@@ -4,7 +4,9 @@ sends unit test requests in succession and collects the response data asynchrono
 
 The web page makes use of `jQuery`, `Bootstrap`, and `Fontawesome`.
 
-### Some notes about the Unit Test server at https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI/blob/development/LitCalTestServer.php
+### Some notes about the Unit Test server
+
+The websocket server is at https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI/blob/development/LitCalTestServer.php.
 
 The main logic for the Unit Test server is at https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI/blob/development/LitCalHealth.php.
 
