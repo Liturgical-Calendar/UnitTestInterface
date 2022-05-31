@@ -103,6 +103,7 @@ let DiocesanCalendars = [];
 let NationalCalendarTemplates = [];
 let DiocesanCalendarTemplates = [];
 let connectionAttempt = null;
+let conn;
 
 const messages = [
     {
@@ -280,7 +281,7 @@ const runTests = () => {
 }
 
 const connectWebSocket = () => {
-    let conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
+    conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
 
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
