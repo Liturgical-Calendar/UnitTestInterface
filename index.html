@@ -52,9 +52,14 @@
 		</div>
 
 		<div id="testsContainer">
-			<div class="row mb-3 text-center g-3">
+			<div class="row mb-3 text-center g-3 litcaltests-header">
 				<div class="col-2 text-white bg-secondary lead pt-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> Websocket connection status</div>
-				<div class="col-1 offset-2"><button id="startTestRunnerBtn" type="button" class="btn btn-lg btn-primary" disabled><i class="fa fa-rotate fa-fw d-inline-block"></i> Run Tests</button></div>
+				<div class="col-2">
+					<select id="APICalendarSelect" class="form-select form-select-lg">
+						<option data-calendartype="nationalcalendar" value="VATICAN">UNIVERSAL CALENDAR</option>
+					</select>
+				</div>
+				<div class="col-1"><button id="startTestRunnerBtn" type="button" class="btn btn-lg btn-primary" disabled><i class="fa fa-rotate fa-fw d-inline-block"></i> Run Tests</button></div>
 				<div class="col-1 text-white bg-success lead pt-2"><i class="fas fa-circle-check fa-fw"></i> <strong>Successful tests:</strong> <span id="successfulCount">0</span></div>
 				<div class="col-1 text-white bg-danger lead pt-2"><i class="fas fa-circle-xmark fa-fw"></i> <strong>Failed tests:</strong> <span id="failedCount">0</span></div>
 				<div class="col-3 text-white bg-dark lead pt-2"><i class="fas fa-stopwatch fa-fw"></i> <strong>Total time for 275 tests:</strong> <span id="total-time">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
@@ -62,7 +67,7 @@
 			<div class="row g-0">
 				<div class="col-9 offset-1 lead text-center fs-2 bg-warning"><b>VALIDATE SOURCE DATA</b></div>
 			</div>
-			<div class="row g-0">
+			<div class="row g-0 sourcedata-tests">
 				<div class="col-1 offset-1">
 					<p class="text-center mb-0 bg-secondary text-white">LitCalMetadata</p>
 					<div class="card text-white bg-info rounded-0 LitCalMetadata file-exists">
@@ -226,41 +231,8 @@
 					</div>
 				</div>
 			</div>
-			<div class="row g-0 nationalcalendars">
-				<div class="col-10 offset-1 lead text-center fs-2 bg-warning"><b>VALIDATE NATIONAL CALENDAR DATA FOR 10 RANDOM YEARS BETWEEN 1970 and <span class="yearMax"></span></b></div>
-				<div class="col-1 offset-1">
-					<p class="text-center mb-0 year-1 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-2 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-3 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-4 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-5 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-6 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-7 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-8 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-9 fw-bold fs-5"></p>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 year-10 fw-bold fs-5"></p>
-				</div>
-			</div>
-			<div class="row g-0 diocesancalendars">
-				<div class="col-10 offset-1 lead text-center fs-2 bg-warning"><b>VALIDATE DIOCESAN CALENDAR DATA FOR 10 RANDOM YEARS BETWEEN 1970 and <span class="yearMax"></span></b></div>
+			<div class="row g-0 calendardata-tests">
+				<div class="col-10 offset-1 lead text-center fs-2 bg-warning"><b>VALIDATE CALENDAR DATA FOR 10 RANDOM YEARS BETWEEN 1970 and <span class="yearMax"></span></b></div>
 				<div class="col-1 offset-1">
 					<p class="text-center mb-0 year-1 fw-bold fs-5"></p>
 				</div>
@@ -300,7 +272,7 @@
 				<div class="col-5 lead text-center fs-3 bg-light border"><b>DOES ST JANE FRANCES DE CHANTAL FALL ON THE RIGHT DAY<br> BOTH BEFORE AND AFTER 2002?</b> <i class="fas fa-circle-info cursor-pointer" title="Saint Jane Frances de Chantal was moved from December 12 to August 12 in the 2002 Latin Edition of the Roman Missal, to allow bishops conferences to insert Our Lady of Guadalupe as an optional memorial on December 12"></i></div>
 				<div class="col-1 offset-1">
 					<p class="text-center mb-0 fw-bold fs-5">2022</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -324,7 +296,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2033</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2033 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -348,7 +320,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2044</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2044 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -372,7 +344,7 @@
 				</div>
 				<div class="col-1 offset-2">
 					<p class="text-center mb-0 fw-bold fs-5">2001</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2001 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -396,7 +368,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2002</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2002 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -420,7 +392,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2010</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2010 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -448,7 +420,7 @@
 				<div class="col-5 offset-1 lead text-center fs-4 text-white border border-white bg-dark">Years in which Dec 12th is a Sunday</div><div class="col-6 lead text-center fs-4 text-white border border-white bg-dark">Years in which Aug 12th is a Sunday</div>
 				<div class="col-1 offset-1">
 					<p class="text-center mb-0 fw-bold fs-5">1971</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1971 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -472,7 +444,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">1976</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1976 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -496,7 +468,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">1982</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1982 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -520,7 +492,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">1993</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1993 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -544,7 +516,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">1999</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1999 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -568,7 +540,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2012</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2012 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -592,7 +564,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2018</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2018 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -616,7 +588,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2029</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2029 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -640,7 +612,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2035</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2035 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -664,7 +636,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2040</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2040 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -688,7 +660,7 @@
 				</div>
 				<div class="col-1">
 					<p class="text-center mb-0 fw-bold fs-5">2046</p>
-					<p class="text-center mb-0 bg-secondary text-white">Universal Calendar</p>
+					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2046 file-exists">
 						<div class="card-body">
 							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
