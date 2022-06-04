@@ -744,21 +744,25 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
 } );
 
 $( document ).on( 'click', '#startTestRunnerBtn', () => {
-    index = 0;
-    calendarIndex = 0;
-    yearIndex = 0;
-    messageCounter = 0;
-    successfulTests = 0;
-    failedTests = 0;
-    currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
-    if ( conn.readyState !== WebSocket.OPEN ) {
-        console.warn( 'cannot run tests: websocket connection is not ready' );
-        console.warn( conn.readyState.toString );
+    if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
+        index = 0;
+        calendarIndex = 0;
+        yearIndex = 0;
+        messageCounter = 0;
+        successfulTests = 0;
+        failedTests = 0;
+        currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
+        if ( conn.readyState !== WebSocket.OPEN ) {
+            console.warn( 'cannot run tests: websocket connection is not ready' );
+            console.warn( conn.readyState.toString );
+        }
+        performance.mark( 'litcalTestRunnerStart' );
+        $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
+        console.log( `currentState = ${currentState}` );
+        runTests();
+    } else {
+        console.warn('Please do not try to start a test run while tests are running!');
     }
-    performance.mark( 'litcalTestRunnerStart' );
-    $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
-    console.log( `currentState = ${currentState}` );
-    runTests();
 } );
 
 connectWebSocket();
