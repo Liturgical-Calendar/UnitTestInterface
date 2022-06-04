@@ -7,6 +7,7 @@ const twentyYearsFromNow = thisYear + 20;
 for ( let i = 10; i > 0; i-- ) {
     Years.push( Math.floor( Math.random() * ( twentyYearsFromNow - 1970 + 1 ) + 1970 ) );
 }
+Years.sort();
 console.log( `10 randomly generated years between 1970 and ${twentyYearsFromNow}:` );
 console.log( Years );
 
@@ -15,7 +16,7 @@ class ReadyToRunTests {
     static SocketReady      = false;
     static AsyncDataReady   = false;
     static check() {
-        return (ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.AsyncDataReady === true);
+        return ( ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.AsyncDataReady === true );
     }
     static tryEnableBtn() {
         console.log( 'ReadyToRunTests.SocketReady = ' + ReadyToRunTests.SocketReady );
@@ -70,6 +71,44 @@ class TestState {
     }
 }
 
+const sourceDataChecks = [
+    {
+        "validate": "LitCalMetadata",
+        "sourceFile": "https://litcal.johnromanodorazio.com/api/dev/LitCalMetadata.php",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeTempore",
+        "sourceFile": "data/propriumdetempore.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis1970",
+        "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis2002",
+        "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis2008",
+        "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "MemorialsFromDecrees",
+        "sourceFile": "data/memorialsFromDecrees/memorialsFromDecrees.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "RegionalCalendarsIndex",
+        "sourceFile": "nations/index.json",
+        "category": "universalcalendar"
+    }
+];
+
 const testTemplate = ( calendarName ) => {
     return `<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar">${calendarName}</p>
     <div class="card text-white bg-info rounded-0 file-exists calendar-${calendarName}">
@@ -85,6 +124,43 @@ const testTemplate = ( calendarName ) => {
 <div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarName}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+    </div>
+</div>
+`;
+}
+
+const sourceDataCheckTemplate = ( check, category, idx ) => {
+    let categoryStr;
+    switch(category){
+        case 'nationalcalendar':
+            categoryStr = 'National Calendar definition: defines any actions that need to be taken on the festivities already defined in the Universal Calendar, to adapt them to this specific National Calendar';
+            break;
+        case 'widerregioncalendar':
+            categoryStr = 'Wider Region definition: contains any festivities that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
+            break;
+        case 'propriumdesanctis':
+            categoryStr = 'Proprium de Sanctis data: contains any festivities defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
+            break;
+        case 'diocesancalendar':
+            categoryStr = 'Diocesan Calendar definition: contains any festivities that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
+            break;
+    }
+    return `<div class="col-1${idx === 0 ? ' offset-1' : ''}">
+    <p class="text-center mb-0 bg-secondary text-white">${check}.json${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
+    <div class="card text-white bg-info rounded-0 ${check} file-exists">
+        <div class="card-body">
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
+        </div>
+    </div>
+    <div class="card text-white bg-info rounded-0 ${check} json-valid">
+        <div class="card-body">
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
+        </div>
+    </div>
+    <div class="card text-white bg-info rounded-0 ${check} schema-valid">
+        <div class="card-body">
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
+        </div>
     </div>
 </div>
 `;
@@ -359,7 +435,8 @@ let conn;
 
 let currentSelectedCalendar = "VATICAN";
 let currentCalendarCategory = "nationalcalendar";
-let countryNames = new Intl.DisplayNames(['en'], {type: 'region'});
+let currentSourceDataChecks = sourceDataChecks;
+let countryNames = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let CalendarNations = [];
 let selectOptions = {};
 let NationalCalendarsArr = [];
@@ -367,55 +444,6 @@ let DiocesanCalendarsArr = [];
 let NationalCalendarTemplates = [ testTemplate( currentSelectedCalendar ) ];
 let DiocesanCalendarTemplates = [];
 
-const messages = [
-    {
-        "action": "executeValidation",
-        "validate": "LitCalMetadata"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "PropriumDeTempore"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "PropriumDeSanctis1970"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "PropriumDeSanctis2002"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "PropriumDeSanctis2008"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "PropriumDeSanctisITALY1983"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "PropriumDeSanctisUSA2011"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "MemorialsFromDecrees"
-    },
-    {
-        "action": "executeValidation",
-        "validate": "RegionalCalendarsIndex"
-    }
-];
-
-const validateCalendarData = {
-    "action": "validateCalendar",
-    "category": "nationalcalendar"
-};
-/*
-const diocesanCalendarCategory = {
-    "action": "validateCalendar",
-    "category": "diocesancalendar"
-};
-*/
 const SpecificUnitTestCategories = [
     {
         "action": "executeUnitTest",
@@ -432,9 +460,9 @@ const SpecificUnitTestCategories = [
 ];
 
 const SpecificUnitTestYears = {
-    "testJohnBaptist" : [ 2022, 2033, 2044 ],
-    "testStJaneFrancesDeChantalMoved" : [ 2001, 2002, 2010 ],
-    "testStJaneFrancesDeChantalOverridden" : [
+    "testJohnBaptist": [ 2022, 2033, 2044 ],
+    "testStJaneFrancesDeChantalMoved": [ 2001, 2002, 2010 ],
+    "testStJaneFrancesDeChantalOverridden": [
         1971,
         1976,
         1982,
@@ -455,20 +483,20 @@ const runTests = () => {
             index = 0;
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
-            conn.send( JSON.stringify( messages[ index++ ] ) );
+            conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
         case TestState.ExecutingValidations:
             if ( ++messageCounter === 3 ) {
                 console.log( 'one cycle complete, passing to next test..' )
                 messageCounter = 0;
-                if ( index < messages.length ) {
-                    conn.send( JSON.stringify( messages[ index++ ] ) );
+                if ( index < currentSourceDataChecks.length ) {
+                    conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
                 } else {
                     console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
                     currentState = TestState.ValidatingCalendarData;
                     index = 0;
                     calendarIndex = 0;
-                    conn.send( JSON.stringify( { ...validateCalendarData, year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 }
             }
             break;
@@ -477,28 +505,28 @@ const runTests = () => {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
                 if ( index < Years.length ) {
-                    conn.send( JSON.stringify( { ...validateCalendarData, year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 }
                 else {
                     console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
                     currentState = TestState.SpecificUnitTests;
                     index = 0;
                     yearIndex = 0;
-                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[index], year: SpecificUnitTestYears[SpecificUnitTestCategories[index].test][yearIndex++], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 }
             }
             break;
         case TestState.SpecificUnitTests:
-            if( ++messageCounter === 4 ) {
+            if ( ++messageCounter === 4 ) {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
-                if( yearIndex < SpecificUnitTestYears[SpecificUnitTestCategories[index].test].length ) {
-                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[index], year: SpecificUnitTestYears[SpecificUnitTestCategories[index].test][yearIndex++], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
+                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 }
-                else if( ++index < SpecificUnitTestCategories.length ) {
+                else if ( ++index < SpecificUnitTestCategories.length ) {
                     yearIndex = 0;
-                    console.log( `Specific unit test ${SpecificUnitTestCategories[index].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
-                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[index], year: SpecificUnitTestYears[SpecificUnitTestCategories[index].test][yearIndex++], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    console.log( `Specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
+                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 }
                 else {
                     console.log( 'Specific unit test validation jobs are finished!' );
@@ -521,9 +549,9 @@ const connectWebSocket = () => {
 
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
-        $('#websocket-connected').toast('show');
-        $('#websocket-status').removeClass('bg-secondary bg-warning bg-danger').addClass('bg-success').find('svg').removeClass('fa-plug fa-plug-circle-xmark fa-plug-circle-exclamation').addClass('fa-plug-circle-check');
-        if(connectionAttempt !== null){
+        $( '#websocket-connected' ).toast( 'show' );
+        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-danger' ).addClass( 'bg-success' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-xmark fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-check' );
+        if ( connectionAttempt !== null ) {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
         }
@@ -531,7 +559,7 @@ const connectWebSocket = () => {
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
     };
-    
+
     conn.onmessage = ( e ) => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
@@ -543,6 +571,7 @@ const connectWebSocket = () => {
         else if ( responseData.type === "error" ) {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
+            $( responseData.classes ).find('.card-text').append(`<span title="${responseData.text}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
             $( '#failedCount' ).text( ++failedTests );
         }
         if ( currentState !== TestState.JobsFinished ) {
@@ -553,29 +582,29 @@ const connectWebSocket = () => {
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
     };
-    
+
     conn.onclose = ( e ) => {
         console.log( 'Connection closed on remote end' );
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
-        if( connectionAttempt === null ) {
-            $('#websocket-status').removeClass('bg-secondary bg-danger bg-success').addClass('bg-warning').find('svg').removeClass('fa-plug fa-plug-circle-check fa-plug-circle-exclamation').addClass('fa-plug-circle-xmark');
-            $('#websocket-closed').toast('show');
-            setTimeout(function() {
+        if ( connectionAttempt === null ) {
+            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
+            $( '#websocket-closed' ).toast( 'show' );
+            setTimeout( function () {
                 connectWebSocket();
-                }, 3000);
+            }, 3000 );
         }
     }
-    
+
     conn.onerror = ( e ) => {
-        $('#websocket-status').removeClass('bg-secondary bg-warning bg-success').addClass('bg-danger').find('svg').removeClass('fa-plug fa-plug-circle-check fa-plug-circle-xmark').addClass('fa-plug-circle-exclamation');
+        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
         console.error( 'Websocket connection error:' );
         console.log( e );
-        $('#websocket-error').toast('show');
-        if( connectionAttempt === null ) {
-            connectionAttempt = setInterval(function() {
+        $( '#websocket-error' ).toast( 'show' );
+        if ( connectionAttempt === null ) {
+            connectionAttempt = setInterval( function () {
                 connectWebSocket();
-              }, 3000);
+            }, 3000 );
         }
     }
 }
@@ -600,42 +629,48 @@ fetch( MetadataURL, {
                 DiocesanCalendarTemplates.push( testTemplate( calendar ) );
             }
 
-            for(const [key,value] of Object.entries(DiocesanCalendars)){
-                if(CalendarNations.indexOf(value.nation) === -1){
-                    CalendarNations.push(value.nation);
-                    selectOptions[value.nation] = [];
+            for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
+                if ( CalendarNations.indexOf( value.nation ) === -1 ) {
+                    CalendarNations.push( value.nation );
+                    selectOptions[ value.nation ] = [];
                 }
-                selectOptions[value.nation].push(`<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>`);
+                selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>` );
             }
 
             let nations = Object.keys( NationalCalendars );
-            nations.sort((a, b) => countryNames.of(COUNTRIES[a]).localeCompare(countryNames.of(COUNTRIES[b])))
-            CalendarNations.sort((a, b) => countryNames.of(COUNTRIES[a]).localeCompare(countryNames.of(COUNTRIES[b])));
+            nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
+            CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
 
             ReadyToRunTests.AsyncDataReady = true;
             ReadyToRunTests.tryEnableBtn();
 
             $( document ).ready( () => {
-                nations.forEach(item => {
-                    if( false === CalendarNations.includes(item) && item !== "VATICAN" ) {
-                        $('#APICalendarSelect').append(`<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of(COUNTRIES[item])}</option>`);
+
+                currentSourceDataChecks.forEach( ( item, idx ) => {
+                    $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
+                } );
+                nations.forEach( item => {
+                    if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
+                        $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
                     }
-                });
-    
-                CalendarNations.forEach(item => {
-                    $('#APICalendarSelect').append(`<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of(COUNTRIES[item])}</option>`);
-                    let $optGroup = $(`<optgroup label="${countryNames.of(COUNTRIES[item])}">`);
-                    $('#APICalendarSelect').append($optGroup);
-                    selectOptions[item].forEach(groupItem => $optGroup.append(groupItem));
-                });
-    
+                } );
+
+                CalendarNations.forEach( item => {
+                    $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
+                    let $optGroup = $( `<optgroup label="${countryNames.of( COUNTRIES[ item ] )}">` );
+                    $( '#APICalendarSelect' ).append( $optGroup );
+                    selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
+                } );
+
                 $( '.yearMax' ).text( twentyYearsFromNow );
                 for ( let i = 10; i > 0; i-- ) {
                     $( `.year-${i}` ).text( Years[ i - 1 ] );
                     $( '.calendardata-tests' ).find( `.year-${i}` ).after( NationalCalendarTemplates.join( '' ) );
                     $( '.calendardata-tests' ).find( `.year-${i}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ i - 1 ]}` );
                 }
-                $('.currentSelectedCalendar').text(currentSelectedCalendar);
+                $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
+                let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
+                $('#total-tests-count').text(totalTestsCount);
                 ReadyToRunTests.PageReady = true;
                 ReadyToRunTests.tryEnableBtn();
             } );
@@ -643,19 +678,70 @@ fetch( MetadataURL, {
         }
     } );
 
-$( document ).on('change', '#APICalendarSelect', (ev) => {
+$( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
+    ReadyToRunTests.PageReady = false;
     const oldSelectedCalendar = currentSelectedCalendar;
     currentSelectedCalendar = ev.currentTarget.value;
-    currentCalendarCategory = $( '#APICalendarSelect :selected' ).data('calendartype');
-    console.log('currentCalendarCategory = ' + currentCalendarCategory);
-    $(`.calendar-${oldSelectedCalendar}`).removeClass(`calendar-${oldSelectedCalendar}`).addClass(`calendar-${currentSelectedCalendar}`);
-    $('.currentSelectedCalendar').text(currentSelectedCalendar);
-    $testCells = $('.sourcedata-tests,.calendardata-tests,.specificunittests');
-    $testCells.find('.bg-success,.bg-danger').removeClass('bg-success bg-danger').addClass('bg-info');
-    $testCells.find('.fa-circle-check,.fa-circle-xmark').removeClass('fa-circle-check fa-circle-xmark').addClass('fa-circle-question');
-    $('#startTestRunnerBtn').prop('disabled', false).removeClass('btn-secondary').addClass('btn-primary');
-    $('#startTestRunnerBtn').find('.fa-stop').removeClass('fa-stop').addClass('fa-rotate');
-});
+    currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
+    console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
+    $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
+    $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
+    //set new currentSourceDataChecks (national calendar index file, missals related to national calendar)
+    $( '.sourcedata-tests' ).empty();
+    if( currentSelectedCalendar === 'VATICAN' ) {
+        currentSourceDataChecks = sourceDataChecks;
+    } else {
+        let nation = currentCalendarCategory === 'nationalcalendar'
+            ? currentSelectedCalendar
+            : MetaData.DiocesanCalendars[currentSelectedCalendar].nation;
+        let sourceFile = `nations/${nation}/${nation}.json`;
+        currentSourceDataChecks = [];
+        MetaData.NationalCalendarsMetadata[nation].widerRegions.forEach((item) => {
+            currentSourceDataChecks.push({
+                "validate": item,
+                "sourceFile": `nations/${item}.json`,
+                "category": "widerregioncalendar"
+            });
+        });
+        currentSourceDataChecks.push({
+                "validate": nation,
+                "sourceFile": sourceFile,
+                "category": "nationalcalendar"
+        });
+        MetaData.NationalCalendarsMetadata[nation].missals.forEach((missal) => {
+            let sourceFile = Object.values( MetaData.RomanMissals ).filter(el => el.value === missal)[0].sanctoraleFileName;
+            if( sourceFile !== false ) {
+                currentSourceDataChecks.push({
+                    "validate": missal,
+                    "sourceFile": sourceFile,
+                    "category": "propriumdesanctis"
+                });
+            }
+        });
+        if( currentCalendarCategory === 'diocesancalendar' ) {
+            currentSourceDataChecks.push({
+                "validate": currentSelectedCalendar,
+                "sourceFile": `nations/${nation}/${MetaData.DiocesanCalendars[currentSelectedCalendar].diocese}.json`,
+                "category": "diocesancalendar"
+            });
+        }
+    }
+    currentSourceDataChecks.forEach( ( item, idx ) => {
+        $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
+    } );
+    $testCells = $( '.calendardata-tests,.specificunittests' );
+    $testCells.find( '.bg-success,.bg-danger' ).removeClass( 'bg-success bg-danger' ).addClass( 'bg-info' );
+    $testCells.find( '.fa-circle-check,.fa-circle-xmark' ).removeClass( 'fa-circle-check fa-circle-xmark' ).addClass( 'fa-circle-question' );
+    let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
+    $('#total-tests-count').text(totalTestsCount);
+    $('#successfulCount,#failedCount').text(0);
+    ReadyToRunTests.PageReady = true;
+    if( ReadyToRunTests.check() ){
+        $( '#startTestRunnerBtn' ).prop( 'disabled', false ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
+        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
+    }
+
+} );
 
 $( document ).on( 'click', '#startTestRunnerBtn', () => {
     index = 0;
@@ -665,8 +751,8 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
     successfulTests = 0;
     failedTests = 0;
     currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
-    if( conn.readyState !== WebSocket.OPEN ) {
-        console.warn('cannot run tests: websocket connection is not ready');
+    if ( conn.readyState !== WebSocket.OPEN ) {
+        console.warn( 'cannot run tests: websocket connection is not ready' );
         console.warn( conn.readyState.toString );
     }
     performance.mark( 'litcalTestRunnerStart' );

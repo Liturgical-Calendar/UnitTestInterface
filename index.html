@@ -60,176 +60,14 @@
 					</select>
 				</div>
 				<div class="col-1"><button id="startTestRunnerBtn" type="button" class="btn btn-lg btn-primary" disabled><i class="fa fa-rotate fa-fw d-inline-block"></i> Run Tests</button></div>
-				<div class="col-1 text-white bg-success lead pt-2"><i class="fas fa-circle-check fa-fw"></i> <strong>Successful tests:</strong> <span id="successfulCount">0</span></div>
+				<div class="col-2 text-white bg-success lead pt-2"><i class="fas fa-circle-check fa-fw"></i> <strong>Successful tests:</strong> <span id="successfulCount">0</span></div>
 				<div class="col-1 text-white bg-danger lead pt-2"><i class="fas fa-circle-xmark fa-fw"></i> <strong>Failed tests:</strong> <span id="failedCount">0</span></div>
-				<div class="col-3 text-white bg-dark lead pt-2"><i class="fas fa-stopwatch fa-fw"></i> <strong>Total time for 275 tests:</strong> <span id="total-time">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
+				<div class="col-3 text-white bg-dark lead pt-2"><i class="fas fa-stopwatch fa-fw"></i> <strong>Total time for <span id="total-tests-count"></span> tests:</strong> <span id="total-time">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
 			</div>
 			<div class="row g-0">
 				<div class="col-9 offset-1 lead text-center fs-2 bg-warning"><b>VALIDATE SOURCE DATA</b></div>
 			</div>
 			<div class="row g-0 sourcedata-tests">
-				<div class="col-1 offset-1">
-					<p class="text-center mb-0 bg-secondary text-white">LitCalMetadata</p>
-					<div class="card text-white bg-info rounded-0 LitCalMetadata file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 LitCalMetadata json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 LitCalMetadata schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">PropriumDeTempore</p>
-					<div class="card text-white bg-info rounded-0 PropriumDeTempore file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeTempore json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeTempore schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">PropriumDeSanctis1970</p>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis1970 file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis1970 json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis1970 schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">PropriumDeSanctis2002</p>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis2002 file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis2002 json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis2002 schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">PropriumDeSanctis2008</p>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis2008 file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis2008 json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctis2008 schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">MemorialsFromDecrees</p>
-					<div class="card text-white bg-info rounded-0 MemorialsFromDecrees file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 MemorialsFromDecrees json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 MemorialsFromDecrees schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">RegionalCalendarsIndex</p>
-					<div class="card text-white bg-info rounded-0 RegionalCalendarsIndex file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 RegionalCalendarsIndex json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 RegionalCalendarsIndex schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">PropriumDeSanctisITALY1983</p>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctisITALY1983 file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctisITALY1983 json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctisITALY1983 schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-1">
-					<p class="text-center mb-0 bg-secondary text-white">PropriumDeSanctisUSA2011</p>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctisUSA2011 file-exists">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctisUSA2011 json-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
-						</div>
-					</div>
-					<div class="card text-white bg-info rounded-0 PropriumDeSanctisUSA2011 schema-valid">
-						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
-						</div>
-					</div>
-				</div>
 			</div>
 			<div class="row g-0 calendardata-tests">
 				<div class="col-10 offset-1 lead text-center fs-2 bg-warning"><b>VALIDATE CALENDAR DATA FOR 10 RANDOM YEARS BETWEEN 1970 and <span class="yearMax"></span></b></div>
@@ -275,22 +113,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -299,22 +137,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2033 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2033 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2033 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -323,22 +161,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2044 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2044 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2044 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -347,22 +185,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2001 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2001 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2001 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2001 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -371,22 +209,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2002 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2002 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2002 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2002 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -395,22 +233,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2010 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2010 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2010 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalMoved year-2010 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -423,22 +261,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1971 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1971 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1971 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1971 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -447,22 +285,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1976 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1976 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1976 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1976 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -471,22 +309,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1982 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1982 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1982 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1982 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -495,22 +333,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1993 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1993 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1993 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1993 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -519,22 +357,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1999 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1999 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1999 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-1999 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -543,22 +381,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2012 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2012 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2012 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2012 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -567,22 +405,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2018 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2018 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2018 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2018 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -591,22 +429,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2029 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2029 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2029 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2029 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -615,22 +453,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2035 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2035 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2035 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2035 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -639,22 +477,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2040 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2040 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2040 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2040 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
@@ -663,22 +501,22 @@
 					<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2046 file-exists">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2046 json-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2046 schema-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
 						</div>
 					</div>
 					<div class="card text-white bg-info rounded-0 StJaneFrancesDeChantalOverridden year-2046 test-valid">
 						<div class="card-body">
-							<p class="card-text"><i class="fas fa-circle-question fa-fw"></i> test valid</p>
+							<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
 						</div>
 					</div>
 				</div>
