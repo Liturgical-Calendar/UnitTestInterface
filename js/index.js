@@ -3,16 +3,18 @@ const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}
 
 const Years = [];
 const thisYear = new Date().getFullYear();
-const twentyYearsFromNow = thisYear + 20;
-while ( Years.length < 10 ) {
-    let newRandomYear = Math.floor( Math.random() * ( twentyYearsFromNow - 1970 + 1 ) + 1970 );
-    if( Years.includes( newRandomYear ) === false ) {
-        Years.push( newRandomYear );
-    }
+const twentyFiveYearsFromNow = thisYear + 25;
+let baseYear = 1970;
+while (baseYear <= twentyFiveYearsFromNow ) {
+    //let newRandomYear = Math.floor( Math.random() * ( twentyFiveYearsFromNow - 1970 + 1 ) + 1970 );
+    //if( Years.includes( newRandomYear ) === false ) {
+    //    Years.push( newRandomYear );
+    //}
+    Years.push( baseYear++ );
 }
-Years.sort();
-console.log( `10 randomly generated years between 1970 and ${twentyYearsFromNow}:` );
-console.log( Years );
+//Years.sort();
+//console.log( `10 randomly generated years between 1970 and ${twentyFiveYearsFromNow}:` );
+//console.log( Years );
 
 class ReadyToRunTests {
     static PageReady        = false;
@@ -22,9 +24,9 @@ class ReadyToRunTests {
         return ( ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.AsyncDataReady === true );
     }
     static tryEnableBtn() {
-        console.log( 'ReadyToRunTests.SocketReady = ' + ReadyToRunTests.SocketReady );
-        console.log( 'ReadyToRunTests.AsyncDataReady = ' + ReadyToRunTests.AsyncDataReady );
-        console.log( 'ReadyToRunTests.PageReady = ' + ReadyToRunTests.PageReady );
+        console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
+        console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.AsyncDataReady );
+        console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         $( '#startTestRunnerBtn' ).prop( 'disabled', !ReadyToRunTests.check() );
     }
 }
@@ -59,12 +61,12 @@ const MsToTimeString = ( ms ) => {
 }
 
 class TestState {
-    static ReadyState = new TestState( 'ReadyState' );
-    static ExecutingValidations = new TestState( 'ExecutingValidations' );
-    static ValidatingNationalCalendars = new TestState( 'ValidatingNationalCalendars' );
-    static ValidatingDiocesanCalendars = new TestState( 'ValidatingDiocesanCalendars' );
-    static SpecificUnitTests = new TestState( 'SpecificUnitTests' );
-    static JobsFinished = new TestState( 'JobsFinished' );
+    static ReadyState                   = new TestState( 'ReadyState' );
+    static ExecutingValidations         = new TestState( 'ExecutingValidations' );
+    static ValidatingNationalCalendars  = new TestState( 'ValidatingNationalCalendars' );
+    static ValidatingDiocesanCalendars  = new TestState( 'ValidatingDiocesanCalendars' );
+    static SpecificUnitTests            = new TestState( 'SpecificUnitTests' );
+    static JobsFinished                 = new TestState( 'JobsFinished' );
 
     constructor( name ) {
         this.name = name;
@@ -128,6 +130,16 @@ const testTemplate = ( calendarName ) => {
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
     </div>
+</div>
+`;
+}
+
+const calDataTestTemplate = ( idx ) => {
+    let i = Years.length - idx;
+    let year = Years[ i ];
+    return `
+<div class="col-1${i === 0 || i % 10 === 0 ? ' offset-1' : ''}">
+    <p class="text-center mb-0 year-${year} fw-bold fs-5">${year}</p>
 </div>
 `;
 }
@@ -460,6 +472,14 @@ const SpecificUnitTestCategories = [
     {
         "action": "executeUnitTest",
         "test": "testStJaneFrancesDeChantalOverridden"
+    },
+    {
+        "action": "executeUnitTest",
+        "test": "testMaryMotherChurchDoesNotExist"
+    },
+    {
+        "action": "executeUnitTest",
+        "test": "testMaryMotherChurchExists"
     }
 ];
 
@@ -478,7 +498,9 @@ const SpecificUnitTestYears = {
         2035,
         2040,
         2046
-    ]
+    ],
+    "testMaryMotherChurchDoesNotExist": [ 2016, 2017 ],
+    "testMaryMotherChurchExists": [ 2018, 2019 ]
 };
 
 const runTests = () => {
@@ -516,27 +538,25 @@ const runTests = () => {
                     currentState = TestState.SpecificUnitTests;
                     index = 0;
                     yearIndex = 0;
+                    console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                     conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 }
             }
             break;
         case TestState.SpecificUnitTests:
-            if ( ++messageCounter === 4 ) {
-                console.log( 'one cycle complete, passing to next test..' );
-                messageCounter = 0;
-                if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
-                }
-                else if ( ++index < SpecificUnitTestCategories.length ) {
-                    yearIndex = 0;
-                    console.log( `Specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
-                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
-                }
-                else {
-                    console.log( 'Specific unit test validation jobs are finished!' );
-                    currentState = TestState.JobsFinished;
-                    runTests();
-                }
+            if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
+                conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+            }
+            else if ( ++index < SpecificUnitTestCategories.length ) {
+                yearIndex = 0;
+                console.log( `Specific unit test ${SpecificUnitTestCategories[ index - 1 ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
+                console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
+                conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+            }
+            else {
+                console.log( 'Specific unit test validation jobs are finished!' );
+                currentState = TestState.JobsFinished;
+                runTests();
             }
             break;
         case TestState.JobsFinished:
@@ -626,7 +646,7 @@ fetch( MetadataURL, {
         if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
             MetaData = data.LitCalMetadata;
             const { NationalCalendars, DiocesanCalendars } = MetaData;
-            for ( const [ key, value ] of Object.entries( NationalCalendars ) ) {
+            for ( const value of Object.values( NationalCalendars ) ) {
                 DiocesanCalendarsArr.push( ...value );
             }
             for ( const calendar of DiocesanCalendarsArr ) {
@@ -666,11 +686,12 @@ fetch( MetadataURL, {
                     selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
                 } );
 
-                $( '.yearMax' ).text( twentyYearsFromNow );
-                for ( let i = 10; i > 0; i-- ) {
-                    $( `.year-${i}` ).text( Years[ i - 1 ] );
-                    $( '.calendardata-tests' ).find( `.year-${i}` ).after( NationalCalendarTemplates.join( '' ) );
-                    $( '.calendardata-tests' ).find( `.year-${i}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ i - 1 ]}` );
+                $( '.yearMax' ).text( twentyFiveYearsFromNow );
+                for ( let i = Years.length; i > 0; i-- ) {
+                    let idx = Years.length - i;
+                    $( '.calendardata-tests' ).append( calDataTestTemplate( i ) );
+                    $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
+                    $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
                 }
                 $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
                 let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
