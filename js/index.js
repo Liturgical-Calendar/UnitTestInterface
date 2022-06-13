@@ -4,8 +4,11 @@ const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}
 const Years = [];
 const thisYear = new Date().getFullYear();
 const twentyYearsFromNow = thisYear + 20;
-for ( let i = 10; i > 0; i-- ) {
-    Years.push( Math.floor( Math.random() * ( twentyYearsFromNow - 1970 + 1 ) + 1970 ) );
+while ( Years.length < 10 ) {
+    let newRandomYear = Math.floor( Math.random() * ( twentyYearsFromNow - 1970 + 1 ) + 1970 );
+    if( Years.includes( newRandomYear ) === false ) {
+        Years.push( newRandomYear );
+    }
 }
 Years.sort();
 console.log( `10 randomly generated years between 1970 and ${twentyYearsFromNow}:` );
@@ -110,7 +113,7 @@ const sourceDataChecks = [
 ];
 
 const testTemplate = ( calendarName ) => {
-    return `<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar">${calendarName}</p>
+    return `<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate(calendarName,22)}</p>
     <div class="card text-white bg-info rounded-0 file-exists calendar-${calendarName}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -146,7 +149,7 @@ const sourceDataCheckTemplate = ( check, category, idx ) => {
             break;
     }
     return `<div class="col-1${idx === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white">${check}.json${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${check}.json">${category !== 'universalcalendar' ? truncate(check,14) : truncate(check,22)}.json</span>${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
     <div class="card text-white bg-info rounded-0 ${check} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
@@ -420,6 +423,7 @@ const COUNTRIES = {
     "ZIMBABWE": "ZW"
 }
 
+const truncate = (source, size) => source.length > size ? source.slice(0, size - 1) + "*" : source;
 
 let MetaData = {};
 let currentState;
@@ -685,7 +689,7 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
-    $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
+    $( '.currentSelectedCalendar' ).text( truncate(currentSelectedCalendar,20) ).attr('title', currentSelectedCalendar);
     //set new currentSourceDataChecks (national calendar index file, missals related to national calendar)
     $( '.sourcedata-tests' ).empty();
     if( currentSelectedCalendar === 'VATICAN' ) {
