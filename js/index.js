@@ -27,7 +27,11 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
         console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.AsyncDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
-        $( '#startTestRunnerBtn' ).prop( 'disabled', !ReadyToRunTests.check() );
+        let testsReady = ReadyToRunTests.check();
+        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady );
+        if( testsReady ) {
+            $( '.page-loader' ).fadeOut('slow');
+        }
     }
 }
 
