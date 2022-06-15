@@ -517,6 +517,9 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
+            if( $('#sourceDataTests').hasClass('show') === false ) {
+                $('#sourceDataTests').collapse('show');
+            }
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
         case TestState.ExecutingValidations:
@@ -747,6 +750,13 @@ fetch( MetadataURL, {
                 $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
                 let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
                 $('#total-tests-count').text(totalTestsCount);
+                let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
+                let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
+                let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
+                $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
+                $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
+                $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
+
                 ReadyToRunTests.PageReady = true;
                 ReadyToRunTests.tryEnableBtn();
             } );
@@ -809,8 +819,14 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     $testCells.find( '.bg-success,.bg-danger' ).removeClass( 'bg-success bg-danger' ).addClass( 'bg-info' );
     $testCells.find( '.fa-circle-check,.fa-circle-xmark' ).removeClass( 'fa-circle-check fa-circle-xmark' ).addClass( 'fa-circle-question' );
     let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
-    $('#total-tests-count').text(totalTestsCount);
-    $('#successfulCount,#failedCount').text(0);
+    $( '#total-tests-count' ).text(totalTestsCount);
+    let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
+    let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
+    let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
+    $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
+    $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
+    $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
+    $('.successfulCount,.failedCount').text(0);
     ReadyToRunTests.PageReady = true;
     if( ReadyToRunTests.check() ){
         $( '#startTestRunnerBtn' ).prop( 'disabled', false ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
