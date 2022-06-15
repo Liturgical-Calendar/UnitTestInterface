@@ -6,15 +6,8 @@ const thisYear = new Date().getFullYear();
 const twentyFiveYearsFromNow = thisYear + 25;
 let baseYear = 1970;
 while (baseYear <= twentyFiveYearsFromNow ) {
-    //let newRandomYear = Math.floor( Math.random() * ( twentyFiveYearsFromNow - 1970 + 1 ) + 1970 );
-    //if( Years.includes( newRandomYear ) === false ) {
-    //    Years.push( newRandomYear );
-    //}
     Years.push( baseYear++ );
 }
-//Years.sort();
-//console.log( `10 randomly generated years between 1970 and ${twentyFiveYearsFromNow}:` );
-//console.log( Years );
 
 class ReadyToRunTests {
     static PageReady        = false;
@@ -67,8 +60,7 @@ const MsToTimeString = ( ms ) => {
 class TestState {
     static ReadyState                   = new TestState( 'ReadyState' );
     static ExecutingValidations         = new TestState( 'ExecutingValidations' );
-    static ValidatingNationalCalendars  = new TestState( 'ValidatingNationalCalendars' );
-    static ValidatingDiocesanCalendars  = new TestState( 'ValidatingDiocesanCalendars' );
+    static ValidatingCalendarData       = new TestState( 'ValidatingCalendarData' );
     static SpecificUnitTests            = new TestState( 'SpecificUnitTests' );
     static JobsFinished                 = new TestState( 'JobsFinished' );
 
@@ -119,8 +111,9 @@ const sourceDataChecks = [
 ];
 
 const testTemplate = ( calendarName ) => {
-    return `<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate(calendarName,22)}</p>
-    <div class="card text-white bg-info rounded-0 file-exists calendar-${calendarName}">
+    return `
+<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate(calendarName,22)}</p>
+<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarName}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
     </div>
@@ -447,8 +440,18 @@ let index;
 let calendarIndex;
 let yearIndex;
 let messageCounter;
+
 let successfulTests = 0;
 let failedTests = 0;
+
+let successfulSourceDataTests = 0;
+let failedSourceDataTests = 0;
+
+let successfulCalendarDataTests = 0;
+let failedCalendarDataTests = 0;
+
+let successfulUnitTests = 0;
+let failedUnitTests = 0;
 
 let connectionAttempt = null;
 let conn;
@@ -513,6 +516,7 @@ const runTests = () => {
             index = 0;
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
+            performance.mark( 'sourceDataTestsStart' );
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
         case TestState.ExecutingValidations:
@@ -526,7 +530,9 @@ const runTests = () => {
                     currentState = TestState.ValidatingCalendarData;
                     index = 0;
                     calendarIndex = 0;
+                    performance.mark( 'calendarDataTestsStart' );
                     conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    $('#calendarDataTests').collapse('show');
                 }
             }
             break;
@@ -543,7 +549,9 @@ const runTests = () => {
                     index = 0;
                     yearIndex = 0;
                     console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
+                    performance.mark( 'specificUnitTestsStart' );
                     conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    $('#specificUnitTests').collapse('show');
                 }
             }
             break;
@@ -595,12 +603,34 @@ const connectWebSocket = () => {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-success' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
             $( '#successfulCount' ).text( ++successfulTests );
+            switch( currentState ) {
+                case TestState.ExecutingValidations:
+                    $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
+                    break;
+                case TestState.ValidatingCalendarData:
+                    $( '#successfulCalendarDataTestsCount' ).text( ++successfulCalendarDataTests );
+                    break;
+                case TestState.SpecificUnitTests:
+                    $( '#successfulUnitTestsCount' ).text( ++successfulUnitTests );
+                    break;
+            }
         }
         else if ( responseData.type === "error" ) {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
             $( responseData.classes ).find('.card-text').append(`<span title="${responseData.text}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
             $( '#failedCount' ).text( ++failedTests );
+            switch( currentState ) {
+                case TestState.ExecutingValidations:
+                    $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
+                    break;
+                case TestState.ValidatingCalendarData:
+                    $( '#failedCalendarDataTestsCount' ).text( ++failedCalendarDataTests );
+                    break;
+                case TestState.SpecificUnitTests:
+                    $( '#failedUnitTestsCount' ).text( ++failedUnitTests );
+                    break;
+            }
         }
         if ( currentState !== TestState.JobsFinished ) {
             runTests();
@@ -609,6 +639,23 @@ const connectWebSocket = () => {
         let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
+        switch( currentState ) {
+            case TestState.ExecutingValidations:
+                performance.mark( 'sourceDataTestsEnd' );
+                let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ) );
+                break;
+            case TestState.ValidatingCalendarData:
+                performance.mark( 'calendarDataTestsEnd' );
+                let totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
+                $( '#totalCalendarDataTestsTime' ).text( MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) ) );
+                break;
+            case TestState.SpecificUnitTests:
+                performance.mark( 'specificUnitTestsEnd' );
+                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
+                $( '#totalUnitTestsTime' ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
+                break;
+        }
     };
 
     conn.onclose = ( e ) => {

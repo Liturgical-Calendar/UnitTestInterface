@@ -13,6 +13,10 @@ body {
     font-size: 0.6rem;
 }
 
+.test-results {
+    font-size: 0.8rem;
+}
+
 .sourcedata-tests .card-body,
 .calendardata-tests .card-body,
 .specificunittests .card-body {

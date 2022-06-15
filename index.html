@@ -68,7 +68,10 @@
 				<div class="accordion-item">
 					<h2 class="row g-0 accordion-header" id="sourceDataHeader">
 						<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sourceDataTests" aria-expanded="true" aria-controls="sourceDataTests">
-							<i class="fas fa-file-code"></i>&nbsp;VALIDATE SOURCE DATA
+							<div class="col-4"><i class="fas fa-file-code fa-fw"></i>&nbsp;<span>VALIDATE SOURCE DATA</span></div>
+							<div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successfulSourceDataTestsCount">0</span></div>
+							<div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failedSourceDataTestsCount">0</span></div>
+							<div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="totalSourceDataTestsTestsCount"></span> tests: <span id="totalSourceDataTestsTime">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
 						</button>
 					</h2>
 					<div id="sourceDataTests" class="accordion-collapse collapse show" aria-labelledby="sourceDataHeader" data-bs-parent="#testSuiteAccordion">
@@ -78,7 +81,10 @@
 				<div class="accordion-item">
 					<h2 class="row g-0 accordion-header" id="calendarDataHeader">
 						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#calendarDataTests" aria-expanded="true" aria-controls="calendarDataTests">
-							<i class="fas fa-file-export"></i>&nbsp;VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL&nbsp;<span class="yearMax"></span>
+							<div class="col-4"><i class="fas fa-file-export fa-fw"></i>&nbsp;VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL&nbsp;<span class="yearMax"></span></div>
+							<div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successfulCalendarDataTestsCount">0</span></div>
+							<div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failedCalendarDataTestsCount">0</span></div>
+							<div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="totalCalendarDataTestsCount"></span> tests: <span id="totalCalendarDataTestsTime">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
 						</button>
 					</h2>
 					<div id="calendarDataTests" class="accordion-collapse collapse" aria-labelledby="calendarDataHeader" data-bs-parent="#testSuiteAccordion">
@@ -88,7 +94,10 @@
 				<div class="accordion-item">
 					<h2 class="row g-0 accordion-header" id="specificUnitTestHeader">
 						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTests" aria-expanded="true" aria-controls="specificUnitTests">
-							<i class="fas fa-file-shield"></i>&nbsp;EXECUTE UNIT TESTS FOR SPECIFIC OCCURRENCES
+							<div class="col-4"><i class="fas fa-file-shield fa-fw"></i>&nbsp;EXECUTE UNIT TESTS FOR SPECIFIC OCCURRENCES</div>
+							<div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successfulUnitTestsCount">0</span></div>
+							<div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failedUnitTestsCount">0</span></div>
+							<div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="totalUnitTestsCount"></span> tests: <span id="totalUnitTestsTime">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
 						</button>
 					</h2>
 					<div id="specificUnitTests" class="accordion-collapse collapse" aria-labelledby="specificUnitTestHeader" data-bs-parent="#testSuiteAccordion">
