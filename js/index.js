@@ -479,37 +479,8 @@ let DiocesanCalendarsArr = [];
 let NationalCalendarTemplates = [ testTemplate( currentSelectedCalendar ) ];
 let DiocesanCalendarTemplates = [];
 
-const SpecificUnitTestCategories = [];
-
-const SpecificUnitTestYears = {
-    "NativityJohnBaptistTest": [ 2022, 2033, 2044 ],
-    "StJaneFrancesDeChantalTest": [
-        //movedornot
-        2001,
-        2002,
-        2010,
-        //overridden
-        1971,
-        1976,
-        1982,
-        1993,
-        1999,
-        2012,
-        2018,
-        2029,
-        2035,
-        2040,
-        2046
-    ],
-    "MaryMotherChurchTest": [
-        //should not exist
-        2016,
-        2017,
-        //should exist
-        2018,
-        2019
-    ]
-};
+let SpecificUnitTestCategories = [];
+let SpecificUnitTestYears = {};
 
 const runTests = () => {
     switch ( currentState ) {
@@ -556,6 +527,7 @@ const runTests = () => {
                     performance.mark( 'specificUnitTestsStart' );
                     conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                     $('#specificUnitTests').collapse('show');
+                    $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
                 }
             }
             break;
@@ -568,6 +540,7 @@ const runTests = () => {
                 console.log( `Specific unit test ${SpecificUnitTestCategories[ index - 1 ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
                 console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
@@ -616,6 +589,8 @@ const connectWebSocket = () => {
                     break;
                 case TestState.SpecificUnitTests:
                     $( '#successfulUnitTestsCount' ).text( ++successfulUnitTests );
+                    let specificUnitTestSuccessCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-success').length;
+                    $(`#successful${responseData.test}TestsCount`).text(specificUnitTestSuccessCount);
                     break;
             }
         }
@@ -633,6 +608,8 @@ const connectWebSocket = () => {
                     break;
                 case TestState.SpecificUnitTests:
                     $( '#failedUnitTestsCount' ).text( ++failedUnitTests );
+                    let specificUnitTestFailedCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-danger').length;
+                    $(`#failed${responseData.test}TestsCount`).text(specificUnitTestFailedCount);
                     break;
             }
         }
@@ -836,7 +813,6 @@ const appendAccordionItem = (prop, obj) => {
             }
             break;
     }
-    console.log(obj);
     $('#specificUnitTestsAccordion').append(`
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${prop}Header">
@@ -852,33 +828,84 @@ const appendAccordionItem = (prop, obj) => {
             </div>
         </div>
     `);
+    let specificUnitTestTotalCount = $(`#specificUnitTest-${prop}`).find('.test-valid').length;
+    $(`#total${prop}TestsCount`).text(specificUnitTestTotalCount);
 }
 
 const setupPage = () => {
     $( document ).ready( () => {
+        if( $('#APICalendarSelect').children().length === 1 ) {
+            nations.forEach( item => {
+                if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
+                    $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
+                }
+            } );
+            CalendarNations.forEach( item => {
+                $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
+                let $optGroup = $( `<optgroup label="${countryNames.of( COUNTRIES[ item ] )}">` );
+                $( '#APICalendarSelect' ).append( $optGroup );
+                selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
+            } );
+        }
+
+        if( currentSelectedCalendar === 'VATICAN' ) {
+            currentSourceDataChecks = sourceDataChecks;
+        } else {
+            let nation = currentCalendarCategory === 'nationalcalendar'
+                ? currentSelectedCalendar
+                : MetaData.DiocesanCalendars[currentSelectedCalendar].nation;
+            let sourceFile = `nations/${nation}/${nation}.json`;
+            currentSourceDataChecks = [];
+            MetaData.NationalCalendarsMetadata[nation].widerRegions.forEach((item) => {
+                currentSourceDataChecks.push({
+                    "validate": item,
+                    "sourceFile": `nations/${item}.json`,
+                    "category": "widerregioncalendar"
+                });
+            });
+            currentSourceDataChecks.push({
+                    "validate": nation,
+                    "sourceFile": sourceFile,
+                    "category": "nationalcalendar"
+            });
+            MetaData.NationalCalendarsMetadata[nation].missals.forEach((missal) => {
+                let sourceFile = Object.values( MetaData.RomanMissals ).filter(el => el.value === missal)[0].sanctoraleFileName;
+                if( sourceFile !== false ) {
+                    currentSourceDataChecks.push({
+                        "validate": missal,
+                        "sourceFile": sourceFile,
+                        "category": "propriumdesanctis"
+                    });
+                }
+            });
+            if( currentCalendarCategory === 'diocesancalendar' ) {
+                currentSourceDataChecks.push({
+                    "validate": currentSelectedCalendar,
+                    "sourceFile": `nations/${nation}/${MetaData.DiocesanCalendars[currentSelectedCalendar].diocese}.json`,
+                    "category": "diocesancalendar"
+                });
+            }
+        }
+    
+        $( '.sourcedata-tests' ).empty();
         currentSourceDataChecks.forEach( ( item, idx ) => {
             $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
         } );
-        nations.forEach( item => {
-            if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
-                $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
-            }
-        } );
-        CalendarNations.forEach( item => {
-            $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
-            let $optGroup = $( `<optgroup label="${countryNames.of( COUNTRIES[ item ] )}">` );
-            $( '#APICalendarSelect' ).append( $optGroup );
-            selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
-        } );
     
-        $( '.yearMax' ).text( twentyFiveYearsFromNow );
-        let idx;
-        for ( let i = Years.length; i > 0; i-- ) {
-            idx = Years.length - i;
-            $( '.calendardata-tests' ).append( calDataTestTemplate( i ) );
-            $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
-            $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
+        if( $('.calendardata-tests').children().length === 0 ) {
+            $( '.yearMax' ).text( twentyFiveYearsFromNow );
+            let idx;
+            for ( let i = Years.length; i > 0; i-- ) {
+                idx = Years.length - i;
+                $( '.calendardata-tests' ).append( calDataTestTemplate( i ) );
+                $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
+                $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
+            }
         }
+
+        $('#specificUnitTestsAccordion').empty();
+        SpecificUnitTestCategories = [];
+        SpecificUnitTestYears = {};
         for( const [ prop, obj ] of Object.entries(UnitTests) ) {
             SpecificUnitTestCategories.push({
                 "action": "executeUnitTest",
@@ -886,7 +913,8 @@ const setupPage = () => {
             });
             appendAccordionItem(prop,obj);
         }
-        $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
+
+        $( '.currentSelectedCalendar' ).text( truncate(currentSelectedCalendar,20) ).attr('title', currentSelectedCalendar);
         let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
         $('#total-tests-count').text(totalTestsCount);
         let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
@@ -895,83 +923,33 @@ const setupPage = () => {
         $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
         $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
         $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
-    
+        successfulSourceDataTests = 0;
+        successfulCalendarDataTests = 0;
+        successfulUnitTests = 0;
+        failedSourceDataTests = 0;
+        failedCalendarDataTests = 0;
+        failedUnitTests = 0;
+        $('.successfulCount,.failedCount').text(0);
+        $testCells = $( '.calendardata-tests' );
+        $testCells.find( '.bg-success,.bg-danger' ).removeClass( 'bg-success bg-danger' ).addClass( 'bg-info' );
+        $testCells.find( '.fa-circle-check,.fa-circle-xmark' ).removeClass( 'fa-circle-check fa-circle-xmark' ).addClass( 'fa-circle-question' );
         ReadyToRunTests.PageReady = true;
         ReadyToRunTests.tryEnableBtn();
+        $( '.page-loader' ).fadeOut('slow');
     } );
 }
 
 
 $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
+    $( '.page-loader' ).show();
     ReadyToRunTests.PageReady = false;
     const oldSelectedCalendar = currentSelectedCalendar;
     currentSelectedCalendar = ev.currentTarget.value;
     currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
-    $( '.currentSelectedCalendar' ).text( truncate(currentSelectedCalendar,20) ).attr('title', currentSelectedCalendar);
-    //set new currentSourceDataChecks (national calendar index file, missals related to national calendar)
-    $( '.sourcedata-tests' ).empty();
-    if( currentSelectedCalendar === 'VATICAN' ) {
-        currentSourceDataChecks = sourceDataChecks;
-    } else {
-        let nation = currentCalendarCategory === 'nationalcalendar'
-            ? currentSelectedCalendar
-            : MetaData.DiocesanCalendars[currentSelectedCalendar].nation;
-        let sourceFile = `nations/${nation}/${nation}.json`;
-        currentSourceDataChecks = [];
-        MetaData.NationalCalendarsMetadata[nation].widerRegions.forEach((item) => {
-            currentSourceDataChecks.push({
-                "validate": item,
-                "sourceFile": `nations/${item}.json`,
-                "category": "widerregioncalendar"
-            });
-        });
-        currentSourceDataChecks.push({
-                "validate": nation,
-                "sourceFile": sourceFile,
-                "category": "nationalcalendar"
-        });
-        MetaData.NationalCalendarsMetadata[nation].missals.forEach((missal) => {
-            let sourceFile = Object.values( MetaData.RomanMissals ).filter(el => el.value === missal)[0].sanctoraleFileName;
-            if( sourceFile !== false ) {
-                currentSourceDataChecks.push({
-                    "validate": missal,
-                    "sourceFile": sourceFile,
-                    "category": "propriumdesanctis"
-                });
-            }
-        });
-        if( currentCalendarCategory === 'diocesancalendar' ) {
-            currentSourceDataChecks.push({
-                "validate": currentSelectedCalendar,
-                "sourceFile": `nations/${nation}/${MetaData.DiocesanCalendars[currentSelectedCalendar].diocese}.json`,
-                "category": "diocesancalendar"
-            });
-        }
-    }
-    currentSourceDataChecks.forEach( ( item, idx ) => {
-        $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
-    } );
-    $testCells = $( '.calendardata-tests,.specificunittests' );
-    $testCells.find( '.bg-success,.bg-danger' ).removeClass( 'bg-success bg-danger' ).addClass( 'bg-info' );
-    $testCells.find( '.fa-circle-check,.fa-circle-xmark' ).removeClass( 'fa-circle-check fa-circle-xmark' ).addClass( 'fa-circle-question' );
-    let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
-    $( '#total-tests-count' ).text(totalTestsCount);
-    let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
-    let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
-    let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
-    $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
-    $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
-    $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
-    successfulSourceDataTests = 0;
-    successfulCalendarDataTests = 0;
-    successfulUnitTests = 0;
-    failedSourceDataTests = 0;
-    failedCalendarDataTests = 0;
-    failedUnitTests = 0;
-    $('.successfulCount,.failedCount').text(0);
-    ReadyToRunTests.PageReady = true;
+    setupPage();
+
     if( ReadyToRunTests.check() ){
         $( '#startTestRunnerBtn' ).prop( 'disabled', false ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
         $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
