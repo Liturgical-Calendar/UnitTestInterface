@@ -1,5 +1,6 @@
 const endpointVersion = "dev"; //could be 'dev', 'v3', 'v2'...
 const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalMetadata.php`;
+const TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalTestsIndex.php`;
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -434,12 +435,23 @@ const COUNTRIES = {
 
 const truncate = (source, size) => source.length > size ? source.slice(0, size - 1) + "*" : source;
 
-let MetaData = {};
+const IntlDTOptions = {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC'
+};
+
+
+let MetaData = null;
+let UnitTests = null;
 let currentState;
 let index;
 let calendarIndex;
 let yearIndex;
 let messageCounter;
+let nations = [];
 
 let successfulTests = 0;
 let failedTests = 0;
@@ -467,33 +479,16 @@ let DiocesanCalendarsArr = [];
 let NationalCalendarTemplates = [ testTemplate( currentSelectedCalendar ) ];
 let DiocesanCalendarTemplates = [];
 
-const SpecificUnitTestCategories = [
-    {
-        "action": "executeUnitTest",
-        "test": "testJohnBaptist"
-    },
-    {
-        "action": "executeUnitTest",
-        "test": "testStJaneFrancesDeChantalMoved"
-    },
-    {
-        "action": "executeUnitTest",
-        "test": "testStJaneFrancesDeChantalOverridden"
-    },
-    {
-        "action": "executeUnitTest",
-        "test": "testMaryMotherChurchDoesNotExist"
-    },
-    {
-        "action": "executeUnitTest",
-        "test": "testMaryMotherChurchExists"
-    }
-];
+const SpecificUnitTestCategories = [];
 
 const SpecificUnitTestYears = {
-    "testJohnBaptist": [ 2022, 2033, 2044 ],
-    "testStJaneFrancesDeChantalMoved": [ 2001, 2002, 2010 ],
-    "testStJaneFrancesDeChantalOverridden": [
+    "NativityJohnBaptistTest": [ 2022, 2033, 2044 ],
+    "StJaneFrancesDeChantalTest": [
+        //movedornot
+        2001,
+        2002,
+        2010,
+        //overridden
         1971,
         1976,
         1982,
@@ -506,8 +501,14 @@ const SpecificUnitTestYears = {
         2040,
         2046
     ],
-    "testMaryMotherChurchDoesNotExist": [ 2016, 2017 ],
-    "testMaryMotherChurchExists": [ 2018, 2019 ]
+    "MaryMotherChurchTest": [
+        //should not exist
+        2016,
+        2017,
+        //should exist
+        2018,
+        2019
+    ]
 };
 
 const runTests = () => {
@@ -687,82 +688,219 @@ const connectWebSocket = () => {
     }
 }
 
-
-fetch( MetadataURL, {
-    method: "POST",
-    mode: "cors",
-    headers: {
-        Accept: "application/json"
-    }
-} )
-    .then( response => response.json() )
-    .then( data => {
-        if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
-            MetaData = data.LitCalMetadata;
-            const { NationalCalendars, DiocesanCalendars } = MetaData;
-            for ( const value of Object.values( NationalCalendars ) ) {
-                DiocesanCalendarsArr.push( ...value );
-            }
-            for ( const calendar of DiocesanCalendarsArr ) {
-                DiocesanCalendarTemplates.push( testTemplate( calendar ) );
-            }
-
-            for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
-                if ( CalendarNations.indexOf( value.nation ) === -1 ) {
-                    CalendarNations.push( value.nation );
-                    selectOptions[ value.nation ] = [];
-                }
-                selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>` );
-            }
-
-            let nations = Object.keys( NationalCalendars );
-            nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
-            CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
-
-            ReadyToRunTests.AsyncDataReady = true;
-            ReadyToRunTests.tryEnableBtn();
-
-            $( document ).ready( () => {
-
-                currentSourceDataChecks.forEach( ( item, idx ) => {
-                    $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
-                } );
-                nations.forEach( item => {
-                    if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
-                        $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
-                    }
-                } );
-
-                CalendarNations.forEach( item => {
-                    $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
-                    let $optGroup = $( `<optgroup label="${countryNames.of( COUNTRIES[ item ] )}">` );
-                    $( '#APICalendarSelect' ).append( $optGroup );
-                    selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
-                } );
-
-                $( '.yearMax' ).text( twentyFiveYearsFromNow );
-                for ( let i = Years.length; i > 0; i-- ) {
-                    let idx = Years.length - i;
-                    $( '.calendardata-tests' ).append( calDataTestTemplate( i ) );
-                    $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
-                    $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
-                }
-                $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
-                let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
-                $('#total-tests-count').text(totalTestsCount);
-                let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
-                let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
-                let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
-                $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
-                $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
-                $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
-
-                ReadyToRunTests.PageReady = true;
-                ReadyToRunTests.tryEnableBtn();
-            } );
-
+Promise.all([
+    fetch( MetadataURL, {
+        method: "POST",
+        mode: "cors",
+        headers: {
+            Accept: "application/json"
         }
+    } ).then(response => response.json()),
+    fetch( TestsIndexURL, {
+        method: "GET",
+        headers: {
+            Accept: "application/json"
+        }
+    } ).then(response => response.json())
+])
+    .then( dataArr => {
+        dataArr.forEach(data => {
+            console.log(data);
+            if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
+                MetaData = data.LitCalMetadata;
+                const { NationalCalendars, DiocesanCalendars } = MetaData;
+                for ( const value of Object.values( NationalCalendars ) ) {
+                    DiocesanCalendarsArr.push( ...value );
+                }
+                for ( const calendar of DiocesanCalendarsArr ) {
+                    DiocesanCalendarTemplates.push( testTemplate( calendar ) );
+                }
+                for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
+                    if ( CalendarNations.indexOf( value.nation ) === -1 ) {
+                        CalendarNations.push( value.nation );
+                        selectOptions[ value.nation ] = [];
+                    }
+                    selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>` );
+                }
+                nations = Object.keys( NationalCalendars );
+                nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
+                CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+                if( UnitTests !== null ) {
+                    ReadyToRunTests.AsyncDataReady = true;
+                    console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
+                    setupPage();
+                }
+            } else {
+                UnitTests = data;
+                if( MetaData !== null ) {
+                    ReadyToRunTests.AsyncDataReady = true;
+                    console.log( 'it seems that Metadata was set first, now UnitTests is also ready' );
+                    setupPage();
+                }
+            }
+        });
     } );
+
+const appendAccordionItem = (prop, obj) => {
+
+    let unitTestStr = '';
+    let idy = 0;
+    SpecificUnitTestYears[prop] = [ ...obj.years ];
+
+    switch( obj.testType ) {
+        case 'exactCorrespondence':
+            obj.years.forEach((year,idx) => {
+                ++idy;
+                let expectedValue = obj.expectedValues[idx];
+                let dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( expectedValue * 1000 );
+                unitTestStr += `
+                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+                        <p class="text-center mb-0 fw-bold">${year}</p>
+                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
+                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
+                            <div class="card-body">
+                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.assertions[year]} ${dateStr}"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            break;
+        case 'exactCorrespondenceSince':
+            let yearSince = obj.years[0];
+            let i = yearSince - 4;
+            while( ++i < yearSince ) {
+                SpecificUnitTestYears[prop].push(i);
+                ++idy;
+                unitTestStr += `
+                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+                        <p class="text-center mb-0 fw-bold">${i}</p>
+                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
+                        <div class="card text-white bg-info rounded-0 ${prop} year-${i} test-valid">
+                            <div class="card-body">
+                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.yearsOther.before}"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            obj.years.forEach((year,idx) => {
+                ++idy;
+                let expectedValue = obj.expectedValues[idx];
+                console.log('test = ' + prop + ', year = ' + year + ', expectedValue = ' + expectedValue );
+                let dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( expectedValue * 1000 );
+                unitTestStr += `
+                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+                        <p class="text-center mb-0 fw-bold">${year}</p>
+                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
+                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
+                            <div class="card-body">
+                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.assertions[year]} ${dateStr}"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            break;
+        case 'variableCorrespondence':
+            obj.years.forEach((year,idx) => {
+                ++idy;
+                let expectedValue = obj.expectedValues[idx];
+                let dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( expectedValue * 1000 );
+                unitTestStr += `
+                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+                        <p class="text-center mb-0 fw-bold">${year}</p>
+                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
+                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
+                            <div class="card-body">
+                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.assertions[year]} ${dateStr}"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            for( const [year, assertion] of Object.entries( obj.yearsOther ) ) {
+                SpecificUnitTestYears[prop].push(year);
+                ++idy;
+                unitTestStr += `
+                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+                        <p class="text-center mb-0 fw-bold">${year}</p>
+                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
+                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
+                            <div class="card-body">
+                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${assertion}"></i></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            break;
+    }
+    console.log(obj);
+    $('#specificUnitTestsAccordion').append(`
+        <div class="accordion-item">
+            <h2 class="row g-0 accordion-header" id="${prop}Header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${prop}" aria-expanded="false" aria-controls="specificUnitTest-${prop}">
+                    <div class="col-4"><i class="fas fa-flask-vial fa-fw"></i>&nbsp;${prop}&nbsp;<i class="fas fa-circle-info" title="${obj.description}"></i></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${prop}TestsCount" class="successfulCount">0</span></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${prop}TestsCount" class="failedCount">0</span></div>
+                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${prop}TestsCount"></span> tests: <span id="total${prop}TestsTime">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
+                </button>
+            </h2>
+            <div id="specificUnitTest-${prop}" class="accordion-collapse collapse" aria-labelledby="${prop}Header" data-bs-parent="#specificUnitTestsAccordion">
+                <div class="row g-0 specificunittests m-2">${unitTestStr}</div>
+            </div>
+        </div>
+    `);
+}
+
+const setupPage = () => {
+    $( document ).ready( () => {
+        currentSourceDataChecks.forEach( ( item, idx ) => {
+            $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
+        } );
+        nations.forEach( item => {
+            if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
+                $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
+            }
+        } );
+        CalendarNations.forEach( item => {
+            $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( COUNTRIES[ item ] )}</option>` );
+            let $optGroup = $( `<optgroup label="${countryNames.of( COUNTRIES[ item ] )}">` );
+            $( '#APICalendarSelect' ).append( $optGroup );
+            selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
+        } );
+    
+        $( '.yearMax' ).text( twentyFiveYearsFromNow );
+        let idx;
+        for ( let i = Years.length; i > 0; i-- ) {
+            idx = Years.length - i;
+            $( '.calendardata-tests' ).append( calDataTestTemplate( i ) );
+            $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
+            $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
+        }
+        for( const [ prop, obj ] of Object.entries(UnitTests) ) {
+            SpecificUnitTestCategories.push({
+                "action": "executeUnitTest",
+                "test": prop
+            });
+            appendAccordionItem(prop,obj);
+        }
+        $( '.currentSelectedCalendar' ).text( currentSelectedCalendar );
+        let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
+        $('#total-tests-count').text(totalTestsCount);
+        let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
+        let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
+        let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
+        $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
+        $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
+        $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
+    
+        ReadyToRunTests.PageReady = true;
+        ReadyToRunTests.tryEnableBtn();
+    } );
+}
+
 
 $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     ReadyToRunTests.PageReady = false;
@@ -826,6 +964,12 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
     $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
     $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
+    successfulSourceDataTests = 0;
+    successfulCalendarDataTests = 0;
+    successfulUnitTests = 0;
+    failedSourceDataTests = 0;
+    failedCalendarDataTests = 0;
+    failedUnitTests = 0;
     $('.successfulCount,.failedCount').text(0);
     ReadyToRunTests.PageReady = true;
     if( ReadyToRunTests.check() ){

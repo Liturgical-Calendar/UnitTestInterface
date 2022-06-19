@@ -80,7 +80,7 @@
 				</div>
 				<div class="accordion-item">
 					<h2 class="row g-0 accordion-header" id="calendarDataHeader">
-						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#calendarDataTests" aria-expanded="true" aria-controls="calendarDataTests">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#calendarDataTests" aria-expanded="false" aria-controls="calendarDataTests">
 							<div class="col-4"><i class="fas fa-file-export fa-fw"></i>&nbsp;VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL&nbsp;<span class="yearMax"></span></div>
 							<div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successfulCalendarDataTestsCount" class="successfulCount">0</span></div>
 							<div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failedCalendarDataTestsCount" class="failedCount">0</span></div>
@@ -93,7 +93,7 @@
 				</div>
 				<div class="accordion-item">
 					<h2 class="row g-0 accordion-header" id="specificUnitTestHeader">
-						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTests" aria-expanded="true" aria-controls="specificUnitTests">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTests" aria-expanded="false" aria-controls="specificUnitTests">
 							<div class="col-4"><i class="fas fa-file-shield fa-fw"></i>&nbsp;EXECUTE UNIT TESTS FOR SPECIFIC OCCURRENCES</div>
 							<div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successfulUnitTestsCount" class="successfulCount">0</span></div>
 							<div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failedUnitTestsCount" class="failedCount">0</span></div>
@@ -101,203 +101,7 @@
 						</button>
 					</h2>
 					<div id="specificUnitTests" class="accordion-collapse collapse" aria-labelledby="specificUnitTestHeader" data-bs-parent="#testSuiteAccordion">
-						<div class="row g-0 specificunittests">
-							<div class="col-3 offset-1 text-center bg-warning border p-1"><b>NATIVITY JOHN BAPTIST COINCIDENCE</b> <i class="fas fa-circle-info cursor-pointer" title="WHEN THE NATIVITY OF JOHN THE BAPTIST COINCIDES WITH THE SOLEMNITY OF THE SACRED HEART, IS IT CORRECTLY MOVED TO JUNE 23?"></i></div>
-							<div class="col-4 text-center bg-warning border p-1"><b>MARY MOTHER CHURCH</b> <i class="fas fa-circle-info cursor-pointer" title="The Memorial of Mary Mother of the Church was added in 2018 by Decree of the Congregation for Divine Worship"></i></div>
-							<div class="col-3 text-center bg-warning border p-1"><b>ST JANE FRANCES DE CHANTAL CREATION</b> <i class="fas fa-circle-info cursor-pointer" title="Saint Jane Frances de Chantal was moved from December 12 to August 12 in the 2002 Latin Edition of the Roman Missal, to allow bishops conferences to insert Our Lady of Guadalupe as an optional memorial on December 12. DOES ST JANE FRANCES DE CHANTAL FALL ON THE RIGHT DAY BOTH BEFORE AND AFTER 2002?"></i></div>
-							<div class="col-1 offset-1">
-								<p class="text-center mb-0 fw-bold">2022</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2022 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2033</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2033 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2044</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 nativityjohnbaptist year-2044 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2016</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testMaryMotherChurchDoesNotExist year-2016 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2017</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testMaryMotherChurchDoesNotExist year-2017 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2018</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testMaryMotherChurchExists year-2018 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2019</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testMaryMotherChurchExists year-2019 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2001</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalMoved year-2001 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2002</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalMoved year-2002 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2010</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalMoved year-2010 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="row g-0 specificunittests">
-							<div class="col-11 offset-1 text-center bg-warning border p-1"><b>IS ST JANE FRANCES DE CHANTAL CORRECTLY OVERRIDDEN, BOTH BEFORE AND AFTER THE MOVE IN 2002?</b> <i class="fas fa-circle-info cursor-pointer" title="Saint Jane Frances de Chantal was moved from December 12 to August 12 in the 2002 Latin Edition of the Roman Missal, to allow bishops conferences to insert Our Lady of Guadalupe as an optional memorial on December 12"></i></div>
-							<div class="col-5 offset-1 text-center text-white border border-white bg-dark">Years in which Dec 12th is a Sunday</div><div class="col-6 text-center text-white border border-white bg-dark">Years in which Aug 12th is a Sunday</div>
-							<div class="col-1 offset-1">
-								<p class="text-center mb-0 fw-bold">1971</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-1971 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">1976</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-1976 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">1982</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-1982 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">1993</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-1993 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">1999</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-1999 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2012</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-2012 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2018</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-2018 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2029</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-2029 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2035</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-2035 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2040</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-2040 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-1">
-								<p class="text-center mb-0 fw-bold">2046</p>
-								<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-								<div class="card text-white bg-info rounded-0 testStJaneFrancesDeChantalOverridden year-2046 test-valid">
-									<div class="card-body">
-										<p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span></p>
-									</div>
-								</div>
-							</div>
+						<div class="accordion bg-light p-3" id="specificUnitTestsAccordion">
 						</div>
 					</div><!-- specific unit test body -->
 				</div><!-- end accordion-item -->
