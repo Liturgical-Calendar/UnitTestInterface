@@ -22,7 +22,9 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.AsyncDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         let testsReady = ReadyToRunTests.check();
-        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady );
+        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
+        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
+
         if( testsReady ) {
             $( '.page-loader' ).fadeOut('slow');
         }
@@ -949,11 +951,7 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
     setupPage();
-
-    if( ReadyToRunTests.check() ){
-        $( '#startTestRunnerBtn' ).prop( 'disabled', false ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
-        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
-    }
+    ReadyToRunTests.tryEnableBtn();
 
 } );
 
