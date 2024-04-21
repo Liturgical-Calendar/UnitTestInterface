@@ -32,5 +32,8 @@ body {
     position: fixed;
     top: 0;
     right: 0;
-    margin: 3px;
+    margin-right: 3px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 3px 3px 18px black;
 }
