@@ -565,6 +565,7 @@ const runTests = () => {
             break;
         case TestState.JobsFinished:
             console.log( 'All jobs finished!' );
+            $( '#tests-complete' ).toast( 'show' );
             $( '.fa-spin' ).closest( '.btn-primary' ).prop( 'disabled', true );
             $( '.fa-spin' ).closest( '.btn-primary' ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' ).find( '.fa-rotate' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
             $( '.fa-spin' ).removeClass( 'fa-spin' );
