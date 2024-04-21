@@ -38,14 +38,18 @@ const MsToTimeString = ( ms ) => {
         left = ms % 3600000;
         ms -= left;
         let hours = ms / 3600000;
-        timeString.push( `${hours} ${hours > 1 ? 'hours' : 'hour'}` );
+        if( hours > 0 ) {
+            timeString.push( `${hours} ${hours > 1 ? 'hours' : 'hour'}` );
+        }
     }
     if ( left > 60000 ) {
         ms = left;
         left = ms % 60000;
         ms -= left;
         let minutes = ms / 60000;
-        timeString.push( `${minutes} ${minutes > 1 ? 'minutes' : 'minute'}` );
+        if( minutes > 0 ) {
+            timeString.push( `${minutes} ${minutes > 1 ? 'minutes' : 'minute'}` );
+        }
     }
     if ( left > 1000 ) {
         ms = left;
@@ -527,6 +531,7 @@ const runTests = () => {
                     yearIndex = 0;
                     console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                     performance.mark( 'specificUnitTestsStart' );
+                    performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
                     conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                     $('#specificUnitTests').collapse('show');
                     $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
@@ -541,11 +546,18 @@ const runTests = () => {
                 yearIndex = 0;
                 console.log( `Specific unit test ${SpecificUnitTestCategories[ index - 1 ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
                 console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
+                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
+                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`, `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
+                $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
+                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
                 conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
                 $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
+                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
+                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`, `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
+                $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
                 currentState = TestState.JobsFinished;
                 runTests();
             }
@@ -822,7 +834,7 @@ const appendAccordionItem = (prop, obj) => {
                     <div class="col-4"><i class="fas fa-flask-vial fa-fw"></i>&nbsp;${prop}&nbsp;<i class="fas fa-circle-info" title="${obj.description}"></i></div>
                     <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${prop}TestsCount" class="successfulCount">0</span></div>
                     <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${prop}TestsCount" class="failedCount">0</span></div>
-                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${prop}TestsCount"></span> tests: <span id="total${prop}TestsTime">0 hours, 0 minutes, 0 seconds, 0ms</span></div>
+                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${prop}TestsCount"></span> tests: <span id="total${prop}TestsTime">0 seconds, 0ms</span></div>
                 </button>
             </h2>
             <div id="specificUnitTest-${prop}" class="accordion-collapse collapse" aria-labelledby="${prop}Header" data-bs-parent="#specificUnitTestsAccordion">
