@@ -27,3 +27,10 @@ body {
     width: 4rem;
     height: 4rem;
 }
+
+#websocket-status {
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 3px;
+}
