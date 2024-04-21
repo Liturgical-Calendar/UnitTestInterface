@@ -476,6 +476,7 @@ let conn;
 
 let currentSelectedCalendar = "VATICAN";
 let currentCalendarCategory = "nationalcalendar";
+let currentResponseType = "JSON";
 let currentSourceDataChecks = sourceDataChecks;
 let countryNames = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let CalendarNations = [];
@@ -512,7 +513,7 @@ const runTests = () => {
                     index = 0;
                     calendarIndex = 0;
                     performance.mark( 'calendarDataTestsStart' );
-                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, responsetype: currentResponseType } ) );
                     $('#calendarDataTests').collapse('show');
                 }
             }
@@ -522,7 +523,7 @@ const runTests = () => {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
                 if ( index < Years.length ) {
-                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, responsetype: currentResponseType } ) );
                 }
                 else {
                     console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
@@ -900,12 +901,12 @@ const setupPage = () => {
                 });
             }
         }
-    
+
         $( '.sourcedata-tests' ).empty();
         currentSourceDataChecks.forEach( ( item, idx ) => {
             $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
         } );
-    
+
         if( $('.calendardata-tests').children().length === 0 ) {
             $( '.yearMax' ).text( twentyFiveYearsFromNow );
             let idx;
@@ -962,6 +963,21 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
+    setupPage();
+    ReadyToRunTests.tryEnableBtn();
+
+} );
+
+$( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
+    $( '.page-loader' ).show();
+    ReadyToRunTests.PageReady = false;
+    const oldResponseType = currentResponseType;
+    currentResponseType = ev.currentTarget.value;
+    console.log( `currentResponseType: ${currentResponseType}` );
+    $( `.calendar-${currentSelectedCalendar}.json-valid .card-text` ).each((idx,el) => {
+        $(el).html( $(el).html().replace(`${oldResponseType} valid`,`${currentResponseType} valid`) )
+    });
+    //$( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
     setupPage();
     ReadyToRunTests.tryEnableBtn();
 
