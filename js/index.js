@@ -741,13 +741,12 @@ const appendAccordionItem = (obj) => {
     let unitTestStr = '';
     let idy = 0;
     obj.assertions.forEach(assertion => {
-        ++idy;
         let dateStr = '';
         if( null !== assertion.expectedValue ) {
             dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( assertion.expectedValue * 1000 );
         }
         unitTestStr += `
-            <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+            <div class="col-1 ${idy===0 || idy % 11 === 0 ? 'offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
                 <div class="card text-white bg-info rounded-0 ${obj.name} year-${assertion.year} test-valid">
@@ -757,6 +756,7 @@ const appendAccordionItem = (obj) => {
                 </div>
             </div>
         `;
+        ++idy;
     });
 
     $('#specificUnitTestsAccordion').append(`
