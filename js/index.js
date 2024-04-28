@@ -777,6 +777,50 @@ const appendAccordionItem = (obj) => {
     $(`#total${obj.name}TestsCount`).text(specificUnitTestTotalCount);
 }
 
+const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
+    let shouldReturn = false;
+    let prop = Object.keys( unitTest[appliesToOrFilter] )[0];
+    switch( prop ) {
+        case 'nationalcalendar':
+            if( appliesToOrFilter === 'appliesTo' ) {
+                shouldReturn = (currentNationalCalendar !== unitTest.appliesTo.nationalcalendar);
+            } else {
+                shouldReturn = (currentNationalCalendar === unitTest.appliesTo.nationalcalendar);
+            }
+            break;
+        case 'nationalcalendars':
+            if( appliesToOrFilter === 'appliesTo' ) {
+                shouldReturn = (false === unitTest.appliesTo.nationalcalendars.includes( currentNationalCalendar ));
+            } else {
+                shouldReturn = ( unitTest.appliesTo.nationalcalendars.includes( currentNationalCalendar ) );
+            }
+        break;
+        case 'diocesancalendar':
+            if( currentCalendarCategory === 'diocesancalendar' ) {
+                if( appliesToOrFilter === 'appliesTo' ) {
+                    shouldReturn = ( currentSelectedCalendar !== unitTest.appliesTo.diocesancalendar );
+                } else {
+                    shouldReturn = ( currentSelectedCalendar === unitTest.appliesTo.diocesancalendar );
+                }
+            } else {
+                shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
+            }
+            break;
+        case 'diocesancalendars':
+            if( currentCalendarCategory === 'diocesancalendar' ) {
+                if( appliesToOrFilter === 'appliesTo' ) {
+                    shouldReturn = ( false === unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) );
+                } else {
+                    shouldReturn = ( unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) );
+                }
+            } else {
+                shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
+            }
+            break;
+    }
+    return shouldReturn;
+}
+
 const setupPage = () => {
     $( document ).ready( () => {
         if( $('#APICalendarSelect').children().length === 1 ) {
@@ -851,39 +895,15 @@ const setupPage = () => {
         $('#specificUnitTestsAccordion').empty();
         SpecificUnitTestCategories = [];
         UnitTests.forEach( unitTest => {
-            console.log( unitTest );
+            //console.log( unitTest );
             if( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
-                let prop = Object.keys( unitTest.appliesTo )[0];
-                console.log( 'unitTest has property `appliesTo` with key `' + prop + '`' );
-                switch( prop ) {
-                    case 'nationalcalendar':
-                        if( currentNationalCalendar !== unitTest.appliesTo.nationalcalendar ) {
-                            return;
-                        }
-                        break;
-                    case 'nationalcalendars':
-                        if( false === unitTest.appliesTo.nationalcalendars.includes( currentNationalCalendar ) ) {
-                            return;
-                        }
-                    break;
-                    case 'diocesancalendar':
-                        if( currentCalendarCategory === 'diocesancalendar' ) {
-                            if( currentSelectedCalendar !== unitTest.appliesTo.diocesancalendar ) {
-                                return;
-                            }
-                        } else {
-                            return;
-                        }
-                        break;
-                    case 'diocesancalendars':
-                        if( currentCalendarCategory === 'diocesancalendar' ) {
-                            if( false === unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) ) {
-                                return;
-                            }
-                        } else {
-                            return;
-                        }
-                        break;
+                if( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
+                    return;
+                }
+            }
+            if( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
+                if( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
+                    return;
                 }
             }
 
