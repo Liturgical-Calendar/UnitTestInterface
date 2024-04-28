@@ -851,8 +851,10 @@ const setupPage = () => {
         $('#specificUnitTestsAccordion').empty();
         SpecificUnitTestCategories = [];
         UnitTests.forEach( unitTest => {
-            if( unitTest.hasOwnProperty( 'appliesTo' ) ) {
-                let prop = Object.keys( unitTest )[0];
+            console.log( unitTest );
+            if( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
+                let prop = Object.keys( unitTest.appliesTo )[0];
+                console.log( 'unitTest has property `appliesTo` with key `' + prop + '`' );
                 switch( prop ) {
                     case 'nationcalendar':
                         if( currentCalendarCategory === 'nationalcalendar' ) {
