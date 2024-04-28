@@ -857,6 +857,7 @@ const setupPage = () => {
                 console.log( 'unitTest has property `appliesTo` with key `' + prop + '`' );
                 switch( prop ) {
                     case 'nationcalendar':
+                        console.log( currentCalendarCategory );
                         if( currentCalendarCategory === 'nationalcalendar' ) {
                             if( currentSelectedCalendar !== unitTest.appliesTo.nationalcalendar ) {
                                 return;
