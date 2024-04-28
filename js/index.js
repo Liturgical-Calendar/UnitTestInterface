@@ -714,7 +714,7 @@ Promise.all([
                         CalendarNations.push( value.nation );
                         selectOptions[ value.nation ] = [];
                     }
-                    selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>` );
+                    selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" data-nationalcalendar="${value.nation}" value="${key}">${value.diocese}</option>` );
                 }
                 nations = Object.keys( NationalCalendars );
                 nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
