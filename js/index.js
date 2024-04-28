@@ -1,6 +1,7 @@
 const endpointVersion = "dev"; //could be 'dev', 'v3', 'v2'...
 const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalMetadata.php`;
-const TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalTestsIndex.php`;
+//const TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalTestsIndex.php`;
+const TestsIndexURL = 'https://litcal.johnromanodorazio.com/api/new-unittest-interface/LitCalTestsIndex.php';
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -734,118 +735,47 @@ Promise.all([
         });
     } );
 
-const appendAccordionItem = (prop, obj) => {
+const appendAccordionItem = (obj) => {
 
     let unitTestStr = '';
     let idy = 0;
-    SpecificUnitTestYears[prop] = [ ...obj.years ];
+    //SpecificUnitTestYears[obj.name] = obj.assertions.reduce((prev,cur) => { prev.push(cur.year); return prev; },[]);
+    obj.assertions.forEach(assertion => {
+        ++idy;
+        let dateStr = '';
+        if( null !== assertion.expectedValue ) {
+            dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( assertion.expectedValue * 1000 );
+        }
+        unitTestStr += `
+            <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
+                <p class="text-center mb-0 fw-bold">${assertion.year}</p>
+                <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
+                <div class="card text-white bg-info rounded-0 ${obj.name} year-${assertion.year} test-valid">
+                    <div class="card-body">
+                        <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${assertion.assertion} ${dateStr}"></i></p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
 
-    switch( obj.testType ) {
-        case 'exactCorrespondence':
-            obj.years.forEach((year,idx) => {
-                ++idy;
-                let expectedValue = obj.expectedValues[idx];
-                let dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( expectedValue * 1000 );
-                unitTestStr += `
-                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
-                        <p class="text-center mb-0 fw-bold">${year}</p>
-                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
-                            <div class="card-body">
-                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.assertions[year]} ${dateStr}"></i></p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            break;
-        case 'exactCorrespondenceSince':
-            let yearSince = obj.years[0];
-            let i = yearSince - 4;
-            while( ++i < yearSince ) {
-                SpecificUnitTestYears[prop].push(i);
-                ++idy;
-                unitTestStr += `
-                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
-                        <p class="text-center mb-0 fw-bold">${i}</p>
-                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                        <div class="card text-white bg-info rounded-0 ${prop} year-${i} test-valid">
-                            <div class="card-body">
-                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.yearsOther.before}"></i></p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            obj.years.forEach((year,idx) => {
-                ++idy;
-                let expectedValue = obj.expectedValues[idx];
-                console.log('test = ' + prop + ', year = ' + year + ', expectedValue = ' + expectedValue );
-                let dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( expectedValue * 1000 );
-                unitTestStr += `
-                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
-                        <p class="text-center mb-0 fw-bold">${year}</p>
-                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
-                            <div class="card-body">
-                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.assertions[year]} ${dateStr}"></i></p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            break;
-        case 'variableCorrespondence':
-            obj.years.forEach((year,idx) => {
-                ++idy;
-                let expectedValue = obj.expectedValues[idx];
-                let dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( expectedValue * 1000 );
-                unitTestStr += `
-                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
-                        <p class="text-center mb-0 fw-bold">${year}</p>
-                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
-                            <div class="card-body">
-                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${obj.assertions[year]} ${dateStr}"></i></p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            for( const [year, assertion] of Object.entries( obj.yearsOther ) ) {
-                SpecificUnitTestYears[prop].push(year);
-                ++idy;
-                unitTestStr += `
-                    <div class="col-1 ${idy===1 || idy % 12 === 0 ? 'offset-1' : ''}">
-                        <p class="text-center mb-0 fw-bold">${year}</p>
-                        <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                        <div class="card text-white bg-info rounded-0 ${prop} year-${year} test-valid">
-                            <div class="card-body">
-                                <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${assertion}"></i></p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            break;
-    }
     $('#specificUnitTestsAccordion').append(`
         <div class="accordion-item">
-            <h2 class="row g-0 accordion-header" id="${prop}Header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${prop}" aria-expanded="false" aria-controls="specificUnitTest-${prop}">
-                    <div class="col-4"><i class="fas fa-flask-vial fa-fw"></i>&nbsp;${prop}&nbsp;<i class="fas fa-circle-info" title="${obj.description}"></i></div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${prop}TestsCount" class="successfulCount">0</span></div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${prop}TestsCount" class="failedCount">0</span></div>
-                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${prop}TestsCount"></span> tests: <span id="total${prop}TestsTime">0 seconds, 0ms</span></div>
+            <h2 class="row g-0 accordion-header" id="${obj.name}Header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${obj.name}" aria-expanded="false" aria-controls="specificUnitTest-${obj.name}">
+                    <div class="col-4"><i class="fas fa-flask-vial fa-fw"></i>&nbsp;${obj.name}&nbsp;<i class="fas fa-circle-info" title="${obj.description}"></i></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${obj.name}TestsCount" class="successfulCount">0</span></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${obj.name}TestsCount" class="failedCount">0</span></div>
+                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${obj.name}TestsCount"></span> tests: <span id="total${obj.name}TestsTime">0 seconds, 0ms</span></div>
                 </button>
             </h2>
-            <div id="specificUnitTest-${prop}" class="accordion-collapse collapse" aria-labelledby="${prop}Header" data-bs-parent="#specificUnitTestsAccordion">
+            <div id="specificUnitTest-${obj.name}" class="accordion-collapse collapse" aria-labelledby="${obj.name}Header" data-bs-parent="#specificUnitTestsAccordion">
                 <div class="row g-0 specificunittests m-2">${unitTestStr}</div>
             </div>
         </div>
     `);
-    let specificUnitTestTotalCount = $(`#specificUnitTest-${prop}`).find('.test-valid').length;
-    $(`#total${prop}TestsCount`).text(specificUnitTestTotalCount);
+    let specificUnitTestTotalCount = $(`#specificUnitTest-${obj.name}`).find('.test-valid').length;
+    $(`#total${obj.name}TestsCount`).text(specificUnitTestTotalCount);
 }
 
 const setupPage = () => {
@@ -922,13 +852,14 @@ const setupPage = () => {
         $('#specificUnitTestsAccordion').empty();
         SpecificUnitTestCategories = [];
         SpecificUnitTestYears = {};
-        for( const [ prop, obj ] of Object.entries(UnitTests) ) {
+        UnitTests.forEach( unitTest => {
             SpecificUnitTestCategories.push({
                 "action": "executeUnitTest",
-                "test": prop
+                "test": unitTest.name
             });
-            appendAccordionItem(prop,obj);
-        }
+            appendAccordionItem(unitTest);
+
+        });
 
         $( '.currentSelectedCalendar' ).text( truncate(currentSelectedCalendar,20) ).attr('title', currentSelectedCalendar);
         let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
