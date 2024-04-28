@@ -739,7 +739,6 @@ const appendAccordionItem = (obj) => {
 
     let unitTestStr = '';
     let idy = 0;
-    //SpecificUnitTestYears[obj.name] = obj.assertions.reduce((prev,cur) => { prev.push(cur.year); return prev; },[]);
     obj.assertions.forEach(assertion => {
         ++idy;
         let dateStr = '';
@@ -851,14 +850,13 @@ const setupPage = () => {
 
         $('#specificUnitTestsAccordion').empty();
         SpecificUnitTestCategories = [];
-        SpecificUnitTestYears = {};
         UnitTests.forEach( unitTest => {
             SpecificUnitTestCategories.push({
                 "action": "executeUnitTest",
                 "test": unitTest.name
             });
+            SpecificUnitTestYears[unitTest.name] = unitTest.assertions.reduce((prev,cur) => { prev.push(cur.year); return prev; },[]);
             appendAccordionItem(unitTest);
-
         });
 
         $( '.currentSelectedCalendar' ).text( truncate(currentSelectedCalendar,20) ).attr('title', currentSelectedCalendar);
