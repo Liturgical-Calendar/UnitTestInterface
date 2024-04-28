@@ -851,6 +851,46 @@ const setupPage = () => {
         $('#specificUnitTestsAccordion').empty();
         SpecificUnitTestCategories = [];
         UnitTests.forEach( unitTest => {
+            if( unitTest.hasOwnProperty( 'appliesTo' ) ) {
+                let prop = Object.keys( unitTest )[0];
+                switch( prop ) {
+                    case 'nationcalendar':
+                        if( currentCalendarCategory === 'nationalcalendar' ) {
+                            if( currentSelectedCalendar !== unitTest.appliesTo.nationalcalendar ) {
+                                return;
+                            }
+                        }
+                        else if (currentCalendarCategory === 'diocesancalendar' ) {
+                            // we need to know the nationalcalendar that the diocesancalendar belongs to...
+                        }
+                        break;
+                    case 'nationalcalendars':
+                        if( currentCalendarCategory === 'nationalcalendar' ) {
+                            if( false === unitTest.appliesTo.nationalcalendars.includes( currentSelectedCalendar ) ) {
+                                return;
+                            }
+                        }
+                        else if ( currentCalendarCategory === 'diocesancalendar' ) {
+                            // we need to know the nationalcalendar that the diocesancalendar belongs to
+                        }
+                        break;
+                    case 'diocesancalendar':
+                        if( currentCalendarCategory === 'diocesancalendar' ) {
+                            if( currentSelectedCalendar !== unitTest.appliesTo.diocesancalendar ) {
+                                return;
+                            }
+                        }
+                        break;
+                    case 'diocesancalendars':
+                        if( currentCalendarCategory === 'diocesancalendar' ) {
+                            if( false === unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) ) {
+                                return;
+                            }
+                        }
+                        break;
+                }
+            }
+
             SpecificUnitTestCategories.push({
                 "action": "executeUnitTest",
                 "test": unitTest.name
