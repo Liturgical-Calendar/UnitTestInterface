@@ -476,6 +476,7 @@ let connectionAttempt = null;
 let conn;
 
 let currentSelectedCalendar = "VATICAN";
+let currentNationalCalendar = "VATICAN";
 let currentCalendarCategory = "nationalcalendar";
 let currentResponseType = "JSON";
 let currentSourceDataChecks = sourceDataChecks;
@@ -857,31 +858,22 @@ const setupPage = () => {
                 console.log( 'unitTest has property `appliesTo` with key `' + prop + '`' );
                 switch( prop ) {
                     case 'nationalcalendar':
-                        console.log( currentCalendarCategory );
-                        if( currentCalendarCategory === 'nationalcalendar' ) {
-                            if( currentSelectedCalendar !== unitTest.appliesTo.nationalcalendar ) {
-                                return;
-                            }
-                        }
-                        else if (currentCalendarCategory === 'diocesancalendar' ) {
-                            // we need to know the nationalcalendar that the diocesancalendar belongs to...
+                        if( currentNationalCalendar !== unitTest.appliesTo.nationalcalendar ) {
+                            return;
                         }
                         break;
                     case 'nationalcalendars':
-                        if( currentCalendarCategory === 'nationalcalendar' ) {
-                            if( false === unitTest.appliesTo.nationalcalendars.includes( currentSelectedCalendar ) ) {
-                                return;
-                            }
+                        if( false === unitTest.appliesTo.nationalcalendars.includes( currentNationalCalendar ) ) {
+                            return;
                         }
-                        else if ( currentCalendarCategory === 'diocesancalendar' ) {
-                            // we need to know the nationalcalendar that the diocesancalendar belongs to
-                        }
-                        break;
+                    break;
                     case 'diocesancalendar':
                         if( currentCalendarCategory === 'diocesancalendar' ) {
                             if( currentSelectedCalendar !== unitTest.appliesTo.diocesancalendar ) {
                                 return;
                             }
+                        } else {
+                            return;
                         }
                         break;
                     case 'diocesancalendars':
@@ -889,6 +881,8 @@ const setupPage = () => {
                             if( false === unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) ) {
                                 return;
                             }
+                        } else {
+                            return;
                         }
                         break;
                 }
@@ -934,6 +928,11 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     const oldSelectedCalendar = currentSelectedCalendar;
     currentSelectedCalendar = ev.currentTarget.value;
     currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
+    if( currentCalendarCategory === 'diocesancalendar' ) {
+        currentNationalCalendar = $( '#APICalendarSelect :selected' ).data( 'nationalcalendar' );
+    } else {
+        currentNationalCalendar = currentSelectedCalendar;
+    }
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
     setupPage();
