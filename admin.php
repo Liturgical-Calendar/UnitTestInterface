@@ -1,6 +1,7 @@
 <?php
 
 include_once("credentials.php");
+include_once("./includes/i18n.php");
 
 function authenticated() {
     if ( !isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW']) ) return false;
@@ -14,6 +15,15 @@ if(!authenticated()) {
     echo "You need a username and password to access this service.";
     die();
 }
+
+
+$langsAvailable = ['en', ...array_map('basename', glob("i18n/*", GLOB_ONLYDIR))];
+$langsAssoc = [];
+foreach( $langsAvailable as $lang ) {
+    $langsAssoc[$lang] = Locale::getDisplayLanguage($lang, $i18n->LOCALE);
+}
+asort($langsAssoc);
+
 ?><!DOCTYPE html>
 <head>
     <title>Administration tools</title>
@@ -35,13 +45,31 @@ if(!authenticated()) {
     <!-- Topbar -->
     <nav class="sb-topnav navbar navbar-expand navbar-light bg-white shadow">
         <!-- Navbar Brand -->
-        <a class="navbar-brand ps-3" href="/">Navbar</a>
+        <a class="navbar-brand ps-3" href="./admin.php">Navbar</a>
         <!-- Sidebar Toggle (Topbar) -->
         <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle"><i class="fas fa-bars"></i></button>
 
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
             <li class="nav-item ms-2 active" id="topNavBar_API"><a class="nav-link btn btn-outline-light border-0 fw-bold" href="./admin.php">Unit Tests Admin</a></li>
+        </ul>
+        <ul class="navbar-nav ms-auto">
+            <li class="nav-item dropdown">
+                <!-- this should contain the value of the currently selected language, based on a cookie -->
+                <a class="nav-link dropdown-toggle btn btn-outline-light border-0" href="#" id="langChoicesDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <?php echo Locale::getDisplayLanguage($i18n->LOCALE, $i18n->LOCALE); ?>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="langChoicesDropdown" id="langChoicesDropdownItems">
+                    <?php
+                        foreach( $langsAssoc as $key => $lang ) {
+                            $classList = substr( $i18n->LOCALE, 0, 2 ) === $key ? "dropdown-item active" : "dropdown-item";
+                            $isoLang = strtoupper( $key );
+                            $displayName = Locale::getDisplayLanguage( $key, 'en');
+                            echo "<a class=\"$classList\" id=\"langChoice-$key\" href=\"#\" title=\"$displayName\"><span class=\"d-none d-md-inline\">$lang</span><span class=\"d-inline d-md-none\">$isoLang</span></a>";
+                        }
+                    ?>
+                </div>
+            </li>
         </ul>
         <a class="btn btn-outline-light text-dark border-0 me-2"
             href="https://github.com/Liturgical-Calendar/" target="_blank"
