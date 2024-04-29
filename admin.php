@@ -72,8 +72,8 @@ asort($langsAssoc);
             </li>
         </ul>
         <a class="btn btn-outline-light text-dark border-0 me-2"
-            href="https://github.com/Liturgical-Calendar/" target="_blank"
-            title="See the project repositories on GitHub">
+            href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank"
+            title="See the Github repository">
             <i class="fab fa-github"></i>
         </a>
     </nav>
@@ -90,7 +90,7 @@ asort($langsAssoc);
                     <div class="nav">
                         <!-- Sidebar - Brand -->
                         <div class="text-center lh-2 px-5 pt-2 sidebar-brand">
-                            <a class="text-uppercase fs-6 fw-bold text-white text-decoration-none" href="/">
+                            <a class="text-uppercase fs-6 fw-bold text-white text-decoration-none" href="/admin.php">
                                 <?php echo _( "Catholic Liturgical Calendar" ); ?>
                             </a>
                         </div>
@@ -154,5 +154,5 @@ asort($langsAssoc);
     <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@1.3.1/i18nextHttpBackend.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/js/bootstrap-multiselect.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-
+    <script src="js/admin.js"></script>
 </body>
