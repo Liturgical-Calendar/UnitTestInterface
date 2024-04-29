@@ -42,7 +42,7 @@ asort($langsAssoc);
     <link href="css/admin.css" rel="stylesheet">
 
 </head>
-<body>
+<body class="sb-nav-fixed">
     <!-- Topbar -->
     <nav class="sb-topnav navbar navbar-expand navbar-light bg-white shadow">
         <!-- Navbar Brand -->
