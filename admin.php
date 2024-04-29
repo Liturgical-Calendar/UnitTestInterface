@@ -139,6 +139,17 @@ $LitCalTests = json_decode( $response );
                     <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
                     <p class="mb-1 lh-sm"><small><i>In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.</i></small></p>
                     <p>Type of $LitCalTests = <?php echo gettype( $LitCalTests ); ?></p>
+                    <form class="row justify-content-center needs-validation" novalidate>
+                        <div class="form-group col col-md-10">
+                            <label for="litCalTestsSelect" class="fw-bold"><?php echo _( "Choose an existing test to modify it"); ?>:</label>
+                            <select id="litCalTestsSelect" class="form-control">
+                                <?php foreach( $LitCalTests as $LitCalTest ) {
+                                    echo "<option value=\"$LitCalTest->name\">$LitCalTest->name</option>";
+                                } ?>
+                            </select>
+                        </div>
+                    </form>
+
                     <pre>
                         <?php echo $response; ?>
                     </pre>
