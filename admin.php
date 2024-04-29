@@ -25,6 +25,7 @@ foreach( $langsAvailable as $lang ) {
 asort($langsAssoc);
 
 ?><!DOCTYPE html>
+<html lang="<?php echo $i18n->LOCALE; ?>">
 <head>
     <title>Administration tools</title>
     <meta charset="utf-8">
@@ -52,7 +53,7 @@ asort($langsAssoc);
 
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-            <li class="nav-item ms-2 active" id="topNavBar_API"><a class="nav-link btn btn-outline-light border-0 fw-bold" href="./admin.php">Unit Tests Admin</a></li>
+            <li class="nav-item ms-2 active" id="topNavBar_API"><a class="nav-link btn btn-outline-light border-0 fw-bold" href="./admin.php"><?php echo _( "Unit Tests Admin" ); ?></a></li>
         </ul>
         <ul class="navbar-nav ms-auto">
             <li class="nav-item dropdown">
@@ -98,7 +99,7 @@ asort($langsAssoc);
                         <!-- <hr> -->
                         <a class="nav-link active" href="/">
                             <i class="sb-nav-link-icon fas fa-fw fa-cross"></i>
-                            <span><?php echo _( "Unit Test Admin" ); ?></span>
+                            <span><?php echo _( "Unit Tests Admin" ); ?></span>
                         </a>
                     </div>
                 </div>
@@ -119,6 +120,11 @@ asort($langsAssoc);
             <!-- Main Content -->
             <main>
                 <div class="container-fluid px-4">
+
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
+                    <p class="mb-1 lh-sm"><small><i>In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.</i></small></p>
+
 
                 </div>
                 <!-- /.container-fluid -->
@@ -157,3 +163,4 @@ asort($langsAssoc);
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="js/admin.js"></script>
 </body>
+</html>
