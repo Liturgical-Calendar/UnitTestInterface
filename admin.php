@@ -24,6 +24,20 @@ foreach( $langsAvailable as $lang ) {
 }
 asort($langsAssoc);
 
+$ch = curl_init();
+
+curl_setopt( $ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/LitCalTestsIndex.php" );
+curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+$response = curl_exec( $ch );
+if ( curl_errno( $ch ) ) {
+    $error_msg = curl_error( $ch );
+    curl_close( $ch );
+    die( $error_msg );
+}
+curl_close( $ch );
+$LitCalTests = json_decode( $response );
+
+
 ?><!DOCTYPE html>
 <html lang="<?php echo $i18n->LOCALE; ?>">
 <head>
@@ -124,7 +138,9 @@ asort($langsAssoc);
                     <!-- Page Heading -->
                     <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
                     <p class="mb-1 lh-sm"><small><i>In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.</i></small></p>
-
+                    <pre>
+                        <?php echo $response; ?>
+                    </pre>
 
                 </div>
                 <!-- /.container-fluid -->
