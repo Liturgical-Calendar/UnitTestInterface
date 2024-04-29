@@ -148,7 +148,7 @@ $LitCalTests = json_decode( $response );
             </main>
             <!-- End of Main Content -->
 
-            <footer class="sticky-footer bg-white">
+            <footer class="fixed-bottom p-3 bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
                         <span>Copyright &copy; John D'Orazio 2020</span>
