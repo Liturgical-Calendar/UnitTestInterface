@@ -1,24 +1,12 @@
-<!DOCTYPE html>
-<!--[if lt IE 7 ]><html class="ie ie6 lte9 lte8 lte7" lang="en"><![endif]-->
-<!--[if IE 7 ]><html class="ie ie7 lte9 lte8 lte7" lang="en"><![endif]-->
-<!--[if IE 8 ]><html class="ie ie8 lte9 lte8" lang="en"><![endif]-->
-<!--[if IE 9 ]><html class="ie ie9 lte9" lang="en"><![endif]-->
-<!--[if gt IE 9]><!--><html class="" lang="en"><!--<![endif]-->
-<head>
-	<meta name="copyright" content="Copyright 2022. John Romano D'Orazio. All Rights Reserved.">
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	<meta http-equiv="Cache-Control" content="no-cache">
-	<title>LitCal Test Runner</title>
-	<link rel="shortcut icon" href="favicon.ico">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-	<link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-	<div aria-live="polite" aria-atomic="true" class="position-relative" style="z-index:999;">
+<?php
+define('SIDEBAR', false);
+include_once( 'layout/head.php' );
+include_once('layout/topnavbar.php');
+?>
+	<!-- Toasts -->
+	<div aria-live="polite" aria-atomic="true" class="position-relative" style="z-index:9999;">
 		<div class="toast-container position-absolute top-0 end-0 p-3">
-			<div class="toast align-items-center text-white bg-danger border-0 p-3" aria-live="assertive" role="alert" id="websocket-error">
+			<div class="toast align-items-center text-white bg-danger border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-error">
 				<div class="d-flex">
 					<div class="toast-body">
 						<i class="fas fa-circle-xmark fa-fw"></i> There was an error opening the connection to the server over the websocket. Perhaps the server is offline?
@@ -26,7 +14,7 @@
 					<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
 				</div>
 			</div>
-			<div class="toast align-items-center text-white bg-success border-0 p-3" aria-live="assertive" role="alert" id="websocket-connected">
+			<div class="toast align-items-center text-white bg-success border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-connected">
 				<div class="d-flex">
 					<div class="toast-body">
 						<i class="fas fa-circle-check fa-fw"></i> Websocket connected successfully!
@@ -34,7 +22,7 @@
 					<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
 				</div>
 			</div>
-			<div class="toast align-items-center text-white bg-warning border-0 p-3" aria-live="assertive" role="alert" id="websocket-closed">
+			<div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-closed">
 				<div class="d-flex">
 					<div class="toast-body">
 						<i class="fas fa-triangle-exclamation fa-fw"></i> Websocket connection closed.
@@ -42,7 +30,7 @@
 					<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
 				</div>
 			</div>
-			<div class="toast align-items-center text-white bg-success border-0 p-3" aria-live="assertive" role="alert" id="tests-complete">
+			<div class="toast align-items-center text-white bg-success border-0 p-3 shadow" aria-live="assertive" role="alert" id="tests-complete">
 				<div class="d-flex">
 					<div class="toast-body">
 						<i class="fas fa-circle-check fa-fw"></i> All tests complete!
@@ -53,11 +41,8 @@
 		</div>
 	</div>
 
+	<main class="pb-5" style="margin-top: 6em;">
 	<div class="container-fluid">
-
-		<div class="header m-3">
-			<h1 class="text-center">Liturgical Calendar Tests</h1>
-		</div>
 
 		<div id="testsContainer">
 			<div class="row mb-3 text-center g-3 litcaltests-header align-items-center justify-content-center">
@@ -126,21 +111,22 @@
 		</div><!-- end testsContainer -->
 		<div class="col-2 text-white bg-secondary p-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> Websocket connection status</div>
 	</div><!-- end containerFluid -->
+	</main>
+	<!-- End of Main Content -->
 
-	<div id="footer-wrapper" class="position-fixed bottom-0 w-100">
-		<div class="footer text-center">
-			DISCLAIMER: The <b><a href="https://litcal.johnromanodorazio.com">LitCal</a></b> liturgical calendar project was created by John Romano D'Orazio, a Catholic priest incardinated in the Diocese of Rome. <a class="copyright" href="https://www.johnromanodorazio.com">&copy; 2022. John Romano D'Orazio. All rights reserved.</a>
-		</div>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
-		<script src="./js/index.js"></script>
-	</div>
+
 	<div class="bg-light position-absolute top-0 left-0 text-center page-loader" style="width:100vw;height:100vh;opacity:.5;">
 		<div class="spinner-border text-dark m-auto position-relative" role="status" style="top:50%;">
 			<span class="visually-hidden">Loading...</span>
 		</div>
 	</div>
 
-</body>
-</html>
+	<?php include_once( 'layout/disclaimer.php' ); ?>
+
+<!-- </div> -->
+<!-- End of Content Wrapper -->
+
+<!-- </div> -->
+<!-- End of Page Wrapper -->
+
+<?php include_once( 'layout/footer.php' ); ?>

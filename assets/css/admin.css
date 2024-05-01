@@ -21,3 +21,24 @@
     }
 
 }
+
+/*
+#assertionsContainer > div {
+    background-color: cadetblue;
+    color: white;
+    border: 1px solid gray;
+}
+
+#assertionsContainer > div > div:first-child {
+    width: 100%;
+    background-color: gray;
+}
+*/
+
+#assertionsContainer {
+    font-size: 0.6rem;
+}
+
+.specificunittests .card-body {
+    padding: 0.5rem;
+}

@@ -1,7 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set("display_errors", 1);
 
 include_once("credentials.php");
-include_once("./includes/i18n.php");
 
 function authenticated() {
     if ( !isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW']) ) return false;
@@ -16,14 +17,6 @@ if(!authenticated()) {
     die();
 }
 
-
-$langsAvailable = ['en', ...array_map('basename', glob("i18n/*", GLOB_ONLYDIR))];
-$langsAssoc = [];
-foreach( $langsAvailable as $lang ) {
-    $langsAssoc[$lang] = Locale::getDisplayLanguage($lang, $i18n->LOCALE);
-}
-asort($langsAssoc);
-
 $ch = curl_init();
 
 curl_setopt( $ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/LitCalTestsIndex.php" );
@@ -37,158 +30,77 @@ if ( curl_errno( $ch ) ) {
 curl_close( $ch );
 $LitCalTests = json_decode( $response );
 
+include_once('layout/head.php');
+include_once('layout/topnavbar.php');
+include_once('layout/sidebar.php');
+?>
+<!-- Main Content -->
+<main class="pb-5">
+    <div class="container-fluid px-4">
 
-?><!DOCTYPE html>
-<html lang="<?php echo $i18n->LOCALE; ?>">
-<head>
-    <title>Administration tools</title>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Custom fonts for this template-->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet" type="text/css">
-
-    <!-- Custom styles for this template-->
-    <link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin@7.0.5/dist/css/styles.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
-    <link href="css/admin.css" rel="stylesheet">
-
-</head>
-<body class="sb-nav-fixed">
-    <!-- Topbar -->
-    <nav class="sb-topnav navbar navbar-expand navbar-light bg-white shadow">
-        <!-- Navbar Brand -->
-        <a class="navbar-brand ps-3" href="./admin.php">Navbar</a>
-        <!-- Sidebar Toggle (Topbar) -->
-        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-
-        <!-- Topbar Navbar -->
-        <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-            <li class="nav-item ms-2 active" id="topNavBar_API"><a class="nav-link btn btn-outline-light border-0 fw-bold" href="./admin.php"><?php echo _( "Unit Tests Admin" ); ?></a></li>
-        </ul>
-        <ul class="navbar-nav ms-auto">
-            <li class="nav-item dropdown">
-                <!-- this should contain the value of the currently selected language, based on a cookie -->
-                <a class="nav-link dropdown-toggle btn btn-outline-light border-0" href="#" id="langChoicesDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <?php echo Locale::getDisplayLanguage($i18n->LOCALE, $i18n->LOCALE); ?>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="langChoicesDropdown" id="langChoicesDropdownItems">
-                    <?php
-                        foreach( $langsAssoc as $key => $lang ) {
-                            $classList = substr( $i18n->LOCALE, 0, 2 ) === $key ? "dropdown-item active" : "dropdown-item";
-                            $isoLang = strtoupper( $key );
-                            $displayName = Locale::getDisplayLanguage( $key, 'en');
-                            echo "<a class=\"$classList\" id=\"langChoice-$key\" href=\"#\" title=\"$displayName\"><span class=\"d-none d-md-inline\">$lang</span><span class=\"d-inline d-md-none\">$isoLang</span></a>";
-                        }
-                    ?>
+        <!-- Page Heading -->
+        <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
+        <p class="mb-1 lh-sm"><small><i>In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.</i></small></p>
+            <div class="row justify-content-center align-items-end">
+                <div class="form-group col col-md-3">
+                    <label for="litCalTestsSelect" class="fw-bold"><?php echo _( "Edit an existing test"); ?></label>
+                    <select id="litCalTestsSelect" class="form-select">
+                        <option value="" selected>--</option>
+                        <?php foreach( $LitCalTests as $LitCalTest ) {
+                            echo "<option value=\"$LitCalTest->name\">$LitCalTest->name</option>";
+                        } ?>
+                    </select>
                 </div>
-            </li>
-        </ul>
-        <a class="btn btn-outline-light text-dark border-0 me-2"
-            href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank"
-            title="See the Github repository">
-            <i class="fab fa-github"></i>
-        </a>
-    </nav>
+                <div class="form-group col col-md-2">
+                    <label class="fw-bold"><?php echo _( "Create new test " ); ?></label>
+                    <button type="button" class="btn btn-primary form-control" title="<?php echo _( "Create new test " ); ?>"><b>+</b></button>
+                </div>
+            </div>
 
-
-    <!-- Page Wrapper -->
-    <div id="layoutSidenav">
-
-        <div id="layoutSidenav_nav">
-
-            <!-- Sidebar -->
-            <nav class="sb-sidenav accordion sb-sidenav-dark bg-gradient" id="accordionSidebar">
-                <div class="sb-sidenav-menu">
-                    <div class="nav">
-                        <!-- Sidebar - Brand -->
-                        <div class="text-center lh-2 px-5 pt-2 sidebar-brand">
-                            <a class="text-uppercase fs-6 fw-bold text-white text-decoration-none" href="/admin.php">
-                                <?php echo _( "Catholic Liturgical Calendar" ); ?>
-                            </a>
+            <div class="card border-4 border-top-0 border-bottom-0 border-end-0 border-primary rounded-3 m-4">
+                <div class="card-header py-3">
+                    <h4 class="m-0 fw-bold text-primary"><i class="fas fa-flask-vial fa-2x text-black d-inline-block me-4" style="--bs-text-opacity: .1;"></i><span id="testName">Name of Test</span></h4>
+                </div>
+                <div class="card-body">
+                    <hr>
+                    <form class="needs-validation regionalNationalDataForm" id="widerRegionForm" novalidate>
+                        <div class="row justify-content-center align-items-start">
+                            <!-- TestType -->
+                            <div class="mb-3 form-group col col-md-3">
+                                <label for="testType" class="form-label">Test Type</label>
+                                <select class="form-select" id="testType" name="testType" disabled>
+                                    <option value="exactCorrespondence">exactCorrespondence</option>
+                                    <option value="exactCorrespondenceSince">exactCorrespondenceSince</option>
+                                    <option value="variableCorrespondence">variableCorrespondence</option>
+                                </select>
+                            </div>
+                            <!-- Description -->
+                            <div class="mb-3 form-group col col-md-9">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="2" required></textarea>
+                            </div>
                         </div>
-                        <!-- <hr> -->
-                        <a class="nav-link active" href="/">
-                            <i class="sb-nav-link-icon fas fa-fw fa-cross"></i>
-                            <span><?php echo _( "Unit Tests Admin" ); ?></span>
-                        </a>
-                    </div>
-                </div>
-                <div class="sb-sidenav-footer">
-                    <!-- Sidebar Toggler (Sidebar) -->
-                    <div class="text-center">
-                        <button type="button" class="btn btn-secondary rounded-circle border-0 sidebarToggle" id="sidebarToggleB"><i class="fas fa-angle-left"></i></button>
-                    </div>
-                </div>
-
-            </nav>
-        </div>
-        <!-- End of Sidebar (layoutSidenav_nav) -->
-
-        <!-- Content Wrapper -->
-        <div id="layoutSidenav_content" class="pt-4">
-
-            <!-- Main Content -->
-            <main>
-                <div class="container-fluid px-4">
-
-                    <!-- Page Heading -->
-                    <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
-                    <p class="mb-1 lh-sm"><small><i>In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.</i></small></p>
-                    <p>Type of $LitCalTests = <?php echo gettype( $LitCalTests ); ?></p>
-                    <form class="row justify-content-center needs-validation" novalidate>
-                        <div class="form-group col col-md-10">
-                            <label for="litCalTestsSelect" class="fw-bold"><?php echo _( "Choose an existing test to modify it"); ?>:</label>
-                            <select id="litCalTestsSelect" class="form-control">
-                                <?php foreach( $LitCalTests as $LitCalTest ) {
-                                    echo "<option value=\"$LitCalTest->name\">$LitCalTest->name</option>";
-                                } ?>
-                            </select>
+                        <!-- Assertions (Dynamic Fields) -->
+                        <div class="row g-0 m-2" id="assertionsContainer">
                         </div>
                     </form>
-
-                    <pre>
-                        <?php echo $response; ?>
-                    </pre>
-
                 </div>
-                <!-- /.container-fluid -->
-
-            </main>
-            <!-- End of Main Content -->
-
-            <footer class="fixed-bottom p-3 bg-white">
-                <div class="container my-auto">
-                    <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; John D'Orazio 2020</span>
-                    </div>
+                <div class="card-footer text-center">
+                    <button class="btn btn-lg btn-primary m-2" id="serializeUnitTestData" disabled><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
                 </div>
-            </footer>
+            </div>
 
-        </div>
-        <!-- End of Content Wrapper -->
+
+        <pre>
+            <?php echo $response; ?>
+        </pre>
 
     </div>
-    <!-- End of Page Wrapper -->
+    <!-- /.container-fluid -->
 
-    <!-- jQuery-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.1/js.cookie.min.js"></script>
-
-    <!-- Bootstrap / sb-admin JavaScript-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin@7.0.5/dist/js/scripts.js"></script>
-
-    <!-- i18next -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/21.6.6/i18next.min.js" integrity="sha512-3CUvxyR4WtlZanN/KmorrZ2VALnUndAQBYjf1HEYNa6McBY+G2zYq4gOZPUDkDtuk3uBdQIva0Lk89hYQ9fQrA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-i18next/1.2.1/jquery-i18next.min.js" integrity="sha512-79RgNpOyaf8AvNEUdanuk1x6g53UPoB6Fh2uogMkOMGADBG6B0DCzxc+dDktXkVPg2rlxGvPeAFKoZxTycVooQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@1.3.1/i18nextHttpBackend.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/js/bootstrap-multiselect.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <script src="js/admin.js"></script>
-</body>
-</html>
+</main>
+<!-- End of Main Content -->
+<?php 
+echo "<script>const LitCalTests = $response;</script>";
+include_once( 'layout/footer.php' );
+?>
