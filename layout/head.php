@@ -1,6 +1,4 @@
 <?php
-include_once("includes/I18n.php");
-$i18n = new I18n;
 $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
 ?><!DOCTYPE html>
 <html lang="<?php echo $i18n->locale; ?>">
@@ -28,3 +26,5 @@ $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
 ?>
 </head>
 <body class="sb-nav-fixed pb-5">
+<?php
+include_once('layout/topnavbar.php');

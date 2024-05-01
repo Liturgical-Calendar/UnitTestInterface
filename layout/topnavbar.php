@@ -11,10 +11,9 @@
             <li class="nav-item ms-2"><a class="nav-link btn btn-outline-light border-0 fw-bold" href="https://litcal.johnromanodorazio.com"><?php echo _( "LitCal Project" ); ?><i class="fas fa-arrow-up-right-from-square ms-2"></i></a></li>
         </ul>
         <ul class="navbar-nav ms-auto">
-            <li class="nav-item dropdown">
-                <!-- this should contain the value of the currently selected language, based on a cookie -->
+            <li class="nav-item dropdown me-4">
                 <a class="nav-link dropdown-toggle btn btn-outline-light border-0" href="#" id="langChoicesDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <?php echo Locale::getDisplayLanguage($i18n->locale, $i18n->locale); ?>
+                    <i class="fas fa-globe me-2"></i><?php echo Locale::getDisplayLanguage($i18n->locale, $i18n->locale); ?>
                 </a>
                 <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="langChoicesDropdown" id="langChoicesDropdownItems">
                     <?php
@@ -27,6 +26,9 @@
                     ?>
                 </div>
             </li>
+            <?php if( $pageName === 'index' ) { ?>
+            <li class="me-2"><div class="text-white bg-secondary p-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> Websocket connection status</div></li>
+            <?php } ?>
         </ul>
         <a class="btn btn-outline-light text-dark border-0 fw-bold"
             href="/admin.php"
