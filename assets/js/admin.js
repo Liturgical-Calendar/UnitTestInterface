@@ -25,9 +25,12 @@ $(document).on('change', '#litCalTestsSelect', ev => {
         currentTest = LitCalTests.filter(el => el.name === ev.currentTarget.value)[0];
         $('#testName').text( currentTest.name );
         $('#testType').val( currentTest.testType ).change();
+        $('#description').attr('rows', 2);
         $('#description').val( currentTest.description );
+        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
+        $( '#assertionsContainer' ).empty();
         const assertionsBuilder = new AssertionsBuilder( currentTest );
-        const assertionBuildHtml = assertionsBuilder.build();
+        const assertionBuildHtml = assertionsBuilder.buildHtml();
         $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
     } else {
         currentTest = null;

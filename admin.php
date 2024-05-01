@@ -2,13 +2,9 @@
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
-include_once("credentials.php");
-
-function authenticated() {
-    if ( !isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW']) ) return false;
-    if ($_SERVER['PHP_AUTH_USER'] === AUTH_USERNAME && password_verify($_SERVER['PHP_AUTH_PW'], AUTH_PASSWORD)) return true;
-    return false;
-}
+include_once("includes/I18n.php");
+$i18n = new I18n;
+include_once( 'includes/auth.php' );
 
 if(!authenticated()) {
     header("WWW-Authenticate: Basic realm=\"Please insert your credentials\"");
@@ -30,8 +26,10 @@ if ( curl_errno( $ch ) ) {
 curl_close( $ch );
 $LitCalTests = json_decode( $response );
 
+[ "LitCalAllFestivities" => $FestivityCollection ] = json_decode( file_get_contents( "https://litcal.johnromanodorazio.com/api/dev/LitCalAllFestivities.php?locale=" . $i18n->locale ), true );
+
+
 include_once('layout/head.php');
-include_once('layout/topnavbar.php');
 include_once('layout/sidebar.php');
 ?>
 <!-- Main Content -->
@@ -41,7 +39,7 @@ include_once('layout/sidebar.php');
         <!-- Page Heading -->
         <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
         <p class="mb-1 lh-sm"><small><i>In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.</i></small></p>
-            <div class="row justify-content-center align-items-end">
+            <div class="row justify-content-center align-items-start">
                 <div class="form-group col col-md-3">
                     <label for="litCalTestsSelect" class="fw-bold"><?php echo _( "Edit an existing test"); ?></label>
                     <select id="litCalTestsSelect" class="form-select">
@@ -51,9 +49,18 @@ include_once('layout/sidebar.php');
                         } ?>
                     </select>
                 </div>
-                <div class="form-group col col-md-2">
+                <div class="form-group col col-md-9">
                     <label class="fw-bold"><?php echo _( "Create new test " ); ?></label>
-                    <button type="button" class="btn btn-primary form-control" title="<?php echo _( "Create new test " ); ?>"><b>+</b></button>
+                    <div class="btn-group form-control p-0 border-0" role="group">
+                        <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalExactCorrespondenceType"
+                            title="<?php echo "In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><b><i class="fas fa-vial me-2"></i> <?php echo _( "Exact date" ); ?></b></button>
+                        <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceSince"
+                            title="<?php echo "When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><b><i class="fas fa-vial me-2"></i> <?php echo _( "Exact date since year" ); ?></b></button>
+                        <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceUntil"
+                            title="<?php echo "When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist"; ?>"><b><i class="fas fa-vial me-2"></i> <?php echo _( "Exact date until year" ); ?></b></button>
+                        <button type="button" class="btn btn-primary col col-md-4" data-testtype="variableCorrespondence"
+                            title="<?php echo "When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years"; ?>"><b><i class="fas fa-vial me-2"></i> <?php echo _( "Variable existence" ); ?></b></button>
+                    </div>
                 </div>
             </div>
 
@@ -63,7 +70,7 @@ include_once('layout/sidebar.php');
                 </div>
                 <div class="card-body">
                     <hr>
-                    <form class="needs-validation regionalNationalDataForm" id="widerRegionForm" novalidate>
+                    <form class="needs-validation" id="testDataForm" novalidate>
                         <div class="row justify-content-center align-items-start">
                             <!-- TestType -->
                             <div class="mb-3 form-group col col-md-3">
@@ -71,6 +78,7 @@ include_once('layout/sidebar.php');
                                 <select class="form-select" id="testType" name="testType" disabled>
                                     <option value="exactCorrespondence">exactCorrespondence</option>
                                     <option value="exactCorrespondenceSince">exactCorrespondenceSince</option>
+                                    <option value="exactCorrespondenceUntil">exactCorrespondenceUntil</option>
                                     <option value="variableCorrespondence">variableCorrespondence</option>
                                 </select>
                             </div>
@@ -90,7 +98,30 @@ include_once('layout/sidebar.php');
                 </div>
             </div>
 
-
+            <!-- Modal Exact Correspondence Type -->
+            <div class="modal fade" id="modalExactCorrespondenceType" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel"><?php echo _('Exact Correspondence Test'); ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form class="row justify-content-left needs-validation" novalidate>
+                        <div class="form-group col col-md-10">
+                            <label for="existingFestivityName" class="fw-bold"><?php echo _( "Choose from existing festivities"); ?>:</label>
+                            <input list="existingFestivitiesList" class="form-control existingFestivityName" id="existingFestivityName" required>
+                            <div class="invalid-feedback"><?php echo _( "This festivity does not seem to exist? Please choose from a value in the list."); ?></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo _('Close'); ?></button>
+                    <button type="button" class="btn btn-primary"><?php echo _('Create test'); ?></button>
+                </div>
+                </div>
+            </div>
+            </div>
         <pre>
             <?php echo $response; ?>
         </pre>
@@ -100,6 +131,15 @@ include_once('layout/sidebar.php');
 
 </main>
 <!-- End of Main Content -->
+
+<datalist id="existingFestivitiesList">
+<?php
+    foreach( $FestivityCollection as $key => $festivity ) {
+        echo "<option value=\"{$key}\">{$festivity["NAME"]}</option>";
+    }
+?>
+</datalist>
+
 <?php 
 echo "<script>const LitCalTests = $response;</script>";
 include_once( 'layout/footer.php' );

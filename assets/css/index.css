@@ -27,13 +27,3 @@ body {
     width: 4rem;
     height: 4rem;
 }
-
-#websocket-status {
-    position: fixed;
-    top: 0;
-    right: 0;
-    margin-right: 3px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    box-shadow: 3px 3px 18px black;
-}

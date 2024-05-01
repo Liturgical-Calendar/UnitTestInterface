@@ -42,3 +42,7 @@
 .specificunittests .card-body {
     padding: 0.5rem;
 }
+
+.sb-sidenav-dark .sb-sidenav-menu .nav-link:hover .sb-nav-link-icon {
+    color: white;
+}
