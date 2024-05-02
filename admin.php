@@ -2,8 +2,6 @@
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
-include_once("includes/I18n.php");
-$i18n = new I18n;
 include_once( 'includes/auth.php' );
 
 if(!authenticated()) {
@@ -25,9 +23,6 @@ if ( curl_errno( $ch ) ) {
 }
 curl_close( $ch );
 $LitCalTests = json_decode( $response );
-
-[ "LitCalAllFestivities" => $FestivityCollection ] = json_decode( file_get_contents( "https://litcal.johnromanodorazio.com/api/dev/LitCalAllFestivities.php?locale=" . $i18n->locale ), true );
-
 
 include_once('layout/head.php');
 include_once('layout/sidebar.php');
@@ -97,31 +92,6 @@ include_once('layout/sidebar.php');
                     <button class="btn btn-lg btn-primary m-2" id="serializeUnitTestData" disabled><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
                 </div>
             </div>
-
-            <!-- Modal Exact Correspondence Type -->
-            <div class="modal fade" id="modalExactCorrespondenceType" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel"><?php echo _('Exact Correspondence Test'); ?></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form class="row justify-content-left needs-validation" novalidate>
-                        <div class="form-group col col-md-10">
-                            <label for="existingFestivityName" class="fw-bold"><?php echo _( "Choose from existing festivities"); ?>:</label>
-                            <input list="existingFestivitiesList" class="form-control existingFestivityName" id="existingFestivityName" required>
-                            <div class="invalid-feedback"><?php echo _( "This festivity does not seem to exist? Please choose from a value in the list."); ?></div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo _('Close'); ?></button>
-                    <button type="button" class="btn btn-primary"><?php echo _('Create test'); ?></button>
-                </div>
-                </div>
-            </div>
-            </div>
         <pre>
             <?php echo $response; ?>
         </pre>
@@ -131,14 +101,7 @@ include_once('layout/sidebar.php');
 
 </main>
 <!-- End of Main Content -->
-
-<datalist id="existingFestivitiesList">
-<?php
-    foreach( $FestivityCollection as $key => $festivity ) {
-        echo "<option value=\"{$key}\">{$festivity["NAME"]}</option>";
-    }
-?>
-</datalist>
+<?php include_once('components/NewTestModal.php') ?>
 
 <?php 
 echo "<script>const LitCalTests = $response;</script>";

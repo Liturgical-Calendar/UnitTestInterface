@@ -1,7 +1,5 @@
 <?php
 define('SIDEBAR', false);
-include_once("includes/I18n.php");
-$i18n = new I18n;
 include_once( 'layout/head.php' );
 ?>
     <!-- Toasts -->

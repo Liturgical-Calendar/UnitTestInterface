@@ -37,3 +37,15 @@ $(document).on('change', '#litCalTestsSelect', ev => {
     }
 });
 
+$(document).on('slide.bs.carousel', ev => {
+    if( ev.to > 0 ) {
+        $( '#carouselPrevButton' ).removeAttr('disabled');
+    } else {
+        $( '#carouselPrevButton' ).attr('disabled','disabled');
+    }
+    if( ev.to === ($('.carousel-item').length - 1) ) {
+        $( '#carouselNextButton' ).attr('disabled','disabled');
+    } else {
+        $( '#carouselNextButton' ).removeAttr('disabled');
+    }
+});
