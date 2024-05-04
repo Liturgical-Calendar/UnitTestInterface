@@ -30,7 +30,7 @@
                             <div class="form-group">
                                 <div>
                                     <label class="fw-bold"><?php echo _( "Years to test" ); ?></label><br>
-                                    <small class="text-muted">First choose the maximum range of years that will belong to the Unit Test. Then you can remove any years that won't be needed.</small>
+                                    <small><small><p class="text-muted lh-sm"><?php echo _("First choose the maximum range of years that will belong to the Unit Test. You can then remove any years that won't be needed."); ?></p></small></small>
                                 </div>
                                 <!-- Double range slider (flat design)  -->
                                 <div class="range-slider flat" id="yearsToTestRangeSlider" data-ticks-position='top'>
@@ -53,7 +53,7 @@
                         <div class="carousel-item" data-item='2'>
                             <div class="form-group">
                                 <label class="fw-bold"><?php echo _( "Set the base date for this liturgical event" ) ?></label><br>
-                                <small><small>You will later be able to adjust the date for each year if needed. If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against, then later you can adjust each successive year with the respective date.</small></small>
+                                <small><small><p class="lh-sm"><?php echo _('If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against. In any case you will later be able to adjust the date for each year if needed.'); ?></p></small></small>
                                 <input type="date" id="baseDate" min="1970-01-01" max="2050-12-31" class="form-control mt-4 w-25" required>
                                 <div class="invalid-feedback"><?php echo _( "The date input cannot be empty"); ?></div>
                             </div>

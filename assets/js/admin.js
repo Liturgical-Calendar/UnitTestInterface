@@ -67,7 +67,7 @@ $(document).on('slid.bs.carousel', ev => {
         let monthDay = '-01-01';
         const selectedEventVal = document.querySelector('#existingFestivityName').value;
         const $selectedOption = $('#existingFestivitiesList').find('option[value="' + selectedEventVal + '"]');
-        if( $selectedOption.length && $selectedOption[0].dataset.month !== '' && $selectedOption[0].dataset.day !== '' ) {
+        if( $selectedOption.length && $selectedOption[0].dataset.month && $selectedOption[0].dataset.month !== '' && $selectedOption[0].dataset.day && $selectedOption[0].dataset.day !== '' ) {
             const month = $selectedOption[0].dataset.month.padStart(2, '0');
             const day = $selectedOption[0].dataset.day.padStart(2, '0');
             monthDay = `-${month}-${day}`;
@@ -144,7 +144,7 @@ $(document).on('click', '#btnCreateTest', () => {
 
 $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg', ev => {
     const parnt = ev.currentTarget.parentElement;
-    $(parnt).fadeOut('slow', () => {
+    $(parnt).fadeOut('fast', () => {
         //parnt.remove();
         $(parnt).empty();
         parnt.classList.add('deleted');
@@ -183,13 +183,14 @@ $(document).on('change', '#existingFestivityName', ev => {
         $(ev.currentTarget).removeClass('is-invalid');
         ev.currentTarget.setCustomValidity('');
         let gradeStr = '';
-        let onDateStr = '[such and such a date]';
-        if( $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day !== '' ) {
-            const eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month-1), Number($existingOption[0].dataset.day), 0, 0, 0));
+        let onDateStr = 'the expected date';
+        if( $existingOption[0].dataset.month && $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day && $existingOption[0].dataset.day !== '' ) {
+            console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
+            const eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
             //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
         }
-        if( $existingOption[0].dataset.grade !== '' ) {
+        if( $existingOption[0].dataset.grade && $existingOption[0].dataset.grade !== '' ) {
             gradeStr = `The ${LitGrade.toString(Number($existingOption[0].dataset.grade) )} of `;
         }
         document.querySelector('#newExactCorrespondenceTestDescription').value = `${gradeStr}'${$existingOption.text()}' should fall on ${onDateStr}`;
