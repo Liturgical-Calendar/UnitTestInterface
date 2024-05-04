@@ -84,7 +84,7 @@ include_once('layout/sidebar.php');
                             </div>
                         </div>
                         <!-- Assertions (Dynamic Fields) -->
-                        <div class="row g-0 m-2" id="assertionsContainer">
+                        <div class="row gx-0 gy-1 m-2" id="assertionsContainer">
                         </div>
                     </form>
                 </div>

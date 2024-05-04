@@ -11,12 +11,36 @@ const AssertType = Object.freeze({
     EventTypeExact:             'eventExists AND hasExpectedTimestamp'
 });
 
+const LitGrade = Object.freeze({
+    WEEKDAY:            0,
+    COMMEMORATION:      1,
+    OPTIONAL_MEMORIAL:  2,
+    MEMORIAL:           3,
+    FEAST:              4,
+    FEAST_OF_THE_LORD:  5,
+    SOLEMNITY:          6,
+    HIGHER_SOLEMNITY:   7,
+    stringVals: [
+        'weekday',
+        'commemoration',
+        'optional memorial',
+        'Memorial',
+        'FEAST',
+        'FEAST OF THE LORD',
+        'SOLEMNITY',
+        'HIGHER SOLEMNITY'
+    ],
+    toString: ( n ) => LitGrade.stringVals[parseInt(n)]
+});
+
+
 class AssertionsBuilder {
     // set some default initial values
     static testType     = TestType.ExactCorrespondence;
     static yearSince    = null; // only useful in case of TestType.ExactCorrespondenceSince
     static bgColor      = 'bg-success';
     static txtColor     = 'text-dark';
+
 
     constructor( test ) {
         this.assertions = test.assertions;
@@ -49,17 +73,13 @@ class AssertionsBuilder {
             AssertionsBuilder.#setColors( assertion );
             const expectedDateStr = assertion.expectedValue !== null ? DTFormat.format(assertion.expectedValue * 1000) : '---';
             const commentStr = assertion.hasOwnProperty('comment') ? ` <i class="fas fa-circle-question fa-fw me-2" title="${assertion.comment}"></i>` : '';
-            assertionBuildStr += `<div class="col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
-                <p class="text-center mb-0 fw-bold">${assertion.year}</p>
+            assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
+                <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>Universal Roman Calendar</span></p>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-2 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">ASSERT THAT: </span><span class="ms-2 text-end assert">${assertion.assert}</span></div>
+                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">ASSERT THAT: </span><span class="ms-2 text-end assert">${assertion.assert}</span><span role="button" class="btn btn-xs btn-danger ms-1 toggleAssert"><i class="fas fa-repeat"></i></span></div>
                 <div class="d-flex justify-content-between align-items-center ps-2 pe-2 ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue">${expectedDateStr}</span></div>
-                <div class="card text-white bg-info rounded-0">
-                    <div class="card-body">
-                        <div class="card-text d-flex flex-column justify-content-between"><span class="fw-bold">ASSERTION:${commentStr}</span>${assertion.assertion}</div>
-                    </div>
-                </div>
-            </div>`;
+                <div class="flex-grow-1 d-flex flex-column bg-info text-white p-3"><span class="fw-bold">ASSERTION:${commentStr}</span><span contenteditable>${assertion.assertion}</span></div>
+                </div>`;
         });
         return $.parseHTML( assertionBuildStr );
     }

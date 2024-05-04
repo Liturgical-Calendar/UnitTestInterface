@@ -21,6 +21,10 @@
                                 <input list="existingFestivitiesList" class="form-control existingFestivityName" id="existingFestivityName" required>
                                 <div class="invalid-feedback"><?php echo _( "This festivity does not seem to exist? Please choose from a value in the list."); ?></div>
                             </div>
+                            <div class="form-group mt-5">
+                                <label for="newExactCorrespondenceTestDescription"><?php echo _('Description') ?></label>
+                                <textarea class="form-control" id="newExactCorrespondenceTestDescription" rows=2 placeholder="Describe what the test intends to accomplish"></textarea>
+                            </div>
                         </div>
                         <div class="carousel-item" data-item='1'>
                             <div class="form-group">
@@ -78,7 +82,19 @@
 <?php
 [ "LitCalAllFestivities" => $FestivityCollection ] = json_decode( file_get_contents( "https://litcal.johnromanodorazio.com/api/dev/LitCalAllFestivities.php?locale=" . $i18n->locale ), true );
 foreach( $FestivityCollection as $key => $festivity ) {
-    echo "<option value=\"{$key}\">{$festivity["NAME"]}</option>";
+    $dataMonth = '';
+    $dataDay = '';
+    $dataGrade = '';
+    if( isset( $festivity["MONTH"] ) ) {
+        $dataMonth = " data-month=\"{$festivity["MONTH"]}\"";
+    }
+    if( isset( $festivity["DAY"] ) ) {
+        $dataDay = " data-day=\"{$festivity["DAY"]}\"";
+    }
+    if( isset( $festivity["GRADE"] ) ) {
+        $dataGrade = " data-grade=\"{$festivity["GRADE"]}\"";
+    }
+    echo "<option value=\"{$key}\"{$dataMonth}{$dataDay}{$dataGrade}>{$festivity["NAME"]}</option>";
 }
 ?>
 </datalist>
