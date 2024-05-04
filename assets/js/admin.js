@@ -109,3 +109,17 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
         layoutMode: 'fitRows'
     });
 });
+
+$(document).on('change', '#existingFestivityName', ev => {
+    const currentVal = ev.currentTarget.value;
+    console.log(currentVal);
+    const datalist = ev.currentTarget.list;
+    // Determine whether an option exists with the current value of the input.
+    if( $(ev.currentTarget.list).find('option[value="' + currentVal + '"]').length > 0 ) {
+        $(ev.currentTarget).removeClass('is-invalid');
+        ev.currentTarget.setCustomValidity('');
+    } else {
+        ev.currentTarget.classList.add('is-invalid');
+        ev.currentTarget.setCustomValidity('Please choose a value from the list');
+    }
+});
