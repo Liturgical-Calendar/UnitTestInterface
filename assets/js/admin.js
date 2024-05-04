@@ -1,4 +1,5 @@
-let currentTest = null;
+
+/** DEFINE OUR GLOBAL VARIABLES */
 
 const DTFormat = new Intl.DateTimeFormat(locale, {
     dateStyle: 'full',
@@ -10,6 +11,56 @@ const MonthDayFmt = new Intl.DateTimeFormat(locale, {
     month: 'long',
     day: 'numeric'
 });
+
+let currentTest = null;
+
+
+/**
+ * LOAD METADATA FOR EXISTING CALENDARS
+ */
+const endpointV = 'dev'; // 'v3';
+const METADATA_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalMetadata.php`;
+const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
+let CalendarNations = [];
+let SelectOptions = {};
+//const COUNTRIES is available from Countries.js, included in footer.php for admin.php
+
+fetch( METADATA_URL )
+    .then(data => data.json())
+    .then(jsonData => {
+        const { LitCalMetadata } = jsonData;
+        const { NationalCalendars, DiocesanCalendars } = LitCalMetadata;
+
+        for( const [key,value] of Object.entries( DiocesanCalendars ) ) {
+            if( false === CalendarNations.includes(value.nation) ) {
+                CalendarNations.push(value.nation);
+                SelectOptions[value.nation] = [];
+            }
+            SelectOptions[value.nation].push(`<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>`);
+        }
+
+        let nations = Object.keys( NationalCalendars );
+        nations.sort((a, b) => COUNTRY_NAMES.of(COUNTRIES[a]).localeCompare(COUNTRY_NAMES.of(COUNTRIES[b])));
+        nations.forEach(item => {
+            if( false === CalendarNations.includes(item) ) {
+                const calName = item === 'VATICAN' ? 'Universal Roman' : COUNTRY_NAMES.of(COUNTRIES[item]);
+                $('#APICalendarSelect').append(`<option data-calendartype="nationalcalendar" value="${item}">${calName}</option>`);
+            }
+        });
+
+        CalendarNations.sort((a, b) => COUNTRY_NAMES.of(COUNTRIES[a]).localeCompare(COUNTRY_NAMES.of(COUNTRIES[b])));
+        CalendarNations.forEach(item => {
+            $('#APICalendarSelect').append(`<option data-calendartype="nationalcalendar" value="${item}">${COUNTRY_NAMES.of(COUNTRIES[item])}</option>`);
+            let $optGroup = $(`<optgroup label="${COUNTRY_NAMES.of(COUNTRIES[item])}">`);
+            $('#APICalendarSelect').append($optGroup);
+            SelectOptions[item].forEach(groupItem => $optGroup.append(groupItem));
+        });
+    });
+
+
+/**
+ * SET DOCUMENT INTERACTIONS
+ */
 
 $(document).on('click', '.sidebarToggle', event => {
     console.log('now toggling sidebar...');
@@ -23,26 +74,52 @@ $(document).on('click', '.sidebarToggle', event => {
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
 
-
 $(document).on('change', '#litCalTestsSelect', ev => {
     //console.log(ev.currentTarget.value);
     if( ev.currentTarget.value !== '' ) {
         currentTest = LitCalTests.filter(el => el.name === ev.currentTarget.value)[0];
         $('#testName').text( currentTest.name );
-        $('#testType').val( currentTest.testType ).change();
-        $('#description').attr('rows', 2);
+        //$('#testType').val( currentTest.testType ).change();
+        $('#cardHeaderTestType').text( currentTest.testType );
+        $('#description').attr('rows', 1);
         $('#description').val( currentTest.description );
-        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
+        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 40 ));
         $( '#assertionsContainer' ).empty();
         const assertionsBuilder = new AssertionsBuilder( currentTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
         $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
+        document.querySelector('#perYearAssertions').classList.remove('invisible');
     } else {
         currentTest = null;
     }
 });
 
-let $iso = null;
+$(document).on('click', '.toggleAssert', ev => {
+    if(ev.currentTarget.parentElement.classList.contains('bg-warning')) {
+        ev.currentTarget.previousSibling.innerText = 'eventExists AND hasExpectedTimestamp';
+        ev.currentTarget.parentElement.classList.remove('bg-warning', 'text-dark');
+        ev.currentTarget.parentElement.classList.add('bg-success', 'text-white');
+        let $pNode = $(ev.currentTarget.parentNode);
+        console.log($pNode);
+        console.log($pNode.siblings('.testYear'));
+        const year = $pNode.siblings('.testYear')[0].innerText;
+        $pNode.next()[0].children[1].innerHTML = '';
+        $pNode.next()[0].children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" onchange="let timestamp = Date.parse(this.value+'T00:00:00.000+00:00');const $grandpa=$(this).closest('div');$grandpa[0].classList.remove('bg-warning','text-dark');$grandpa[0].classList.add('bg-success','text-white');this.parentNode.innerText=DTFormat.format(timestamp);" />`);
+    } else {
+        ev.currentTarget.previousSibling.innerText = 'eventNotExists';
+        ev.currentTarget.parentElement.classList.remove('bg-success', 'text-white');
+        ev.currentTarget.parentElement.classList.add('bg-warning', 'text-dark');
+        let $pNode = $(ev.currentTarget.parentNode);
+        $pNode.next()[0].classList.remove('bg-success', 'text-white');
+        $pNode.next()[0].classList.add('bg-warning', 'text-dark');
+        $pNode.next()[0].children[1].innerText = '---';
+    }
+});
+
+/**
+ * DEFINE INTERACTIONS FOR CREATE NEW TEST MODAL
+ */
+let $isotopeYearsToTestGrid = null;
 
 $(document).on('slid.bs.carousel', ev => {
     if( ev.to > 0 ) {
@@ -56,8 +133,8 @@ $(document).on('slid.bs.carousel', ev => {
         $( '#carouselNextButton' ).removeAttr('disabled');
     }
     if( ev.to === 1 ) {
-        if( null === $iso ) {
-            $iso = $('#yearsToTestGrid').isotope({
+        if( null === $isotopeYearsToTestGrid ) {
+            $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
                 layoutMode: 'fitRows'
             });
         }
@@ -77,102 +154,8 @@ $(document).on('slid.bs.carousel', ev => {
     }
 });
 
-$(document).on('click', '#btnCreateTest', () => {
-    let form = document.querySelector('#carouselCreateNewUnitTest form');
-    if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        let firstInvalidInput = $(form).find(":invalid")[0];
-        console.log(firstInvalidInput);
-        let parentCarouselItem = $(firstInvalidInput).closest('.carousel-item');
-        console.log(parentCarouselItem);
-        console.log(parentCarouselItem.data('item'));
-        $('#carouselCreateNewUnitTest').carousel(parentCarouselItem.data('item'));
-    } else {
-        //let's build our new currentTest
-        currentTest = {};
-        currentTest.name = document.querySelector('#existingFestivityName').value;
-        currentTest.testType = 'exactCorrespondence';
-        currentTest.description = document.querySelector('#newExactCorrespondenceTestDescription').value;
-        const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
-        const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt($(el).contents().filter(function() {
-            return this.nodeType === Node.TEXT_NODE;
-          }).text()));
-        console.log(yearsChosen);
-        //const baseDate = document.querySelector('#baseDate').valueAsDate;
-        console.log(document.querySelector('#baseDate').value);
-        const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00.000+00:00');
-        const baseDateMonth = ((baseDate.getMonth()+1) + '').padStart(2, '0');
-        const baseDateDay = (baseDate.getDate() + '').padStart(2, '0');
-        console.log(`baseDateMonth=${baseDateMonth},baseDateDay=${baseDateDay}`);
-        /*
-        currentTest.assertions = yearsChosen.map(year => {
-            dateX = new Date(Date.UTC(year,baseDateMonth,baseDateDay,0,0,0));
-            timeX = dateX.getTime() / 1000;
-            return {
-                "year": year,
-                "assert": "eventExists AND hasExpectedTimestamp",
-                "assertion": currentTest.description,
-                "expectedValue": timeX
-            }
-        });
-        */
-        currentTest.assertions = [];
-        yearsChosen.forEach(year => {
-            const dateX = Date.parse(`${year}-${baseDateMonth}-${baseDateDay}T00:00:00.000+00:00`) / 1000;
-            currentTest.assertions.push({
-                "year": year,
-                "assert": "eventExists AND hasExpectedTimestamp",
-                "assertion": currentTest.description,
-                "expectedValue": dateX
-            });
-        });
-        console.log(currentTest.assertions);
-        $('#testName').text( currentTest.name );
-        $('#testType').val( currentTest.testType ).change();
-        $('#description').attr('rows', 2);
-        $('#description').val( currentTest.description );
-        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
-        $('#assertionsContainer').empty();
-        const assertionsBuilder = new AssertionsBuilder( currentTest );
-        const assertionBuildHtml = assertionsBuilder.buildHtml();
-        $(assertionBuildHtml).appendTo('#assertionsContainer');
-        const myModalEl = document.querySelector('#modalExactCorrespondenceType');
-        const myModal = bootstrap.Modal.getInstance(myModalEl);
-        myModal.hide();
-    }
-});
 
-$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg', ev => {
-    const parnt = ev.currentTarget.parentElement;
-    $(parnt).fadeOut('fast', () => {
-        //parnt.remove();
-        $(parnt).empty();
-        parnt.classList.add('deleted');
-        $(parnt).fadeIn('fast', () => {
-            $('#yearsToTestGrid').isotope('layout');
-        });
-    });
-});
-
-$(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
-    let rangeVals = [];
-    document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
-    const min = Math.min(...rangeVals);
-    const max = Math.max(...rangeVals);
-    $('#yearsToTestGrid').isotope('destroy');
-    $('#yearsToTestGrid').empty();
-    let htmlStr = '';
-    for( let i = min; i <= max; i++ ) {
-        htmlStr += `<span class="testYearSpan">${i}<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i></span>`;
-    }
-    console.log(htmlStr);
-    //$parsedHtml = $.parseHTML( htmlStr );
-    //console.log($parsedHtml);
-    document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    $iso = $('#yearsToTestGrid').isotope({
-        layoutMode: 'fitRows'
-    });
-});
+/** SLIDER 1 INTERACTIONS */
 
 $(document).on('change', '#existingFestivityName', ev => {
     const currentVal = ev.currentTarget.value;
@@ -200,24 +183,89 @@ $(document).on('change', '#existingFestivityName', ev => {
     }
 });
 
-$(document).on('click', '.toggleAssert', ev => {
-    if(ev.currentTarget.parentElement.classList.contains('bg-warning')) {
-        ev.currentTarget.previousSibling.innerText = 'eventExists AND hasExpectedTimestamp';
-        ev.currentTarget.parentElement.classList.remove('bg-warning', 'text-dark');
-        ev.currentTarget.parentElement.classList.add('bg-success', 'text-white');
-        let $pNode = $(ev.currentTarget.parentNode);
-        console.log($pNode);
-        console.log($pNode.siblings('.testYear'));
-        const year = $pNode.siblings('.testYear')[0].innerText;
-        $pNode.next()[0].children[1].innerHTML = '';
-        $pNode.next()[0].children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" onchange="let timestamp = Date.parse(this.value+'T00:00:00.000+00:00');const $grandpa=$(this).closest('div');$grandpa[0].classList.remove('bg-warning','text-dark');$grandpa[0].classList.add('bg-success','text-white');this.parentNode.innerText=DTFormat.format(timestamp);" />`);
+/** SLIDER 2 INTERACTIONS */
+
+$(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
+    let rangeVals = [];
+    document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
+    const min = Math.min(...rangeVals);
+    const max = Math.max(...rangeVals);
+    $('#yearsToTestGrid').isotope('destroy');
+    $('#yearsToTestGrid').empty();
+    let htmlStr = '';
+    for( let i = min; i <= max; i++ ) {
+        htmlStr += `<span class="testYearSpan">${i}<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i></span>`;
+    }
+    console.log(htmlStr);
+    //$parsedHtml = $.parseHTML( htmlStr );
+    //console.log($parsedHtml);
+    document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
+    $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
+        layoutMode: 'fitRows'
+    });
+});
+
+$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg', ev => {
+    const parnt = ev.currentTarget.parentElement;
+    $(parnt).fadeOut('fast', () => {
+        //parnt.remove();
+        $(parnt).empty();
+        parnt.classList.add('deleted');
+        $(parnt).fadeIn('fast', () => {
+            $('#yearsToTestGrid').isotope('layout');
+        });
+    });
+});
+
+/** FINAL CREATE TEST BUTTON */
+
+$(document).on('click', '#btnCreateTest', () => {
+    let form = document.querySelector('#carouselCreateNewUnitTest form');
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        let firstInvalidInput = $(form).find(":invalid")[0];
+        console.log(firstInvalidInput);
+        let parentCarouselItem = $(firstInvalidInput).closest('.carousel-item');
+        console.log(parentCarouselItem);
+        console.log(parentCarouselItem.data('item'));
+        $('#carouselCreateNewUnitTest').carousel(parentCarouselItem.data('item'));
     } else {
-        ev.currentTarget.previousSibling.innerText = 'eventNotExists';
-        ev.currentTarget.parentElement.classList.remove('bg-success', 'text-white');
-        ev.currentTarget.parentElement.classList.add('bg-warning', 'text-dark');
-        let $pNode = $(ev.currentTarget.parentNode);
-        $pNode.next()[0].classList.remove('bg-success', 'text-white');
-        $pNode.next()[0].classList.add('bg-warning', 'text-dark');
-        $pNode.next()[0].children[1].innerText = '---';
+        //let's build our new currentTest
+        currentTest = {};
+        currentTest.name = document.querySelector('#existingFestivityName').value;
+        currentTest.testType = 'exactCorrespondence';
+        currentTest.description = document.querySelector('#newExactCorrespondenceTestDescription').value;
+        const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
+        const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt($(el).contents().filter(function() {
+            return this.nodeType === Node.TEXT_NODE;
+          }).text()));
+        //const baseDate = document.querySelector('#baseDate').valueAsDate;
+        const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00.000+00:00');
+        const baseDateMonth = ((baseDate.getMonth()+1) + '').padStart(2, '0');
+        const baseDateDay = (baseDate.getDate() + '').padStart(2, '0');
+        currentTest.assertions = [];
+        yearsChosen.forEach(year => {
+            const dateX = Date.parse(`${year}-${baseDateMonth}-${baseDateDay}T00:00:00.000+00:00`) / 1000;
+            currentTest.assertions.push({
+                "year": year,
+                "assert": "eventExists AND hasExpectedTimestamp",
+                "assertion": currentTest.description,
+                "expectedValue": dateX
+            });
+        });
+        $('#testName').text( currentTest.name );
+        //$('#testType').val( currentTest.testType ).change();
+        $('#cardHeaderTestType').text( currentTest.testType );
+        $('#description').attr('rows', 2);
+        $('#description').val( currentTest.description );
+        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
+        $('#assertionsContainer').empty();
+        const assertionsBuilder = new AssertionsBuilder( currentTest );
+        const assertionBuildHtml = assertionsBuilder.buildHtml();
+        $(assertionBuildHtml).appendTo('#assertionsContainer');
+        document.querySelector('#perYearAssertions').classList.remove('invisible');
+        const myModalEl = document.querySelector('#modalExactCorrespondenceType');
+        const myModal = bootstrap.Modal.getInstance(myModalEl);
+        myModal.hide();
     }
 });

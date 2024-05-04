@@ -30,6 +30,7 @@ if( !defined('SIDEBAR') || true === SIDEBAR ) {
     <script>const locale = '<?php echo $i18n->locale ?>';</script>
 <?php
     if( $pageName === 'admin' ) {
+        echo "<script src=\"assets/js/Countries.js\"></script>";
         echo "<script src=\"assets/js/AssertionsBuilder.js\"></script>";
         echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
     }
