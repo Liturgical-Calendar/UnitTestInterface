@@ -46,3 +46,38 @@
 .sb-sidenav-dark .sb-sidenav-menu .nav-link:hover .sb-nav-link-icon {
     color: white;
 }
+
+#yearsToTestGrid {
+    margin-top: 16px;
+    width: 100%;
+    min-height: 250px;
+    height: auto;
+    margin-bottom: 40px;
+}
+
+#yearsToTestGrid > .testYearSpan {
+    display: inline-block;
+    padding: 3px 5px;
+    background-color: beige;
+    border: 1px solid darkblue;
+    border-radius: 2px;
+    margin: 5px 3px;
+    cursor: default;
+}
+
+#yearsToTestGrid > .testYearSpan.deleted {
+    background: repeating-linear-gradient(
+        45deg,
+        red,
+        red 5px,
+        white 8px,
+        white 12px
+    );
+    width: 3px;
+    height: 32px;
+    cursor: not-allowed;
+}
+
+#yearsToTestGrid > .testYearSpan > svg:hover {
+    opacity: 1.0 !important;
+}

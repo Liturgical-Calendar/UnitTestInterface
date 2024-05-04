@@ -37,7 +37,9 @@ $(document).on('change', '#litCalTestsSelect', ev => {
     }
 });
 
-$(document).on('slide.bs.carousel', ev => {
+let $iso = null;
+
+$(document).on('slid.bs.carousel', ev => {
     if( ev.to > 0 ) {
         $( '#carouselPrevButton' ).removeAttr('disabled');
     } else {
@@ -48,4 +50,62 @@ $(document).on('slide.bs.carousel', ev => {
     } else {
         $( '#carouselNextButton' ).removeAttr('disabled');
     }
+    if( ev.to === 1 ) {
+        if( null === $iso ) {
+            $iso = $('#yearsToTestGrid').isotope({
+                layoutMode: 'fitRows'
+            });
+        }
+    }
+    if( ev.to === 2 ) {
+        let firstYear = document.querySelector('#lowerRange').value;
+        console.log('firstYear = ' + firstYear);
+        document.querySelector('#baseDate').value = firstYear + '-01-01';
+        document.querySelector('#btnCreateTest').removeAttribute('disabled');
+    }
+});
+
+$(document).on('click', '#btnCreateTest', () => {
+    let form = document.querySelector('#carouselCreateNewUnitTest form');
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        let firstInvalidInput = $(form).find(":invalid")[0];
+        console.log(firstInvalidInput);
+        let parentCarouselItem = $(firstInvalidInput).closest('.carousel-item');
+        console.log(parentCarouselItem);
+        console.log(parentCarouselItem.data('item'));
+        $('#carouselCreateNewUnitTest').carousel(parentCarouselItem.data('item'));
+    }
+});
+
+$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg', ev => {
+    const parnt = ev.currentTarget.parentElement;
+    $(parnt).fadeOut('slow', () => {
+        //parnt.remove();
+        $(parnt).empty();
+        parnt.classList.add('deleted');
+        $(parnt).fadeIn('fast', () => {
+            $('#yearsToTestGrid').isotope('layout');
+        });
+    });
+});
+
+$(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
+    let rangeVals = [];
+    document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
+    const min = Math.min(...rangeVals);
+    const max = Math.max(...rangeVals);
+    $('#yearsToTestGrid').isotope('destroy');
+    $('#yearsToTestGrid').empty();
+    let htmlStr = '';
+    for( let i = min; i <= max; i++ ) {
+        htmlStr += `<span class="testYearSpan">${i}<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i></span>`;
+    }
+    console.log(htmlStr);
+    //$parsedHtml = $.parseHTML( htmlStr );
+    //console.log($parsedHtml);
+    document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
+    $iso = $('#yearsToTestGrid').isotope({
+        layoutMode: 'fitRows'
+    });
 });

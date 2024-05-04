@@ -15,18 +15,44 @@
                 </div>
                 <div class="carousel-inner">
                     <form class="row justify-content-left needs-validation" novalidate>
-                        <div class="carousel-item active">
-                            <div class="form-group d-block w-100">
+                        <div class="carousel-item active" data-item='0'>
+                            <div class="form-group">
                                 <label for="existingFestivityName" class="fw-bold"><?php echo _( "Choose the liturgical event for which you would like to create a test"); ?>:</label>
                                 <input list="existingFestivitiesList" class="form-control existingFestivityName" id="existingFestivityName" required>
                                 <div class="invalid-feedback"><?php echo _( "This festivity does not seem to exist? Please choose from a value in the list."); ?></div>
                             </div>
                         </div>
-                        <div class="carousel-item">
-                            <div class="form-group d-block w-100"></div>
+                        <div class="carousel-item" data-item='1'>
+                            <div class="form-group">
+                                <div>
+                                    <label class="fw-bold"><?php echo _( "Years to test" ); ?></label><br>
+                                    <small class="text-muted">First choose the maximum range of years that will belong to the Unit Test. Then you can remove any years that won't be needed.</small>
+                                </div>
+                                <!-- Double range slider (flat design)  -->
+                                <div class="range-slider flat" id="yearsToTestRangeSlider" data-ticks-position='top'>
+                                    <input type="range" id="lowerRange" min="1970" max="2049" value="1999" oninput="this.parentNode.style.setProperty('--value-a',this.value); this.parentNode.style.setProperty('--text-value-a', JSON.stringify(this.value))">
+                                    <output></output>
+                                    <input type="range" id="upperRange" min="1971" max="2050" value="2030" oninput="this.parentNode.style.setProperty('--value-b',this.value); this.parentNode.style.setProperty('--text-value-b', JSON.stringify(this.value))">
+                                    <output></output>
+                                    <div class='range-slider__progress'></div>
+                                </div>
+                            </div>
+                            <div id="yearsToTestGrid">
+                                <?php
+                                for( $i=1999; $i<= 2030; $i++ ) {
+                                    $title = _( 'remove' );
+                                    echo "<span class=\"testYearSpan\">$i<i class=\"fas fa-xmark-circle ms-1 opacity-50\" role=\"button\" title=\"$title\"></i></span>";
+                                }
+                                ?>
+                            </div>
                         </div>
-                        <div class="carousel-item">
-                            <div class="form-group d-block w-100"></div>
+                        <div class="carousel-item" data-item='2'>
+                            <div class="form-group">
+                                <label class="fw-bold"><?php echo _( "Set the base date for this liturgical event" ) ?></label><br>
+                                <small><small>You will later be able to adjust the date for each year if needed. If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against, then later you can adjust each successive year with the respective date.</small></small>
+                                <input type="date" id="baseDate" min="1970-01-01" max="2050-12-31" class="form-control mt-4 w-25" required>
+                                <div class="invalid-feedback"><?php echo _( "The date input cannot be empty"); ?></div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -42,7 +68,7 @@
                 <span class="fas fa-caret-right" aria-hidden="true"></span>
             </button>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo _('Close'); ?></button>
-            <button type="button" class="btn btn-primary" disabled><?php echo _('Create test'); ?></button>
+            <button type="button" class="btn btn-primary" id="btnCreateTest" disabled><?php echo _('Create test'); ?></button>
         </div>
         </div>
     </div>

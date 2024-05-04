@@ -31,6 +31,7 @@ if( !defined('SIDEBAR') || true === SIDEBAR ) {
 <?php
     if( $pageName === 'admin' ) {
         echo "<script src=\"assets/js/AssertionsBuilder.js\"></script>";
+        echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
     }
     if( file_exists( "assets/js/{$pageName}.js" ) ) {
         echo "<script src=\"assets/js/{$pageName}.js\"></script>";

@@ -25,6 +25,9 @@ $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
     if( file_exists( "assets/css/{$pageName}.css" ) ) {
         echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
     }
+    if( $pageName === 'admin' ) {
+        echo "<link href=\"assets/css/multi-range-slider.css\" rel=\"stylesheet\">";
+    }
 ?>
 </head>
 <body class="sb-nav-fixed pb-5">
