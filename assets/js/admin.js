@@ -119,7 +119,46 @@ $(document).on('click', '.toggleAssert', ev => {
 /**
  * DEFINE INTERACTIONS FOR CREATE NEW TEST MODAL
  */
+let currentTestType = 'exactCorrespondence'; //this value will be set on modal open
 let $isotopeYearsToTestGrid = null;
+
+const modalLabel = {
+    exactCorrespondence: 'Exact Date Correspondence Test',
+    exactCorrespondenceSince: 'Exact Date Correspondence Since Year Test',
+    exactCorrespondenceUntil: 'Exact Date Correspondence Until Year Test',
+    variableCorrespondence: 'Variable Existence Test'
+}
+
+$(document).on('show.bs.modal', ev => {
+    // we want to make sure the carousel is on the first slide every time we open the modal
+    $('#carouselCreateNewUnitTest').carousel(0);
+    // we also want to reset our form to defaults
+    document.querySelector('#carouselCreateNewUnitTest form').reset();
+    // set our global currentTestType variable based on the button that was clicked to open the modal
+    currentTestType = ev.relatedTarget.dataset.testtype;
+    // update our carousel elements based on the currentTestType
+    $(ev.currentTarget).find(`.${currentTestType}`).removeClass('d-none');
+    if( null !== $isotopeYearsToTestGrid ) {
+        $isotopeYearsToTestGrid.isotope('destroy');
+    }
+    $('#yearsToTestGrid').empty();
+    let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
+    let hammerIcon = currentTestType === 'exactCorrespondence' ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
+    let htmlStr = '';
+    for( let year = 1999; year <= 2030; year++ ) {
+        htmlStr += `<span class="testYearSpan">${hammerIcon}${year}${removeIcon}</span>`;
+    }
+    document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
+    $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
+        layoutMode: 'fitRows'
+    });
+    document.querySelector('#yearsToTestGrid').classList.add('invisible');
+    document.querySelector('#exampleModalLabel').innerText = modalLabel[currentTestType];
+});
+
+$(document).on('hide.bs.modal', ev => {
+    $(ev.currentTarget).find(`.${currentTestType}`).addClass('d-none');
+});
 
 $(document).on('slid.bs.carousel', ev => {
     if( ev.to > 0 ) {
@@ -133,11 +172,8 @@ $(document).on('slid.bs.carousel', ev => {
         $( '#carouselNextButton' ).removeAttr('disabled');
     }
     if( ev.to === 1 ) {
-        if( null === $isotopeYearsToTestGrid ) {
-            $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
-                layoutMode: 'fitRows'
-            });
-        }
+        $isotopeYearsToTestGrid.isotope('layout');
+        document.querySelector('#yearsToTestGrid').classList.remove('invisible');
     }
     if( ev.to === 2 ) {
         let firstYear = document.querySelector('#lowerRange').value;
@@ -192,9 +228,11 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     const max = Math.max(...rangeVals);
     $('#yearsToTestGrid').isotope('destroy');
     $('#yearsToTestGrid').empty();
+    let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
+    let hammerIcon = currentTestType === 'exactCorrespondence' ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
-    for( let i = min; i <= max; i++ ) {
-        htmlStr += `<span class="testYearSpan">${i}<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i></span>`;
+    for( let year = min; year <= max; year++ ) {
+        htmlStr += `<span class="testYearSpan">${hammerIcon}${year}${removeIcon}</span>`;
     }
     console.log(htmlStr);
     //$parsedHtml = $.parseHTML( htmlStr );
@@ -205,7 +243,7 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     });
 });
 
-$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg', ev => {
+$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark', ev => {
     const parnt = ev.currentTarget.parentElement;
     $(parnt).fadeOut('fast', () => {
         //parnt.remove();
@@ -215,6 +253,17 @@ $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg', ev => {
             $('#yearsToTestGrid').isotope('layout');
         });
     });
+});
+
+$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev => {
+    const parnt = ev.currentTarget.parentElement;
+    const bgClass = currentTestType === 'variableCorrespondence' ? 'bg-warning' : 'bg-info';
+    if( ['exactCorrespondenceSince','exactCorrespondenceUntil'].includes(currentTestType) ) {
+        console.log('yes we are dealing with an exactCorrespondenceSince or exactCorrespondenceUntil type test');
+        console.log($(parnt.parentElement).find(`.${bgClass}`));
+        $(parnt.parentElement).find(`.${bgClass}`).removeClass(`${bgClass}`);
+    }
+    parnt.classList.add(bgClass);
 });
 
 /** FINAL CREATE TEST BUTTON */
@@ -254,7 +303,6 @@ $(document).on('click', '#btnCreateTest', () => {
             });
         });
         $('#testName').text( currentTest.name );
-        //$('#testType').val( currentTest.testType ).change();
         $('#cardHeaderTestType').text( currentTest.testType );
         $('#description').attr('rows', 2);
         $('#description').val( currentTest.description );

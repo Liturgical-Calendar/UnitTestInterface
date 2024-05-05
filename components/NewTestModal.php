@@ -1,5 +1,5 @@
 <!-- Modal Exact Correspondence Type -->
-<div class="modal fade" id="modalExactCorrespondenceType" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="modalDefineTest" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
         <div class="modal-header">
@@ -30,7 +30,18 @@
                             <div class="form-group">
                                 <div>
                                     <label class="fw-bold"><?php echo _( "Years to test" ); ?></label><br>
-                                    <small><small><p class="text-muted lh-sm"><?php echo _("First choose the maximum range of years that will belong to the Unit Test. You can then remove any years that won't be needed."); ?></p></small></small>
+                                    <small>
+                                        <p class="text-muted lh-sm">
+                                            <small><?php echo _("First choose the maximum range of years that will belong to the Unit Test."); ?></small>
+                                            <small class="exactCorrespondenceSince d-none"> &#x28;<i><?php echo _("This range should include a few years before the year in which the liturgical event should start to exist."); ?></i>&#x29; </small>
+                                            <small class="exactCorrespondenceUntil d-none"> &#x28;<i><?php echo _("This range should include a few years after the year in which the liturgical event should cease to exist."); ?></i>&#x29; </small>
+                                            <small><?php echo _("You can then remove any years that won't be needed."); ?></small>
+                                            <small class="exactCorrespondenceSince d-none"> <?php echo _("Finally, set the year from which the liturgical event should exist by clicking on the hammer icon inside one of the years in the range."); ?> </small>
+                                            <small class="exactCorrespondenceUntil d-none"> <?php echo _("Finally, set the year until which the liturgical event should exist by clicking on the hammer icon inside one of the years in the range."); ?> </small>
+                                            <small class="variableCorrespondence d-none"> <?php echo _("Finally, set the years in which the liturgical event shouldn't exist by clicking on the hammer icon inside the years in the range."); ?></small>
+                                        </p>
+                                        <p class="text-muted lh-sm"><?php _("First choose the maximum range of years that will belong to the Unit Test.") ?></p>
+                                    </small>
                                 </div>
                                 <!-- Double range slider (flat design)  -->
                                 <div class="range-slider flat" id="yearsToTestRangeSlider" data-ticks-position='top'>
@@ -41,14 +52,7 @@
                                     <div class='range-slider__progress'></div>
                                 </div>
                             </div>
-                            <div id="yearsToTestGrid">
-                                <?php
-                                for( $i=1999; $i<= 2030; $i++ ) {
-                                    $title = _( 'remove' );
-                                    echo "<span class=\"testYearSpan\">$i<i class=\"fas fa-xmark-circle ms-1 opacity-50\" role=\"button\" title=\"$title\"></i></span>";
-                                }
-                                ?>
-                            </div>
+                            <div id="yearsToTestGrid"></div>
                         </div>
                         <div class="carousel-item" data-item='2'>
                             <div class="form-group">
