@@ -134,6 +134,8 @@ $(document).on('show.bs.modal', ev => {
     $('#carouselCreateNewUnitTest').carousel(0);
     // we also want to reset our form to defaults
     document.querySelector('#carouselCreateNewUnitTest form').reset();
+    document.querySelector('#carouselCreateNewUnitTest form').classList.remove('was-validated');
+    document.querySelector('#btnCreateTest').setAttribute('disabled','disabled');
     // set our global currentTestType variable based on the button that was clicked to open the modal
     currentTestType = ev.relatedTarget.dataset.testtype;
     // update our carousel elements based on the currentTestType
@@ -202,6 +204,9 @@ $(document).on('change', '#existingFestivityName', ev => {
         $(ev.currentTarget).removeClass('is-invalid');
         ev.currentTarget.setCustomValidity('');
         let gradeStr = '';
+        if( $existingOption[0].dataset.grade && $existingOption[0].dataset.grade !== '' ) {
+            gradeStr = `The ${LitGrade.toString(Number($existingOption[0].dataset.grade) )} of `;
+        }
         let onDateStr = 'the expected date';
         if( $existingOption[0].dataset.month && $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day && $existingOption[0].dataset.day !== '' ) {
             console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
@@ -209,10 +214,7 @@ $(document).on('change', '#existingFestivityName', ev => {
             onDateStr = MonthDayFmt.format(eventDate);
             //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
         }
-        if( $existingOption[0].dataset.grade && $existingOption[0].dataset.grade !== '' ) {
-            gradeStr = `The ${LitGrade.toString(Number($existingOption[0].dataset.grade) )} of `;
-        }
-        document.querySelector('#newExactCorrespondenceTestDescription').value = `${gradeStr}'${$existingOption.text()}' should fall on ${onDateStr}`;
+        document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${$existingOption.text()}' should fall on ${onDateStr}`;
     } else {
         ev.currentTarget.classList.add('is-invalid');
         ev.currentTarget.setCustomValidity('Please choose a value from the list');
@@ -259,11 +261,20 @@ $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev =
     const parnt = ev.currentTarget.parentElement;
     const bgClass = currentTestType === 'variableCorrespondence' ? 'bg-warning' : 'bg-info';
     if( ['exactCorrespondenceSince','exactCorrespondenceUntil'].includes(currentTestType) ) {
-        console.log('yes we are dealing with an exactCorrespondenceSince or exactCorrespondenceUntil type test');
-        console.log($(parnt.parentElement).find(`.${bgClass}`));
-        $(parnt.parentElement).find(`.${bgClass}`).removeClass(`${bgClass}`);
+        $(parnt.parentElement).find(`.testYearSpan`).removeClass([`${bgClass}`,'bg-warning']);
+        const siblings = Array.from(parnt.parentElement.children);
+        const idxAsChild = siblings.indexOf(parnt);
+        const allPrevSiblings = siblings.slice(0,idxAsChild);
+        const allNextSiblings = siblings.slice(idxAsChild+1);
+        if( 'exactCorrespondenceSince' === currentTestType ) {
+            $(allPrevSiblings).addClass('bg-warning');
+        } else {
+            $(allNextSiblings).addClass('bg-warning');
+        }
     }
     parnt.classList.add(bgClass);
+    document.querySelector('#yearSinceUntilShadow').value = parnt.innerText;
+    console.log(document.querySelector('#yearSinceUntilShadow').value);
 });
 
 /** FINAL CREATE TEST BUTTON */
@@ -282,22 +293,46 @@ $(document).on('click', '#btnCreateTest', () => {
         //let's build our new currentTest
         currentTest = {};
         currentTest.name = document.querySelector('#existingFestivityName').value;
-        currentTest.testType = 'exactCorrespondence';
-        currentTest.description = document.querySelector('#newExactCorrespondenceTestDescription').value;
+        currentTest.testType = currentTestType;
+        currentTest.description = document.querySelector('#newUnitTestDescription').value;
         const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
+        let yearSinceUntil = null;
+        if( ['exactCorrespondenceSince','exactCorrespondenceUntil'].includes(currentTestType) ) {
+            yearSinceUntil = parseInt($('.testYearSpan.bg-info').contents().filter(function() {
+                return this.nodeType === Node.TEXT_NODE;
+            }).text());
+            if( currentTestType === 'exactCorrespondenceSince' ) {
+                currentTest.yearSince = yearSinceUntil;
+            } else {
+                currentTest.yearUntil = yearSinceUntil;
+            }
+        }
+        let yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt($(el).contents().filter(function() {
+            return this.nodeType === Node.TEXT_NODE;
+        }).text()));
+
         const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt($(el).contents().filter(function() {
             return this.nodeType === Node.TEXT_NODE;
-          }).text()));
+        }).text()));
         //const baseDate = document.querySelector('#baseDate').valueAsDate;
         const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00.000+00:00');
         const baseDateMonth = ((baseDate.getMonth()+1) + '').padStart(2, '0');
         const baseDateDay = (baseDate.getDate() + '').padStart(2, '0');
         currentTest.assertions = [];
+        let assert =  null;
+        let dateX = null;
         yearsChosen.forEach(year => {
-            const dateX = Date.parse(`${year}-${baseDateMonth}-${baseDateDay}T00:00:00.000+00:00`) / 1000;
+            if( yearsNonExistence.includes(year) ) {
+                assert = 'eventNotExists';
+                dateX = null;
+                currentTest.description = currentTest.description.replace('should fall on', 'should not exist on');
+            } else {
+                assert = 'eventExists AND hasExpectedTimestamp';
+                dateX = Date.parse(`${year}-${baseDateMonth}-${baseDateDay}T00:00:00.000+00:00`) / 1000;
+            }
             currentTest.assertions.push({
                 "year": year,
-                "assert": "eventExists AND hasExpectedTimestamp",
+                "assert": assert,
                 "assertion": currentTest.description,
                 "expectedValue": dateX
             });
@@ -312,7 +347,7 @@ $(document).on('click', '#btnCreateTest', () => {
         const assertionBuildHtml = assertionsBuilder.buildHtml();
         $(assertionBuildHtml).appendTo('#assertionsContainer');
         document.querySelector('#perYearAssertions').classList.remove('invisible');
-        const myModalEl = document.querySelector('#modalExactCorrespondenceType');
+        const myModalEl = document.querySelector('#modalDefineTest');
         const myModal = bootstrap.Modal.getInstance(myModalEl);
         myModal.hide();
     }
