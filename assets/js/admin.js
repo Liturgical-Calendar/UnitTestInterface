@@ -148,7 +148,7 @@ $(document).on('show.bs.modal', ev => {
     let hammerIcon = currentTestType === 'exactCorrespondence' ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
     for( let year = 1999; year <= 2030; year++ ) {
-        htmlStr += `<span class="testYearSpan">${hammerIcon}${year}${removeIcon}</span>`;
+        htmlStr += `<span class="testYearSpan year-${year}">${hammerIcon}${year}${removeIcon}</span>`;
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
     $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
@@ -209,9 +209,22 @@ $(document).on('change', '#existingFestivityName', ev => {
         }
         let onDateStr = 'the expected date';
         if( $existingOption[0].dataset.month && $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day && $existingOption[0].dataset.day !== '' ) {
-            console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
-            const eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+            //console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
+            let eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
+            if( gradeStr !== '' && Number($existingOption[0].dataset.grade) < LitGrade.FEAST ) {
+                const minYear = parseInt(document.querySelector('#lowerRange').value);
+                const maxYear = parseInt(document.querySelector('#upperRange').value);
+                for(year = minYear; year <= maxYear; year++) {
+                    eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+                    if( eventDate.getDay() === 0 ) {
+                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday` );
+                        document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
+                    } else {
+                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate) );
+                    }
+                }
+            }
             //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
         }
         document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${$existingOption.text()}' should fall on ${onDateStr}`;
@@ -234,7 +247,7 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     let hammerIcon = currentTestType === 'exactCorrespondence' ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
     for( let year = min; year <= max; year++ ) {
-        htmlStr += `<span class="testYearSpan">${hammerIcon}${year}${removeIcon}</span>`;
+        htmlStr += `<span class="testYearSpan year-${year}">${hammerIcon}${year}${removeIcon}</span>`;
     }
     console.log(htmlStr);
     //$parsedHtml = $.parseHTML( htmlStr );
@@ -261,17 +274,18 @@ $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev =
     const parnt = ev.currentTarget.parentElement;
     const bgClass = currentTestType === 'variableCorrespondence' ? 'bg-warning' : 'bg-info';
     if( ['exactCorrespondenceSince','exactCorrespondenceUntil'].includes(currentTestType) ) {
-        $(parnt.parentElement).find(`.testYearSpan`).removeClass([`${bgClass}`,'bg-warning']);
+        $(parnt.parentElement).find(`.testYearSpan`).removeClass([`bg-info`,'bg-warning']);
         const siblings = Array.from(parnt.parentElement.children);
         const idxAsChild = siblings.indexOf(parnt);
         const allPrevSiblings = siblings.slice(0,idxAsChild);
         const allNextSiblings = siblings.slice(idxAsChild+1);
         if( 'exactCorrespondenceSince' === currentTestType ) {
-            $(allPrevSiblings).addClass('bg-warning');
+            $(allPrevSiblings).removeClass('bg-light').addClass('bg-warning');
         } else {
-            $(allNextSiblings).addClass('bg-warning');
+            $(allNextSiblings).removeClass('bg-light').addClass('bg-warning');
         }
     }
+    parnt.classList.remove('bg-light');
     parnt.classList.add(bgClass);
     document.querySelector('#yearSinceUntilShadow').value = parnt.innerText;
     console.log(document.querySelector('#yearSinceUntilShadow').value);
@@ -321,19 +335,21 @@ $(document).on('click', '#btnCreateTest', () => {
         currentTest.assertions = [];
         let assert =  null;
         let dateX = null;
+        let assertion = null;
         yearsChosen.forEach(year => {
             if( yearsNonExistence.includes(year) ) {
                 assert = 'eventNotExists';
                 dateX = null;
-                currentTest.description = currentTest.description.replace('should fall on', 'should not exist on');
+                assertion = currentTest.description.replace('should fall on', 'should not exist on');
             } else {
                 assert = 'eventExists AND hasExpectedTimestamp';
                 dateX = Date.parse(`${year}-${baseDateMonth}-${baseDateDay}T00:00:00.000+00:00`) / 1000;
+                assertion = currentTest.description;
             }
             currentTest.assertions.push({
                 "year": year,
                 "assert": assert,
-                "assertion": currentTest.description,
+                "assertion": assertion,
                 "expectedValue": dateX
             });
         });
