@@ -43,7 +43,7 @@ class AssertionsBuilder {
 
 
     constructor( test ) {
-        this.assertions = test.assertions;
+        this.assertions = test.assertions.map(el => new Assertion(el));
         AssertionsBuilder.testType = test.testType;
         if( test.testType === TestType.ExactCorrespondenceSince ) {
             AssertionsBuilder.yearSince = test.yearSince;
@@ -69,10 +69,13 @@ class AssertionsBuilder {
 
     buildHtml() {
         let assertionBuildStr = '';
+        //console.log(this.assertions);
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
+            //console.log(assertion);
             const expectedDateStr = assertion.expectedValue !== null ? DTFormat.format(assertion.expectedValue * 1000) : '---';
             const commentStr = assertion.hasOwnProperty('comment') ? ` <i class="fas fa-circle-question fa-fw me-2" title="${assertion.comment}"></i>` : '';
+            //unfortunately Firefox does not implement the "plaintext-only" value for [contenteditable], so we won't use it yet
             assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>Universal Roman Calendar</span></p>
