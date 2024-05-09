@@ -88,7 +88,6 @@
 
 <datalist id="existingFestivitiesList">
 <?php
-[ "LitCalAllFestivities" => $FestivityCollection ] = json_decode( file_get_contents( "https://litcal.johnromanodorazio.com/api/dev/LitCalAllFestivities.php?locale=" . $i18n->locale ), true );
 foreach( $FestivityCollection as $key => $festivity ) {
     $dataMonth = '';
     $dataDay = '';
