@@ -212,9 +212,9 @@ const sanitizeInput = (input) => {
 }
 
 const checkTargetInput = (target) => {
-    let sanitizedInput = sanitizeInput( target.innerText );
-    if( sanitizedInput !== target.innerText ) {
-        target.innerText = sanitizedInput;
+    let sanitizedInput = sanitizeInput( target.textContent );
+    if( sanitizedInput !== target.textContent ) {
+        target.textContent = sanitizedInput;
         const $alert = $('#noScriptedContentAlert');
         $alert.removeClass('d-none');
         $alert.fadeIn('fast', () => {
@@ -228,9 +228,9 @@ const checkTargetInput = (target) => {
 }
 
 const serializeUnitTest = () => {
-    const eventkey = document.querySelector('#testName').innerText;
+    const eventkey = document.querySelector('#testName').textContent;
     const description = document.querySelector('#description').value;
-    const testType = document.querySelector('#cardHeaderTestType').innerText;
+    const testType = document.querySelector('#cardHeaderTestType').textContent;
     const yearSince = testType === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
     const yearUntil = testType === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
     proxiedTest.eventkey = eventkey;
@@ -292,25 +292,25 @@ $(document).on('click', '.toggleAssert', ev => {
     //const assertionIndex = $(ev.currentTarget.parentElement.parentElement).index();
     const assertionIndex = $(ev.currentTarget.parentElement.parentElement).prevAll(':has(.testYear)').length;
     if(ev.currentTarget.parentElement.classList.contains('bg-warning')) {
-        ev.currentTarget.previousSibling.innerText = AssertType.EventTypeExact;
+        ev.currentTarget.previousSibling.textContent = AssertType.EventTypeExact;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventTypeExact;
         ev.currentTarget.parentElement.classList.remove('bg-warning', 'text-dark');
         ev.currentTarget.parentElement.classList.add('bg-success', 'text-white');
         let $pNode = $(ev.currentTarget.parentNode);
         console.log($pNode);
         console.log($pNode.siblings('.testYear'));
-        const year = $pNode.siblings('.testYear')[0].innerText;
+        const year = $pNode.siblings('.testYear')[0].textContent;
         $pNode.next()[0].children[1].innerHTML = '';
         $pNode.next()[0].children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" />`);
     } else {
-        ev.currentTarget.previousSibling.innerText = AssertType.EventNotExists;
+        ev.currentTarget.previousSibling.textContent = AssertType.EventNotExists;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventNotExists;
         ev.currentTarget.parentElement.classList.remove('bg-success', 'text-white');
         ev.currentTarget.parentElement.classList.add('bg-warning', 'text-dark');
         let $pNode = $(ev.currentTarget.parentNode);
         $pNode.next()[0].classList.remove('bg-success', 'text-white');
         $pNode.next()[0].classList.add('bg-warning', 'text-dark');
-        $pNode.next()[0].children[1].innerText = '---';
+        $pNode.next()[0].children[1].textContent = '---';
         proxiedTest.assertions[assertionIndex].expectedValue = null;
     }
 });
@@ -323,15 +323,43 @@ $(document).on('change', '.expectedValue > [type=date]', ev => {
     proxiedTest.assertions[assertionIndex].expectedValue = timestamp / 1000;
     $grandpa[0].classList.remove('bg-warning','text-dark');
     $grandpa[0].classList.add('bg-success','text-white');
-    ev.currentTarget.parentNode.innerText = DTFormat.format(timestamp);
+    ev.currentTarget.parentNode.textContent = DTFormat.format(timestamp);
 });
+
+$(document).on('show.bs.modal', '#modalAddEditComment', ev => {
+    console.log(ev);
+    const tgt = ev.relatedTarget;
+    console.log(tgt);
+    const icon = tgt.querySelector('.svg-inline--fa');
+    console.log(icon);
+    const value = icon.classList.contains('fa-comment-dots') ? tgt.title : '';
+    const myModalEl = document.querySelector('#modalAddEditComment');
+    const txtArea = myModalEl.querySelector('#unitTestComment');
+    txtArea.value = value;
+    $(myModalEl.querySelector('#btnSaveComment')).one('click', () => {
+        const newValue = sanitizeInput(txtArea.value);
+        tgt.title = newValue;
+        if(newValue === '') {
+            icon.classList.remove('fa-comment-dots');
+            icon.classList.add('fa-comment-medical');
+            tgt.classList.remove('btn-dark');
+            tgt.classList.add('btn-secondary');
+        } else {
+            icon.classList.remove('fa-comment-medical');
+            tgt.classList.remove('btn-secondary');
+            icon.classList.add('fa-comment-dots');
+            tgt.classList.add('btn-dark');
+        }
+    });
+});
+
 
 $(document).on('blur paste drop input', '[contenteditable]', ev => {
     console.log(ev.type);
 
     if( ['paste','drop'].includes( ev.type ) ) {
         setTimeout(() => {
-            ev.currentTarget.innerText = ev.currentTarget.innerText;
+            ev.currentTarget.textContent = ev.currentTarget.textContent;
             checkTargetInput(ev.currentTarget);
         }, 1);
     }
@@ -339,11 +367,11 @@ $(document).on('blur paste drop input', '[contenteditable]', ev => {
         checkTargetInput(ev.currentTarget);
     }
     else {
-        console.log(ev.currentTarget.innerText);
+        console.log(ev.currentTarget.textContent);
     }
     const grandpa = ev.currentTarget.parentElement.parentElement;
     const assertionIndex = $(grandpa).prevAll(':has(.testYear)').length;
-    proxiedTest.assertions[assertionIndex].assertion = ev.currentTarget.innerText;
+    proxiedTest.assertions[assertionIndex].assertion = ev.currentTarget.textContent;
 });
 
 $(document).on('click', '#serializeUnitTestData', ev => {
@@ -363,7 +391,7 @@ const modalLabel = {
     variableCorrespondence: 'Variable Existence Test'
 }
 
-$(document).on('show.bs.modal', ev => {
+$(document).on('show.bs.modal', '#modalDefineTest', ev => {
     // we want to make sure the carousel is on the first slide every time we open the modal
     $('#carouselCreateNewUnitTest').carousel(0);
     // we also want to reset our form to defaults
@@ -389,10 +417,10 @@ $(document).on('show.bs.modal', ev => {
         layoutMode: 'fitRows'
     });
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
-    document.querySelector('#exampleModalLabel').innerText = modalLabel[currentTestType];
+    document.querySelector('#exampleModalLabel').textContent = modalLabel[currentTestType];
 });
 
-$(document).on('hide.bs.modal', ev => {
+$(document).on('hide.bs.modal', '#modalDefineTest', ev => {
     $(ev.currentTarget).find(`.${currentTestType}`).addClass('d-none');
 });
 
@@ -521,7 +549,7 @@ $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev =
     }
     parnt.classList.remove('bg-light');
     parnt.classList.add(bgClass);
-    document.querySelector('#yearSinceUntilShadow').value = parnt.innerText;
+    document.querySelector('#yearSinceUntilShadow').value = parnt.textContent;
     console.log(document.querySelector('#yearSinceUntilShadow').value);
 });
 

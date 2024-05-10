@@ -104,6 +104,25 @@ include_once 'layout/sidebar.php';
 [ "LitCalAllFestivities" => $FestivityCollection ] = json_decode( file_get_contents( "https://litcal.johnromanodorazio.com/api/dev/LitCalAllFestivities.php?locale=" . $i18n->locale ), true );
 include_once 'components/NewTestModal.php';
 ?>
+<div class="modal fade" id="modalAddEditComment" tabindex="-1" aria-labelledby="addEditCommentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEditCommentModalLabel"><?php echo _('Add or Edit Comment'); ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="unitTestComment" class="fw-bold"><?php echo _('Comment') ?></label>
+                    <textarea class="form-control" id="unitTestComment" rows=2 placeholder="This test is significant because..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnSaveComment" data-bs-dismiss="modal"><?php echo _('Save'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Warning alert for attempts at pasting scripted material in contenteditables -->
 <div class="alert alert-danger d-flex align-items-center position-absolute top-50 start-50 d-none" role="alert" id="noScriptedContentAlert">

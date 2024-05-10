@@ -74,7 +74,7 @@ class AssertionsBuilder {
             AssertionsBuilder.#setColors( assertion );
             //console.log(assertion);
             const expectedDateStr = assertion.expectedValue !== null ? DTFormat.format(assertion.expectedValue * 1000) : '---';
-            const commentStr = assertion.hasOwnProperty('comment') ? ` <i class="fas fa-circle-question fa-fw me-2" title="${assertion.comment}"></i>` : '';
+            const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
             //unfortunately Firefox does not implement the "plaintext-only" value for [contenteditable], so we won't use it yet
             assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
@@ -86,4 +86,10 @@ class AssertionsBuilder {
         });
         return $.parseHTML( assertionBuildStr );
     }
+}
+
+const commentIcon = (hasComment, value = null) => {
+    return hasComment
+    ? ` <span title="${value}" class="mb-1 btn btn-xs btn-dark float-end" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-dots fa-fw"></i></span>`
+    : ' <span title="add a comment" class="mb-1 btn btn-xs btn-secondary float-end" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-medical fa-fw"></i></span>';
 }
