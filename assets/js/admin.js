@@ -110,9 +110,15 @@ const sanitizeOnSetValue = {
                         return;
                     }
                 }
+                break;
             default:
                 if( typeof prop === 'number' || target instanceof Array ) {
-                    console.log('I think we are trying to push to an internal array, target is an array = ' + target instanceof Array);
+                    if( target instanceof Array ) {
+                        console.log('I think we are trying to push to an internal array, target is an array');
+                    } else {
+                        console.log('we seem to be accessing an indexed array');
+                    }
+                    return Reflect.set(target, prop, value);
                 } else {
                     console.warn('unexpected property ' + prop + ' of type ' + typeof prop + ' on target of type ' + typeof target);
                 }
@@ -169,23 +175,35 @@ fetch( METADATA_URL )
 
 class UnitTest {
     constructor(eventkey, description, testType, assertions, yearSince = null, yearUntil = null ) {
-        this.name = eventkey + 'Test';
-        this.eventkey = eventkey;
-        this.description = description;
-        this.testType = testType;
-        this.assertions = assertions;
-        if( null !== yearSince ) {
-            this.yearSince = yearSince;
-        }
-        if( null !== yearUntil ) {
-            this.yearUntil = yearUntil;
+        if( arguments.length === 1 ) {
+            if(
+                typeof arguments[0] === 'object'
+                && (Object.keys( arguments[0] ).length === 5 || Object.keys( arguments[0] ).length === 6)
+                && Object.keys( arguments[0] ).every(val => ['name', 'eventkey', 'description', 'testType', 'assertions', 'yearSince', 'yearUntil'].includes(val) )
+            ) {
+                Object.assign(this, arguments[0]);
+            } else {
+                console.log('there seem to be extra unexpected properties: ' + Object.keys( arguments[0] ).join(', ') );
+            }
+        } else {
+            this.name = eventkey + 'Test';
+            this.eventkey = eventkey;
+            this.description = description;
+            this.testType = testType;
+            this.assertions = assertions;
+            if( null !== yearSince ) {
+                this.yearSince = yearSince;
+            }
+            if( null !== yearUntil ) {
+                this.yearUntil = yearUntil;
+            }
         }
     }
 }
 
 class Assertion {
     constructor(year, expectedValue, assert, assertion, comment = null) {
-        if( arguments.length === 4 ) {
+        if( arguments.length === 4 || arguments.length === 5 ) {
             this.year = year;
             this.expectedValue = expectedValue;
             this.assert = assert;
@@ -228,7 +246,7 @@ const checkTargetInput = (target) => {
 }
 
 const serializeUnitTest = () => {
-    const eventkey = document.querySelector('#testName').textContent;
+    const eventkey = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
     const testType = document.querySelector('#cardHeaderTestType').textContent;
     const yearSince = testType === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
@@ -236,16 +254,24 @@ const serializeUnitTest = () => {
     proxiedTest.eventkey = eventkey;
     proxiedTest.description = description;
     proxiedTest.testType = testType;
-    proxiedTest.yearSince = yearSince;
-    proxiedTest.yearUntil = yearUntil;
-    const assertions = [];
-    let firstAssertion = new Assertion( currentTest.assertions[0] );
-    const newUnitTest = new UnitTest(eventkey, description, testType, assertions);
-    console.log('newUnitTest is of type ' + typeof newUnitTest);
-    console.log( newUnitTest );
-    console.log( firstAssertion );
-    console.log('currentTest =');
-    console.log(currentTest);
+    if( testType === 'exactCorrespondenceSince' ) {
+        proxiedTest.yearSince = yearSince;
+    }
+    if( testType === 'exactCorrespondenceUntil' ) {
+        proxiedTest.yearUntil = yearUntil;
+    }
+    proxiedTest.assertions = [];
+    let assertionDivs = document.querySelectorAll('#assertionsContainer > div');
+    assertionDivs.forEach(div => {
+        const year = Number(div.querySelector('p.testYear').textContent);
+        const expectedValue = div.querySelector('div > span.expectedValue').textContent === '---' ? null : Number( div.querySelector('.expectedValue').getAttribute('data-value') );
+        const assert = div.querySelector('.assert').textContent;
+        const assertion = div.querySelector('[contenteditable]').textContent;
+        const hasComment = div.querySelector('.comment > svg').getAttribute('data-icon') === 'comment-dots';
+        const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
+        proxiedTest.assertions.push(new Assertion(year, expectedValue, assert, assertion, comment));
+    });
+    return new UnitTest( proxiedTest );
 }
 
 
@@ -272,12 +298,18 @@ $(document).on('change', '#litCalTestsSelect', ev => {
         currentTest.assertions = currentTest.assertions.map(el => new Assertion(el));
         proxiedTest = new Proxy(currentTest, sanitizeOnSetValue);
 
-        $('#testName').text( proxiedTest.name );
+        document.querySelector('#testName').textContent = proxiedTest.name;
         //$('#testType').val( proxiedTest.testType ).change();
-        $('#cardHeaderTestType').text( proxiedTest.testType );
-        $('#description').attr('rows', 1);
-        $('#description').val( proxiedTest.description );
-        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 40 ));
+        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.testType;
+        document.querySelector('#description').setAttribute('rows', 1);
+        document.querySelector('#description').value = proxiedTest.description;
+        document.querySelector('#description').setAttribute('rows', Math.ceil( $('#description')[0].scrollHeight / 40 ));
+        if( proxiedTest.hasOwnProperty('yearSince') ) {
+            document.querySelector('#yearSince').value = proxiedTest.yearSince;
+        }
+        if( proxiedTest.hasOwnProperty('yearUntil') ) {
+            document.querySelector('#yearUntil').value = proxiedTest.yearUntil;
+        }
         $( '#assertionsContainer' ).empty();
         const assertionsBuilder = new AssertionsBuilder( proxiedTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
@@ -346,8 +378,8 @@ $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
             tgt.classList.add('btn-secondary');
         } else {
             icon.classList.remove('fa-comment-medical');
-            tgt.classList.remove('btn-secondary');
             icon.classList.add('fa-comment-dots');
+            tgt.classList.remove('btn-secondary');
             tgt.classList.add('btn-dark');
         }
     });
@@ -375,7 +407,18 @@ $(document).on('blur paste drop input', '[contenteditable]', ev => {
 });
 
 $(document).on('click', '#serializeUnitTestData', ev => {
-    serializeUnitTest();
+    const newUnitTest = serializeUnitTest();
+    fetch( METADATA_URL, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newUnitTest)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+    });
 });
 
 /**
@@ -417,7 +460,7 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
         layoutMode: 'fitRows'
     });
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
-    document.querySelector('#exampleModalLabel').textContent = modalLabel[currentTestType];
+    document.querySelector('#defineTestModalLabel').textContent = modalLabel[currentTestType];
 });
 
 $(document).on('hide.bs.modal', '#modalDefineTest', ev => {
@@ -549,8 +592,7 @@ $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev =
     }
     parnt.classList.remove('bg-light');
     parnt.classList.add(bgClass);
-    document.querySelector('#yearSinceUntilShadow').value = parnt.textContent;
-    console.log(document.querySelector('#yearSinceUntilShadow').value);
+    document.querySelector('#yearSinceUntilShadow').value = parnt.innerText; //do not use textContent here!
 });
 
 /** FINAL CREATE TEST BUTTON */

@@ -80,7 +80,7 @@ class AssertionsBuilder {
                 <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>Universal Roman Calendar</span></p>
                 <div class="d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">ASSERT THAT: </span><span class="ms-2 text-end assert">${assertion.assert}</span><span role="button" class="btn btn-xs btn-danger ms-1 toggleAssert"><i class="fas fa-repeat"></i></span></div>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-2 ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue">${expectedDateStr}</span></div>
+                <div class="d-flex justify-content-between align-items-center ps-2 pe-2 ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue" data-value="${assertion.expectedValue}">${expectedDateStr}</span></div>
                 <div class="flex-grow-1 d-flex flex-column text-white p-3" style="background-color: cadetblue;"><span class="fw-bold">ASSERTION:${commentStr}</span><span contenteditable>${assertion.assertion}</span></div>
                 </div>`;
         });
@@ -90,6 +90,8 @@ class AssertionsBuilder {
 
 const commentIcon = (hasComment, value = null) => {
     return hasComment
-    ? ` <span title="${value}" class="mb-1 btn btn-xs btn-dark float-end" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-dots fa-fw"></i></span>`
-    : ' <span title="add a comment" class="mb-1 btn btn-xs btn-secondary float-end" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-medical fa-fw"></i></span>';
+    /*? `<i title="${value}" class="fas fa-comment-dots fa-fw mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>`
+    : ' <i title="add a comment" class="fas fa-comment-medical fa-fw mb-1 btn btn-xs btn-secondary float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>'*/
+    ? ` <span title="${value}" class="mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-dots fa-fw"></i></span>`
+    : ' <span title="add a comment" class="mb-1 btn btn-xs btn-secondary float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-medical fa-fw"></i></span>';
 }
