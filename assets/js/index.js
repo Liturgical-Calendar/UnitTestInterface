@@ -441,6 +441,22 @@ const COUNTRIES = {
 
 const truncate = (source, size) => source.length > size ? source.slice(0, size - 1) + "*" : source;
 
+const HTMLEncode = (str) => {
+    str = [...str];
+    //    ^ es20XX spread to Array: keeps surrogate pairs
+    let i = str.length, aRet = [];
+  
+    while (i--) {
+        var iC = str[i].codePointAt(0);
+        if (iC < 65 || iC > 127 || (iC>90 && iC<97)) {
+            aRet[i] = '&#'+iC+';';
+        } else {
+            aRet[i] = str[i];
+        }
+    }
+    return aRet.join('');
+}
+
 const IntlDTOptions = {
     weekday: 'short',
     year: 'numeric',
@@ -614,7 +630,7 @@ const connectWebSocket = () => {
         else if ( responseData.type === "error" ) {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find('.card-text').append(`<span title="${responseData.text}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
+            $( responseData.classes ).find('.card-text').append(`<span title="${HTMLEncode( responseData.text )}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
             $( '#failedCount' ).text( ++failedTests );
             switch( currentState ) {
                 case TestState.ExecutingValidations:
