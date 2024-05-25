@@ -52,7 +52,7 @@
                                         <div class='range-slider__progress'></div>
                                     </div>
                                     <div id="yearsToTestGrid"></div>
-                                    <input type="number" class="invisible" id="yearSinceUntilShadow" required>
+                                    <input type="number" class="invisible" id="yearSinceUntilShadow" value="1970" required>
                                     <div class="invalid-feedback exactCorrespondenceSince d-none"><?php echo _( "Please set the year from which the liturgical event should exist"); ?></div>
                                     <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php echo _( "Please set the year until which the liturgical event should exist"); ?></div>
                                     <div class="invalid-feedback variableCorrespondence d-none"><?php echo _( "Please set the years in which the liturgical event should not exist"); ?></div>
@@ -88,7 +88,7 @@
 
 <datalist id="existingFestivitiesList">
 <?php
-foreach( $FestivityCollection as $key => $festivity ) {
+foreach( $LitCalAllFestivities as $key => $festivity ) {
     $dataMonth = '';
     $dataDay = '';
     $dataGrade = '';
@@ -101,7 +101,7 @@ foreach( $FestivityCollection as $key => $festivity ) {
     if( isset( $festivity["GRADE"] ) ) {
         $dataGrade = " data-grade=\"{$festivity["GRADE"]}\"";
     }
-    echo "<option value=\"{$key}\"{$dataMonth}{$dataDay}{$dataGrade}>{$festivity["NAME"]}</option>";
+    echo "<option value=\"{$key}\"{$dataMonth}{$dataDay}{$dataGrade}>{$festivity["NAME"]} ({$festivity["GRADE_LCL"]})</option>";
 }
 ?>
 </datalist>
