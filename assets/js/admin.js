@@ -596,7 +596,7 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     for( let year = minYear; year <= maxYear; year++ ) {
         if($existingOption) {
             eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-            if( eventDate.getDay() === 0 ) {
+            if( eventDate.getUTCDay() === 0 ) {
                 titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
                 lightClass = ' bg-light';
             } else {
@@ -667,38 +667,33 @@ $(document).on('change', '#existingFestivityName', ev => {
     if( $existingOption.length > 0 ) {
         $(ev.currentTarget).removeClass('is-invalid');
         ev.currentTarget.setCustomValidity('');
-        let gradeStr = '';
-        if( $existingOption[0].dataset.grade && $existingOption[0].dataset.grade !== '' ) {
-            gradeStr = `The ${LitGrade.toString(Number($existingOption[0].dataset.grade) )} of `;
-        }
+        const [name, grade] = $existingOption.text().split(/[\(\)]+/).map(el => el.trim());
+        let gradeStr = `The ${grade} of `;
         let onDateStr = 'the expected date';
         if( $existingOption[0].dataset.month && $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day && $existingOption[0].dataset.day !== '' ) {
             //console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
             let eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
-            if( gradeStr !== '' && Number($existingOption[0].dataset.grade) <= LitGrade.FEAST ) {
+            if( Number($existingOption[0].dataset.grade) <= LitGrade.FEAST ) {
                 const minYear = parseInt(document.querySelector('#lowerRange').value);
                 const maxYear = parseInt(document.querySelector('#upperRange').value);
                 for(year = minYear; year <= maxYear; year++) {
                     eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
                     console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-                    if( eventDate.getDay() === 0 ) {
+                    if( eventDate.getUTCDay() === 0 ) {
                         document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday` );
                         document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
                     } else {
                         document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate) );
                     }
                 }
-            } else if( gradeStr === '' ) {
-                console.log('selected option does not seem to have a grade string?');
-                console.log($existingOption[0].dataset);
             }
             //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
         } else {
             console.log('selected option does not seem to have month or day values?');
             console.log($existingOption[0].dataset);
         }
-        document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${$existingOption.text()}' should fall on ${onDateStr}`;
+        document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${name}' should fall on ${onDateStr}`;
     } else {
         ev.currentTarget.classList.add('is-invalid');
         ev.currentTarget.setCustomValidity('Please choose a value from the list');
@@ -722,7 +717,7 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.eventkey + '"]');
     for( let year = minYear; year <= maxYear; year++ ) {
         eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-        if( eventDate.getDay() === 0 ) {
+        if( eventDate.getUTCDay() === 0 ) {
             titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
             lightClass = ' bg-light';
         } else {
@@ -814,10 +809,7 @@ $(document).on('click', '#btnCreateTest', () => {
         const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt($(el).contents().filter(function() {
             return this.nodeType === Node.TEXT_NODE;
         }).text()));
-        //const baseDate = document.querySelector('#baseDate').valueAsDate;
         const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00Z');
-        //const baseDateMonth = ((baseDate.getMonth()+1) + '').padStart(2, '0');
-        //const baseDateDay = (baseDate.getDate() + '').padStart(2, '0');
         proxiedTest.assertions = [];
         let assert =  null;
         let dateX = null;
