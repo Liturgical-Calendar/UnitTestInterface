@@ -79,7 +79,7 @@ class TestState {
     }
 }
 
-const sourceDataChecks = [
+const sourceDataChecks = Object.freeze([
     {
         "validate": "LitCalMetadata",
         "sourceFile": "https://litcal.johnromanodorazio.com/api/dev/LitCalMetadata.php",
@@ -115,7 +115,7 @@ const sourceDataChecks = [
         "sourceFile": "nations/index.json",
         "category": "universalcalendar"
     }
-];
+]);
 
 const testTemplate = ( calendarName ) => {
     return `
@@ -164,7 +164,7 @@ const sourceDataCheckTemplate = ( check, category, idx ) => {
             categoryStr = 'Diocesan Calendar definition: contains any festivities that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
             break;
     }
-    return `<div class="col-1${idx === 0 ? ' offset-1' : ''}">
+    return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
     <p class="text-center mb-0 bg-secondary text-white"><span title="${check}.json">${category !== 'universalcalendar' ? truncate(check,14) : truncate(check,22)}.json</span>${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
     <div class="card text-white bg-info rounded-0 ${check} file-exists">
         <div class="card-body">
@@ -441,6 +441,12 @@ const COUNTRIES = {
 
 const truncate = (source, size) => source.length > size ? source.slice(0, size - 1) + "*" : source;
 
+/**
+ * HTMLEncode function
+ * kudos to https://stackoverflow.com/a/784765/394921
+ * @param {*} str 
+ * @returns 
+ */
 const HTMLEncode = (str) => {
     str = [...str];
     //    ^ es20XX spread to Array: keeps surrogate pairs
@@ -494,7 +500,7 @@ let currentSelectedCalendar = "VATICAN";
 let currentNationalCalendar = "VATICAN";
 let currentCalendarCategory = "nationalcalendar";
 let currentResponseType = "JSON";
-let currentSourceDataChecks = sourceDataChecks;
+let currentSourceDataChecks = [];
 let countryNames = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let CalendarNations = [];
 let selectOptions = {};
@@ -778,7 +784,7 @@ const appendAccordionItem = (obj) => {
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${obj.name}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${obj.name}" aria-expanded="false" aria-controls="specificUnitTest-${obj.name}">
-                    <div class="col-4"><i class="fas fa-flask-vial fa-fw"></i>&nbsp;${obj.name}&nbsp;<i class="fas fa-circle-info" title="${obj.description}"></i></div>
+                    <div class="col-4">${obj.name.length>50 ? '<small>': ''}<i class="fas fa-flask-vial fa-fw me-2"></i>${obj.name}<i class="fas fa-circle-info ms-2" title="${obj.description}"></i>${obj.name.length>50 ? '</small>': ''}</div>
                     <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${obj.name}TestsCount" class="successfulCount">0</span></div>
                     <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${obj.name}TestsCount" class="failedCount">0</span></div>
                     <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${obj.name}TestsCount"></span> tests: <span id="total${obj.name}TestsTime">0 seconds, 0ms</span></div>
@@ -854,13 +860,15 @@ const setupPage = () => {
         }
 
         if( currentSelectedCalendar === 'VATICAN' ) {
-            currentSourceDataChecks = sourceDataChecks;
+            currentSourceDataChecks = [...sourceDataChecks];
         } else {
             let nation = currentCalendarCategory === 'nationalcalendar'
                 ? currentSelectedCalendar
                 : MetaData.DiocesanCalendars[currentSelectedCalendar].nation;
             let sourceFile = `nations/${nation}/${nation}.json`;
-            currentSourceDataChecks = [];
+            console.log('sourceDataChecks:');
+            console.log(sourceDataChecks);
+            currentSourceDataChecks = [...sourceDataChecks];
             MetaData.NationalCalendarsMetadata[nation].widerRegions.forEach((item) => {
                 currentSourceDataChecks.push({
                     "validate": item,
