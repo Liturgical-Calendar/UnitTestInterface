@@ -576,6 +576,7 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     let lightClass = '';
     if( 'edittest' in ev.relatedTarget.dataset ) {
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
+        document.querySelector('#existingFestivityName').value = proxiedTest.eventkey;
         $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.eventkey + '"]');
         console.log($existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
@@ -827,6 +828,7 @@ $(document).on('click', '#btnCreateTest', () => {
                 dateX = null;
                 assertion = proxiedTest.description.replace('should fall on', 'should not exist on');
             } else {
+                baseDate.setUTCFullYear(year);
                 assert = 'eventExists AND hasExpectedTimestamp';
                 dateX = Date.parse(`${baseDate.toISOString()}`) / 1000;
                 assertion = proxiedTest.description;
