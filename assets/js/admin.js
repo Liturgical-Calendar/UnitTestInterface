@@ -313,6 +313,7 @@ const serializeUnitTest = () => {
 
 const rebuildFestivitiesOptions = (element) => {
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
+    console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
     fetch( `${LITCAL_ALLFESTIVITIES_URL}?${calendarType}=${element.value}` )
     .then(data => data.json())
@@ -379,6 +380,7 @@ $(document).on('change', '#litCalTestsSelect', ev => {
             const calendarType = Object.keys(proxiedTest.appliesTo)[0];
             document.querySelector('#APICalendarSelect').value = proxiedTest.appliesTo[calendarType];
             rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
+            document.querySelector('#existingFestivityName').value = proxiedTest.eventkey;
             AssertionsBuilder.appliesTo = proxiedTest.appliesTo[calendarType];
         }
         $( '#assertionsContainer' ).empty();
@@ -386,7 +388,9 @@ $(document).on('change', '#litCalTestsSelect', ev => {
         const assertionBuildHtml = assertionsBuilder.buildHtml();
         $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
         document.querySelector('#perYearAssertions').classList.remove('invisible');
+        document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.testType;
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
+        document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.setAttribute('disabled', 'disabled'));
     } else {
         proxiedTest = null;
     }
@@ -544,6 +548,8 @@ const modalLabel = {
     variableCorrespondence: 'Variable Existence Test'
 }
 
+const ArrayRange = (start, end, endInclusive) => Array.from({length: (end - start)+endInclusive}, (v, k) => k + start);
+
 $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     // we want to make sure the carousel is on the first slide every time we open the modal
     $('#carouselCreateNewUnitTest').carousel(0);
@@ -562,8 +568,47 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
     let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
-    for( let year = 1999; year <= 2030; year++ ) {
-        htmlStr += `<span class="testYearSpan year-${year}">${hammerIcon}${year}${removeIcon}</span>`;
+    let years;
+    let minYear = 1970;
+    let maxYear = 2030;
+    let $existingOption = null;
+    let titleAttr = '';
+    let lightClass = '';
+    if( 'edittest' in ev.relatedTarget.dataset ) {
+        document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
+        $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.eventkey + '"]');
+        console.log($existingOption);
+        years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
+        minYear = Math.min(...years);
+        maxYear = Math.max(...years);
+        document.querySelector('#lowerRange').setAttribute('value', minYear);
+        document.querySelector('#lowerRange').parentNode.style.setProperty('--value-a',minYear);
+        document.querySelector('#lowerRange').parentNode.style.setProperty('--text-value-a', `"${minYear}"`);
+        document.querySelector('#upperRange').setAttribute('value', maxYear);
+        document.querySelector('#upperRange').parentNode.style.setProperty('--value-b',maxYear);
+        document.querySelector('#upperRange').parentNode.style.setProperty('--text-value-b', `"${maxYear}"`);
+    } else {
+        minYear = Number(document.querySelector('#lowerRange').getAttribute('value'));
+        maxYear = Number(document.querySelector('#upperRange').getAttribute('value'));
+        years = ArrayRange(minYear, maxYear, true);
+    }
+    for( let year = minYear; year <= maxYear; year++ ) {
+        if($existingOption) {
+            eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+            if( eventDate.getDay() === 0 ) {
+                titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
+                lightClass = ' bg-light';
+            } else {
+                titleAttr = ` title="${DTFormat.format(eventDate)}"`;
+                lightClass = '';
+            }
+        }
+        //console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
+        if(years.includes(year)) {
+            htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
+        } else {
+            htmlStr += `<span class="testYearSpan year-${year} deleted"></span>`;
+        }
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
     $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
@@ -571,6 +616,9 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     });
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
     document.querySelector('#defineTestModalLabel').textContent = modalLabel[currentTestType];
+    if('edittest' in ev.relatedTarget.dataset) {
+        $('#carouselCreateNewUnitTest').carousel(1);
+    }
 });
 
 $(document).on('hide.bs.modal', '#modalDefineTest', ev => {
@@ -661,15 +709,26 @@ $(document).on('change', '#existingFestivityName', ev => {
 $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     let rangeVals = [];
     document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
-    const min = Math.min(...rangeVals);
-    const max = Math.max(...rangeVals);
+    const minYear = Math.min(...rangeVals);
+    const maxYear = Math.max(...rangeVals);
     $('#yearsToTestGrid').isotope('destroy');
     $('#yearsToTestGrid').empty();
     let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
     let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
-    for( let year = min; year <= max; year++ ) {
-        htmlStr += `<span class="testYearSpan year-${year}">${hammerIcon}${year}${removeIcon}</span>`;
+    let titleAttr = '';
+    let lightClass = '';
+    $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.eventkey + '"]');
+    for( let year = minYear; year <= maxYear; year++ ) {
+        eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+        if( eventDate.getDay() === 0 ) {
+            titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
+            lightClass = ' bg-light';
+        } else {
+            titleAttr = ` title="${DTFormat.format(eventDate)}"`;
+            lightClass = '';
+        }
+        htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
     }
     console.log(htmlStr);
     //$parsedHtml = $.parseHTML( htmlStr );
@@ -678,7 +737,7 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
         layoutMode: 'fitRows'
     });
-    document.querySelector('#yearSinceUntilShadow').value = min;
+    document.querySelector('#yearSinceUntilShadow').value = minYear;
 });
 
 $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark', ev => {

@@ -54,7 +54,7 @@ include_once 'layout/sidebar.php';
                     </div>
                     <div class="form-group col col-md-9">
                         <label><?php echo _( "Test Type" ); ?></label>
-                        <div class="btn-group form-control p-0 border-0" role="group">
+                        <div class="btn-group form-control p-0 border-0" id="createNewTestBtnGrp" role="group">
                             <button type="button" class="btn btn-primary col col-md-3" data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php echo "In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-vial me-2"></i> <?php echo _( "Exact date" ); ?></b></small></button>
                             <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
@@ -83,7 +83,7 @@ include_once 'layout/sidebar.php';
                         </div>
                     </div>
                     <!-- Assertions (Dynamic Fields) -->
-                    <label class="text-secondary invisible" id="perYearAssertions">Per year assertions</label>
+                    <label class="text-secondary text-center w-100 invisible" id="perYearAssertions">Per year assertions <i class="btn btn-secondary fas fa-pen-to-square ms-5" data-testtype="" data-edittest="true" data-bs-toggle="modal" data-bs-target="#modalDefineTest" title="Edit year range"></i></label>
                     <div class="row gx-0 gy-1 m-2" id="assertionsContainer">
                     </div>
                     <input type="hidden" id="yearSince" />
