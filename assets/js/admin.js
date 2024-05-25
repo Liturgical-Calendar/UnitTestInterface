@@ -12,6 +12,10 @@ const MonthDayFmt = new Intl.DateTimeFormat(locale, {
     day: 'numeric'
 });
 
+const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
+    weekday: 'long'
+});
+
 let proxiedTest = null;
 
 const sanitizeOnSetValue = {
@@ -20,6 +24,9 @@ const sanitizeOnSetValue = {
             return new Proxy(target[prop], sanitizeOnSetValue);
         } else {
             console.log({ type: 'get', target, prop });
+            if(typeof target[prop] === 'string') {
+                target[prop] = sanitizeInput(target[prop]);
+            }
             return Reflect.get(target, prop);
         }
     },
@@ -27,7 +34,7 @@ const sanitizeOnSetValue = {
         switch( prop ) {
             case 'name':
                 //we don't allow the name to ever be different than eventkey+'Test'
-                value = target['eventkey'] + 'Test';
+                value = (target['eventkey']) + 'Test';
                 break;
             case 'testType':
                 if( false === [TestType.ExactCorrespondence, TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil, TestType.VariableCorrespondence ].includes( value ) ) {
@@ -55,7 +62,7 @@ const sanitizeOnSetValue = {
                 if( typeof value !== 'string' ) {
                     console.warn(`property ${prop} of this object must be of type string`);
                     return;
-                } else if ( false === Object.keys(FestivityCollection).includes(value) ) {
+                } else if ( false === Object.keys(LitCalAllFestivities).includes(value) ) {
                     console.warn(`property ${prop} of this object must contain a valid Liturgical Event Key`);
                     return;
                 }
@@ -111,6 +118,28 @@ const sanitizeOnSetValue = {
                     }
                 }
                 break;
+            case 'appliesTo':
+                if( false == value instanceof Object ) {
+                    console.warn(`property ${prop} of this object must be of type object`);
+                    return;
+                }
+                if( Object.keys(value).length !== 1 || (false === value.hasOwnProperty('nationalcalendar') && false === value.hasOwnProperty('diocesancalendar')) ) {
+                    console.warn(`The ${prop} Object must have either a nationalcalendar property or a diocesancalendar property, no other properties are allowed.`);
+                    return;
+                }
+                break;
+            case 'nationalcalendar':
+                if( typeof value !== 'string' || false === CalendarNations.includes(value) ) {
+                    console.warn(`The value of the "${prop}" property must correspond to an actual available National Calendar`);
+                    return;
+                }
+                break;
+            case 'diocesancalendar':
+                if( typeof value !== 'string' || false === Object.keys(DiocesanCalendars).includes(value) ) {
+                    console.warn(`The value of the "${prop}" property must correspond to an actual available Diocesan Calendar`);
+                    return;
+                }
+                break;
             default:
                 if( typeof prop === 'number' || target instanceof Array ) {
                     if( target instanceof Array ) {
@@ -134,17 +163,21 @@ const sanitizeOnSetValue = {
  */
 const endpointV = 'dev'; // 'v3';
 const METADATA_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalMetadata.php`;
+const TESTS_INDEX_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalTestsIndex.php`;
+const LITCAL_ALLFESTIVITIES_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalAllFestivities.php`;
 const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
 let CalendarNations = [];
 let SelectOptions = {};
+let DiocesanCalendars;
 //const COUNTRIES is available from Countries.js, included in footer.php for admin.php
 
 fetch( METADATA_URL )
     .then(data => data.json())
     .then(jsonData => {
         const { LitCalMetadata } = jsonData;
-        const { NationalCalendars, DiocesanCalendars } = LitCalMetadata;
-
+        const { NationalCalendars } = LitCalMetadata;
+        ({DiocesanCalendars} = LitCalMetadata);
+        Object.freeze(DiocesanCalendars);
         for( const [key,value] of Object.entries( DiocesanCalendars ) ) {
             if( false === CalendarNations.includes(value.nation) ) {
                 CalendarNations.push(value.nation);
@@ -179,7 +212,7 @@ class UnitTest {
             if(
                 typeof arguments[0] === 'object'
                 && (Object.keys( arguments[0] ).length === 5 || Object.keys( arguments[0] ).length === 6)
-                && Object.keys( arguments[0] ).every(val => ['name', 'eventkey', 'description', 'testType', 'assertions', 'yearSince', 'yearUntil'].includes(val) )
+                && Object.keys( arguments[0] ).every(val => ['name', 'eventkey', 'description', 'testType', 'assertions', 'yearSince', 'yearUntil', 'appliesTo'].includes(val) )
             ) {
                 Object.assign(this, arguments[0]);
             } else {
@@ -271,9 +304,41 @@ const serializeUnitTest = () => {
         const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
         proxiedTest.assertions.push(new Assertion(year, expectedValue, assert, assertion, comment));
     });
+    if( document.querySelector('#APICalendarSelect').value !== 'VATICAN' ) {
+        const currentCalendarType = document.querySelector(`#APICalendarSelect [value="${document.querySelector('#APICalendarSelect').value}"]`).dataset.calendartype;
+        proxiedTest.appliesTo = {[currentCalendarType]: document.querySelector('#APICalendarSelect').value};
+    }
     return new UnitTest( proxiedTest );
 }
 
+const rebuildFestivitiesOptions = (element) => {
+    const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
+    const calendarType = selectedOption.dataset.calendartype;
+    fetch( `${LITCAL_ALLFESTIVITIES_URL}?${calendarType}=${element.value}` )
+    .then(data => data.json())
+    .then(json => {
+        ({LitCalAllFestivities} = json);
+        Object.freeze(LitCalAllFestivities);
+        let htmlStr = '';
+        for (const [key, el] of Object.entries(LitCalAllFestivities)) {
+            let dataMonth = '';
+            let dataDay = '';
+            let dataGrade = '';
+            if( el.hasOwnProperty( "MONTH" ) ) {
+                dataMonth = ` data-month="${el.MONTH}"`;
+            }
+            if( el.hasOwnProperty( "DAY" ) ) {
+                dataDay = ` data-day="${el.DAY}"`;
+            }
+            if( el.hasOwnProperty( "GRADE" ) ) {
+                dataGrade = ` data-grade="${el.GRADE}"`;
+            }
+            htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.NAME} (${el.GRADE_LCL})</option>`;
+        };
+        document.querySelector('#existingFestivitiesList').innerHTML = htmlStr;
+    });
+
+}
 
 /**
  * SET DOCUMENT INTERACTIONS
@@ -310,14 +375,36 @@ $(document).on('change', '#litCalTestsSelect', ev => {
         if( proxiedTest.hasOwnProperty('yearUntil') ) {
             document.querySelector('#yearUntil').value = proxiedTest.yearUntil;
         }
+        if( proxiedTest.hasOwnProperty('appliesTo') ) {
+            const calendarType = Object.keys(proxiedTest.appliesTo)[0];
+            document.querySelector('#APICalendarSelect').value = proxiedTest.appliesTo[calendarType];
+            rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
+            AssertionsBuilder.appliesTo = proxiedTest.appliesTo[calendarType];
+        }
         $( '#assertionsContainer' ).empty();
         const assertionsBuilder = new AssertionsBuilder( proxiedTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
         $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
         document.querySelector('#perYearAssertions').classList.remove('invisible');
+        document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
     } else {
         proxiedTest = null;
     }
+});
+
+$(document).on('change', '#APICalendarSelect', ev => {
+    rebuildFestivitiesOptions( ev.currentTarget );
+});
+
+$(document).on('click', '.editDate', ev => {
+    const curVal = Number(ev.currentTarget.previousSibling.dataset.value) * 1000;
+    const curDate = new Date( curVal );
+    const curDateVal = curDate.toISOString().split('T')[0];
+    const pElement = ev.currentTarget.parentElement;
+    pElement.classList.remove('bg-success', 'text-white');
+    pElement.classList.add('bg-warning', 'text-dark');
+    pElement.children[1].innerHTML = '';
+    pElement.children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${curDateVal}" />`);
 });
 
 $(document).on('click', '.toggleAssert', ev => {
@@ -328,7 +415,7 @@ $(document).on('click', '.toggleAssert', ev => {
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventTypeExact;
         ev.currentTarget.parentElement.classList.remove('bg-warning', 'text-dark');
         ev.currentTarget.parentElement.classList.add('bg-success', 'text-white');
-        let $pNode = $(ev.currentTarget.parentNode);
+        const $pNode = $(ev.currentTarget.parentNode);
         console.log($pNode);
         console.log($pNode.siblings('.testYear'));
         const year = $pNode.siblings('.testYear')[0].textContent;
@@ -339,7 +426,7 @@ $(document).on('click', '.toggleAssert', ev => {
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventNotExists;
         ev.currentTarget.parentElement.classList.remove('bg-success', 'text-white');
         ev.currentTarget.parentElement.classList.add('bg-warning', 'text-dark');
-        let $pNode = $(ev.currentTarget.parentNode);
+        const $pNode = $(ev.currentTarget.parentNode);
         $pNode.next()[0].classList.remove('bg-success', 'text-white');
         $pNode.next()[0].classList.add('bg-warning', 'text-dark');
         $pNode.next()[0].children[1].textContent = '---';
@@ -348,13 +435,16 @@ $(document).on('click', '.toggleAssert', ev => {
 });
 
 $(document).on('change', '.expectedValue > [type=date]', ev => {
-    let timestamp = Date.parse(ev.currentTarget.value+'T00:00:00.000+00:00');
+    const timestamp = Date.parse(ev.currentTarget.value+'T00:00:00Z');
     const $grandpa = $(ev.currentTarget).closest('div');
     const $greatGrandpa = $grandpa.parent().closest('div');
     const assertionIndex = $greatGrandpa.prevAll(':has(.testYear)').length;
     proxiedTest.assertions[assertionIndex].expectedValue = timestamp / 1000;
     $grandpa[0].classList.remove('bg-warning','text-dark');
     $grandpa[0].classList.add('bg-success','text-white');
+    console.log(ev.currentTarget.parentNode.dataset);
+    ev.currentTarget.parentNode.dataset.value = timestamp / 1000;
+    console.log(ev.currentTarget.parentNode.dataset);
     ev.currentTarget.parentNode.textContent = DTFormat.format(timestamp);
 });
 
@@ -408,15 +498,35 @@ $(document).on('blur paste drop input', '[contenteditable]', ev => {
 
 $(document).on('click', '#serializeUnitTestData', ev => {
     const newUnitTest = serializeUnitTest();
-    fetch( METADATA_URL, {
+    let responseStatus = 400;
+    fetch( TESTS_INDEX_URL, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(newUnitTest)
     })
-    .then(response => response.json())
+    .then(response => {
+        responseStatus = response.status;
+        return response.json();
+    })
     .then(data => {
+        console.log(responseStatus);
+        const $alert = $('#responseToPutRequest');
+        document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
+        if(responseStatus !== 201) {
+            $alert.removeClass('alert-success');
+            $alert.addClass('alert-warning');
+            //$alert.find()
+        }
+        $alert.removeClass('d-none');
+        $alert.fadeIn('fast', () => {
+            setTimeout(() => {
+                $alert.fadeOut('slow', () => {
+                    $alert.addClass('d-none');
+                });
+            }, 2000);
+        });
         console.log(data);
     });
 });
@@ -517,11 +627,12 @@ $(document).on('change', '#existingFestivityName', ev => {
             //console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
             let eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
-            if( gradeStr !== '' && Number($existingOption[0].dataset.grade) < LitGrade.FEAST ) {
+            if( gradeStr !== '' && Number($existingOption[0].dataset.grade) <= LitGrade.FEAST ) {
                 const minYear = parseInt(document.querySelector('#lowerRange').value);
                 const maxYear = parseInt(document.querySelector('#upperRange').value);
                 for(year = minYear; year <= maxYear; year++) {
                     eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+                    console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
                     if( eventDate.getDay() === 0 ) {
                         document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday` );
                         document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
@@ -529,8 +640,14 @@ $(document).on('change', '#existingFestivityName', ev => {
                         document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate) );
                     }
                 }
+            } else if( gradeStr === '' ) {
+                console.log('selected option does not seem to have a grade string?');
+                console.log($existingOption[0].dataset);
             }
             //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
+        } else {
+            console.log('selected option does not seem to have month or day values?');
+            console.log($existingOption[0].dataset);
         }
         document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${$existingOption.text()}' should fall on ${onDateStr}`;
     } else {
@@ -561,6 +678,7 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
         layoutMode: 'fitRows'
     });
+    document.querySelector('#yearSinceUntilShadow').value = min;
 });
 
 $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark', ev => {
@@ -610,7 +728,9 @@ $(document).on('click', '#btnCreateTest', () => {
     } else {
         //let's build our new Unit Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
-        proxiedTest.name = document.querySelector('#existingFestivityName').value;
+        proxiedTest.eventkey = document.querySelector('#existingFestivityName').value;
+        console.log(document.querySelector('#existingFestivityName').value);
+        console.log(proxiedTest.name);
         proxiedTest.testType = currentTestType;
         proxiedTest.description = document.querySelector('#newUnitTestDescription').value;
         const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
@@ -635,9 +755,9 @@ $(document).on('click', '#btnCreateTest', () => {
             return this.nodeType === Node.TEXT_NODE;
         }).text()));
         //const baseDate = document.querySelector('#baseDate').valueAsDate;
-        const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00.000+00:00');
-        const baseDateMonth = ((baseDate.getMonth()+1) + '').padStart(2, '0');
-        const baseDateDay = (baseDate.getDate() + '').padStart(2, '0');
+        const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00Z');
+        //const baseDateMonth = ((baseDate.getMonth()+1) + '').padStart(2, '0');
+        //const baseDateDay = (baseDate.getDate() + '').padStart(2, '0');
         proxiedTest.assertions = [];
         let assert =  null;
         let dateX = null;
@@ -649,12 +769,11 @@ $(document).on('click', '#btnCreateTest', () => {
                 assertion = proxiedTest.description.replace('should fall on', 'should not exist on');
             } else {
                 assert = 'eventExists AND hasExpectedTimestamp';
-                dateX = Date.parse(`${year}-${baseDateMonth}-${baseDateDay}T00:00:00.000+00:00`) / 1000;
+                dateX = Date.parse(`${baseDate.toISOString()}`) / 1000;
                 assertion = proxiedTest.description;
             }
             proxiedTest.assertions.push(new Assertion(year, dateX, assert, assertion));
         });
-
         $('#testName').text( proxiedTest.name );
         $('#cardHeaderTestType').text( proxiedTest.testType );
         $('#description').attr('rows', 2);
