@@ -13,7 +13,7 @@ if (!authenticated()) {
 
 $ch = curl_init();
 
-curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/namespaced/testsindex");
+curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/testsindex");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 if (curl_errno($ch)) {
@@ -101,7 +101,7 @@ include_once 'layout/sidebar.php';
 </main>
 <!-- End of Main Content -->
 <?php
-[ "LitCalAllFestivities" => $LitCalAllFestivities ] = json_decode(file_get_contents("https://litcal.johnromanodorazio.com/api/namespaced/allevents/?locale=" . $i18n->locale), true);
+[ "LitCalAllFestivities" => $LitCalAllFestivities ] = json_decode(file_get_contents("https://litcal.johnromanodorazio.com/api/dev/allevents/?locale=" . $i18n->locale), true);
 include_once 'components/NewTestModal.php';
 ?>
 <div class="modal fade" id="modalAddEditComment" tabindex="-1" aria-labelledby="addEditCommentModalLabel" aria-hidden="true">

@@ -161,7 +161,7 @@ const sanitizeOnSetValue = {
 /**
  * LOAD METADATA FOR EXISTING CALENDARS
  */
-const endpointV = 'namespaced'; // 'dev';
+const endpointV = 'dev'; // 'dev';
 const METADATA_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/metadata/`;
 const TESTS_INDEX_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/testsindex/`;
 const LITCAL_ALLFESTIVITIES_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/allevents/`;
