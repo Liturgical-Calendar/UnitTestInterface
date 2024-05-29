@@ -82,7 +82,7 @@ class TestState {
 const sourceDataChecks = Object.freeze([
     {
         "validate": "LitCalMetadata",
-        "sourceFile": "https://litcal.johnromanodorazio.com/api/dev/LitCalMetadata.php",
+        "sourceFile": "https://litcal.johnromanodorazio.com/api/dev/metadata/",
         "category": "universalcalendar"
     },
     {
