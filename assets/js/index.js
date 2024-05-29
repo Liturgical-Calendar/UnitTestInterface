@@ -1,6 +1,6 @@
-const endpointVersion = "dev"; //could be 'dev', 'v3', 'v2'...
-const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalMetadata.php`;
-const TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/LitCalTestsIndex.php`;
+const endpointVersion = "namespaced"; //could be 'dev', 'v3', 'v2'...
+const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/metadata/`;
+const TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/testsindex/`;
 
 const Years = [];
 const thisYear = new Date().getFullYear();

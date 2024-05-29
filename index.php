@@ -1,6 +1,6 @@
 <?php
 define('SIDEBAR', false);
-include_once( 'layout/head.php' );
+include_once('layout/head.php');
 ?>
     <!-- Toasts -->
     <div aria-live="polite" aria-atomic="true" class="position-relative" style="z-index:9999;">
@@ -120,7 +120,7 @@ include_once( 'layout/head.php' );
         </div>
     </div>
 
-    <?php include_once( 'layout/disclaimer.php' ); ?>
+    <?php include_once('layout/disclaimer.php'); ?>
 
 <!-- </div> -->
 <!-- End of Content Wrapper -->
@@ -128,4 +128,4 @@ include_once( 'layout/head.php' );
 <!-- </div> -->
 <!-- End of Page Wrapper -->
 
-<?php include_once( 'layout/footer.php' ); ?>
+<?php include_once('layout/footer.php'); ?>

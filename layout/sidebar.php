@@ -10,17 +10,17 @@
                     <!-- Sidebar - Brand -->
                     <div class="text-center lh-2 px-5 pt-2 sidebar-brand">
                         <a class="text-uppercase fs-6 fw-bold text-white text-decoration-none" href="/admin.php">
-                            <?php echo _( "Catholic Liturgical Calendar" ); ?>
+                            <?php echo _("Catholic Liturgical Calendar"); ?>
                         </a>
                     </div>
                     <!-- <hr> -->
                     <a class="nav-link<?php echo $pageName === 'index' ? ' active' : '' ?>" href="/">
                         <i class="sb-nav-link-icon fas fa-house"></i>
-                        <span><?php echo _( "Unit Tests Runner" ); ?></span>
+                        <span><?php echo _("Unit Tests Runner"); ?></span>
                     </a>
                     <a class="nav-link<?php echo $pageName === 'admin' ? ' active' : '' ?>" href="/admin.php">
                         <i class="sb-nav-link-icon fas fa-cog"></i>
-                        <span><?php echo _( "Unit Tests Admin" ); ?></span>
+                        <span><?php echo _("Unit Tests Admin"); ?></span>
                     </a>
                 </div>
             </div>
