@@ -448,10 +448,12 @@ const truncate = (source, size) => source.length > size ? source.slice(0, size -
  * @returns 
  */
 const HTMLEncode = (str) => {
+    // avoid a double encoding!
+    str = str.replaceAll('&#039;', '"');
     str = [...str];
     //    ^ es20XX spread to Array: keeps surrogate pairs
     let i = str.length, aRet = [];
-  
+
     while (i--) {
         var iC = str[i].codePointAt(0);
         if (iC < 65 || iC > 127 || (iC>90 && iC<97)) {
