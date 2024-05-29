@@ -1,14 +1,14 @@
 
 <?php
-include_once( 'layout/disclaimer.php' );
-if( !defined('SIDEBAR') || true === SIDEBAR ) {
-?>
+include_once('layout/disclaimer.php');
+if (!defined('SIDEBAR') || true === SIDEBAR) {
+    ?>
         </div>
         <!-- End of Content Wrapper -->
 
     </div>
     <!-- End of Page Wrapper -->
-<?php
+    <?php
 }
 ?>
     <!-- jQuery-->
@@ -29,13 +29,13 @@ if( !defined('SIDEBAR') || true === SIDEBAR ) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>const locale = '<?php echo $i18n->locale ?>';</script>
 <?php
-    if( $pageName === 'admin' ) {
-        echo "<script src=\"assets/js/Countries.js\"></script>";
-        echo "<script src=\"assets/js/AssertionsBuilder.js\"></script>";
-        echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
-    }
-    if( file_exists( "assets/js/{$pageName}.js" ) ) {
-        echo "<script src=\"assets/js/{$pageName}.js\"></script>";
-    }
+if ($pageName === 'admin') {
+    echo "<script src=\"assets/js/Countries.js\"></script>";
+    echo "<script src=\"assets/js/AssertionsBuilder.js\"></script>";
+    echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
+}
+if (file_exists("assets/js/{$pageName}.js")) {
+    echo "<script src=\"assets/js/{$pageName}.js\"></script>";
+}
 ?></body>
 </html>

@@ -1,6 +1,6 @@
 <?php
 include_once("includes/I18n.php");
-$i18n = new I18n;
+$i18n = new I18n();
 $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
 ?><!DOCTYPE html>
 <html lang="<?php echo $i18n->locale; ?>">
@@ -22,12 +22,12 @@ $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
 <?php
-    if( file_exists( "assets/css/{$pageName}.css" ) ) {
-        echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
-    }
-    if( $pageName === 'admin' ) {
-        echo "<link href=\"assets/css/multi-range-slider.css\" rel=\"stylesheet\">";
-    }
+if (file_exists("assets/css/{$pageName}.css")) {
+    echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
+}
+if ($pageName === 'admin') {
+    echo "<link href=\"assets/css/multi-range-slider.css\" rel=\"stylesheet\">";
+}
 ?>
 </head>
 <body class="sb-nav-fixed pb-5">

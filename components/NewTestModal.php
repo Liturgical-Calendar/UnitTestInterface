@@ -17,9 +17,9 @@
                         <form class="row justify-content-left needs-validation" novalidate>
                             <div class="carousel-item active" data-item='0'>
                                 <div class="form-group">
-                                    <label for="existingFestivityName" class="fw-bold"><?php echo _( "Choose the liturgical event for which you would like to create a test"); ?>:</label>
+                                    <label for="existingFestivityName" class="fw-bold"><?php echo _("Choose the liturgical event for which you would like to create a test"); ?>:</label>
                                     <input list="existingFestivitiesList" class="form-control existingFestivityName" id="existingFestivityName" required>
-                                    <div class="invalid-feedback"><?php echo _( "This festivity does not seem to exist? Please choose from a value in the list."); ?></div>
+                                    <div class="invalid-feedback"><?php echo _("This festivity does not seem to exist? Please choose from a value in the list."); ?></div>
                                 </div>
                                 <div class="form-group mt-5">
                                     <label for="newUnitTestDescription"><?php echo _('Description') ?></label>
@@ -28,7 +28,7 @@
                             </div>
                             <div class="carousel-item" data-item='1'>
                                 <div class="form-group">
-                                    <label class="fw-bold" for="yearSinceUntilShadow"><?php echo _( "Years to test" ); ?></label><br>
+                                    <label class="fw-bold" for="yearSinceUntilShadow"><?php echo _("Years to test"); ?></label><br>
                                     <div>
                                         <small>
                                             <p class="text-muted lh-sm">
@@ -53,17 +53,17 @@
                                     </div>
                                     <div id="yearsToTestGrid"></div>
                                     <input type="number" class="invisible" id="yearSinceUntilShadow" value="1970" required>
-                                    <div class="invalid-feedback exactCorrespondenceSince d-none"><?php echo _( "Please set the year from which the liturgical event should exist"); ?></div>
-                                    <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php echo _( "Please set the year until which the liturgical event should exist"); ?></div>
-                                    <div class="invalid-feedback variableCorrespondence d-none"><?php echo _( "Please set the years in which the liturgical event should not exist"); ?></div>
+                                    <div class="invalid-feedback exactCorrespondenceSince d-none"><?php echo _("Please set the year from which the liturgical event should exist"); ?></div>
+                                    <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php echo _("Please set the year until which the liturgical event should exist"); ?></div>
+                                    <div class="invalid-feedback variableCorrespondence d-none"><?php echo _("Please set the years in which the liturgical event should not exist"); ?></div>
                                 </div>
                             </div>
                             <div class="carousel-item" data-item='2'>
                                 <div class="form-group">
-                                    <label class="fw-bold" for="baseDate"><?php echo _( "Set the base date for this liturgical event" ) ?></label><br>
+                                    <label class="fw-bold" for="baseDate"><?php echo _("Set the base date for this liturgical event") ?></label><br>
                                     <small><small><p class="lh-sm"><?php echo _('If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against. In any case you will later be able to adjust the date for each year if needed.'); ?></p></small></small>
                                     <input type="date" id="baseDate" min="1970-01-01" max="2050-12-31" class="form-control mt-4 w-25" required>
-                                    <div class="invalid-feedback"><?php echo _( "The date input cannot be empty"); ?></div>
+                                    <div class="invalid-feedback"><?php echo _("The date input cannot be empty"); ?></div>
                                 </div>
                             </div>
                         </form>
@@ -88,17 +88,17 @@
 
 <datalist id="existingFestivitiesList">
 <?php
-foreach( $LitCalAllFestivities as $key => $festivity ) {
+foreach ($LitCalAllFestivities as $key => $festivity) {
     $dataMonth = '';
     $dataDay = '';
     $dataGrade = '';
-    if( isset( $festivity["MONTH"] ) ) {
+    if (isset($festivity["MONTH"])) {
         $dataMonth = " data-month=\"{$festivity["MONTH"]}\"";
     }
-    if( isset( $festivity["DAY"] ) ) {
+    if (isset($festivity["DAY"])) {
         $dataDay = " data-day=\"{$festivity["DAY"]}\"";
     }
-    if( isset( $festivity["GRADE"] ) ) {
+    if (isset($festivity["GRADE"])) {
         $dataGrade = " data-grade=\"{$festivity["GRADE"]}\"";
     }
     echo "<option value=\"{$key}\"{$dataMonth}{$dataDay}{$dataGrade}>{$festivity["NAME"]} ({$festivity["GRADE_LCL"]})</option>";

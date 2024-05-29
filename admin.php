@@ -2,27 +2,27 @@
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
-include_once 'includes/auth.php';
+require_once 'includes/auth.php';
 
-if(!authenticated()) {
+if (!authenticated()) {
     header("WWW-Authenticate: Basic realm=\"Please insert your credentials\"");
-    header($_SERVER["SERVER_PROTOCOL"]." 401 Unauthorized");
+    header($_SERVER["SERVER_PROTOCOL"] . " 401 Unauthorized");
     echo "You need a username and password to access this service.";
     die();
 }
 
 $ch = curl_init();
 
-curl_setopt( $ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/LitCalTestsIndex.php" );
-curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-$response = curl_exec( $ch );
-if ( curl_errno( $ch ) ) {
-    $error_msg = curl_error( $ch );
-    curl_close( $ch );
-    die( $error_msg );
+curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/testsindex");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$response = curl_exec($ch);
+if (curl_errno($ch)) {
+    $error_msg = curl_error($ch);
+    curl_close($ch);
+    die($error_msg);
 }
-curl_close( $ch );
-$LitCalTests = json_decode( $response );
+curl_close($ch);
+$LitCalTests = json_decode($response);
 
 include_once 'layout/head.php';
 include_once 'layout/sidebar.php';
@@ -32,37 +32,37 @@ include_once 'layout/sidebar.php';
     <div class="container-fluid px-4">
 
         <!-- Page Heading -->
-        <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _( "Define a Unit Test for a Liturgical event"); ?></h1>
+        <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _("Define a Unit Test for a Liturgical event"); ?></h1>
         <p class="mb-1 lh-sm"><small><i><?php echo _("In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year."); ?></i></small></p>
         <div class="row justify-content-center align-items-start bg-light border p-2 mt-4">
             <div class="form-group col col-md-2" id="editExistingTestOption">
-                <label for="litCalTestsSelect" class="fw-bold border border-top-0 border-start-0 border-end-0 border-secondary mb-4 w-100 text-center"><?php echo _( "Edit an existing test"); ?></label>
+                <label for="litCalTestsSelect" class="fw-bold border border-top-0 border-start-0 border-end-0 border-secondary mb-4 w-100 text-center"><?php echo _("Edit an existing test"); ?></label>
                 <select id="litCalTestsSelect" class="form-select">
                     <option value="" selected>--</option>
-                    <?php foreach( $LitCalTests as $LitCalTest ) {
+                    <?php foreach ($LitCalTests as $LitCalTest) {
                         echo "<option value=\"$LitCalTest->name\">$LitCalTest->name</option>";
                     } ?>
                 </select>
             </div>
             <div class="col col-md-10">
-                <label class="w-100 text-center fw-bold border border-top-0 border-start-0 border-end-0 border-secondary"><?php echo _( 'Create a New Test' ); ?></label>
+                <label class="w-100 text-center fw-bold border border-top-0 border-start-0 border-end-0 border-secondary"><?php echo _('Create a New Test'); ?></label>
                 <div class="row justify-content-center align-items-start">
                     <div class="form-group col col-md-3 border border-top-0 border-bottom-0 border-end-0 border-secondary">
-                        <label for="APICalendarSelect"><?php echo _( 'Calendar to test' ); ?></label>
+                        <label for="APICalendarSelect"><?php echo _('Calendar to test'); ?></label>
                         <select id="APICalendarSelect" class="form-select">
                         </select>
                     </div>
                     <div class="form-group col col-md-9">
-                        <label><?php echo _( "Test Type" ); ?></label>
+                        <label><?php echo _("Test Type"); ?></label>
                         <div class="btn-group form-control p-0 border-0" id="createNewTestBtnGrp" role="group">
                             <button type="button" class="btn btn-primary col col-md-3" data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-vial me-2"></i> <?php echo _( "Exact date" ); ?></b></small></button>
+                                title="<?php echo "In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-vial me-2"></i> <?php echo _("Exact date"); ?></b></small></button>
                             <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _( "Exact date since year" ); ?></b></small></button>
+                                title="<?php echo "When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _("Exact date since year"); ?></b></small></button>
                             <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceUntil" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist"; ?>"><small><b><?php echo _( "Exact date until year" ); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small></button>
+                                title="<?php echo "When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist"; ?>"><small><b><?php echo _("Exact date until year"); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small></button>
                             <button type="button" class="btn btn-primary col col-md-4" data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years"; ?>"><small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _( "Variable existence" ); ?></b></small></button>
+                                title="<?php echo "When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years"; ?>"><small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence"); ?></b></small></button>
                         </div>
                     </div>
                 </div>
@@ -101,7 +101,7 @@ include_once 'layout/sidebar.php';
 </main>
 <!-- End of Main Content -->
 <?php
-[ "LitCalAllFestivities" => $LitCalAllFestivities ] = json_decode( file_get_contents( "https://litcal.johnromanodorazio.com/api/dev/LitCalAllFestivities.php?locale=" . $i18n->locale ), true );
+[ "LitCalAllFestivities" => $LitCalAllFestivities ] = json_decode(file_get_contents("https://litcal.johnromanodorazio.com/api/dev/allevents/?locale=" . $i18n->locale), true);
 include_once 'components/NewTestModal.php';
 ?>
 <div class="modal fade" id="modalAddEditComment" tabindex="-1" aria-labelledby="addEditCommentModalLabel" aria-hidden="true">

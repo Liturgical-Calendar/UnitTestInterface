@@ -161,10 +161,10 @@ const sanitizeOnSetValue = {
 /**
  * LOAD METADATA FOR EXISTING CALENDARS
  */
-const endpointV = 'dev'; // 'v3';
-const METADATA_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalMetadata.php`;
-const TESTS_INDEX_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalTestsIndex.php`;
-const LITCAL_ALLFESTIVITIES_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/LitCalAllFestivities.php`;
+const endpointV = 'dev'; // 'dev';
+const METADATA_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/metadata/`;
+const TESTS_INDEX_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/testsindex/`;
+const LITCAL_ALLFESTIVITIES_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/allevents/`;
 const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
 let CalendarNations = [];
 let SelectOptions = {};
