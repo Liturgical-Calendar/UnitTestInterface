@@ -23,7 +23,7 @@ const sanitizeOnSetValue = {
         if (typeof target[prop] === 'object' && target[prop] !== null) {
             return new Proxy(target[prop], sanitizeOnSetValue);
         } else {
-            console.log({ type: 'get', target, prop });
+            //console.log({ type: 'get', target, prop });
             if(typeof target[prop] === 'string') {
                 target[prop] = sanitizeInput(target[prop]);
             }
@@ -142,18 +142,18 @@ const sanitizeOnSetValue = {
                 break;
             default:
                 if( typeof prop === 'number' || target instanceof Array ) {
-                    if( target instanceof Array ) {
+                    /*if( target instanceof Array ) {
                         console.log('I think we are trying to push to an internal array, target is an array');
                     } else {
                         console.log('we seem to be accessing an indexed array');
-                    }
+                    }*/
                     return Reflect.set(target, prop, value);
                 } else {
                     console.warn('unexpected property ' + prop + ' of type ' + typeof prop + ' on target of type ' + typeof target);
                 }
                 return;
             }
-        console.log({ type: 'set', target, prop, value });
+        //console.log({ type: 'set', target, prop, value });
         return Reflect.set(target, prop, value);
     }
 };
@@ -315,7 +315,7 @@ const rebuildFestivitiesOptions = (element) => {
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
-    fetch( `${LITCAL_ALLFESTIVITIES_URL}?${calendarType}=${element.value}` )
+    return fetch( `${LITCAL_ALLFESTIVITIES_URL}?${calendarType}=${element.value}` )
     .then(data => data.json())
     .then(json => {
         ({LitCalAllFestivities} = json);
@@ -357,10 +357,11 @@ $(document).on('click', '.sidebarToggle', event => {
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
 
-$(document).on('change', '#litCalTestsSelect', ev => {
+$(document).on('change', '#litCalTestsSelect', async (ev) => {
     //console.log(ev.currentTarget.value);
     if( ev.currentTarget.value !== '' ) {
         const currentTest = LitCalTests.filter(el => el.name === ev.currentTarget.value)[0];
+        console.log(currentTest);
         currentTest.assertions = currentTest.assertions.map(el => new Assertion(el));
         proxiedTest = new Proxy(currentTest, sanitizeOnSetValue);
 
@@ -379,8 +380,9 @@ $(document).on('change', '#litCalTestsSelect', ev => {
         if( proxiedTest.hasOwnProperty('appliesTo') ) {
             const calendarType = Object.keys(proxiedTest.appliesTo)[0];
             document.querySelector('#APICalendarSelect').value = proxiedTest.appliesTo[calendarType];
-            rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
+            await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
             document.querySelector('#existingFestivityName').value = proxiedTest.eventkey;
+            AssertionsBuilder.test = LitCalAllFestivities[proxiedTest.eventkey];
             AssertionsBuilder.appliesTo = proxiedTest.appliesTo[calendarType];
         }
         $( '#assertionsContainer' ).empty();
@@ -396,8 +398,8 @@ $(document).on('change', '#litCalTestsSelect', ev => {
     }
 });
 
-$(document).on('change', '#APICalendarSelect', ev => {
-    rebuildFestivitiesOptions( ev.currentTarget );
+$(document).on('change', '#APICalendarSelect', async (ev) => {
+    await rebuildFestivitiesOptions( ev.currentTarget );
 });
 
 $(document).on('click', '.editDate', ev => {
@@ -679,11 +681,12 @@ $(document).on('change', '#existingFestivityName', ev => {
                 const maxYear = parseInt(document.querySelector('#upperRange').value);
                 for(year = minYear; year <= maxYear; year++) {
                     eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-                    console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
                     if( eventDate.getUTCDay() === 0 ) {
+                        console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
                         document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday` );
                         document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
                     } else {
+                        console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
                         document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate) );
                     }
                 }
@@ -714,7 +717,8 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     let htmlStr = '';
     let titleAttr = '';
     let lightClass = '';
-    $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.eventkey + '"]');
+    const currentEventKey = document.querySelector('#existingFestivityName').value;
+    $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + currentEventKey + '"]');
     for( let year = minYear; year <= maxYear; year++ ) {
         eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
         if( eventDate.getUTCDay() === 0 ) {

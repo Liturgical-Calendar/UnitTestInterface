@@ -41,6 +41,7 @@ class AssertionsBuilder {
     static appliesTo    = "Universal Roman Calendar";
     static bgColor      = 'bg-success';
     static txtColor     = 'text-dark';
+    static currentTest  = null;
 
 
     constructor( test ) {
@@ -49,7 +50,9 @@ class AssertionsBuilder {
         if( test.testType === TestType.ExactCorrespondenceSince ) {
             AssertionsBuilder.yearSince = test.yearSince;
         }
-        console.log( 'new instance of AssertionsBuilder, testType = ' + AssertionsBuilder.testType );
+        AssertionsBuilder.test = LitCalAllFestivities[test.eventkey];
+        console.log( 'new instance of AssertionsBuilder, test = ');
+        console.log(AssertionsBuilder.test);
     }
 
     static #setColors( assertion ) {
@@ -76,12 +79,23 @@ class AssertionsBuilder {
             //console.log(assertion);
             const expectedDateStr = assertion.expectedValue !== null ? DTFormat.format(assertion.expectedValue * 1000) : '---';
             const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
+            let sundayCheck = '';
+            if(AssertionsBuilder.test.GRADE <= LitGrade.FEAST && AssertionsBuilder.test.MONTH && AssertionsBuilder.test.DAY) {
+                const eventDate = new Date(assertion.expectedValue*1000);
+                //console.log( DTFormat.format(assertion.expectedValue*1000) );
+                if( eventDate.getUTCDay() === 0 ) {
+                    //console.log('this day is a Sunday!');
+                    sundayCheck = 'bg-warning text-dark';
+                } else {
+                    sundayCheck = '';
+                }
+            }
             //unfortunately Firefox does not implement the "plaintext-only" value for [contenteditable], so we won't use it yet
             assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>${AssertionsBuilder.appliesTo}</span></p>
                 <div class="d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">ASSERT THAT: </span><span class="ms-2 text-end assert">${assertion.assert}</span><span role="button" class="btn btn-xs btn-danger ms-1 toggleAssert"><i class="fas fa-repeat"></i></span></div>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue" data-value="${assertion.expectedValue}">${expectedDateStr}</span><span role="button" class="btn btn-xs btn-danger ms-1 editDate"><i class="fas fa-pen-to-square"></i></span></div>
+                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 ${sundayCheck !== '' ? sundayCheck : AssertionsBuilder.bgColor + ' ' + AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue" data-value="${assertion.expectedValue}">${expectedDateStr}</span><span role="button" class="btn btn-xs btn-danger ms-1 editDate"><i class="fas fa-pen-to-square"></i></span></div>
                 <div class="flex-grow-1 d-flex flex-column text-white p-3" style="background-color: cadetblue;"><span class="fw-bold">ASSERTION:${commentStr}</span><span contenteditable>${assertion.assertion}</span></div>
                 </div>`;
         });
