@@ -13,7 +13,7 @@ if (!authenticated()) {
 
 $ch = curl_init();
 
-curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/testsindex");
+curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/dev/testsindex/");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 if (curl_errno($ch)) {
@@ -55,14 +55,26 @@ include_once 'layout/sidebar.php';
                     <div class="form-group col col-md-9">
                         <label><?php echo _("Test Type"); ?></label>
                         <div class="btn-group form-control p-0 border-0" id="createNewTestBtnGrp" role="group">
-                            <button type="button" class="btn btn-primary col col-md-3" data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-vial me-2"></i> <?php echo _("Exact date"); ?></b></small></button>
-                            <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)"; ?>"><small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _("Exact date since year"); ?></b></small></button>
-                            <button type="button" class="btn btn-primary col col-md-4" data-testtype="exactCorrespondenceUntil" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist"; ?>"><small><b><?php echo _("Exact date until year"); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small></button>
-                            <button type="button" class="btn btn-primary col col-md-4" data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo "When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years"; ?>"><small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence"); ?></b></small></button>
+                            <button type="button" class="btn btn-primary col col-md-3"
+                                data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
+                                title="<?php echo _("In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)"); ?>">
+                                <small><b><i class="fas fa-vial me-2"></i> <?php echo _("Exact date"); ?></b></small>
+                            </button>
+                            <button type="button" class="btn btn-primary col col-md-4"
+                                data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
+                                title="<?php echo _("When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)"); ?>">
+                                <small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _("Exact date since year"); ?></b></small>
+                            </button>
+                            <button type="button" class="btn btn-primary col col-md-4"
+                                data-testtype="exactCorrespondenceUntil" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
+                                title="<?php echo _("When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist"); ?>">
+                                <small><b><?php echo _("Exact date until year"); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small>
+                            </button>
+                            <button type="button" class="btn btn-primary col col-md-4"
+                                data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
+                                title="<?php echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years"); ?>">
+                                <small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence"); ?></b></small>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -71,19 +83,17 @@ include_once 'layout/sidebar.php';
 
         <div class="card border-4 border-top-0 border-bottom-0 border-end-0 border-primary rounded-3 mt-4">
             <div class="card-header py-3">
-                <h4 class="m-0 fw-bold text-primary position-relative"><i class="fas fa-flask-vial fa-2x text-black d-inline-block me-4" style="--bs-text-opacity: .1;"></i><span id="testName">Name of Test</span><div class="text-muted position-absolute bottom-0 end-0 pb-1"><i class="fas fa-layer-group me-2"></i><span id="cardHeaderTestType"></span></div></h4>
+                <h4 class="m-0 fw-bold text-primary position-relative"><i class="fas fa-flask-vial fa-2x text-black d-inline-block me-4" style="--bs-text-opacity: .1;"></i><span id="testName"><?php echo _("Name of Test"); ?></span><div class="text-muted position-absolute bottom-0 end-0 pb-1"><i class="fas fa-layer-group me-2"></i><span id="cardHeaderTestType"></span></div></h4>
             </div>
             <div class="card-body">
                 <form class="needs-validation" id="testDataForm" novalidate>
                     <div class="row justify-content-center align-items-start">
-                        <!-- Description -->
                         <div class="mb-3 form-group col col-md-12">
-                            <label for="description" class="form-label text-secondary">Description</label>
+                            <label for="description" class="form-label text-secondary"><?php echo _("Description"); ?></label>
                             <textarea class="form-control" id="description" name="description" rows="1" required></textarea>
                         </div>
                     </div>
-                    <!-- Assertions (Dynamic Fields) -->
-                    <label class="text-secondary text-center w-100 invisible" id="perYearAssertions">Per year assertions <i class="btn btn-secondary fas fa-pen-to-square ms-5" data-testtype="" data-edittest="true" data-bs-toggle="modal" data-bs-target="#modalDefineTest" title="Edit year range"></i></label>
+                    <label class="text-secondary text-center w-100 invisible" id="perYearAssertions"><?php echo _("Per year assertions"); ?> <i class="btn btn-secondary fas fa-pen-to-square ms-5" data-testtype="" data-edittest="true" data-bs-toggle="modal" data-bs-target="#modalDefineTest" title="Edit year range"></i></label>
                     <div class="row gx-0 gy-1 m-2" id="assertionsContainer">
                     </div>
                     <input type="hidden" id="yearSince" />
