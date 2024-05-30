@@ -29,7 +29,7 @@ jobs:
         run: |
           sudo apt-get install -y gettext
           [[ -f i18n/litcal.pot ]] || mkdir i18n && touch i18n/litcal.pot
-          xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot index.php admin.php
+          xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot index.php admin.php layout/topnavbar.php layout/sidebar.php components/NewTestModal.php
           echo "POT_LINES_CHANGED=$(git diff -U0 | grep '^[+|-][^+|-]' | grep -Ev '^[+-]"POT-Creation-Date' | wc -l)" >> $GITHUB_OUTPUT
 
       # push the output folder to your repo

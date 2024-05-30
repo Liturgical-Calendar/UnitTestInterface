@@ -27,7 +27,7 @@
                 </div>
             </li>
             <?php if ($pageName === 'index') { ?>
-            <li class="me-2"><div class="text-white bg-secondary p-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> Websocket connection status</div></li>
+            <li class="me-2"><div class="text-white bg-secondary p-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> <?php echo _("Websocket connection status"); ?></div></li>
             <?php } ?>
         </ul>
         <a class="btn btn-outline-light text-dark border-0 fw-bold"
