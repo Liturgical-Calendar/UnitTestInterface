@@ -8,13 +8,16 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-30 08:16+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-05-31 07:33+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
+"liturgical-calendar/unit-test-interface/it/>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.5.5\n"
 
 #: index.php:12
 msgid ""
@@ -198,7 +201,7 @@ msgstr ""
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
-msgstr ""
+msgstr "Calendario Liturgico Cattolico"
 
 #: layout/sidebar.php:19
 msgid "Unit Tests Runner"
@@ -217,6 +220,8 @@ msgid ""
 "This festivity does not seem to exist? Please choose from a value in the "
 "list."
 msgstr ""
+"Questa festività non sembra esistere? Si prega scegliere da un valore "
+"nell'elenco."
 
 #: components/NewTestModal.php:31
 msgid "Years to test"
