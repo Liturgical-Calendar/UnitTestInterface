@@ -14,7 +14,7 @@
                 ?><i class="fas fa-arrow-up-right-from-square ms-2"></i>
                 </a>
             </li>
-            <li class="nav-item dropdown ms-2">
+            <li class="nav-item dropdown ms-4">
                 <a class="nav-link dropdown-toggle btn btn-outline-light border-0"
                     href="#" id="apiVersionsDropdown" role="button"
                     data-bs-toggle="dropdown"
