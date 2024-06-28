@@ -25,9 +25,9 @@
             <li>
             <select class="form-select"
                     aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
-                    <option class="dropdown-item" id="apiVersion-v3" href="#"><span>v3</span></option>
-                    <option class="dropdown-item" id="apiVersion-dev" href="#"><span>dev</span></option>
-                    <option class="dropdown-item" id="apiVersion-v9" href="#" title="experimental!"><span>v9</span></option>
+                    <option id="apiVersion-v3" value="v3">v3</option>
+                    <option id="apiVersion-dev" value="dev">dev</option>
+                    <option id="apiVersion-v9" value="v9">v9 (experimental)</option>
                 </select>
             </li>
         </ul>
