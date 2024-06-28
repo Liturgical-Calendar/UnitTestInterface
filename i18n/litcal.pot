@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-28 21:47+0000\n"
+"POT-Creation-Date: 2024-06-28 21:53+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -189,15 +189,15 @@ msgstr ""
 msgid "LitCal Project"
 msgstr ""
 
-#: layout/topnavbar.php:22
+#: layout/topnavbar.php:19
 msgid "API Version"
 msgstr ""
 
-#: layout/topnavbar.php:61
+#: layout/topnavbar.php:58
 msgid "Websocket connection status"
 msgstr ""
 
-#: layout/topnavbar.php:68 layout/sidebar.php:23
+#: layout/topnavbar.php:65 layout/sidebar.php:23
 msgid "Unit Tests Admin"
 msgstr ""
 
