@@ -1,6 +1,6 @@
-const endpointVersion = "dev"; //could be 'dev', 'v3', 'v2'...
-const MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/metadata/`;
-const TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/testsindex/`;
+let endpointVersion = "dev";
+let MetadataURL, TestsIndexURL;
+setEndpoints();
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -8,6 +8,28 @@ const twentyFiveYearsFromNow = thisYear + 25;
 let baseYear = 1970;
 while (baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
+}
+
+const setEndpoints = (ev = null) => {
+    if(ev) {
+        endpointVersion = ev.currentTarget.value;
+    } else {
+        endpointVersion = document.querySelector('#apiVersionsDropdownItems').value;
+    }
+    switch(endpointVersion) {
+        case 'dev':
+            MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/metadata/`;
+            TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/testsindex/`;
+        break;
+        case 'v9':
+            MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/calendars/`;
+            TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/tests/`;
+        break;
+        case 'v3':
+            MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/calendars/`;
+            TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/tests/`;
+        break;
+    }
 }
 
 class ReadyToRunTests {
@@ -444,8 +466,8 @@ const truncate = (source, size) => source.length > size ? source.slice(0, size -
 /**
  * HTMLEncode function
  * kudos to https://stackoverflow.com/a/784765/394921
- * @param {*} str 
- * @returns 
+ * @param {*} str
+ * @returns
  */
 const HTMLEncode = (str) => {
     // avoid a double encoding!
