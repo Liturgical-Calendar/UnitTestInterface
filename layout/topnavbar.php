@@ -21,7 +21,9 @@
                 ><i class="fas fa-code-branch me-2"></i><?php
                     echo _("API Version");
                 ?></label>
-                <select class="form-select"
+            </li>
+            <li>
+            <select class="form-select"
                     aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
                     <option class="dropdown-item" id="apiVersion-v3" href="#"><span>v3</span></option>
                     <option class="dropdown-item" id="apiVersion-dev" href="#"><span>dev</span></option>
