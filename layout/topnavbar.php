@@ -15,7 +15,7 @@
                 </a>
             </li>
             <li class="nav-item ms-4">
-                <label id="apiVersionsDropdown" for="apiVersionsDropdownItems"><i class="fas fa-code-branch me-2"></i><?php
+                <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link"><i class="fas fa-code-branch me-2"></i><?php
                     echo _("API Version");
                 ?></label>
             </li>
