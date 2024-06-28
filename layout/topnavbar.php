@@ -8,26 +8,58 @@
         <?php } ?>
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-            <li class="nav-item ms-2"><a class="nav-link btn btn-outline-light border-0 fw-bold" href="https://litcal.johnromanodorazio.com"><?php echo _("LitCal Project"); ?><i class="fas fa-arrow-up-right-from-square ms-2"></i></a></li>
+            <li class="nav-item ms-2">
+                <a class="nav-link btn btn-outline-light border-0 fw-bold" href="https://litcal.johnromanodorazio.com"><?php
+                    echo _("LitCal Project");
+                ?><i class="fas fa-arrow-up-right-from-square ms-2"></i>
+                </a>
+            </li>
+            <li class="nav-item dropdown ms-2">
+                <a class="nav-link dropdown-toggle btn btn-outline-light border-0"
+                    href="#" id="apiVersionsDropdown" role="button"
+                    data-bs-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false"
+                ><i class="fas fa-code-branch me-2"></i><?php
+                    echo _("API Version");
+                ?></a>
+                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in"
+                    aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
+                    <a class="dropdown-item" id="apiVersion-v3" href="#"><span>v3</span></a>
+                    <a class="dropdown-item" id="apiVersion-dev" href="#"><span>dev</span></a>
+                    <a class="dropdown-item" id="apiVersion-v9" href="#" title="experimental!"><span>v9</span></a>
+                </div>
+            </li>
         </ul>
         <ul class="navbar-nav ms-auto">
             <li class="nav-item dropdown me-4">
-                <a class="nav-link dropdown-toggle btn btn-outline-light border-0" href="#" id="langChoicesDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-globe me-2"></i><?php echo Locale::getDisplayLanguage($i18n->locale, $i18n->locale); ?>
+                <a class="nav-link dropdown-toggle btn btn-outline-light border-0"
+                    href="#" id="langChoicesDropdown" role="button"
+                    data-bs-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false"
+                ><i class="fas fa-globe me-2"></i><?php
+                    echo Locale::getDisplayLanguage($i18n->locale, $i18n->locale);
+                ?>
                 </a>
-                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="langChoicesDropdown" id="langChoicesDropdownItems">
+                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in"
+                    aria-labelledby="langChoicesDropdown" id="langChoicesDropdownItems">
                     <?php
                     foreach ($i18n->langsAssoc as $key => $lang) {
                         $classList = substr($i18n->locale, 0, 2) === $key ? "dropdown-item active" : "dropdown-item";
                         $isoLang = strtoupper($key);
                         $displayName = Locale::getDisplayLanguage($key, 'en');
-                        echo "<a class=\"$classList\" id=\"langChoice-$key\" href=\"#\" title=\"$displayName\"><span class=\"d-none d-md-inline\">$lang</span><span class=\"d-inline d-md-none\">$isoLang</span></a>";
+                        echo "<a class=\"$classList\" id=\"langChoice-$key\" href=\"#\" title=\"$displayName\">"
+                            . "<span class=\"d-none d-md-inline\">$lang</span><span class=\"d-inline d-md-none\">$isoLang</span>"
+                            . "</a>";
                     }
                     ?>
                 </div>
             </li>
             <?php if ($pageName === 'index') { ?>
-            <li class="me-2"><div class="text-white bg-secondary p-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> <?php echo _("Websocket connection status"); ?></div></li>
+            <li class="me-2">
+                <div class="text-white bg-secondary p-2" id="websocket-status"><i class="fas fa-plug fa-fw"></i> <?php
+                    echo _("Websocket connection status");
+                ?></div>
+            </li>
             <?php } ?>
         </ul>
         <a class="btn btn-outline-light text-dark border-0 fw-bold"
