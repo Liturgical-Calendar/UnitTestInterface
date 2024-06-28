@@ -22,7 +22,8 @@
             <li>
             <select class="form-select"
                     aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
-                    <option id="apiVersion-v3" value="v3">v3 (latest stable)</option>
+                    <!-- v3 is not a viable option since it didn't use JSON unit test files -->
+                    <!-- <option id="apiVersion-v3" value="v3">v3 (latest stable)</option> -->
                     <option id="apiVersion-dev" value="dev">dev (development)</option>
                     <option id="apiVersion-v9" value="v9">v9 (experimental)</option>
                 </select>

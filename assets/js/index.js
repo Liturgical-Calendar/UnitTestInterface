@@ -1,7 +1,3 @@
-let endpointVersion = "dev";
-let MetadataURL, TestsIndexURL;
-setEndpoints();
-
 const Years = [];
 const thisYear = new Date().getFullYear();
 const twentyFiveYearsFromNow = thisYear + 25;
@@ -10,27 +6,34 @@ while (baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
 }
 
+const ENDPOINTS = {
+    VERSION: "dev",
+    METADATA: "",
+    TESTSINDEX: ""
+}
 const setEndpoints = (ev = null) => {
     if(ev) {
-        endpointVersion = ev.currentTarget.value;
+        ENDPOINTS.VERSION = ev.currentTarget.value;
     } else {
-        endpointVersion = document.querySelector('#apiVersionsDropdownItems').value;
+        ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
     }
-    switch(endpointVersion) {
+    switch(ENDPOINTS.VERSION) {
         case 'dev':
-            MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/metadata/`;
-            TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/testsindex/`;
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
         break;
         case 'v9':
-            MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/calendars/`;
-            TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/tests/`;
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v9/calendars/`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v9/tests/`;
         break;
         case 'v3':
-            MetadataURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/calendars/`;
-            TestsIndexURL = `https://litcal.johnromanodorazio.com/api/${endpointVersion}/tests/`;
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
         break;
     }
 }
+
+setEndpoints();
 
 class ReadyToRunTests {
     static PageReady        = false;
@@ -104,7 +107,7 @@ class TestState {
 const sourceDataChecks = Object.freeze([
     {
         "validate": "LitCalMetadata",
-        "sourceFile": "https://litcal.johnromanodorazio.com/api/dev/metadata/",
+        "sourceFile": ENDPOINTS.METADATA,
         "category": "universalcalendar"
     },
     {
@@ -729,57 +732,60 @@ const connectWebSocket = () => {
 }
 
 Promise.all([
-    fetch( MetadataURL, {
+    fetch( ENDPOINTS.METADATA, {
         method: "POST",
         mode: "cors",
         headers: {
             Accept: "application/json"
         }
-    } ).then(response => response.json()),
-    fetch( TestsIndexURL, {
+    }).then(response => response.json()),
+    fetch( ENDPOINTS.TESTSINDEX, {
         method: "GET",
         headers: {
             Accept: "application/json"
         }
-    } ).then(response => response.json())
-])
-    .then( dataArr => {
-        dataArr.forEach(data => {
-            console.log(data);
-            if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
-                MetaData = data.LitCalMetadata;
-                const { NationalCalendars, DiocesanCalendars } = MetaData;
-                for ( const value of Object.values( NationalCalendars ) ) {
-                    DiocesanCalendarsArr.push( ...value );
+    }).then(response => response.json())
+]).then( dataArr => {
+    dataArr.forEach(data => {
+        console.log(data);
+        if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
+            MetaData = data.LitCalMetadata;
+            const { NationalCalendars, DiocesanCalendars } = MetaData;
+            for ( const value of Object.values( NationalCalendars ) ) {
+                DiocesanCalendarsArr.push( ...value );
+            }
+            for ( const calendar of DiocesanCalendarsArr ) {
+                DiocesanCalendarTemplates.push( testTemplate( calendar ) );
+            }
+            for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
+                if ( CalendarNations.indexOf( value.nation ) === -1 ) {
+                    CalendarNations.push( value.nation );
+                    selectOptions[ value.nation ] = [];
                 }
-                for ( const calendar of DiocesanCalendarsArr ) {
-                    DiocesanCalendarTemplates.push( testTemplate( calendar ) );
-                }
-                for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
-                    if ( CalendarNations.indexOf( value.nation ) === -1 ) {
-                        CalendarNations.push( value.nation );
-                        selectOptions[ value.nation ] = [];
-                    }
-                    selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" data-nationalcalendar="${value.nation}" value="${key}">${value.diocese}</option>` );
-                }
-                nations = Object.keys( NationalCalendars );
-                nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
-                CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
-                if( UnitTests !== null ) {
-                    ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
-                    setupPage();
-                }
+                selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" data-nationalcalendar="${value.nation}" value="${key}">${value.diocese}</option>` );
+            }
+            nations = Object.keys( NationalCalendars );
+            nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
+            CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+            if( UnitTests !== null ) {
+                ReadyToRunTests.AsyncDataReady = true;
+                console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
+                setupPage();
+            }
+        } else {
+            if (ENDPOINTS.VERSION === 'v9') {
+                UnitTests = data.litcal_tests;
             } else {
                 UnitTests = data;
-                if( MetaData !== null ) {
-                    ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that Metadata was set first, now UnitTests is also ready' );
-                    setupPage();
-                }
             }
-        });
-    } );
+            if( MetaData !== null ) {
+                ReadyToRunTests.AsyncDataReady = true;
+                console.log( 'it seems that Metadata was set first, now UnitTests is also ready' );
+                setupPage();
+            }
+        }
+    });
+});
 
 const appendAccordionItem = (obj) => {
 
@@ -949,6 +955,7 @@ const setupPage = () => {
                     return;
                 }
             }
+            else if(  unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1  )
             if( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
                 if( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
                     return;
@@ -985,9 +992,10 @@ const setupPage = () => {
         ReadyToRunTests.PageReady = true;
         ReadyToRunTests.tryEnableBtn();
         $( '.page-loader' ).fadeOut('slow');
-    } );
+    });
 }
 
+$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
 
 $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     $( '.page-loader' ).show();
@@ -1005,7 +1013,7 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     setupPage();
     ReadyToRunTests.tryEnableBtn();
 
-} );
+});
 
 $( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
     $( '.page-loader' ).show();
@@ -1020,7 +1028,7 @@ $( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
     setupPage();
     ReadyToRunTests.tryEnableBtn();
 
-} );
+});
 
 $( document ).on( 'click', '#startTestRunnerBtn', () => {
     if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
