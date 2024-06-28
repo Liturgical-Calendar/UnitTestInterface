@@ -22,12 +22,12 @@
                 ><i class="fas fa-code-branch me-2"></i><?php
                     echo _("API Version");
                 ?></a>
-                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in"
+                <select class="dropdown-menu dropdown-menu-end shadow animated--grow-in form-select"
                     aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
-                    <a class="dropdown-item" id="apiVersion-v3" href="#"><span>v3</span></a>
-                    <a class="dropdown-item" id="apiVersion-dev" href="#"><span>dev</span></a>
-                    <a class="dropdown-item" id="apiVersion-v9" href="#" title="experimental!"><span>v9</span></a>
-                </div>
+                    <option class="dropdown-item" id="apiVersion-v3" href="#"><span>v3</span></option>
+                    <option class="dropdown-item" id="apiVersion-dev" href="#"><span>dev</span></option>
+                    <option class="dropdown-item" id="apiVersion-v9" href="#" title="experimental!"><span>v9</span></option>
+                </select>
             </li>
         </ul>
         <ul class="navbar-nav ms-auto">
