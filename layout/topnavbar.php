@@ -15,14 +15,13 @@
                 </a>
             </li>
             <li class="nav-item dropdown ms-4">
-                <a class="nav-link dropdown-toggle btn btn-outline-light border-0"
-                    href="#" id="apiVersionsDropdown" role="button"
-                    data-bs-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false"
+                <label class="nav-link btn btn-outline-light border-0"
+                    id="apiVersionsDropdown"
+                    for="apiVersionsDropdownItems"
                 ><i class="fas fa-code-branch me-2"></i><?php
                     echo _("API Version");
-                ?></a>
-                <select class="dropdown-menu dropdown-menu-end shadow animated--grow-in form-select"
+                ?></label>
+                <select class="form-select"
                     aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
                     <option class="dropdown-item" id="apiVersion-v3" href="#"><span>v3</span></option>
                     <option class="dropdown-item" id="apiVersion-dev" href="#"><span>dev</span></option>
