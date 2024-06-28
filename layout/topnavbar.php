@@ -14,11 +14,8 @@
                 ?><i class="fas fa-arrow-up-right-from-square ms-2"></i>
                 </a>
             </li>
-            <li class="nav-item dropdown ms-4">
-                <label class="nav-link btn btn-outline-light border-0"
-                    id="apiVersionsDropdown"
-                    for="apiVersionsDropdownItems"
-                ><i class="fas fa-code-branch me-2"></i><?php
+            <li class="nav-item ms-4">
+                <label id="apiVersionsDropdown" for="apiVersionsDropdownItems"><i class="fas fa-code-branch me-2"></i><?php
                     echo _("API Version");
                 ?></label>
             </li>
