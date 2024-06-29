@@ -744,6 +744,7 @@ const fetchMetadataAndTests = () => {
         }).then(response => response.json()),
         fetch( ENDPOINTS.TESTSINDEX, {
             method: "GET",
+            mode: "cors",
             headers: {
                 Accept: "application/json"
             }
@@ -802,8 +803,11 @@ const appendAccordionItem = (obj) => {
     let idy = 0;
     obj.assertions.forEach(assertion => {
         let dateStr = '';
-        if( null !== assertion.expectedValue ) {
+        if( assertion.hasOwnProperty('expectedValue') && null !== assertion.expectedValue ) {
             dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( assertion.expectedValue * 1000 );
+        }
+        else if ( assertion.hasOwnProperty('expected_value') && null !== assertion.expected_value ) {
+            dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( assertion.expected_value * 1000 );
         }
         unitTestStr += `
             <div class="col-1 ${idy===0 || idy % 11 === 0 ? 'offset-1' : ''}">
@@ -964,7 +968,11 @@ const setupPage = () => {
                     return;
                 }
             }
-            else if(  unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1  )
+            else if( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1  ) {
+                if( true === handleAppliesToOrFilter( unitTest, 'applies_to' ) ) {
+                    return;
+                }
+            }
             if( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
                 if( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
                     return;
