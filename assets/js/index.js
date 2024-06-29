@@ -754,21 +754,21 @@ const fetchMetadataAndTests = () => {
             console.log(data);
             if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                 MetaData = data.litcal_metadata;
-                const { NationalCalendars, DiocesanCalendars } = MetaData;
-                for ( const value of Object.values( NationalCalendars ) ) {
+                const { national_calendars, diocesan_calendars } = MetaData;
+                for ( const value of Object.values( national_calendars ) ) {
                     DiocesanCalendarsArr.push( ...value );
                 }
-                for ( const calendar of DiocesanCalendarsArr ) {
+                for ( const calendar of diocesan_calendarsArr ) {
                     DiocesanCalendarTemplates.push( testTemplate( calendar ) );
                 }
-                for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
+                for ( const [ key, value ] of Object.entries( diocesan_calendars ) ) {
                     if ( CalendarNations.indexOf( value.nation ) === -1 ) {
                         CalendarNations.push( value.nation );
                         selectOptions[ value.nation ] = [];
                     }
                     selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" data-nationalcalendar="${value.nation}" value="${key}">${value.diocese}</option>` );
                 }
-                nations = Object.keys( NationalCalendars );
+                nations = Object.keys( national_calendars );
                 nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
                 CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 if( UnitTests !== null ) {
@@ -911,7 +911,7 @@ const setupPage = () => {
         } else {
             let nation = currentCalendarCategory === 'nationalcalendar'
                 ? currentSelectedCalendar
-                : MetaData.DiocesanCalendars[currentSelectedCalendar].nation;
+                : MetaData.diocesan_calendars[currentSelectedCalendar].nation;
             let sourceFile = `nations/${nation}/${nation}.json`;
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
@@ -941,7 +941,7 @@ const setupPage = () => {
             if( currentCalendarCategory === 'diocesancalendar' ) {
                 currentSourceDataChecks.push({
                     "validate": currentSelectedCalendar,
-                    "sourceFile": `nations/${nation}/${MetaData.DiocesanCalendars[currentSelectedCalendar].diocese}.json`,
+                    "sourceFile": `nations/${nation}/${MetaData.diocesan_calendars[currentSelectedCalendar].diocese}.json`,
                     "category": "diocesancalendar"
                 });
             }
