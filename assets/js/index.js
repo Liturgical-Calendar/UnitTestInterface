@@ -733,63 +733,68 @@ const connectWebSocket = () => {
     }
 }
 
-setEndpoints();
-
-Promise.all([
-    fetch( ENDPOINTS.METADATA, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-            Accept: "application/json"
-        }
-    }).then(response => response.json()),
-    fetch( ENDPOINTS.TESTSINDEX, {
-        method: "GET",
-        headers: {
-            Accept: "application/json"
-        }
-    }).then(response => response.json())
-]).then( dataArr => {
-    dataArr.forEach(data => {
-        console.log(data);
-        if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
-            MetaData = data.LitCalMetadata;
-            const { NationalCalendars, DiocesanCalendars } = MetaData;
-            for ( const value of Object.values( NationalCalendars ) ) {
-                DiocesanCalendarsArr.push( ...value );
+const fetchMetadataAndTests = () => {
+    Promise.all([
+        fetch( ENDPOINTS.METADATA, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                Accept: "application/json"
             }
-            for ( const calendar of DiocesanCalendarsArr ) {
-                DiocesanCalendarTemplates.push( testTemplate( calendar ) );
+        }).then(response => response.json()),
+        fetch( ENDPOINTS.TESTSINDEX, {
+            method: "GET",
+            headers: {
+                Accept: "application/json"
             }
-            for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
-                if ( CalendarNations.indexOf( value.nation ) === -1 ) {
-                    CalendarNations.push( value.nation );
-                    selectOptions[ value.nation ] = [];
+        }).then(response => response.json())
+    ]).then( dataArr => {
+        dataArr.forEach(data => {
+            console.log(data);
+            if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
+                MetaData = data.LitCalMetadata;
+                const { NationalCalendars, DiocesanCalendars } = MetaData;
+                for ( const value of Object.values( NationalCalendars ) ) {
+                    DiocesanCalendarsArr.push( ...value );
                 }
-                selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" data-nationalcalendar="${value.nation}" value="${key}">${value.diocese}</option>` );
-            }
-            nations = Object.keys( NationalCalendars );
-            nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
-            CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
-            if( UnitTests !== null ) {
-                ReadyToRunTests.AsyncDataReady = true;
-                console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
-                setupPage();
-            }
-        } else {
-            if (ENDPOINTS.VERSION === 'v9') {
-                UnitTests = data.litcal_tests;
+                for ( const calendar of DiocesanCalendarsArr ) {
+                    DiocesanCalendarTemplates.push( testTemplate( calendar ) );
+                }
+                for ( const [ key, value ] of Object.entries( DiocesanCalendars ) ) {
+                    if ( CalendarNations.indexOf( value.nation ) === -1 ) {
+                        CalendarNations.push( value.nation );
+                        selectOptions[ value.nation ] = [];
+                    }
+                    selectOptions[ value.nation ].push( `<option data-calendartype="diocesancalendar" data-nationalcalendar="${value.nation}" value="${key}">${value.diocese}</option>` );
+                }
+                nations = Object.keys( NationalCalendars );
+                nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
+                CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+                if( UnitTests !== null ) {
+                    ReadyToRunTests.AsyncDataReady = true;
+                    console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
+                    setupPage();
+                }
             } else {
-                UnitTests = data;
+                if (data instanceof Array) {
+                    UnitTests = data;
+                } else if (data.hasOwnProperty('litcal_tests')) {
+                    UnitTests = data.litcal_tests;
+                } else {
+                    let arrayStatus = data instanceof Array ? 'true' : 'false';
+                    let objStatus = data.hasOwnProperty('litcal_tests') ? 'true' : 'false';
+                    let message = `Could not decode tests data! Is it an array? ${arrayStatus} It it an object with property 'litcal_tests'? ${objStatus}`;
+                    console.error(message);
+                }
+                if( MetaData !== null ) {
+                    ReadyToRunTests.AsyncDataReady = true;
+                    console.log( 'it seems that Metadata was set first, now UnitTests is also ready' );
+                    setupPage();
+                }
             }
-            if( MetaData !== null ) {
-                ReadyToRunTests.AsyncDataReady = true;
-                console.log( 'it seems that Metadata was set first, now UnitTests is also ready' );
-                setupPage();
-            }
-        }
+        });
     });
-});
+}
 
 const appendAccordionItem = (obj) => {
 
@@ -1054,6 +1059,8 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
     } else {
         console.warn('Please do not try to start a test run while tests are running!');
     }
-} );
+});
 
+setEndpoints();
+fetchMetadataAndTests();
 connectWebSocket();
