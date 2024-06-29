@@ -9,7 +9,8 @@
             <div class="modal-body">
                 <div id="carouselCreateNewUnitTest" class="carousel carousel-dark slide" style="min-height: 300px;" data-bs-ride="false" data-bs-interval="false">
                     <div class="carousel-indicators">
-                        <button type="button" data-bs-target="#carouselCreateNewUnitTest" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                        <button type="button" data-bs-target="#carouselCreateNewUnitTest" data-bs-slide-to="0"
+                            class="active" aria-current="true" aria-label="Slide 1"></button>
                         <button type="button" data-bs-target="#carouselCreateNewUnitTest" data-bs-slide-to="1" aria-label="Slide 2"></button>
                         <button type="button" data-bs-target="#carouselCreateNewUnitTest" data-bs-slide-to="2" aria-label="Slide 3"></button>
                     </div>
@@ -23,7 +24,8 @@
                                 </div>
                                 <div class="form-group mt-5">
                                     <label for="newUnitTestDescription"><?php echo _('Description') ?></label>
-                                    <textarea class="form-control" id="newUnitTestDescription" rows=2 placeholder="Describe what the test intends to accomplish"></textarea>
+                                    <textarea class="form-control" id="newUnitTestDescription" rows=2
+                                        placeholder="Describe what the test intends to accomplish"></textarea>
                                 </div>
                             </div>
                             <div class="carousel-item" data-item='1'>
@@ -45,9 +47,11 @@
                                     </div>
                                     <!-- Double range slider (flat design)  -->
                                     <div class="range-slider flat" id="yearsToTestRangeSlider" data-ticks-position='top'>
-                                        <input type="range" id="lowerRange" min="1970" max="2049" value="1999" oninput="this.parentNode.style.setProperty('--value-a',this.value); this.parentNode.style.setProperty('--text-value-a', JSON.stringify(this.value))">
+                                        <input type="range" id="lowerRange" min="1970" max="2049" value="1999"
+                                            oninput="this.parentNode.style.setProperty('--value-a',this.value); this.parentNode.style.setProperty('--text-value-a', JSON.stringify(this.value))">
                                         <output></output>
-                                        <input type="range" id="upperRange" min="1971" max="2050" value="2030" oninput="this.parentNode.style.setProperty('--value-b',this.value); this.parentNode.style.setProperty('--text-value-b', JSON.stringify(this.value))">
+                                        <input type="range" id="upperRange" min="1971" max="2050" value="2030"
+                                            oninput="this.parentNode.style.setProperty('--value-b',this.value); this.parentNode.style.setProperty('--text-value-b', JSON.stringify(this.value))">
                                         <output></output>
                                         <div class='range-slider__progress'></div>
                                     </div>
@@ -71,11 +75,13 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" type="button" id="carouselPrevButton" data-bs-target="#carouselCreateNewUnitTest" data-bs-slide="prev" disabled><!-- class carousel-control-prev -->
+                <button class="btn btn-primary" type="button" id="carouselPrevButton"
+                    data-bs-target="#carouselCreateNewUnitTest" data-bs-slide="prev" disabled><!-- class carousel-control-prev -->
                     <span class="fas fa-caret-left" aria-hidden="true"></span>
                     <span>Previous</span>
                 </button>
-                <button class="btn btn-primary" type="button" id="carouselNextButton" data-bs-target="#carouselCreateNewUnitTest" data-bs-slide="next"><!-- class carousel-control-prev -->
+                <button class="btn btn-primary" type="button" id="carouselNextButton"
+                    data-bs-target="#carouselCreateNewUnitTest" data-bs-slide="next"><!-- class carousel-control-prev -->
                     <span>Next</span>
                     <span class="fas fa-caret-right" aria-hidden="true"></span>
                 </button>
