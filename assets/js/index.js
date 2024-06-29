@@ -969,7 +969,7 @@ const setupPage = () => {
                 }
             }
             else if( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1  ) {
-                if( true === handleAppliesToOrFilter( unitTest, 'applies_to' ) ) {
+                if( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                     return;
                 }
             }
