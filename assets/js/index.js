@@ -6,6 +6,12 @@ while (baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
 }
 
+const ENDPOINTS = {
+    VERSION: "dev",
+    METADATA: "",
+    TESTSINDEX: ""
+}
+
 const sourceDataChecks = [
     {
         "validate": "LitCalMetadata",
@@ -43,12 +49,6 @@ const sourceDataChecks = [
         "category": "universalcalendar"
     }
 ];
-
-const ENDPOINTS = {
-    VERSION: "dev",
-    METADATA: "",
-    TESTSINDEX: ""
-}
 
 const setEndpoints = (ev = null) => {
     if(ev !== null) {
