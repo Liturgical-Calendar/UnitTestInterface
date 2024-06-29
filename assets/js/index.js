@@ -12,7 +12,7 @@ const ENDPOINTS = {
     TESTSINDEX: ""
 }
 const setEndpoints = (ev = null) => {
-    if(ev) {
+    if(ev !== null) {
         ENDPOINTS.VERSION = ev.currentTarget.value;
     } else {
         ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
@@ -31,6 +31,7 @@ const setEndpoints = (ev = null) => {
             ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
         break;
     }
+    document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion${ENDPOINTS.VERSION}`);
 }
 
 setEndpoints();
@@ -104,7 +105,7 @@ class TestState {
     }
 }
 
-const sourceDataChecks = Object.freeze([
+const sourceDataChecks = [
     {
         "validate": "LitCalMetadata",
         "sourceFile": ENDPOINTS.METADATA,
@@ -140,7 +141,7 @@ const sourceDataChecks = Object.freeze([
         "sourceFile": "nations/index.json",
         "category": "universalcalendar"
     }
-]);
+];
 
 const testTemplate = ( calendarName ) => {
     return `

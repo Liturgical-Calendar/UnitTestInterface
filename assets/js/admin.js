@@ -161,17 +161,46 @@ const sanitizeOnSetValue = {
 /**
  * LOAD METADATA FOR EXISTING CALENDARS
  */
-const endpointV = 'dev'; // 'dev';
-const METADATA_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/metadata/`;
-const TESTS_INDEX_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/testsindex/`;
-const LITCAL_ALLFESTIVITIES_URL = `https://litcal.johnromanodorazio.com/api/${endpointV}/allevents/`;
+const ENDPOINTS = {
+    VERSION: "dev",
+    METADATA: "",
+    TESTSINDEX: "",
+    EVENTS: ""
+}
+const setEndpoints = (ev = null) => {
+    if(ev) {
+        ENDPOINTS.VERSION = ev.currentTarget.value;
+    } else {
+        ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+    }
+    switch(ENDPOINTS.VERSION) {
+        case 'dev':
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
+            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/dev/allevents/`;
+        break;
+        case 'v9':
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v9/calendars/`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v9/tests/`;
+            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/v9/events/`;
+        break;
+        case 'v3':
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
+            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/v4/LitCalAllFestivities.php/`;
+        break;
+    }
+}
+
+setEndpoints();
+
 const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
 let CalendarNations = [];
 let SelectOptions = {};
 let DiocesanCalendars;
 //const COUNTRIES is available from Countries.js, included in footer.php for admin.php
 
-fetch( METADATA_URL )
+fetch( ENDPOINTS.METADATA )
     .then(data => data.json())
     .then(jsonData => {
         const { LitCalMetadata } = jsonData;
@@ -315,7 +344,7 @@ const rebuildFestivitiesOptions = (element) => {
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
-    return fetch( `${LITCAL_ALLFESTIVITIES_URL}?${calendarType}=${element.value}` )
+    return fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` )
     .then(data => data.json())
     .then(json => {
         ({LitCalAllFestivities} = json);
@@ -356,6 +385,8 @@ $(document).on('click', '.sidebarToggle', event => {
     }
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
+
+$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
 
 $(document).on('change', '#litCalTestsSelect', async (ev) => {
     //console.log(ev.currentTarget.value);
@@ -505,7 +536,7 @@ $(document).on('blur paste drop input', '[contenteditable]', ev => {
 $(document).on('click', '#serializeUnitTestData', ev => {
     const newUnitTest = serializeUnitTest();
     let responseStatus = 400;
-    fetch( TESTS_INDEX_URL, {
+    fetch( ENDPOINTS.TESTSINDEX, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json"
