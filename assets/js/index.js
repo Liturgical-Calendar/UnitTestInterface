@@ -844,28 +844,32 @@ const appendAccordionItem = (obj) => {
 
 const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
     let shouldReturn = false;
-    let prop = Object.keys( unitTest[appliesToOrFilter] )[0];
+    // TODO: the following two variables are needed to handle the switch to the /tests schema
+    //      When the older schema is deprecated we can clean up and simplify this code
+    let appliesToProp = unitTest.hasOwnProperty('appliesTo') ? 'appliesTo' : 'applies_to';
+    let searchProp = appliesToOrFilter === 'appliesTo' ? appliesToProp : appliesToOrFilter;
+    let prop = Object.keys( unitTest[searchProp] )[0];
     switch( prop ) {
         case 'nationalcalendar':
             if( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = (currentNationalCalendar !== unitTest.appliesTo.nationalcalendar);
+                shouldReturn = (currentNationalCalendar !== unitTest[appliesToProp].nationalcalendar);
             } else {
-                shouldReturn = (currentNationalCalendar === unitTest.appliesTo.nationalcalendar);
+                shouldReturn = (currentNationalCalendar === unitTest[appliesToProp].nationalcalendar);
             }
             break;
         case 'nationalcalendars':
             if( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = (false === unitTest.appliesTo.nationalcalendars.includes( currentNationalCalendar ));
+                shouldReturn = (false === unitTest[appliesToProp].nationalcalendars.includes( currentNationalCalendar ));
             } else {
-                shouldReturn = ( unitTest.appliesTo.nationalcalendars.includes( currentNationalCalendar ) );
+                shouldReturn = ( unitTest[appliesToProp].nationalcalendars.includes( currentNationalCalendar ) );
             }
         break;
         case 'diocesancalendar':
             if( currentCalendarCategory === 'diocesancalendar' ) {
                 if( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( currentSelectedCalendar !== unitTest.appliesTo.diocesancalendar );
+                    shouldReturn = ( currentSelectedCalendar !== unitTest[appliesToProp].diocesancalendar );
                 } else {
-                    shouldReturn = ( currentSelectedCalendar === unitTest.appliesTo.diocesancalendar );
+                    shouldReturn = ( currentSelectedCalendar === unitTest[appliesToProp].diocesancalendar );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
@@ -874,9 +878,9 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
         case 'diocesancalendars':
             if( currentCalendarCategory === 'diocesancalendar' ) {
                 if( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( false === unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( false === unitTest[appliesToProp].diocesancalendars.includes( currentSelectedCalendar ) );
                 } else {
-                    shouldReturn = ( unitTest.appliesTo.diocesancalendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( unitTest[appliesToProp].diocesancalendars.includes( currentSelectedCalendar ) );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
