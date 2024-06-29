@@ -752,8 +752,8 @@ const fetchMetadataAndTests = () => {
     ]).then( dataArr => {
         dataArr.forEach(data => {
             console.log(data);
-            if ( data.hasOwnProperty( 'LitCalMetadata' ) ) {
-                MetaData = data.LitCalMetadata;
+            if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
+                MetaData = data.litcal_metadata;
                 const { NationalCalendars, DiocesanCalendars } = MetaData;
                 for ( const value of Object.values( NationalCalendars ) ) {
                     DiocesanCalendarsArr.push( ...value );
