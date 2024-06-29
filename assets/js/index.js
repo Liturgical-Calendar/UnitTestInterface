@@ -32,6 +32,7 @@ const setEndpoints = (ev = null) => {
         break;
     }
     document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion${ENDPOINTS.VERSION}`);
+    sourceDataChecks[0].sourceFile = ENDPOINTS.METADATA;
 }
 
 setEndpoints();
