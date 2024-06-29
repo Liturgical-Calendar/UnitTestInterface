@@ -916,7 +916,7 @@ const setupPage = () => {
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
             currentSourceDataChecks = [...sourceDataChecks];
-            MetaData.NationalCalendarsMetadata[nation].widerRegions.forEach((item) => {
+            MetaData.national_calendars_metadata[nation].wider_regions.forEach((item) => {
                 currentSourceDataChecks.push({
                     "validate": item,
                     "sourceFile": `nations/${item}.json`,
@@ -928,8 +928,8 @@ const setupPage = () => {
                     "sourceFile": sourceFile,
                     "category": "nationalcalendar"
             });
-            MetaData.NationalCalendarsMetadata[nation].missals.forEach((missal) => {
-                let sourceFile = Object.values( MetaData.RomanMissals ).filter(el => el.value === missal)[0].sanctoraleFileName;
+            MetaData.national_calendars_metadata[nation].missals.forEach((missal) => {
+                let sourceFile = Object.values( MetaData.roman_missals ).filter(el => el.value === missal)[0].sanctorale_filename;
                 if( sourceFile !== false ) {
                     currentSourceDataChecks.push({
                         "validate": missal,
