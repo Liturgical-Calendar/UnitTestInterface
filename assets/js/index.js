@@ -6,11 +6,50 @@ while (baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
 }
 
+const sourceDataChecks = [
+    {
+        "validate": "LitCalMetadata",
+        "sourceFile": ENDPOINTS.METADATA,
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeTempore",
+        "sourceFile": "data/propriumdetempore.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis1970",
+        "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis2002",
+        "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis2008",
+        "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "MemorialsFromDecrees",
+        "sourceFile": "data/memorialsFromDecrees/memorialsFromDecrees.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "RegionalCalendarsIndex",
+        "sourceFile": "nations/index.json",
+        "category": "universalcalendar"
+    }
+];
+
 const ENDPOINTS = {
     VERSION: "dev",
     METADATA: "",
     TESTSINDEX: ""
 }
+
 const setEndpoints = (ev = null) => {
     if(ev !== null) {
         ENDPOINTS.VERSION = ev.currentTarget.value;
@@ -34,8 +73,6 @@ const setEndpoints = (ev = null) => {
     document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion${ENDPOINTS.VERSION}`);
     sourceDataChecks[0].sourceFile = ENDPOINTS.METADATA;
 }
-
-setEndpoints();
 
 class ReadyToRunTests {
     static PageReady        = false;
@@ -106,43 +143,6 @@ class TestState {
     }
 }
 
-const sourceDataChecks = [
-    {
-        "validate": "LitCalMetadata",
-        "sourceFile": ENDPOINTS.METADATA,
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeTempore",
-        "sourceFile": "data/propriumdetempore.json",
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeSanctis1970",
-        "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeSanctis2002",
-        "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeSanctis2008",
-        "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "MemorialsFromDecrees",
-        "sourceFile": "data/memorialsFromDecrees/memorialsFromDecrees.json",
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "RegionalCalendarsIndex",
-        "sourceFile": "nations/index.json",
-        "category": "universalcalendar"
-    }
-];
 
 const testTemplate = ( calendarName ) => {
     return `
@@ -732,6 +732,8 @@ const connectWebSocket = () => {
         }
     }
 }
+
+setEndpoints();
 
 Promise.all([
     fetch( ENDPOINTS.METADATA, {
