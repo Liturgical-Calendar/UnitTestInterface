@@ -758,7 +758,7 @@ const fetchMetadataAndTests = () => {
                 for ( const value of Object.values( national_calendars ) ) {
                     DiocesanCalendarsArr.push( ...value );
                 }
-                for ( const calendar of diocesan_calendarsArr ) {
+                for ( const calendar of DiocesanCalendarsArr ) {
                     DiocesanCalendarTemplates.push( testTemplate( calendar ) );
                 }
                 for ( const [ key, value ] of Object.entries( diocesan_calendars ) ) {
