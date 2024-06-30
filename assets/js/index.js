@@ -10,7 +10,7 @@ const ENDPOINTS = {
     VERSION: "dev",
     METADATA: "",
     TESTSINDEX: "",
-    DECREES
+    DECREES: ""
 }
 
 const sourceDataChecks = [
