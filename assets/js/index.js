@@ -73,7 +73,7 @@ const setEndpoints = (ev = null) => {
             ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
         break;
     }
-    document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion${ENDPOINTS.VERSION}`);
+    document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
     sourceDataChecks[0].sourceFile = ENDPOINTS.METADATA;
 }
 
@@ -528,18 +528,18 @@ let failedUnitTests = 0;
 let connectionAttempt = null;
 let conn;
 
-let currentSelectedCalendar = "VATICAN";
-let currentNationalCalendar = "VATICAN";
-let currentCalendarCategory = "nationalcalendar";
-let currentResponseType = "JSON";
-let currentSourceDataChecks = [];
-let countryNames = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
-let CalendarNations = [];
-let selectOptions = {};
-let NationalCalendarsArr = [];
-let DiocesanCalendarsArr = [];
-let NationalCalendarTemplates = [ testTemplate( currentSelectedCalendar ) ];
-let DiocesanCalendarTemplates = [];
+let currentSelectedCalendar     = "VATICAN";
+let currentNationalCalendar     = "VATICAN";
+let currentCalendarCategory     = "nationalcalendar";
+let currentResponseType         = "JSON";
+let currentSourceDataChecks     = [];
+let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
+let CalendarNations             = [];
+let selectOptions               = {};
+let NationalCalendarsArr        = [];
+let DiocesanCalendarsArr        = [];
+let NationalCalendarTemplates   = [ testTemplate( currentSelectedCalendar ) ];
+let DiocesanCalendarTemplates   = [];
 
 let SpecificUnitTestCategories = [];
 let SpecificUnitTestYears = {};
@@ -568,7 +568,15 @@ const runTests = () => {
                     index = 0;
                     calendarIndex = 0;
                     performance.mark( 'calendarDataTestsStart' );
-                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, responsetype: currentResponseType } ) );
+                    conn.send(
+                        JSON.stringify({
+                            action: 'validateCalendar',
+                            year: Years[ index++ ],
+                            calendar: currentSelectedCalendar,
+                            category: currentCalendarCategory,
+                            responsetype: currentResponseType
+                        })
+                    );
                     $('#calendarDataTests').collapse('show');
                 }
             }
