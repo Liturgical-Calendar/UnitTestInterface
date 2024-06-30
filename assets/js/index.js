@@ -57,24 +57,26 @@ const setEndpoints = (ev = null) => {
     } else {
         ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
     }
+    console.info('ENDPOINTS.VERSION set to ' + ENDPOINTS.VERSION);
     switch(ENDPOINTS.VERSION) {
         case 'dev':
-            ENDPOINTS.METADATA =    `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
-            ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
-        break;
+            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
+            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
+            break;
         case 'v4':
         case 'v9':
-            ENDPOINTS.METADATA =    `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
-            ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
-            ENDPOINTS.DECREES =     `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
-        break;
+            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
+            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
+            ENDPOINTS.DECREES     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
+            break;
         case 'v3':
-            ENDPOINTS.METADATA =    `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
-            ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
-        break;
+            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
+            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
+            break;
     }
     document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
     sourceDataChecks[0].sourceFile = ENDPOINTS.METADATA;
+    sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
 }
 
 class ReadyToRunTests {
