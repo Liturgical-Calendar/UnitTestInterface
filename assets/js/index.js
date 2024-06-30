@@ -41,7 +41,7 @@ const sourceDataChecks = [
     },
     {
         "validate": "MemorialsFromDecrees",
-        "sourceFile": "data/memorialsFromDecrees/memorialsFromDecrees.json",
+        "sourceFile": ENDPOINTS.DECREES,
         "category": "universalcalendar"
     },
     {
