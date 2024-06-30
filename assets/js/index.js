@@ -9,7 +9,8 @@ while (baseYear <= twentyFiveYearsFromNow ) {
 const ENDPOINTS = {
     VERSION: "dev",
     METADATA: "",
-    TESTSINDEX: ""
+    TESTSINDEX: "",
+    DECREES
 }
 
 const sourceDataChecks = [
@@ -58,16 +59,18 @@ const setEndpoints = (ev = null) => {
     }
     switch(ENDPOINTS.VERSION) {
         case 'dev':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
+            ENDPOINTS.METADATA =    `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
+            ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
         break;
+        case 'v4':
         case 'v9':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v9/calendars/`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v9/tests/`;
+            ENDPOINTS.METADATA =    `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
+            ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
+            ENDPOINTS.DECREES =     `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
         break;
         case 'v3':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
+            ENDPOINTS.METADATA =    `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
+            ENDPOINTS.TESTSINDEX =  `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
         break;
     }
     document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion${ENDPOINTS.VERSION}`);
