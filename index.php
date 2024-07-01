@@ -61,20 +61,49 @@ include_once('layout/head.php');
                         <option data-responsetype="ics" value="ICS">ICS</option>
                     </select>
                 </div>
-                <div class="col-2"><button id="startTestRunnerBtn" type="button" class="btn btn-primary" disabled><i class="fa fa-rotate fa-fw d-inline-block"></i> <?php echo _("Run Tests"); ?></button></div>
+                <div class="col-2">
+                    <button id="startTestRunnerBtn" type="button"
+                            class="btn btn-primary" disabled
+                    ><i class="fa fa-rotate fa-fw d-inline-block"></i> <span id="startTestRunnerBtnLbl"><?php
+                        echo _("Run Tests");
+                    ?></span></button>
+                </div>
                 <div class="col-1"></div>
-                <div class="col-2 text-white bg-success p-2"><i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCount" class="successfulCount">0</span></div>
-                <div class="col-1 text-white bg-danger p-2"><i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCount" class="failedCount">0</span></div>
-                <div class="col-3 text-white bg-dark p-2"><i class="fas fa-stopwatch fa-fw"></i> <?php echo sprintf(_("Total time for %s tests:"), "<span id=\"total-tests-count\"></span>"); ?> <span id="total-time">0 seconds, 0ms</span></div>
+                <div class="col-2 text-white bg-success p-2">
+                    <i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCount" class="successfulCount">0</span>
+                </div>
+                <div class="col-1 text-white bg-danger p-2">
+                    <i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCount" class="failedCount">0</span>
+                </div>
+                <div class="col-3 text-white bg-dark p-2">
+                    <i class="fas fa-stopwatch fa-fw"></i> <?php
+                        echo sprintf(_("Total time for %s tests:"), "<span id=\"total-tests-count\"></span>");
+                    ?> <span id="total-time">0 seconds, 0ms</span>
+                </div>
             </div>
             <div class="accordion" id="testSuiteAccordion">
                 <div class="accordion-item">
                     <h2 class="row g-0 accordion-header" id="sourceDataHeader">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sourceDataTests" aria-expanded="true" aria-controls="sourceDataTests">
+                        <button class="accordion-button" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sourceDataTests"
+                            aria-expanded="true" aria-controls="sourceDataTests"
+                        >
                             <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("VALIDATE SOURCE DATA"); ?></span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulSourceDataTestsCount" class="successfulCount">0</span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedSourceDataTestsCount" class="failedCount">0</span></div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> <?php echo sprintf(_("Total time for %s tests:"), "<span id=\"totalSourceDataTestsCount\"></span>"); ?> <span id="totalSourceDataTestsTime">0 seconds, 0ms</span></div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-success">
+                                <i class="fas fa-circle-check fa-fw"></i> <?php
+                                    echo _("Successful tests:");
+                                ?> <span id="successfulSourceDataTestsCount" class="successfulCount">0</span>
+                            </div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
+                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
+                                    echo _("Failed tests:");
+                                ?> <span id="failedSourceDataTestsCount" class="failedCount">0</span>
+                            </div>
+                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
+                                <i class="fas fa-stopwatch fa-fw"></i> <?php
+                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalSourceDataTestsCount\"></span>");
+                                ?> <span id="totalSourceDataTestsTime">0 seconds, 0ms</span>
+                            </div>
                         </button>
                     </h2>
                     <div id="sourceDataTests" class="accordion-collapse collapse show" aria-labelledby="sourceDataHeader" data-bs-parent="#testSuiteAccordion">
@@ -83,11 +112,30 @@ include_once('layout/head.php');
                 </div>
                 <div class="accordion-item">
                     <h2 class="row g-0 accordion-header" id="calendarDataHeader">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#calendarDataTests" aria-expanded="false" aria-controls="calendarDataTests">
-                            <div class="col-4"><i class="fas fa-file-export fa-fw"></i>&nbsp;<?php echo _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"); ?>&nbsp;<span class="yearMax"></span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCalendarDataTestsCount" class="successfulCount">0</span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCalendarDataTestsCount" class="failedCount">0</span></div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> <?php echo sprintf(_("Total time for %s tests:"), "<span id=\"totalCalendarDataTestsCount\"></span>"); ?> <span id="totalCalendarDataTestsTime">0 seconds, 0ms</span></div>
+                        <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#calendarDataTests"
+                            aria-expanded="false" aria-controls="calendarDataTests"
+                        >
+                            <div class="col-4">
+                                <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
+                                    echo _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL");
+                                ?>&nbsp;<span class="yearMax"></span>
+                            </div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-success">
+                                <i class="fas fa-circle-check fa-fw"></i> <?php
+                                    echo _("Successful tests:");
+                                ?> <span id="successfulCalendarDataTestsCount" class="successfulCount">0</span>
+                            </div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
+                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
+                                    echo _("Failed tests:");
+                                ?> <span id="failedCalendarDataTestsCount" class="failedCount">0</span>
+                            </div>
+                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
+                                <i class="fas fa-stopwatch fa-fw"></i> <?php
+                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalCalendarDataTestsCount\"></span>");
+                                ?> <span id="totalCalendarDataTestsTime">0 seconds, 0ms</span>
+                            </div>
                         </button>
                     </h2>
                     <div id="calendarDataTests" class="accordion-collapse collapse" aria-labelledby="calendarDataHeader" data-bs-parent="#testSuiteAccordion">
@@ -96,11 +144,29 @@ include_once('layout/head.php');
                 </div>
                 <div class="accordion-item">
                     <h2 class="row g-0 accordion-header" id="specificUnitTestHeader">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTests" aria-expanded="false" aria-controls="specificUnitTests">
-                            <div class="col-4"><i class="fas fa-file-shield fa-fw"></i>&nbsp;<?php echo _("EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"); ?></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulUnitTestsCount" class="successfulCount">0</span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedUnitTestsCount" class="failedCount">0</span></div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> <?php echo sprintf(_("Total time for %s tests:"), "<span id=\"totalUnitTestsCount\"></span>"); ?> <span id="totalUnitTestsTime">0 seconds, 0ms</span></div>
+                        <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#specificUnitTests"
+                            aria-expanded="false" aria-controls="specificUnitTests"
+                        >
+                            <div class="col-4"><i class="fas fa-file-shield fa-fw"></i>&nbsp;<?php
+                                echo _("EXECUTE UNIT TESTS FOR SPECIFIC EVENTS");
+                            ?>
+                            </div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-success">
+                                <i class="fas fa-circle-check fa-fw"></i> <?php
+                                    echo _("Successful tests:");
+                                ?> <span id="successfulUnitTestsCount" class="successfulCount">0</span>
+                            </div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
+                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
+                                    echo _("Failed tests:");
+                                ?> <span id="failedUnitTestsCount" class="failedCount">0</span>
+                            </div>
+                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
+                                <i class="fas fa-stopwatch fa-fw"></i> <?php
+                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalUnitTestsCount\"></span>");
+                                ?> <span id="totalUnitTestsTime">0 seconds, 0ms</span>
+                            </div>
                         </button>
                     </h2>
                     <div id="specificUnitTests" class="accordion-collapse collapse" aria-labelledby="specificUnitTestHeader" data-bs-parent="#testSuiteAccordion">
