@@ -934,7 +934,7 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 
 const setupPage = () => {
     $( document ).ready( () => {
-        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').text();
+        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
         if( $('#APICalendarSelect').children().length === 1 ) {
             nations.forEach( item => {
                 if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
