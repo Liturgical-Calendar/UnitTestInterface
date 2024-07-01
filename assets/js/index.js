@@ -598,7 +598,12 @@ const runTests = () => {
                     console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                     performance.mark( 'specificUnitTestsStart' );
                     performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                    conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                    conn.send( JSON.stringify({
+                        ...SpecificUnitTestCategories[ index ],
+                        year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
+                        calendar: currentSelectedCalendar,
+                        category: currentCalendarCategory
+                    }) );
                     $('#specificUnitTests').collapse('show');
                     $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
                 }
@@ -613,16 +618,29 @@ const runTests = () => {
                 console.log( `Specific unit test ${SpecificUnitTestCategories[ index - 1 ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
                 console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
-                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`, `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
+                let totalUnitTestTime = performance.measure(
+                    'litcalUnitTestRunner',
+                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
+                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
+                );
                 $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                conn.send( JSON.stringify({
+                    ...SpecificUnitTestCategories[ index ],
+                    year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
+                    calendar: currentSelectedCalendar,
+                    category: currentCalendarCategory
+                }) );
                 $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
-                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`, `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
+                let totalUnitTestTime = performance.measure(
+                    'litcalUnitTestRunner',
+                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
+                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
+                );
                 $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
                 currentState = TestState.JobsFinished;
                 runTests();
@@ -863,37 +881,37 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
     let searchProp = appliesToOrFilter === 'appliesTo' ? appliesToProp : appliesToOrFilter;
     let prop = Object.keys( unitTest[searchProp] )[0];
     switch( prop ) {
-        case 'nationalcalendar':
+        case 'national_calendar':
             if( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = (currentNationalCalendar !== unitTest[appliesToProp].nationalcalendar);
+                shouldReturn = (currentNationalCalendar !== unitTest[appliesToProp].national_calendar);
             } else {
-                shouldReturn = (currentNationalCalendar === unitTest[appliesToProp].nationalcalendar);
+                shouldReturn = (currentNationalCalendar === unitTest[appliesToProp].national_calendar);
             }
             break;
-        case 'nationalcalendars':
+        case 'national_calendars':
             if( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = (false === unitTest[appliesToProp].nationalcalendars.includes( currentNationalCalendar ));
+                shouldReturn = (false === unitTest[appliesToProp].national_calendars.includes( currentNationalCalendar ));
             } else {
-                shouldReturn = ( unitTest[appliesToProp].nationalcalendars.includes( currentNationalCalendar ) );
+                shouldReturn = ( unitTest[appliesToProp].national_calendars.includes( currentNationalCalendar ) );
             }
         break;
-        case 'diocesancalendar':
+        case 'diocesan_calendar':
             if( currentCalendarCategory === 'diocesancalendar' ) {
                 if( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( currentSelectedCalendar !== unitTest[appliesToProp].diocesancalendar );
+                    shouldReturn = ( currentSelectedCalendar !== unitTest[appliesToProp].diocesan_calendar );
                 } else {
-                    shouldReturn = ( currentSelectedCalendar === unitTest[appliesToProp].diocesancalendar );
+                    shouldReturn = ( currentSelectedCalendar === unitTest[appliesToProp].diocesan_calendar );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
             }
             break;
-        case 'diocesancalendars':
+        case 'diocesan_calendars':
             if( currentCalendarCategory === 'diocesancalendar' ) {
                 if( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( false === unitTest[appliesToProp].diocesancalendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( false === unitTest[appliesToProp].diocesan_calendars.includes( currentSelectedCalendar ) );
                 } else {
-                    shouldReturn = ( unitTest[appliesToProp].diocesancalendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( unitTest[appliesToProp].diocesan_calendars.includes( currentSelectedCalendar ) );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
@@ -1046,7 +1064,6 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
     setupPage();
     ReadyToRunTests.tryEnableBtn();
-
 });
 
 $( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
