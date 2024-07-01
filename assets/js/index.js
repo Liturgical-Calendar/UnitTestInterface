@@ -93,7 +93,7 @@ class ReadyToRunTests {
         let testsReady = ReadyToRunTests.check();
         $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
         $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
-
+        setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
         if( testsReady ) {
             $( '.page-loader' ).fadeOut('slow');
         }
