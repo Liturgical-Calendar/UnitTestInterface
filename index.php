@@ -45,7 +45,7 @@ include_once('layout/head.php');
     <div class="container-fluid">
 
         <div id="testsContainer">
-            <div class="row mb-3 text-center g-3 litcaltests-header align-items-center justify-content-center">
+            <div class="row mb-3 text-center g-3 litcaltests-header align-items-end justify-content-center">
                 <div class="col-2">
                     <label for="APICalendarSelect"><?php echo _("Liturgical Calendar"); ?></label>
                     <select id="APICalendarSelect" class="form-select form-select-sm">
