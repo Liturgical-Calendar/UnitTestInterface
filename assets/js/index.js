@@ -515,6 +515,8 @@ let yearIndex;
 let messageCounter;
 let nations = [];
 
+let startTestRunnerBtnLbl = '';
+
 let successfulTests = 0;
 let failedTests = 0;
 
@@ -649,9 +651,10 @@ const runTests = () => {
         case TestState.JobsFinished:
             console.log( 'All jobs finished!' );
             $( '#tests-complete' ).toast( 'show' );
-            $( '.fa-spin' ).closest( '.btn-primary' ).prop( 'disabled', true );
-            $( '.fa-spin' ).closest( '.btn-primary' ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' ).find( '.fa-rotate' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' );
+            let $btnPrimary = $( '.fa-spin' ).closest( '.btn-primary' );
+            $btnPrimary.prop( 'disabled', true ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' );
+            $( '.fa-spin' ).removeClass( 'fa-spin' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
+            setTestRunnerBtnLblTxt('Tests Complete');
             break;
     }
 }
@@ -743,8 +746,10 @@ const connectWebSocket = () => {
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
-            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
+            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' )
+                .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
             $( '#websocket-closed' ).toast( 'show' );
+            $( '.fa-spin' ).removeClass( 'fa-spin' );
             setTimeout( function () {
                 connectWebSocket();
             }, 3000 );
@@ -752,16 +757,22 @@ const connectWebSocket = () => {
     }
 
     conn.onerror = ( e ) => {
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
+        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
+            .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
         console.error( 'Websocket connection error:' );
         console.log( e );
         $( '#websocket-error' ).toast( 'show' );
+        $( '.fa-spin' ).removeClass( 'fa-spin' );
         if ( connectionAttempt === null ) {
             connectionAttempt = setInterval( function () {
                 connectWebSocket();
             }, 3000 );
         }
     }
+}
+
+const setTestRunnerBtnLblTxt = (txt) => {
+    document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
 }
 
 const fetchMetadataAndTests = () => {
@@ -923,6 +934,7 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 
 const setupPage = () => {
     $( document ).ready( () => {
+        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').text();
         if( $('#APICalendarSelect').children().length === 1 ) {
             nations.forEach( item => {
                 if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
@@ -1093,12 +1105,15 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
             console.warn( conn.readyState.toString );
+        } else {
+            performance.mark( 'litcalTestRunnerStart' );
+            $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
+            setTestRunnerBtnLblTxt('Tests Running...');
+            console.log( `currentState = ${currentState}` );
+            runTests();
         }
-        performance.mark( 'litcalTestRunnerStart' );
-        $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
-        console.log( `currentState = ${currentState}` );
-        runTests();
     } else {
+        //TODO: perhaps we could allow to interrupt running tests?
         console.warn('Please do not try to start a test run while tests are running!');
     }
 });
