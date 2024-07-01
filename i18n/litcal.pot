@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-29 01:12+0000\n"
+"POT-Creation-Date: 2024-07-01 21:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -47,36 +47,36 @@ msgstr ""
 msgid "Response Format"
 msgstr ""
 
-#: index.php:64
+#: index.php:68
 msgid "Run Tests"
 msgstr ""
 
-#: index.php:66 index.php:75 index.php:88 index.php:101
+#: index.php:73 index.php:94 index.php:126 index.php:157
 msgid "Successful tests:"
 msgstr ""
 
-#: index.php:67 index.php:76 index.php:89 index.php:102
+#: index.php:76 index.php:99 index.php:131 index.php:162
 msgid "Failed tests:"
 msgstr ""
 
-#: index.php:68 index.php:77 index.php:90 index.php:103
+#: index.php:80 index.php:104 index.php:136 index.php:167
 #, php-format
 msgid "Total time for %s tests:"
 msgstr ""
 
-#: index.php:74
+#: index.php:91
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
-#: index.php:87
+#: index.php:121
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"
 msgstr ""
 
-#: index.php:100
+#: index.php:152
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:120
+#: index.php:186
 msgid "Loading..."
 msgstr ""
 
