@@ -248,7 +248,7 @@ let CalendarNations             = [];
 let NationalCalendarsArr        = [];
 let DiocesanCalendarsArr        = [];
 
-fetch( ENDPOINTS.METADATA, {
+fetch( ENDPOINTS.CALENDARS, {
     method: "POST",
     mode: "cors",
     headers: {
