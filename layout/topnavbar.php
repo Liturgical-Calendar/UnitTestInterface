@@ -17,10 +17,10 @@
                 </a>
             </li>
             <li class="nav-item ms-4<?php $currentPage === 'index' ? ' active' : '' ?>">
-                <a href="index.php"><?php echo _('Calendars'); ?></a>
+                <a class="nav-link" href="index.php"><?php echo _('Calendars'); ?></a>
             </li>
             <li class="nav-item ms-4<?php $currentPage === 'resources' ? ' active' : '' ?>">
-                <a href="resources.php"><?php echo _('Resources'); ?></a>
+                <a class="nav-link" href="resources.php"><?php echo _('Resources'); ?></a>
             </li>
             <li class="nav-item ms-4">
                 <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link"><i class="fas fa-code-branch me-2"></i><?php
