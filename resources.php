@@ -45,7 +45,7 @@ include_once('layout/head.php');
 
         <div id="testsContainer">
             <div class="row mb-3 text-center g-3 litcaltests-header align-items-end justify-content-center">
-                <div class="col-1">
+                <div class="col-2">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
                         <option data-responsetype="json" value="JSON">JSON</option>
