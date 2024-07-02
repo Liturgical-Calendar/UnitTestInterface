@@ -1,6 +1,4 @@
-<?php
-    $currentPage = basename($_SERVER["SCRIPT_FILENAME"], '.php');
-?>    <!-- Topbar -->
+    <!-- Topbar -->
     <nav class="sb-topnav navbar navbar-expand navbar-light bg-white shadow">
         <!-- Navbar Brand -->
         <a class="navbar-brand text-danger ps-3"><i class="me-3 fas fa-cross"></i>LitCal Unit Tests</a>
@@ -10,17 +8,11 @@
         <?php } ?>
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-            <li class="nav-item ms-2">
-                <a class="nav-link btn btn-outline-light border-0 fw-bold" href="https://litcal.johnromanodorazio.com"><?php
-                    echo _("LitCal Project");
-                ?><i class="fas fa-arrow-up-right-from-square ms-2"></i>
-                </a>
+            <li class="nav-item ms-4">
+                <a class="nav-link<?php $pageName === 'index' ? ' active b' : '' ?>" href="index.php"><?php echo _('Calendars'); ?></a>
             </li>
-            <li class="nav-item ms-4<?php $currentPage === 'index' ? ' active' : '' ?>">
-                <a class="nav-link" href="index.php"><?php echo _('Calendars'); ?></a>
-            </li>
-            <li class="nav-item ms-4<?php $currentPage === 'resources' ? ' active' : '' ?>">
-                <a class="nav-link" href="resources.php"><?php echo _('Resources'); ?></a>
+            <li class="nav-item ms-4">
+                <a class="nav-link<?php $pageName === 'resources' ? ' active' : '' ?>" href="resources.php"><?php echo _('Resources'); ?></a>
             </li>
             <li class="nav-item ms-4">
                 <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link"><i class="fas fa-code-branch me-2"></i><?php
@@ -68,6 +60,12 @@
                 ?></div>
             </li>
             <?php } ?>
+            <li class="nav-item ms-2">
+                <a class="nav-link btn btn-outline-light border-0 fw-bold" href="https://litcal.johnromanodorazio.com"><?php
+                    echo _("LitCal Project");
+                ?><i class="fas fa-arrow-up-right-from-square ms-2"></i>
+                </a>
+            </li>
         </ul>
         <a class="btn btn-outline-light text-dark border-0 fw-bold"
             href="/admin.php?apiVersion=dev"
