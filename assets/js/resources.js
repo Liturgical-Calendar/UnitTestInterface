@@ -500,6 +500,7 @@ const setupPage = () => {
         let resourcePathHtml = resourcePaths.map(resourceTemplate).join('');
         document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
         ReadyToRunTests.PageReady = true;
+        connectWebSocket();
     });
 }
 
@@ -536,7 +537,7 @@ fetch( ENDPOINTS.CALENDARS, {
     nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
     CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
     ReadyToRunTests.MetaDataReady = true;
-    console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
+    console.log( 'Metadata is ready' );
     setupPage();
 })
 
