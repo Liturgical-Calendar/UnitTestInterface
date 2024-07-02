@@ -552,9 +552,12 @@ fetch( ENDPOINTS.CALENDARS, {
         }
     }
     WiderRegionsArr.push( ...wider_regions );
-    NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+    //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
     NationalCalendarsArr.forEach(nation => {
         resourcePaths[`nation-${nation}`] = `/data/nation/${nation}`;
+    });
+    DiocesanCalendarsArr.forEach(diocese => {
+        resourcePaths[`diocese-${diocese}`] = `/data/diocese/${diocese}`;
     });
     ReadyToRunTests.MetaDataReady = true;
     console.log( 'Metadata is ready' );
