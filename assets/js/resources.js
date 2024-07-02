@@ -223,6 +223,6 @@ const setTestRunnerBtnLblTxt = (txt) => {
 
 $(document).ready(() =>  {
     let resourcePathHtml = resourcePaths.map(resourceTemplate).join('');
-    document.querySelector('#resourceDataTests').innerHTML = resourcePathHtml;
+    document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
     $( '.page-loader' ).fadeOut('slow');
 });
