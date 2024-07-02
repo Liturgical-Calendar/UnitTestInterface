@@ -240,6 +240,15 @@ const setTestRunnerBtnLblTxt = (txt) => {
     document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
 }
 
+const setupPage = () => {
+    $(document).ready(() =>  {
+        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        let resourcePathHtml = resourcePaths.map(resourceTemplate).join('');
+        document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
+        ReadyToRunTests.PageReady = true;
+    });
+}
+
 let MetaData = null;
 let startTestRunnerBtnLbl = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
@@ -247,6 +256,8 @@ let nations = [];
 let CalendarNations             = [];
 let NationalCalendarsArr        = [];
 let DiocesanCalendarsArr        = [];
+
+setEndpoints();
 
 fetch( ENDPOINTS.CALENDARS, {
     method: "POST",
@@ -275,11 +286,4 @@ fetch( ENDPOINTS.CALENDARS, {
     setupPage();
 })
 
-const setupPage = () => {
-    $(document).ready(() =>  {
-        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
-        let resourcePathHtml = resourcePaths.map(resourceTemplate).join('');
-        document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
-        ReadyToRunTests.PageReady = true;
-    });
-}
+$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
