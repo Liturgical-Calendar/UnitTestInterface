@@ -104,10 +104,10 @@ include_once('layout/head.php');
                     </div>
                 </div>
                 <div class="accordion-item">
-                    <h2 class="row g-0 accordion-header" id="calendarDataHeader">
+                    <h2 class="row g-0 accordion-header" id="resourceDataHeader">
                         <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#calendarDataTests"
-                            aria-expanded="false" aria-controls="calendarDataTests"
+                            data-bs-toggle="collapse" data-bs-target="#resourceDataTests"
+                            aria-expanded="false" aria-controls="resourceDataTests"
                         >
                             <div class="col-4">
                                 <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
@@ -131,8 +131,8 @@ include_once('layout/head.php');
                             </div>
                         </button>
                     </h2>
-                    <div id="calendarDataTests" class="accordion-collapse collapse" aria-labelledby="calendarDataHeader" data-bs-parent="#testSuiteAccordion">
-                        <div class="row g-0 calendardata-tests"></div>
+                    <div id="resourceDataTests" class="accordion-collapse collapse" aria-labelledby="resourceDataHeader" data-bs-parent="#testSuiteAccordion">
+                        <div class="row g-0 resourcedata-tests"></div>
                     </div>
                 </div>
             </div><!-- end accordion -->
