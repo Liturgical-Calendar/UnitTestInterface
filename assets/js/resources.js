@@ -519,13 +519,13 @@ const setupPage = () => {
     });
 }
 
+
 let MetaData = null;
 let startTestRunnerBtnLbl = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
-let nations = [];
-let CalendarNations             = [];
 let NationalCalendarsArr        = [];
 let DiocesanCalendarsArr        = [];
+let WiderRegionsArr             = [];
 let connectionAttempt = null;
 let conn;
 
@@ -542,17 +542,18 @@ fetch( ENDPOINTS.CALENDARS, {
 .then(data => {
     MetaData = data.litcal_metadata;
     const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
+    //we're currently getting the dioceses from the national_calendars,
+    //and the nations from the diocesan_calendars!
     for ( const value of Object.values( national_calendars ) ) {
         DiocesanCalendarsArr.push( ...value );
     }
-    for ( const [ key, value ] of Object.entries( diocesan_calendars ) ) {
-        if ( CalendarNations.indexOf( value.nation ) === -1 ) {
-            CalendarNations.push( value.nation );
+    for ( const value of Object.values( diocesan_calendars ) ) {
+        if ( NationalCalendarsArr.indexOf( value.nation ) === -1 ) {
+            NationalCalendarsArr.push( value.nation );
         }
     }
-    nations = Object.keys( national_calendars );
-    nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
-    CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+    WiderRegionsArr.push( ...wider_regions );
+    NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
     ReadyToRunTests.MetaDataReady = true;
     console.log( 'Metadata is ready' );
     setupPage();
