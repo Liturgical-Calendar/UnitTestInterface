@@ -511,6 +511,8 @@ let nations = [];
 let CalendarNations             = [];
 let NationalCalendarsArr        = [];
 let DiocesanCalendarsArr        = [];
+let connectionAttempt = null;
+let conn;
 
 setEndpoints();
 
