@@ -87,7 +87,7 @@ include_once('layout/head.php');
                             data-bs-toggle="collapse" data-bs-target="#sourceDataTests"
                             aria-expanded="true" aria-controls="sourceDataTests"
                         >
-                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("VALIDATE SOURCE DATA"); ?></span></div>
+                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("API Paths"); ?></span></div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">
                                 <i class="fas fa-circle-check fa-fw"></i> <?php
                                     echo _("Successful tests:");
@@ -117,8 +117,8 @@ include_once('layout/head.php');
                         >
                             <div class="col-4">
                                 <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
-                                    echo _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL");
-                                ?>&nbsp;<span class="yearMax"></span>
+                                    echo _("Source Data");
+                                ?></span>
                             </div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">
                                 <i class="fas fa-circle-check fa-fw"></i> <?php
@@ -141,38 +141,6 @@ include_once('layout/head.php');
                         <div class="row g-0 calendardata-tests"></div>
                     </div>
                 </div>
-                <div class="accordion-item">
-                    <h2 class="row g-0 accordion-header" id="specificUnitTestHeader">
-                        <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#specificUnitTests"
-                            aria-expanded="false" aria-controls="specificUnitTests"
-                        >
-                            <div class="col-4"><i class="fas fa-file-shield fa-fw"></i>&nbsp;<?php
-                                echo _("EXECUTE UNIT TESTS FOR SPECIFIC EVENTS");
-                            ?>
-                            </div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success">
-                                <i class="fas fa-circle-check fa-fw"></i> <?php
-                                    echo _("Successful tests:");
-                                ?> <span id="successfulUnitTestsCount" class="successfulCount">0</span>
-                            </div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
-                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
-                                    echo _("Failed tests:");
-                                ?> <span id="failedUnitTestsCount" class="failedCount">0</span>
-                            </div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
-                                <i class="fas fa-stopwatch fa-fw"></i> <?php
-                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalUnitTestsCount\"></span>");
-                                ?> <span id="totalUnitTestsTime">0 seconds, 0ms</span>
-                            </div>
-                        </button>
-                    </h2>
-                    <div id="specificUnitTests" class="accordion-collapse collapse" aria-labelledby="specificUnitTestHeader" data-bs-parent="#testSuiteAccordion">
-                        <div class="accordion bg-light p-3" id="specificUnitTestsAccordion">
-                        </div>
-                    </div><!-- specific unit test body -->
-                </div><!-- end accordion-item -->
             </div><!-- end accordion -->
         </div><!-- end testsContainer -->
     </div><!-- end containerFluid -->
