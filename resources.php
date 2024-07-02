@@ -1,4 +1,4 @@
-
+<?php
 define('SIDEBAR', false);
 include_once('layout/head.php');
 ?>
