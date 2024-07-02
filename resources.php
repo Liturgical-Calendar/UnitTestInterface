@@ -45,12 +45,6 @@ include_once('layout/head.php');
 
         <div id="testsContainer">
             <div class="row mb-3 text-center g-3 litcaltests-header align-items-end justify-content-center">
-                <div class="col-2">
-                    <label for="APICalendarSelect"><?php echo _("Liturgical Calendar"); ?></label>
-                    <select id="APICalendarSelect" class="form-select form-select-sm">
-                        <option data-calendartype="nationalcalendar" value="VATICAN"><?php echo _("General Roman"); ?></option>
-                    </select>
-                </div>
                 <div class="col-1">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
@@ -87,7 +81,7 @@ include_once('layout/head.php');
                             data-bs-toggle="collapse" data-bs-target="#sourceDataTests"
                             aria-expanded="true" aria-controls="sourceDataTests"
                         >
-                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("API Paths"); ?></span></div>
+                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("Source data"); ?></span></div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">
                                 <i class="fas fa-circle-check fa-fw"></i> <?php
                                     echo _("Successful tests:");
@@ -117,7 +111,7 @@ include_once('layout/head.php');
                         >
                             <div class="col-4">
                                 <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
-                                    echo _("Source Data");
+                                    echo _("API Paths");
                                 ?></span>
                             </div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">
