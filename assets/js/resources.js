@@ -605,6 +605,8 @@ const loadAsyncData = () => {
                     MissalsArr.push(missal.missal_id);
                     resourcePaths[`missals-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
                 });
+                ReadyToRunTests.MissalsReady = true;
+                console.log( 'Missals is ready');
                 if(MetaData !== null) {
                     console.log('MetaData was set first, proceeding to setup page...');
                     setupPage();
