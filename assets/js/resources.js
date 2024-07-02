@@ -2,16 +2,25 @@
 class ReadyToRunTests {
     static PageReady        = false;
     static SocketReady      = false;
-    static MetaDataReady   = false;
+    static MetaDataReady    = false;
+    static MissalsReady     = false;
     static check() {
-        return ( ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.MetaDataReady === true );
+        return (
+            ReadyToRunTests.PageReady === true
+            && ReadyToRunTests.SocketReady === true
+            && ReadyToRunTests.MetaDataReady === true
+            && ReadyToRunTests.MissalsReady === true
+        );
     }
     static tryEnableBtn() {
         console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
         console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.MetaDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
+        console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
         let testsReady = ReadyToRunTests.check();
         $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
+        // always make sure we have the fa-rotate class, ready to start spinning on button press
+        // we might be resetting after a previous run where last class was fa-stop
         $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
         setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
         if( testsReady ) {
@@ -295,6 +304,7 @@ const ENDPOINTS = {
     TESTS: "",
     DECREES: "",
     EVENTS: "",
+    MISSALS: ""
 }
 
 const sourceDataChecks = [
@@ -335,6 +345,14 @@ const sourceDataChecks = [
     }
 ];
 
+const resourceDataChecks = [
+    {
+        "validate": "",
+        "sourceFile": "",
+        "category": "resourceDataCheck"
+    }
+];
+
 const setEndpoints = (ev = null) => {
     if(ev !== null) {
         ENDPOINTS.VERSION = ev.currentTarget.value;
@@ -352,6 +370,7 @@ const setEndpoints = (ev = null) => {
             ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
             ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
             ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
+            ENDPOINTS.MISSALS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals/`;
             break;
         case 'v3':
             ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
@@ -365,7 +384,6 @@ const setEndpoints = (ev = null) => {
 
 const resourcePaths = {
     'calendars': '/calendars',
-    'missals':   '/missals',
     'decrees':   '/decrees',
     'events':    '/events',
     'easter':    '/easter',
@@ -519,52 +537,84 @@ const setupPage = () => {
 }
 
 
-let MetaData = null;
-let startTestRunnerBtnLbl = '';
+let MetaData                    = null;
+let Missals                     = null;
+let startTestRunnerBtnLbl       = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let NationalCalendarsArr        = [];
 let DiocesanCalendarsArr        = [];
 let WiderRegionsArr             = [];
-let connectionAttempt = null;
+let MissalsArr                  = [];
+let connectionAttempt           = null;
 let conn;
 
-setEndpoints();
+const loadAsyncData = () => {
+    Promise.all([
+        fetch( ENDPOINTS.CALENDARS, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                Accept: "application/json"
+            }
+        }).then(response => response.json()),
+        fetch( ENDPOINTS.MISSALS, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                Accept: "application/json"
+            }
+        }).then(response => response.json())
+    ]).then(dataArr => {
+        dataArr.forEach(data => {
+            if(data.hasOwnProperty('litcal_metadata')) {
+                MetaData = data.litcal_metadata;
+                const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
+                //we're currently getting the dioceses from the national_calendars,
+                //and the nations from the diocesan_calendars!
+                for ( const value of Object.values( national_calendars ) ) {
+                    DiocesanCalendarsArr.push( ...value );
+                }
+                for ( const value of Object.values( diocesan_calendars ) ) {
+                    if ( NationalCalendarsArr.indexOf( value.nation ) === -1 ) {
+                        NationalCalendarsArr.push( value.nation );
+                    }
+                }
+                WiderRegionsArr.push( ...wider_regions );
+                //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+                NationalCalendarsArr.forEach(nation => {
+                    resourcePaths[`nation-${nation}`] = `/data/nation/${nation}`;
+                });
+                DiocesanCalendarsArr.forEach(diocese => {
+                    resourcePaths[`diocese-${diocese}`] = `/data/diocese/${diocese}`;
+                });
+                WiderRegionsArr.forEach(wider_region => {
+                    resourcePaths[`wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
+                });
+                ReadyToRunTests.MetaDataReady = true;
+                console.log( 'Metadata is ready' );
+                if(Missals !== null) {
+                    console.log('Missals was set first, proceeding to setup page...');
+                    setupPage();
+                }
+            }
+            else if(data.hasOwnProperty('litcal_missals')) {
+                Missals = data.litcal_missals;
+                resourcePaths[`missals`] = `/missals`;
+                Missals.forEach(missal => {
+                    MissalsArr.push(missal.missal_id);
+                    resourcePaths[`missals-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
+                });
+                if(MetaData !== null) {
+                    console.log('MetaData was set first, proceeding to setup page...');
+                    setupPage();
+                }
+            }
+        });
+    });
 
-fetch( ENDPOINTS.CALENDARS, {
-    method: "POST",
-    mode: "cors",
-    headers: {
-        Accept: "application/json"
-    }
-})
-.then(response => response.json())
-.then(data => {
-    MetaData = data.litcal_metadata;
-    const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
-    //we're currently getting the dioceses from the national_calendars,
-    //and the nations from the diocesan_calendars!
-    for ( const value of Object.values( national_calendars ) ) {
-        DiocesanCalendarsArr.push( ...value );
-    }
-    for ( const value of Object.values( diocesan_calendars ) ) {
-        if ( NationalCalendarsArr.indexOf( value.nation ) === -1 ) {
-            NationalCalendarsArr.push( value.nation );
-        }
-    }
-    WiderRegionsArr.push( ...wider_regions );
-    //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
-    NationalCalendarsArr.forEach(nation => {
-        resourcePaths[`nation-${nation}`] = `/data/nation/${nation}`;
-    });
-    DiocesanCalendarsArr.forEach(diocese => {
-        resourcePaths[`diocese-${diocese}`] = `/data/diocese/${diocese}`;
-    });
-    WiderRegionsArr.forEach(wider_region => {
-        resourcePaths[`wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
-    });
-    ReadyToRunTests.MetaDataReady = true;
-    console.log( 'Metadata is ready' );
-    setupPage();
-})
+}
+
+setEndpoints();
+loadAsyncData();
 
 $(document).on('change', '#apiVersionsDropdownItems', setEndpoints);

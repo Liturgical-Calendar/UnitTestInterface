@@ -933,7 +933,7 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 }
 
 const setupPage = () => {
-    $( document ).ready( () => {
+    $( document ).ready(() => {
         startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
         if( $('#APICalendarSelect').children().length === 1 ) {
             nations.forEach( item => {
