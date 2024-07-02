@@ -9,10 +9,10 @@
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
             <li class="nav-item ms-4">
-                <a class="nav-link<?php $pageName === 'index' ? ' active' : '' ?>" href="index.php"><?php echo _('Calendars'); ?></a>
+                <a class="nav-link<?php echo $pageName === 'index' ? ' active' : '' ?>" href="index.php"><?php echo _('Calendars'); ?></a>
             </li>
             <li class="nav-item ms-4">
-                <a class="nav-link<?php $pageName === 'resources' ? ' active' : '' ?>" href="resources.php"><?php echo _('Resources'); ?></a>
+                <a class="nav-link<?php echo $pageName === 'resources' ? ' active' : '' ?>" href="resources.php"><?php echo _('Resources'); ?></a>
             </li>
             <li class="nav-item ms-4">
                 <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link"><i class="fas fa-code-branch me-2"></i><?php
