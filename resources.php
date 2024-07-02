@@ -65,7 +65,7 @@ include_once('layout/head.php');
                 <div class="col-2 text-white bg-success p-2">
                     <i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCount" class="successfulCount">0</span>
                 </div>
-                <div class="col-1 text-white bg-danger p-2">
+                <div class="col-2 text-white bg-danger p-2">
                     <i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCount" class="failedCount">0</span>
                 </div>
                 <div class="col-3 text-white bg-dark p-2">
