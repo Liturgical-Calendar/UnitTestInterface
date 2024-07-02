@@ -1,4 +1,6 @@
-    <!-- Topbar -->
+<?php
+    $currentPage = basename($_SERVER["SCRIPT_FILENAME"], '.php');
+?>    <!-- Topbar -->
     <nav class="sb-topnav navbar navbar-expand navbar-light bg-white shadow">
         <!-- Navbar Brand -->
         <a class="navbar-brand text-danger ps-3"><i class="me-3 fas fa-cross"></i>LitCal Unit Tests</a>
@@ -14,13 +16,19 @@
                 ?><i class="fas fa-arrow-up-right-from-square ms-2"></i>
                 </a>
             </li>
+            <li class="nav-item ms-4<?php $currentPage === 'index' ? ' active' : '' ?>">
+                <a href="index.php"><?php echo _('Calendars'); ?></a>
+            </li>
+            <li class="nav-item ms-4<?php $currentPage === 'resources' ? ' active' : '' ?>">
+                <a href="resources.php"><?php echo _('Resources'); ?></a>
+            </li>
             <li class="nav-item ms-4">
                 <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link"><i class="fas fa-code-branch me-2"></i><?php
                     echo _("API Version");
                 ?></label>
             </li>
             <li>
-            <select class="form-select"
+                <select class="form-select"
                     aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
                     <!-- v3 is not a viable option since it didn't use JSON unit test files -->
                     <!-- <option id="apiVersion-v3" value="v3">v3 (latest stable)</option> -->
