@@ -20,6 +20,21 @@ class ReadyToRunTests {
     }
 }
 
+class TestState {
+    static ReadyState                   = new TestState( 'ReadyState' );
+    static ExecutingValidations         = new TestState( 'ExecutingValidations' );
+    static ValidatingCalendarData       = new TestState( 'ValidatingCalendarData' );
+    static SpecificUnitTests            = new TestState( 'SpecificUnitTests' );
+    static JobsFinished                 = new TestState( 'JobsFinished' );
+
+    constructor( name ) {
+        this.name = name;
+    }
+    toString() {
+        return `TestState.${this.name}`;
+    }
+}
+
 const COUNTRIES = {
     "ÅLAND ISLANDS": "AX",
     "AFGHANISTAN": "AF",
