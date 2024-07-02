@@ -1,3 +1,79 @@
+
+const ENDPOINTS = {
+    VERSION: "dev",
+    CALENDARS: "",
+    TESTS: "",
+    DECREES: "",
+    EVENTS: "",
+}
+
+const sourceDataChecks = [
+    {
+        "validate": "LitCalMetadata",
+        "sourceFile": ENDPOINTS.CALENDARS,
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeTempore",
+        "sourceFile": "data/propriumdetempore.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis1970",
+        "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis2002",
+        "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "PropriumDeSanctis2008",
+        "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "MemorialsFromDecrees",
+        "sourceFile": ENDPOINTS.DECREES,
+        "category": "universalcalendar"
+    },
+    {
+        "validate": "RegionalCalendarsIndex",
+        "sourceFile": "nations/index.json",
+        "category": "universalcalendar"
+    }
+];
+
+const setEndpoints = (ev = null) => {
+    if(ev !== null) {
+        ENDPOINTS.VERSION = ev.currentTarget.value;
+    } else {
+        ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+    }
+    console.info('ENDPOINTS.VERSION set to ' + ENDPOINTS.VERSION);
+    switch(ENDPOINTS.VERSION) {
+        case 'dev':
+            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
+            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
+            break;
+        case 'v4':
+        case 'v9':
+            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
+            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
+            ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
+            break;
+        case 'v3':
+            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
+            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
+            break;
+    }
+    document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
+    sourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
+    sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
+}
+
+
 const resourcePaths = [
     '/calendars',
     '/missals',
@@ -27,7 +103,126 @@ const resourceTemplate = (resource, rowIdx) => `<div class="col-1 ${rowIdx === 0
     </div>
 </div>`;
 
+
+const connectWebSocket = () => {
+    conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
+
+    conn.onopen = ( e ) => {
+        console.log( "Websocket connection established!" );
+        $( '#websocket-connected' ).toast( 'show' );
+        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-danger' ).addClass( 'bg-success' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-xmark fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-check' );
+        if ( connectionAttempt !== null ) {
+            clearInterval( connectionAttempt );
+            connectionAttempt = null;
+        }
+        currentState = TestState.ReadyState;
+        ReadyToRunTests.SocketReady = true;
+        ReadyToRunTests.tryEnableBtn();
+    };
+
+    conn.onmessage = ( e ) => {
+        const responseData = JSON.parse( e.data );
+        console.log( responseData );
+        if ( responseData.type === "success" ) {
+            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-success' );
+            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
+            $( '#successfulCount' ).text( ++successfulTests );
+            switch( currentState ) {
+                case TestState.ExecutingValidations:
+                    $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
+                    break;
+                case TestState.ValidatingCalendarData:
+                    $( '#successfulCalendarDataTestsCount' ).text( ++successfulCalendarDataTests );
+                    break;
+                case TestState.SpecificUnitTests:
+                    $( '#successfulUnitTestsCount' ).text( ++successfulUnitTests );
+                    let specificUnitTestSuccessCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-success').length;
+                    $(`#successful${responseData.test}TestsCount`).text(specificUnitTestSuccessCount);
+                    break;
+            }
+        }
+        else if ( responseData.type === "error" ) {
+            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
+            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
+            $( responseData.classes ).find('.card-text').append(`<span title="${HTMLEncode( responseData.text )}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
+            $( '#failedCount' ).text( ++failedTests );
+            switch( currentState ) {
+                case TestState.ExecutingValidations:
+                    $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
+                    break;
+                case TestState.ValidatingCalendarData:
+                    $( '#failedCalendarDataTestsCount' ).text( ++failedCalendarDataTests );
+                    break;
+                case TestState.SpecificUnitTests:
+                    $( '#failedUnitTestsCount' ).text( ++failedUnitTests );
+                    let specificUnitTestFailedCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-danger').length;
+                    $(`#failed${responseData.test}TestsCount`).text(specificUnitTestFailedCount);
+                    break;
+            }
+        }
+        if ( currentState !== TestState.JobsFinished ) {
+            runTests();
+        }
+        performance.mark( 'litcalTestRunnerEnd' );
+        let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
+        console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
+        $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
+        switch( currentState ) {
+            case TestState.ExecutingValidations:
+                performance.mark( 'sourceDataTestsEnd' );
+                let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ) );
+                break;
+            case TestState.ValidatingCalendarData:
+                performance.mark( 'calendarDataTestsEnd' );
+                let totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
+                $( '#totalCalendarDataTestsTime' ).text( MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) ) );
+                break;
+            case TestState.SpecificUnitTests:
+                performance.mark( 'specificUnitTestsEnd' );
+                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
+                $( '#totalUnitTestsTime' ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
+                break;
+        }
+    };
+
+    conn.onclose = ( e ) => {
+        console.log( 'Connection closed on remote end' );
+        ReadyToRunTests.SocketReady = false;
+        ReadyToRunTests.tryEnableBtn();
+        if ( connectionAttempt === null ) {
+            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' )
+                .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
+            $( '#websocket-closed' ).toast( 'show' );
+            $( '.fa-spin' ).removeClass( 'fa-spin' );
+            setTimeout( function () {
+                connectWebSocket();
+            }, 3000 );
+        }
+    }
+
+    conn.onerror = ( e ) => {
+        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
+            .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
+        console.error( 'Websocket connection error:' );
+        console.log( e );
+        $( '#websocket-error' ).toast( 'show' );
+        $( '.fa-spin' ).removeClass( 'fa-spin' );
+        if ( connectionAttempt === null ) {
+            connectionAttempt = setInterval( function () {
+                connectWebSocket();
+            }, 3000 );
+        }
+    }
+}
+
+const setTestRunnerBtnLblTxt = (txt) => {
+    document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
+}
+
+
 $(document).ready(() =>  {
     let resourcePathHtml = resourcePaths.map((resource,idx) => resourceTemplate).join('');
     document.querySelector('#resourcedata-tests').innerHTML(resourcePathHtml);
+    $( '.page-loader' ).fadeOut('slow');
 });
