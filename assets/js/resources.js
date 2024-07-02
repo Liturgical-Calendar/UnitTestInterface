@@ -1,4 +1,25 @@
 
+class ReadyToRunTests {
+    static PageReady        = false;
+    static SocketReady      = false;
+    static MetaDataReady   = false;
+    static check() {
+        return ( ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.MetaDataReady === true );
+    }
+    static tryEnableBtn() {
+        console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
+        console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.MetaDataReady );
+        console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
+        let testsReady = ReadyToRunTests.check();
+        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
+        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
+        setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
+        if( testsReady ) {
+            $( '.page-loader' ).fadeOut('slow');
+        }
+    }
+}
+
 const ENDPOINTS = {
     VERSION: "dev",
     CALENDARS: "",
@@ -72,7 +93,6 @@ const setEndpoints = (ev = null) => {
     sourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
 }
-
 
 const resourcePaths = [
     '/calendars',
@@ -220,9 +240,46 @@ const setTestRunnerBtnLblTxt = (txt) => {
     document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
 }
 
+let MetaData = null;
+let startTestRunnerBtnLbl = '';
+let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
+let nations = [];
+let CalendarNations             = [];
+let NationalCalendarsArr        = [];
+let DiocesanCalendarsArr        = [];
 
-$(document).ready(() =>  {
-    let resourcePathHtml = resourcePaths.map(resourceTemplate).join('');
-    document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
-    $( '.page-loader' ).fadeOut('slow');
-});
+fetch( ENDPOINTS.METADATA, {
+    method: "POST",
+    mode: "cors",
+    headers: {
+        Accept: "application/json"
+    }
+})
+.then(response => response.json())
+.then(data => {
+    MetaData = data.litcal_metadata;
+    const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
+    for ( const value of Object.values( national_calendars ) ) {
+        DiocesanCalendarsArr.push( ...value );
+    }
+    for ( const [ key, value ] of Object.entries( diocesan_calendars ) ) {
+        if ( CalendarNations.indexOf( value.nation ) === -1 ) {
+            CalendarNations.push( value.nation );
+        }
+    }
+    nations = Object.keys( national_calendars );
+    nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
+    CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
+    ReadyToRunTests.MetaDataReady = true;
+    console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
+    setupPage();
+})
+
+const setupPage = () => {
+    $(document).ready(() =>  {
+        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        let resourcePathHtml = resourcePaths.map(resourceTemplate).join('');
+        document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
+        ReadyToRunTests.PageReady = true;
+    });
+}
