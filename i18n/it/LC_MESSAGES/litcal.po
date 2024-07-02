@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-02 17:06+0000\n"
+"POT-Creation-Date: 2024-07-02 17:18+0000\n"
 "PO-Revision-Date: 2024-05-31 07:33+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -187,27 +187,27 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: layout/topnavbar.php:15
-msgid "LitCal Project"
-msgstr ""
-
-#: layout/topnavbar.php:20
+#: layout/topnavbar.php:12
 msgid "Calendars"
 msgstr ""
 
-#: layout/topnavbar.php:23
+#: layout/topnavbar.php:15
 msgid "Resources"
 msgstr ""
 
-#: layout/topnavbar.php:27
+#: layout/topnavbar.php:19
 msgid "API Version"
 msgstr ""
 
-#: layout/topnavbar.php:67
+#: layout/topnavbar.php:59
 msgid "Websocket connection status"
 msgstr ""
 
-#: layout/topnavbar.php:75 layout/sidebar.php:23
+#: layout/topnavbar.php:65
+msgid "LitCal Project"
+msgstr ""
+
+#: layout/topnavbar.php:73 layout/sidebar.php:23
 msgid "Unit Tests Admin"
 msgstr ""
 
