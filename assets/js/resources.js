@@ -558,8 +558,9 @@ const loadAsyncData = () => {
             }
         }).then(response => response.json()),
         fetch( ENDPOINTS.MISSALS, {
-            method: "POST",
-            mode: "cors",
+            //TODO: using 'POST' method is giving a Cors error, why?
+            //      https://litcal-tests.johnromanodorazio.com is set as an allowed origin
+            method: "GET",
             headers: {
                 Accept: "application/json"
             }
