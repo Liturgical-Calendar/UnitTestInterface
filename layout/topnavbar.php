@@ -8,10 +8,10 @@
         <?php } ?>
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-            <li class="nav-item ms-4">
+            <li class="nav-item ms-4<?php echo $pageName === 'index' ? ' bg-info' : '' ?>">
                 <a class="nav-link<?php echo $pageName === 'index' ? ' active' : '' ?>" href="index.php"><?php echo _('Calendars'); ?></a>
             </li>
-            <li class="nav-item ms-4">
+            <li class="nav-item ms-4<?php echo $pageName === 'resources' ? ' bg-info' : '' ?>">
                 <a class="nav-link<?php echo $pageName === 'resources' ? ' active' : '' ?>" href="resources.php"><?php echo _('Resources'); ?></a>
             </li>
             <li class="nav-item ms-4">
