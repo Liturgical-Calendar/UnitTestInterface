@@ -620,7 +620,8 @@ const loadAsyncData = () => {
                         NationalCalendarsArr.push( value.nation );
                     }
                 }
-                WiderRegionsArr.push( ...wider_regions );
+                let widerRegionsNames = wider_regions.map(region => region.name);
+                WiderRegionsArr.push( ...widerRegionsNames );
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 NationalCalendarsArr.forEach(nation => {
                     resourcePaths[`data-path-nation-${nation}`] = `/data/nation/${nation}`;
@@ -638,11 +639,15 @@ const loadAsyncData = () => {
                         "category": "resourceDataCheck"
                     });
                 });
-                WiderRegionsArr.forEach(wider_region => {
-                    resourcePaths[`data-path-wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
+                WiderRegionsArr.forEach(widerRegion => {
+                    // we need to request a locale for widerRegion on the data path
+                    // so let's retrieve the first available locale from the metadata
+                    let widerRegionObj = wider_regions.filter(region => region.name === widerRegion);
+                    let widerRegionFirstLang = widerRegionObj.languages[0];
+                    resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`;
                     resourceDataChecks.push({
-                        "validate": `data-path-wider-region-${wider_region}`,
-                        "sourceFile": ENDPOINTS.DATA + `widerregion/${wider_region}`,
+                        "validate": `data-path-wider-region-${widerRegion}`,
+                        "sourceFile": ENDPOINTS.DATA + `widerregion/${widerRegion}`,
                         "category": "resourceDataCheck"
                     });
                 });
