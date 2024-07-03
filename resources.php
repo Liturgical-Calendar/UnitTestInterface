@@ -76,34 +76,6 @@ include_once('layout/head.php');
             </div>
             <div class="accordion" id="testSuiteAccordion">
                 <div class="accordion-item">
-                    <h2 class="row g-0 accordion-header" id="sourceDataHeader">
-                        <button class="accordion-button" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#sourceDataTests"
-                            aria-expanded="true" aria-controls="sourceDataTests"
-                        >
-                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("Source data"); ?></span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success">
-                                <i class="fas fa-circle-check fa-fw"></i> <?php
-                                    echo _("Successful tests:");
-                                ?> <span id="successfulSourceDataTestsCount" class="successfulCount">0</span>
-                            </div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
-                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
-                                    echo _("Failed tests:");
-                                ?> <span id="failedSourceDataTestsCount" class="failedCount">0</span>
-                            </div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
-                                <i class="fas fa-stopwatch fa-fw"></i> <?php
-                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalSourceDataTestsCount\"></span>");
-                                ?> <span id="totalSourceDataTestsTime">0 seconds, 0ms</span>
-                            </div>
-                        </button>
-                    </h2>
-                    <div id="sourceDataTests" class="accordion-collapse collapse show" aria-labelledby="sourceDataHeader" data-bs-parent="#testSuiteAccordion">
-                        <div class="row g-0 sourcedata-tests"></div>
-                    </div>
-                </div>
-                <div class="accordion-item">
                     <h2 class="row g-0 accordion-header" id="resourceDataHeader">
                         <button class="accordion-button collapsed" type="button"
                             data-bs-toggle="collapse" data-bs-target="#resourceDataTests"
@@ -133,6 +105,34 @@ include_once('layout/head.php');
                     </h2>
                     <div id="resourceDataTests" class="accordion-collapse collapse" aria-labelledby="resourceDataHeader" data-bs-parent="#testSuiteAccordion">
                         <div class="row g-0 resourcedata-tests"></div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="row g-0 accordion-header" id="sourceDataHeader">
+                        <button class="accordion-button" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sourceDataTests"
+                            aria-expanded="true" aria-controls="sourceDataTests"
+                        >
+                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("Source data"); ?></span></div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-success">
+                                <i class="fas fa-circle-check fa-fw"></i> <?php
+                                    echo _("Successful tests:");
+                                ?> <span id="successfulSourceDataTestsCount" class="successfulCount">0</span>
+                            </div>
+                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
+                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
+                                    echo _("Failed tests:");
+                                ?> <span id="failedSourceDataTestsCount" class="failedCount">0</span>
+                            </div>
+                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
+                                <i class="fas fa-stopwatch fa-fw"></i> <?php
+                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalSourceDataTestsCount\"></span>");
+                                ?> <span id="totalSourceDataTestsTime">0 seconds, 0ms</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="sourceDataTests" class="accordion-collapse collapse show" aria-labelledby="sourceDataHeader" data-bs-parent="#testSuiteAccordion">
+                        <div class="row g-0 sourcedata-tests"></div>
                     </div>
                 </div>
             </div><!-- end accordion -->
