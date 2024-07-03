@@ -668,14 +668,14 @@ const runTests = () => {
             if( $('#resourceDataTests').hasClass('show') === false ) {
                 $('#resourceDataTests').collapse('show');
             }
-            conn.send( JSON.stringify( { action: 'executeResourceValidation', ...resourceDataChecks[ index++ ] } ) );
+            conn.send( JSON.stringify( { action: 'executeValidation', ...resourceDataChecks[ index++ ] } ) );
             break;
         case TestState.ExecutingResourceValidations:
             if ( ++messageCounter === 3 ) {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
                 if ( index < resourceDataChecks.length ) {
-                    conn.send( JSON.stringify( { action: 'executeResourceValidation', ...resourceDataChecks[ index++ ] } ) );
+                    conn.send( JSON.stringify( { action: 'executeValidation', ...resourceDataChecks[ index++ ] } ) );
                 } else {
                     console.log( 'Rsource file validation jobs are finished! Now continuing to check source data...' );
                     currentState = TestState.JobsFinished;
