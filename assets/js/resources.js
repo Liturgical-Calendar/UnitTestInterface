@@ -642,8 +642,12 @@ const loadAsyncData = () => {
                 WiderRegionsArr.forEach(widerRegion => {
                     // we need to request a locale for widerRegion on the data path
                     // so let's retrieve the first available locale from the metadata
-                    let widerRegionObj = wider_regions.filter(region => region.name === widerRegion);
+                    console.log(wider_regions);
+                    let widerRegionObj = wider_regions.filter(region => region.name === widerRegion)[0];
+                    console.log(widerRegion);
+                    console.log(widerRegionObj);
                     let widerRegionFirstLang = widerRegionObj.languages[0];
+                    console.log(widerRegionFirstLang);
                     resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`;
                     resourceDataChecks.push({
                         "validate": `data-path-wider-region-${widerRegion}`,
