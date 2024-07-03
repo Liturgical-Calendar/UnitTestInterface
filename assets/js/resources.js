@@ -650,8 +650,8 @@ const loadAsyncData = () => {
                     console.log(widerRegionFirstLang);
                     resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}`;
                     resourceDataChecks.push({
-                        "validate": `data-path-wider-region-${widerRegion}?locale=${widerRegionFirstLang}`,
-                        "sourceFile": ENDPOINTS.DATA + `widerregion/${widerRegion}`,
+                        "validate": `data-path-wider-region-${widerRegion}`,
+                        "sourceFile": ENDPOINTS.DATA + `widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
                         "category": "resourceDataCheck"
                     });
                 });
