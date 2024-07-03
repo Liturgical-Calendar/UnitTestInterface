@@ -600,25 +600,25 @@ const loadAsyncData = () => {
                 WiderRegionsArr.push( ...wider_regions );
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 NationalCalendarsArr.forEach(nation => {
-                    resourcePaths[`nation-${nation}`] = `/data/nation/${nation}`;
+                    resourcePaths[`data-nation-${nation}`] = `/data/nation/${nation}`;
                     resourceDataChecks.push({
-                        "validate": `nation-${nation}`,
+                        "validate": `data-nation-${nation}`,
                         "sourceFile": ENDPOINTS.DATA + `nation/${nation}`,
                         "category": "resourceDataCheck"
                     });
                 });
                 DiocesanCalendarsArr.forEach(diocese => {
-                    resourcePaths[`diocese-${diocese}`] = `/data/diocese/${diocese}`;
+                    resourcePaths[`data-diocese-${diocese}`] = `/data/diocese/${diocese}`;
                     resourceDataChecks.push({
-                        "validate": `diocese-${diocese}`,
+                        "validate": `data-diocese-${diocese}`,
                         "sourceFile": ENDPOINTS.DATA + `diocese/${diocese}`,
                         "category": "resourceDataCheck"
                     });
                 });
                 WiderRegionsArr.forEach(wider_region => {
-                    resourcePaths[`wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
+                    resourcePaths[`data-wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
                     resourceDataChecks.push({
-                        "validate": `wider-region-${wider_region}`,
+                        "validate": `data-wider-region-${wider_region}`,
                         "sourceFile": ENDPOINTS.DATA + `widerregion/${wider_region}`,
                         "category": "resourceDataCheck"
                     });
