@@ -738,6 +738,38 @@ const runTests = () => {
     }
 }
 
+const MsToTimeString = ( ms ) => {
+    let timeString = [];
+    let left = ms;
+    if ( ms > 3600000 ) {
+        left = ms % 3600000;
+        ms -= left;
+        let hours = ms / 3600000;
+        if( hours > 0 ) {
+            timeString.push( `${hours} ${hours > 1 ? 'hours' : 'hour'}` );
+        }
+    }
+    if ( left > 60000 ) {
+        ms = left;
+        left = ms % 60000;
+        ms -= left;
+        let minutes = ms / 60000;
+        if( minutes > 0 ) {
+            timeString.push( `${minutes} ${minutes > 1 ? 'minutes' : 'minute'}` );
+        }
+    }
+    if ( left > 1000 ) {
+        ms = left;
+        left = ms % 1000;
+        ms -= left;
+        let seconds = ms / 1000;
+        timeString.push( `${seconds} ${seconds > 1 ? 'seconds' : 'second'}` );
+    }
+    if ( left > 0 ) {
+        timeString.push( `${left}ms` );
+    }
+    return timeString.join( ', ' );
+}
 
 $(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
 
