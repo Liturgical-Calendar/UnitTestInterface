@@ -430,6 +430,29 @@ const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || id
     </div>
 </div>`;
 
+/**
+ * HTMLEncode function
+ * kudos to https://stackoverflow.com/a/784765/394921
+ * @param {*} str
+ * @returns
+ */
+const HTMLEncode = (str) => {
+    // avoid a double encoding!
+    str = str.replaceAll('&#039;', '"');
+    str = [...str];
+    //    ^ es20XX spread to Array: keeps surrogate pairs
+    let i = str.length, aRet = [];
+
+    while (i--) {
+        var iC = str[i].codePointAt(0);
+        if (iC < 65 || iC > 127 || (iC>90 && iC<97)) {
+            aRet[i] = '&#'+iC+';';
+        } else {
+            aRet[i] = str[i];
+        }
+    }
+    return aRet.join('');
+}
 
 const connectWebSocket = () => {
     conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
