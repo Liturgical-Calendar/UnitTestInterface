@@ -600,25 +600,25 @@ const loadAsyncData = () => {
                 WiderRegionsArr.push( ...wider_regions );
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 NationalCalendarsArr.forEach(nation => {
-                    resourcePaths[`data-nation-${nation}`] = `/data/nation/${nation}`;
+                    resourcePaths[`data-path-nation-${nation}`] = `/data/nation/${nation}`;
                     resourceDataChecks.push({
-                        "validate": `data-nation-${nation}`,
+                        "validate": `data-path-nation-${nation}`,
                         "sourceFile": ENDPOINTS.DATA + `nation/${nation}`,
                         "category": "resourceDataCheck"
                     });
                 });
                 DiocesanCalendarsArr.forEach(diocese => {
-                    resourcePaths[`data-diocese-${diocese}`] = `/data/diocese/${diocese}`;
+                    resourcePaths[`data-path-diocese-${diocese}`] = `/data/diocese/${diocese}`;
                     resourceDataChecks.push({
-                        "validate": `data-diocese-${diocese}`,
+                        "validate": `data-path-diocese-${diocese}`,
                         "sourceFile": ENDPOINTS.DATA + `diocese/${diocese}`,
                         "category": "resourceDataCheck"
                     });
                 });
                 WiderRegionsArr.forEach(wider_region => {
-                    resourcePaths[`data-wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
+                    resourcePaths[`data-path-wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
                     resourceDataChecks.push({
-                        "validate": `data-wider-region-${wider_region}`,
+                        "validate": `data-path-wider-region-${wider_region}`,
                         "sourceFile": ENDPOINTS.DATA + `widerregion/${wider_region}`,
                         "category": "resourceDataCheck"
                     });
@@ -632,17 +632,17 @@ const loadAsyncData = () => {
             }
             else if(data.hasOwnProperty('litcal_missals')) {
                 Missals = data.litcal_missals;
-                resourcePaths[`missals`] = `/missals`;
+                resourcePaths[`missals-path`] = `/missals`;
                 resourceDataChecks.push({
-                    "validate": "missals",
+                    "validate": "missals-path",
                     "sourceFile": ENDPOINTS.MISSALS,
                     "category": "resourceDataCheck"
                 });
                 Missals.forEach(missal => {
                     MissalsArr.push(missal.missal_id);
-                    resourcePaths[`missals-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
+                    resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
                     resourceDataChecks.push({
-                        "validate": `missals-${missal.missal_id}`,
+                        "validate": `missals-path-${missal.missal_id}`,
                         "sourceFile": ENDPOINTS.MISSALS + `${missal.missal_id}`,
                         "category": "resourceDataCheck"
                     });
