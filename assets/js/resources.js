@@ -30,10 +30,10 @@ class ReadyToRunTests {
 }
 
 class TestState {
-    static ReadyState                   = new TestState( 'ReadyState' );
-    static ExecutingValidations         = new TestState( 'ExecutingValidations' );
-    static ValidatingCalendarData       = new TestState( 'ValidatingCalendarData' );
-    static SpecificUnitTests            = new TestState( 'SpecificUnitTests' );
+    static NotReady                     = new TestState( 'NotReady' );
+    static Ready                        = new TestState( 'Ready' );
+    static ExecutingResourceValidations = new TestState( 'ExecutingResourceValidations' );
+    static ExecutingSourceValidations   = new TestState( 'ExecutingSourceValidations' );
     static JobsFinished                 = new TestState( 'JobsFinished' );
 
     constructor( name ) {
@@ -304,15 +304,42 @@ const ENDPOINTS = {
     TESTS: "",
     DECREES: "",
     EVENTS: "",
-    MISSALS: ""
+    MISSALS: "",
+    EASTER: "",
+    DATA: ""
 }
 
-const sourceDataChecks = [
+// rememeber that 'validate' must coincide with the class on the card,
+// that's how the Websocket backend (Health class) knows which classes to send back
+const resourceDataChecks = [
     {
-        "validate": "LitCalMetadata",
+        "validate": "calendars-path",
         "sourceFile": ENDPOINTS.CALENDARS,
-        "category": "universalcalendar"
+        "category": "resourceDataCheck"
     },
+    {
+        "validate": "decrees-path",
+        "sourceFile": ENDPOINTS.DECREES,
+        "category": "resourceDataCheck"
+    },
+    {
+        "validate": "tests-path",
+        "sourceFile": ENDPOINTS.TESTS,
+        "category": "resourceDataCheck"
+    },
+    {
+        "validate": "events-path",
+        "sourceFile": ENDPOINTS.EVENTS,
+        "category": "resourceDataCheck"
+    },
+    {
+        "validate": "easter-path",
+        "sourceFile": ENDPOINTS.EASTER,
+        "category": "resourceDataCheck"
+    }
+];
+
+const sourceDataChecks = [
     {
         "validate": "PropriumDeTempore",
         "sourceFile": "data/propriumdetempore.json",
@@ -334,22 +361,9 @@ const sourceDataChecks = [
         "category": "universalcalendar"
     },
     {
-        "validate": "MemorialsFromDecrees",
-        "sourceFile": ENDPOINTS.DECREES,
-        "category": "universalcalendar"
-    },
-    {
         "validate": "RegionalCalendarsIndex",
         "sourceFile": "nations/index.json",
         "category": "universalcalendar"
-    }
-];
-
-const resourceDataChecks = [
-    {
-        "validate": "",
-        "sourceFile": "",
-        "category": "resourceDataCheck"
     }
 ];
 
@@ -371,6 +385,9 @@ const setEndpoints = (ev = null) => {
             ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
             ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
             ENDPOINTS.MISSALS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals/`;
+            ENDPOINTS.DATA         = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/data/`;
+            ENDPOINTS.EVENTS       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/events/`;
+            ENDPOINTS.EASTER       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/easter/`;
             break;
         case 'v3':
             ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
@@ -378,16 +395,20 @@ const setEndpoints = (ev = null) => {
             break;
     }
     document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
-    sourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
-    sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
+    resourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
+    resourceDataChecks[1].sourceFile = ENDPOINTS.DECREES;
+    resourceDataChecks[2].sourceFile = ENDPOINTS.TESTS;
+    resourceDataChecks[3].sourceFile = ENDPOINTS.EVENTS;
+    resourceDataChecks[4].sourceFile = ENDPOINTS.EASTER;
 }
 
 const resourcePaths = {
-    'calendars': '/calendars',
-    'decrees':   '/decrees',
-    'events':    '/events',
-    'easter':    '/easter',
-    'tests':     '/tests'
+    'calendars-path': '/calendars',
+    'decrees-path':   '/decrees',
+    'events-path':    '/events',
+    'easter-path':    '/easter',
+    'tests-path':     '/tests',
+    'easter-path':    '/easter'
 };
 
 const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
@@ -434,16 +455,11 @@ const connectWebSocket = () => {
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
             $( '#successfulCount' ).text( ++successfulTests );
             switch( currentState ) {
-                case TestState.ExecutingValidations:
+                case TestState.ExecutingResourceValidations:
+                    $( '#successfulResourceDataTestsCount' ).text( ++successfulResourceDataTests );
+                    break;
+                case TestState.ExecutingSourceValidations:
                     $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
-                    break;
-                case TestState.ValidatingCalendarData:
-                    $( '#successfulCalendarDataTestsCount' ).text( ++successfulCalendarDataTests );
-                    break;
-                case TestState.SpecificUnitTests:
-                    $( '#successfulUnitTestsCount' ).text( ++successfulUnitTests );
-                    let specificUnitTestSuccessCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-success').length;
-                    $(`#successful${responseData.test}TestsCount`).text(specificUnitTestSuccessCount);
                     break;
             }
         }
@@ -453,16 +469,11 @@ const connectWebSocket = () => {
             $( responseData.classes ).find('.card-text').append(`<span title="${HTMLEncode( responseData.text )}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
             $( '#failedCount' ).text( ++failedTests );
             switch( currentState ) {
-                case TestState.ExecutingValidations:
+                case TestState.ExecutingResourceValidations:
+                    $( '#failedResourceDataTestsCount' ).text( ++failedResourceDataTests );
+                    break;
+                case TestState.ExecutingSourceValidations:
                     $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
-                    break;
-                case TestState.ValidatingCalendarData:
-                    $( '#failedCalendarDataTestsCount' ).text( ++failedCalendarDataTests );
-                    break;
-                case TestState.SpecificUnitTests:
-                    $( '#failedUnitTestsCount' ).text( ++failedUnitTests );
-                    let specificUnitTestFailedCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-danger').length;
-                    $(`#failed${responseData.test}TestsCount`).text(specificUnitTestFailedCount);
                     break;
             }
         }
@@ -474,20 +485,15 @@ const connectWebSocket = () => {
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
         switch( currentState ) {
-            case TestState.ExecutingValidations:
-                performance.mark( 'sourceDataTestsEnd' );
-                let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+            case TestState.ExecutingResourceValidations:
+                performance.mark( 'resourceDataTestsEnd' );
+                let totalSourceDataTestTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
                 $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ) );
                 break;
-            case TestState.ValidatingCalendarData:
-                performance.mark( 'calendarDataTestsEnd' );
-                let totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
+            case TestState.ExecutingSourceValidations:
+                performance.mark( 'sourceDataTestsEnd' );
+                let totalCalendarDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
                 $( '#totalCalendarDataTestsTime' ).text( MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) ) );
-                break;
-            case TestState.SpecificUnitTests:
-                performance.mark( 'specificUnitTestsEnd' );
-                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
-                $( '#totalUnitTestsTime' ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
                 break;
         }
     };
@@ -537,6 +543,7 @@ const setupPage = () => {
 }
 
 
+let currentState                = TestState.NotReady;
 let MetaData                    = null;
 let Missals                     = null;
 let startTestRunnerBtnLbl       = '';
@@ -547,6 +554,16 @@ let WiderRegionsArr             = [];
 let MissalsArr                  = [];
 let connectionAttempt           = null;
 let conn;
+
+let messageCounter;
+let successfulTests = 0;
+let failedTests = 0;
+
+let successfulSourceDataTests = 0;
+let failedSourceDataTests = 0;
+
+let successfulResourceDataTests = 0;
+let failedResourceDataTests = 0;
 
 const loadAsyncData = () => {
     Promise.all([
@@ -584,12 +601,27 @@ const loadAsyncData = () => {
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 NationalCalendarsArr.forEach(nation => {
                     resourcePaths[`nation-${nation}`] = `/data/nation/${nation}`;
+                    resourceDataChecks.push({
+                        "validate": `nation-${nation}`,
+                        "sourceFile": ENDPOINTS.DATA + `nation/${nation}`,
+                        "category": "resourceDataCheck"
+                    });
                 });
                 DiocesanCalendarsArr.forEach(diocese => {
                     resourcePaths[`diocese-${diocese}`] = `/data/diocese/${diocese}`;
+                    resourceDataChecks.push({
+                        "validate": `diocese-${diocese}`,
+                        "sourceFile": ENDPOINTS.DATA + `diocese/${diocese}`,
+                        "category": "resourceDataCheck"
+                    });
                 });
                 WiderRegionsArr.forEach(wider_region => {
                     resourcePaths[`wider-region-${wider_region}`] = `/data/widerregion/${wider_region}`;
+                    resourceDataChecks.push({
+                        "validate": `wider-region-${wider_region}`,
+                        "sourceFile": ENDPOINTS.DATA + `widerregion/${wider_region}`,
+                        "category": "resourceDataCheck"
+                    });
                 });
                 ReadyToRunTests.MetaDataReady = true;
                 console.log( 'Metadata is ready' );
@@ -601,9 +633,19 @@ const loadAsyncData = () => {
             else if(data.hasOwnProperty('litcal_missals')) {
                 Missals = data.litcal_missals;
                 resourcePaths[`missals`] = `/missals`;
+                resourceDataChecks.push({
+                    "validate": "missals",
+                    "sourceFile": ENDPOINTS.MISSALS,
+                    "category": "resourceDataCheck"
+                });
                 Missals.forEach(missal => {
                     MissalsArr.push(missal.missal_id);
                     resourcePaths[`missals-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
+                    resourceDataChecks.push({
+                        "validate": `missals-${missal.missal_id}`,
+                        "sourceFile": ENDPOINTS.MISSALS + `${missal.missal_id}`,
+                        "category": "resourceDataCheck"
+                    });
                 });
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
@@ -614,10 +656,82 @@ const loadAsyncData = () => {
             }
         });
     });
-
 }
+
+const runTests = () => {
+    switch ( currentState ) {
+        case TestState.ReadyState:
+            index = 0;
+            messageCounter = 0;
+            currentState = TestState.ExecutingResourceValidations;
+            performance.mark( 'resourceDataTestsStart' );
+            if( $('#resourceDataTests').hasClass('show') === false ) {
+                $('#resourceDataTests').collapse('show');
+            }
+            conn.send( JSON.stringify( { action: 'executeResourceValidation', ...resourceDataChecks[ index++ ] } ) );
+            break;
+        case TestState.ExecutingResourceValidations:
+            if ( ++messageCounter === 3 ) {
+                console.log( 'one cycle complete, passing to next test..' );
+                messageCounter = 0;
+                if ( index < resourceDataChecks.length ) {
+                    conn.send( JSON.stringify( { action: 'executeResourceValidation', ...resourceDataChecks[ index++ ] } ) );
+                } else {
+                    console.log( 'Rsource file validation jobs are finished! Now continuing to check source data...' );
+                    currentState = TestState.JobsFinished;
+                    /*
+                    currentState = TestState.ExecutingSourceValidations;
+                    index = 0;
+                    calendarIndex = 0;
+                    performance.mark( 'sourceDataTestsStart' );
+                    conn.send(
+                        JSON.stringify({
+                            action: 'executeSourceValidation',
+                            ...sourceDataChecks[ index++ ]
+                        })
+                    );
+                    $('#sourceDataTests').collapse('show');
+                    */
+                }
+            }
+            break;
+        case TestState.JobsFinished:
+            console.log( 'All jobs finished!' );
+            $( '#tests-complete' ).toast( 'show' );
+            let $btnPrimary = $( '.fa-spin' ).closest( '.btn-primary' );
+            $btnPrimary.prop( 'disabled', true ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' );
+            $( '.fa-spin' ).removeClass( 'fa-spin' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
+            setTestRunnerBtnLblTxt('Tests Complete');
+            break;
+    }
+}
+
+
+$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
+
+$(document).on('click', '#startTestRunnerBtn', () => {
+    if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
+        index = 0;
+        calendarIndex = 0;
+        messageCounter = 0;
+        successfulTests = 0;
+        failedTests = 0;
+        currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
+        if ( conn.readyState !== WebSocket.OPEN ) {
+            console.warn( 'cannot run tests: websocket connection is not ready' );
+            console.warn( conn.readyState.toString );
+        } else {
+            performance.mark( 'litcalTestRunnerStart' );
+            $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
+            setTestRunnerBtnLblTxt('Tests Running...');
+            console.log( `currentState = ${currentState}` );
+            runTests();
+        }
+    } else {
+        //TODO: perhaps we could allow to interrupt running tests?
+        console.warn('Please do not try to start a test run while tests are running!');
+    }
+});
 
 setEndpoints();
 loadAsyncData();
-
-$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
