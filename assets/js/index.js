@@ -93,8 +93,10 @@ class ReadyToRunTests {
         let testsReady = ReadyToRunTests.check();
         $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
         $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
-        setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
         if( testsReady ) {
+            // only try to set the #startTestRunnerBtnLbl with the stored value when the page is ready
+            // to prevent if from being set to an empty value (before we have actually stored the original value)
+            setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
             $( '.page-loader' ).fadeOut('slow');
         }
     }
@@ -934,6 +936,7 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 
 const setupPage = () => {
     $( document ).ready(() => {
+        // store the original value of the #startTestRunnerBtnLbl for later use
         startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
         if( $('#APICalendarSelect').children().length === 1 ) {
             nations.forEach( item => {
