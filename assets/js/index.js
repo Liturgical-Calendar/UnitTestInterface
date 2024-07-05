@@ -977,7 +977,7 @@ const setupPage = () => {
                     "category": "nationalcalendar"
             });
             MetaData.national_calendars_metadata[nation].missals.forEach((missal) => {
-                let sourceFile = Object.values( MetaData.roman_missals ).filter(el => el.value === missal)[0].sanctorale_filename;
+                let sourceFile = Object.values( MetaData.roman_missals ).filter(el => el.value === missal)[0].data_path;
                 if( sourceFile !== false ) {
                     currentSourceDataChecks.push({
                         "validate": missal,
