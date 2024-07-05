@@ -939,7 +939,10 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 const setupPage = () => {
     $( document ).ready(() => {
         // store the original value of the #startTestRunnerBtnLbl for later use
-        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        // but only if it hasn't been set yet (only the first time we do a page setup)
+        if(startTestRunnerBtnLbl === '') {
+            startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        }
         if( $('#APICalendarSelect').children().length === 1 ) {
             nations.forEach( item => {
                 if ( false === CalendarNations.includes( item ) && item !== "VATICAN" ) {
