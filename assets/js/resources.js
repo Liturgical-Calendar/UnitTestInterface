@@ -588,7 +588,9 @@ const setTestRunnerBtnLblTxt = (txt) => {
 
 const setupPage = () => {
     $(document).ready(() =>  {
-        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        if (startTestRunnerBtnLbl === '') {
+            startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        }
         let resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
         document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
         ReadyToRunTests.PageReady = true;
