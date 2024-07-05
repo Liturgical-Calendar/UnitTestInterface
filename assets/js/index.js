@@ -811,7 +811,7 @@ const fetchMetadataAndTests = () => {
                         selectOptions[ diocesanCalendar.nation ] = [];
                     }
                     selectOptions[ diocesanCalendar.nation ].push(
-                        `<option data-calendartype="diocesancalendar" data-nationalcalendar="${diocesanCalendar.nation}" value="${key}">${diocesanCalendar.diocese}</option>`
+                        `<option data-calendartype="diocesancalendar" data-nationalcalendar="${diocesanCalendar.nation}" value="${diocesanCalendar.calendar_id}">${diocesanCalendar.diocese}</option>`
                     );
                 })
                 nations = Object.keys( national_calendars );
