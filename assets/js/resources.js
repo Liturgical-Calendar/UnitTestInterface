@@ -306,7 +306,8 @@ const ENDPOINTS = {
     EVENTS: "",
     MISSALS: "",
     EASTER: "",
-    DATA: ""
+    DATA: "",
+    SCHEMAS: ""
 }
 
 // rememeber that 'validate' must coincide with the class on the card,
@@ -335,6 +336,11 @@ const resourceDataChecks = [
     {
         "validate": "easter-path",
         "sourceFile": ENDPOINTS.EASTER,
+        "category": "resourceDataCheck"
+    },
+    {
+        "validate": "schemas-path",
+        "sourceFile": ENDPOINTS.SCHEMAS,
         "category": "resourceDataCheck"
     }
 ];
@@ -418,6 +424,7 @@ const setEndpoints = (ev = null) => {
             ENDPOINTS.DATA         = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/data/`;
             ENDPOINTS.EVENTS       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/events/`;
             ENDPOINTS.EASTER       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/easter/`;
+            ENDPOINTS.SCHEMAS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/schemas/`;
             break;
         case 'v3':
             ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
@@ -430,6 +437,7 @@ const setEndpoints = (ev = null) => {
     resourceDataChecks[2].sourceFile = ENDPOINTS.TESTS;
     resourceDataChecks[3].sourceFile = ENDPOINTS.EVENTS;
     resourceDataChecks[4].sourceFile = ENDPOINTS.EASTER;
+    resourceDataChecks[5].sourceFile = ENDPOINTS.SCHEMAS;
 }
 
 const resourcePaths = {
@@ -438,7 +446,8 @@ const resourcePaths = {
     'events-path':    '/events',
     'easter-path':    '/easter',
     'tests-path':     '/tests',
-    'easter-path':    '/easter'
+    'easter-path':    '/easter',
+    'schemas-path':   '/schemas'
 };
 
 
