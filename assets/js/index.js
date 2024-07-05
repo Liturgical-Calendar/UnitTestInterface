@@ -543,7 +543,6 @@ let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'regi
 let CalendarNations             = [];
 let selectOptions               = {};
 //let NationalCalendarsArr        = [];
-let DiocesanCalendarsArr        = [];
 let NationalCalendarTemplates   = [ testTemplate( currentSelectedCalendar ) ];
 let DiocesanCalendarTemplates   = [];
 
@@ -798,11 +797,8 @@ const fetchMetadataAndTests = () => {
             console.log(data);
             if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                 MetaData = data.litcal_metadata;
-                const { national_calendars, diocesan_calendars } = MetaData;
-                for ( const value of Object.values( national_calendars ) ) {
-                    DiocesanCalendarsArr.push( ...value );
-                }
-                for ( const calendar of DiocesanCalendarsArr ) {
+                const { national_calendars, national_calendars_keys, diocesan_calendars, diocesan_calendars_keys } = MetaData;
+                for ( const calendar of diocesan_calendars_keys ) {
                     DiocesanCalendarTemplates.push( testTemplate( calendar ) );
                 }
                 diocesan_calendars.forEach(diocesanCalendar => {
@@ -814,7 +810,7 @@ const fetchMetadataAndTests = () => {
                         `<option data-calendartype="diocesancalendar" data-nationalcalendar="${diocesanCalendar.nation}" value="${diocesanCalendar.calendar_id}">${diocesanCalendar.diocese}</option>`
                     );
                 })
-                nations = Object.keys( national_calendars );
+                nations = national_calendars_keys;
                 nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
                 CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 if( UnitTests !== null ) {
@@ -967,7 +963,7 @@ const setupPage = () => {
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
             currentSourceDataChecks = [...sourceDataChecks];
-            MetaData.national_calendars_metadata[nation].wider_regions.forEach((item) => {
+            MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].wider_regions.forEach((item) => {
                 currentSourceDataChecks.push({
                     "validate": item,
                     "sourceFile": `nations/${item}.json`,
@@ -979,7 +975,7 @@ const setupPage = () => {
                     "sourceFile": sourceFile,
                     "category": "nationalcalendar"
             });
-            MetaData.national_calendars_metadata[nation].missals.forEach((missal) => {
+            MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].missals.forEach((missal) => {
                 let sourceFile = Object.values( MetaData.roman_missals ).filter(el => el.missal_id === missal)[0].data_path;
                 if( sourceFile !== false ) {
                     currentSourceDataChecks.push({

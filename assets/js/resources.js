@@ -642,17 +642,9 @@ const loadAsyncData = () => {
         dataArr.forEach(data => {
             if(data.hasOwnProperty('litcal_metadata')) {
                 MetaData = data.litcal_metadata;
-                const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
-                //we're currently getting the dioceses from the national_calendars,
-                //and the nations from the diocesan_calendars!
-                for ( const value of Object.values( national_calendars ) ) {
-                    DiocesanCalendarsArr.push( ...value );
-                }
-                diocesan_calendars.forEach(diocesanCalendar => {
-                    if ( NationalCalendarsArr.indexOf( diocesanCalendar.nation ) === -1 ) {
-                        NationalCalendarsArr.push( diocesanCalendar.nation );
-                    }
-                });
+                const { national_calendars, national_calendars_keys, diocesan_calendars, diocesan_calendars_keys, wider_regions, wider_regions_keys } = MetaData;
+                DiocesanCalendarsArr = diocesan_calendars_keys;
+                NationalCalendarsArr = national_calendars_keys;
                 wider_regions.forEach(region => {
                     sourceDataChecks.push({
                         "validate": `wider-region-${region.name}`,
@@ -665,8 +657,7 @@ const loadAsyncData = () => {
                         "category": "sourceDataCheck"
                     });
                 });
-                let widerRegionsNames = wider_regions.map(region => region.name);
-                WiderRegionsArr.push( ...widerRegionsNames );
+                WiderRegionsArr = wider_regions_keys;
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
                 NationalCalendarsArr.forEach(nation => {
                     resourcePaths[`data-path-nation-${nation}`] = `/data/nation/${nation}`;
