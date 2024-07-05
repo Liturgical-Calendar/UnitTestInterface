@@ -341,29 +341,59 @@ const resourceDataChecks = [
 
 const sourceDataChecks = [
     {
-        "validate": "PropriumDeTempore",
-        "sourceFile": "data/propriumdetempore.json",
-        "category": "universalcalendar"
+        "validate": "memorials-from-decrees",
+        "sourceFile": "data/memorialsFromDecrees/memorialsFromDecrees.json",
+        "category": "sourceDataCheck"
     },
     {
-        "validate": "PropriumDeSanctis1970",
+        "validate": "memorials-from-decrees-i18n",
+        "sourceFolder": "data/memorialsFromDecrees/i18n",
+        "category": "sourceDataCheck"
+    },
+    {
+        "validate": "proprium-de-sanctis-1970",
         "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
-        "category": "universalcalendar"
+        "category": "sourceDataCheck"
     },
     {
-        "validate": "PropriumDeSanctis2002",
+        "validate": "proprium-de-sanctis-1970-i18n",
+        "sourceFolder": "data/propriumdesanctis_1970/i18n",
+        "category": "sourceDataCheck"
+    },
+    {
+        "validate": "proprium-de-sanctis-2002",
         "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
-        "category": "universalcalendar"
+        "category": "sourceDataCheck"
     },
     {
-        "validate": "PropriumDeSanctis2008",
+        "validate": "proprium-de-sanctis-2002-i18n",
+        "sourceFolder": "data/propriumdesanctis_2002/i18n",
+        "category": "sourceDataCheck"
+    },
+    {
+        "validate": "proprium-de-sanctis-2008",
         "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
-        "category": "universalcalendar"
+        "category": "sourceDataCheck"
     },
     {
-        "validate": "RegionalCalendarsIndex",
+        "validate": "proprium-de-sanctis-2008-i18n",
+        "sourceFolder": "data/propriumdesanctis_2008/i18n",
+        "category": "sourceDataCheck"
+    },
+    {
+        "validate": "proprium-de-tempore",
+        "sourceFile": "data/propriumdetempore.json",
+        "category": "sourceDataCheck"
+    },
+    {
+        "validate": "proprium-de-tempore-i18n",
+        "sourceFolder": "data/propriumdetempore/",
+        "category": "sourceDataCheck"
+    },
+    {
+        "validate": "regional-calendars-index",
         "sourceFile": "nations/index.json",
-        "category": "universalcalendar"
+        "category": "sourceDataCheck"
     }
 ];
 
@@ -410,6 +440,7 @@ const resourcePaths = {
     'tests-path':     '/tests',
     'easter-path':    '/easter'
 };
+
 
 const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
     <p class="text-center mb-0 bg-secondary text-white"><span title="${resourcePaths[resource]}">${resourcePaths[resource]}</span></p>
@@ -615,11 +646,23 @@ const loadAsyncData = () => {
                 for ( const value of Object.values( national_calendars ) ) {
                     DiocesanCalendarsArr.push( ...value );
                 }
-                for ( const value of Object.values( diocesan_calendars ) ) {
-                    if ( NationalCalendarsArr.indexOf( value.nation ) === -1 ) {
-                        NationalCalendarsArr.push( value.nation );
+                diocesan_calendars.forEach(diocesanCalendar => {
+                    if ( NationalCalendarsArr.indexOf( diocesanCalendar.nation ) === -1 ) {
+                        NationalCalendarsArr.push( diocesanCalendar.nation );
                     }
-                }
+                });
+                wider_regions.forEach(region => {
+                    sourceDataChecks.push({
+                        "validate": `wider-region-${region.name}`,
+                        "sourceFile": region.data_path,
+                        "category": "sourceDataCheck"
+                    });
+                    sourceDataChecks.push({
+                        "validate": `wider-region-i18n-${region.name}`,
+                        "sourceFolder": region.i18n_path,
+                        "category": "sourceDataCheck"
+                    });
+                });
                 let widerRegionsNames = wider_regions.map(region => region.name);
                 WiderRegionsArr.push( ...widerRegionsNames );
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
