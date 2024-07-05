@@ -51,8 +51,6 @@ include_once('layout/head.php');
                     <select id="APIResponseSelect" class="form-select form-select-sm">
                         <option data-responsetype="json" value="JSON">JSON</option>
                         <option data-responsetype="yaml" value="YML">YAML</option>
-                        <option data-responsetype="xml" value="XML">XML</option>
-                        <option data-responsetype="ics" value="ICS">ICS</option>
                     </select>
                 </div>
                 <div class="col-2">
