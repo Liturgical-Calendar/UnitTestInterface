@@ -644,7 +644,7 @@ const loadAsyncData = () => {
                 MetaData = data.litcal_metadata;
                 const { national_calendars_keys, diocesan_calendars_keys, wider_regions, wider_regions_keys } = MetaData;
                 DiocesanCalendarsArr = diocesan_calendars_keys;
-                NationalCalendarsArr = national_calendars_keys;
+                NationalCalendarsArr = national_calendars_keys.slice(1);
                 wider_regions.forEach(region => {
                     sourceDataChecks.push({
                         "validate": `wider-region-${region.name}`,
