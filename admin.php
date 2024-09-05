@@ -15,7 +15,7 @@ $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
 
 $ch = curl_init();
 
-if ($apiVersion === 'v9') {
+if ($apiVersion === 'dev') {
     curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests/");
 } else {
     curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/testsindex/");
@@ -28,7 +28,7 @@ if (curl_errno($ch)) {
     die($error_msg);
 }
 curl_close($ch);
-if ($apiVersion === 'v9') {
+if ($apiVersion === 'dev') {
     $LitCalTests = json_decode($response)->litcal_tests;
 } else {
     $LitCalTests = json_decode($response);
@@ -122,13 +122,7 @@ include_once 'layout/sidebar.php';
 <!-- End of Main Content -->
 <?php
 if ($apiVersion === 'dev') {
-    $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/dev/allevents/";
-    [ "LitCalAllFestivities" => $LitCalAllFestivities ] = json_decode(
-        file_get_contents("$eventsEndpoint?locale=" . $i18n->locale),
-        true
-    );
-} elseif ($apiVersion === 'v9') {
-    $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/v9/events/";
+    $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/dev/events/";
     [ "litcal_events" => $LitCalAllFestivities ] = json_decode(
         file_get_contents("$eventsEndpoint?locale=" . $i18n->locale),
         true

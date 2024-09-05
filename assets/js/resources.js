@@ -412,11 +412,7 @@ const setEndpoints = (ev = null) => {
     console.info('ENDPOINTS.VERSION set to ' + ENDPOINTS.VERSION);
     switch(ENDPOINTS.VERSION) {
         case 'dev':
-            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
-            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
-            break;
         case 'v4':
-        case 'v9':
             ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
             ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
             ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;

@@ -175,14 +175,9 @@ const setEndpoints = (ev = null) => {
     }
     switch(ENDPOINTS.VERSION) {
         case 'dev':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/metadata/`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/testsindex/`;
-            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/dev/allevents/`;
-        break;
-        case 'v9':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v9/calendars/`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v9/tests/`;
-            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/v9/events/`;
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/calendars/`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/tests/`;
+            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/dev/events/`;
         break;
         case 'v3':
             ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
