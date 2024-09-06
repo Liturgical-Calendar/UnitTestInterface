@@ -413,14 +413,14 @@ const setEndpoints = (ev = null) => {
     switch(ENDPOINTS.VERSION) {
         case 'dev':
         case 'v4':
-            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
-            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
-            ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
-            ENDPOINTS.MISSALS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals/`;
-            ENDPOINTS.DATA         = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/data/`;
-            ENDPOINTS.EVENTS       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/events/`;
-            ENDPOINTS.EASTER       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/easter/`;
-            ENDPOINTS.SCHEMAS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/schemas/`;
+            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars`;
+            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests`;
+            ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees`;
+            ENDPOINTS.MISSALS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals`;
+            ENDPOINTS.DATA         = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/data`;
+            ENDPOINTS.EVENTS       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/events`;
+            ENDPOINTS.EASTER       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/easter`;
+            ENDPOINTS.SCHEMAS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/schemas`;
             break;
         case 'v3':
             ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
