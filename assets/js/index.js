@@ -61,9 +61,9 @@ const setEndpoints = (ev = null) => {
     switch(ENDPOINTS.VERSION) {
         case 'dev':
         case 'v4':
-            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars/`;
-            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests/`;
-            ENDPOINTS.DECREES     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees/`;
+            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars`;
+            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests`;
+            ENDPOINTS.DECREES     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees`;
             break;
         case 'v3':
             ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
@@ -775,15 +775,15 @@ const setTestRunnerBtnLblTxt = (txt) => {
 const fetchMetadataAndTests = () => {
     Promise.all([
         fetch( ENDPOINTS.METADATA, {
-            method: "POST",
-            mode: "no-cors",
+            method: "GET",
+            //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
         }).then(response => response.json()),
         fetch( ENDPOINTS.TESTSINDEX, {
             method: "GET",
-            mode: "no-cors",
+            //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }

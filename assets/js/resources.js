@@ -629,8 +629,7 @@ let failedResourceDataTests = 0;
 const loadAsyncData = () => {
     Promise.all([
         fetch( ENDPOINTS.CALENDARS, {
-            method: "POST",
-            mode: "cors",
+            method: "GET",
             headers: {
                 Accept: "application/json"
             }
