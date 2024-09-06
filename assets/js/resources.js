@@ -667,7 +667,7 @@ const loadAsyncData = () => {
                     resourcePaths[`data-path-nation-${nation}`] = `/data/nation/${nation}`;
                     resourceDataChecks.push({
                         "validate": `data-path-nation-${nation}`,
-                        "sourceFile": ENDPOINTS.DATA + `nation/${nation}`,
+                        "sourceFile": ENDPOINTS.DATA + `/nation/${nation}`,
                         "category": "resourceDataCheck"
                     });
                 });
@@ -675,7 +675,7 @@ const loadAsyncData = () => {
                     resourcePaths[`data-path-diocese-${diocese}`] = `/data/diocese/${diocese}`;
                     resourceDataChecks.push({
                         "validate": `data-path-diocese-${diocese}`,
-                        "sourceFile": ENDPOINTS.DATA + `diocese/${diocese}`,
+                        "sourceFile": ENDPOINTS.DATA + `/diocese/${diocese}`,
                         "category": "resourceDataCheck"
                     });
                 });
@@ -691,7 +691,7 @@ const loadAsyncData = () => {
                     resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}`;
                     resourceDataChecks.push({
                         "validate": `data-path-wider-region-${widerRegion}`,
-                        "sourceFile": ENDPOINTS.DATA + `widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
+                        "sourceFile": ENDPOINTS.DATA + `/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
                         "category": "resourceDataCheck"
                     });
                 });
