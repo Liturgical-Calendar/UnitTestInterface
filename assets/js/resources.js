@@ -715,7 +715,7 @@ const loadAsyncData = () => {
                     resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
                     resourceDataChecks.push({
                         "validate": `missals-path-${missal.missal_id}`,
-                        "sourceFile": ENDPOINTS.MISSALS + `${missal.missal_id}`,
+                        "sourceFile": ENDPOINTS.MISSALS + `/${missal.missal_id}`,
                         "category": "resourceDataCheck"
                     });
                 });
