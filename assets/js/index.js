@@ -776,14 +776,14 @@ const fetchMetadataAndTests = () => {
     Promise.all([
         fetch( ENDPOINTS.METADATA, {
             method: "POST",
-            mode: "cors",
+            mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
         }).then(response => response.json()),
         fetch( ENDPOINTS.TESTSINDEX, {
             method: "GET",
-            mode: "cors",
+            mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
