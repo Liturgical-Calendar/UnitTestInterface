@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-02 17:18+0000\n"
+"POT-Creation-Date: 2024-09-05 19:07+0000\n"
 "PO-Revision-Date: 2024-05-31 07:33+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -175,15 +175,15 @@ msgstr ""
 msgid "Save Unit Test"
 msgstr ""
 
-#: admin.php:143
+#: admin.php:137
 msgid "Add or Edit Comment"
 msgstr ""
 
-#: admin.php:148
+#: admin.php:142
 msgid "Comment"
 msgstr ""
 
-#: admin.php:153
+#: admin.php:147
 msgid "Save"
 msgstr ""
 
@@ -199,15 +199,15 @@ msgstr ""
 msgid "API Version"
 msgstr ""
 
-#: layout/topnavbar.php:59
+#: layout/topnavbar.php:58
 msgid "Websocket connection status"
 msgstr ""
 
-#: layout/topnavbar.php:65
+#: layout/topnavbar.php:64
 msgid "LitCal Project"
 msgstr ""
 
-#: layout/topnavbar.php:73 layout/sidebar.php:23
+#: layout/topnavbar.php:72 layout/sidebar.php:23
 msgid "Unit Tests Admin"
 msgstr ""
 
