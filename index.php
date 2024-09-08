@@ -72,13 +72,13 @@ include_once('layout/head.php');
                 <div class="col-2 text-white bg-success p-2">
                     <i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCount" class="successfulCount">0</span>
                 </div>
-                <div class="col-1 text-white bg-danger p-2">
+                <div class="col-2 text-white bg-danger p-2">
                     <i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCount" class="failedCount">0</span>
                 </div>
-                <div class="col-3 text-white bg-dark p-2">
+                <div class="col-2 text-white bg-dark p-2">
                     <i class="fas fa-stopwatch fa-fw"></i> <?php
                         echo sprintf(_("Total time for %s tests:"), "<span id=\"total-tests-count\"></span>");
-                    ?> <span id="total-time">0 seconds, 0ms</span>
+                    ?> <span id="total-time">0</span>
                 </div>
             </div>
             <div class="accordion" id="testSuiteAccordion">
@@ -102,7 +102,7 @@ include_once('layout/head.php');
                             <div class="col-3 text-white p-2 text-center test-results bg-dark">
                                 <i class="fas fa-stopwatch fa-fw"></i> <?php
                                     echo sprintf(_("Total time for %s tests:"), "<span id=\"totalSourceDataTestsCount\"></span>");
-                                ?> <span id="totalSourceDataTestsTime">0 seconds, 0ms</span>
+                                ?> <span id="totalSourceDataTestsTime">0</span>
                             </div>
                         </button>
                     </h2>
@@ -134,7 +134,7 @@ include_once('layout/head.php');
                             <div class="col-3 text-white p-2 text-center test-results bg-dark">
                                 <i class="fas fa-stopwatch fa-fw"></i> <?php
                                     echo sprintf(_("Total time for %s tests:"), "<span id=\"totalCalendarDataTestsCount\"></span>");
-                                ?> <span id="totalCalendarDataTestsTime">0 seconds, 0ms</span>
+                                ?> <span id="totalCalendarDataTestsTime">0</span>
                             </div>
                         </button>
                     </h2>
@@ -165,7 +165,7 @@ include_once('layout/head.php');
                             <div class="col-3 text-white p-2 text-center test-results bg-dark">
                                 <i class="fas fa-stopwatch fa-fw"></i> <?php
                                     echo sprintf(_("Total time for %s tests:"), "<span id=\"totalUnitTestsCount\"></span>");
-                                ?> <span id="totalUnitTestsTime">0 seconds, 0ms</span>
+                                ?> <span id="totalUnitTestsTime">0</span>
                             </div>
                         </button>
                     </h2>

@@ -4,7 +4,7 @@ class I18n
 {
     public string $locale;
     public array $langsAvailable = [];
-    public array $langsAssoc = [];
+    public array $langsAssoc     = [];
 
     public function __construct()
     {
