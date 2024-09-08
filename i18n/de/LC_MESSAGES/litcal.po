@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-05 19:07+0000\n"
 "PO-Revision-Date: 2024-09-08 12:08+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: German <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/de/>\n"
 "Language: de\n"
@@ -78,7 +78,7 @@ msgstr "VALIDIEREN SIE KALENDERDATEN FÜR DIE JAHRE VON 1970 BIS"
 
 #: index.php:152
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
-msgstr ""
+msgstr "Führen Sie Einheitstests für spezifische Ereignisse aus."
 
 #: index.php:186
 msgid "Loading..."
@@ -264,7 +264,7 @@ msgstr ""
 
 #: components/NewTestModal.php:33
 msgid "Years to test"
-msgstr ""
+msgstr "Jahre zum Testen"
 
 #: components/NewTestModal.php:37 components/NewTestModal.php:45
 msgid ""
@@ -286,6 +286,8 @@ msgid ""
 "This range should include a few years after the year in which the liturgical "
 "event should cease to exist."
 msgstr ""
+"Dieser Bereich sollte einige Jahre nach dem Jahr umfassen, in dem das "
+"liturgische Ereignis aufhören soll zu existieren."
 
 #: components/NewTestModal.php:40
 msgid "You can then remove any years that won't be needed."
@@ -296,12 +298,18 @@ msgid ""
 "Finally, set the year from which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
+"Legen Sie schließlich das Jahr fest, ab dem das liturgische Ereignis "
+"existieren soll, indem Sie auf das Hammer-Symbol in einem der Jahre im "
+"Bereich klicken."
 
 #: components/NewTestModal.php:42
 msgid ""
 "Finally, set the year until which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
+"Legen Sie schließlich das Jahr fest, bis zu dem das liturgische Ereignis "
+"existieren soll, indem Sie auf das Hammer-Symbol in einem der Jahre im "
+"Bereich klicken."
 
 #: components/NewTestModal.php:43
 msgid ""
@@ -315,6 +323,8 @@ msgstr ""
 #: components/NewTestModal.php:60
 msgid "Please set the year from which the liturgical event should exist"
 msgstr ""
+"Bitte legen Sie das Jahr fest, ab dem das liturgische Ereignis existieren "
+"soll."
 
 #: components/NewTestModal.php:61
 msgid "Please set the year until which the liturgical event should exist"
@@ -325,10 +335,12 @@ msgstr ""
 #: components/NewTestModal.php:62
 msgid "Please set the years in which the liturgical event should not exist"
 msgstr ""
+"Bitte legen Sie die Jahre fest, in denen das liturgische Ereignis nicht "
+"existieren soll."
 
 #: components/NewTestModal.php:67
 msgid "Set the base date for this liturgical event"
-msgstr ""
+msgstr "Legen Sie das Basisdatum für dieses liturgische Ereignis fest."
 
 #: components/NewTestModal.php:68
 msgid ""
@@ -342,7 +354,7 @@ msgstr ""
 
 #: components/NewTestModal.php:70
 msgid "The date input cannot be empty"
-msgstr ""
+msgstr "Das Datumsfeld darf nicht leer sein."
 
 #: components/NewTestModal.php:88
 msgid "Close"
@@ -350,4 +362,4 @@ msgstr "Schließen"
 
 #: components/NewTestModal.php:89
 msgid "Create test"
-msgstr ""
+msgstr "Test erstellen"
