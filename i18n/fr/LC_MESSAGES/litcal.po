@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-05 19:07+0000\n"
-"PO-Revision-Date: 2024-09-08 12:02+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2024-09-08 12:08+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: French <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/fr/>\n"
 "Language: fr\n"
@@ -240,7 +240,7 @@ msgstr "Admin des tests unitaires"
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
-msgstr "Calendrier liturgique catholique"
+msgstr "Calendrier Liturgique Catholique"
 
 #: layout/sidebar.php:19
 msgid "Unit Tests Runner"
@@ -248,7 +248,7 @@ msgstr "Exécuteur de tests unitaires"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
-msgstr ""
+msgstr "Test de Correspondance Exacte"
 
 #: components/NewTestModal.php:21
 msgid "Choose the liturgical event for which you would like to create a test"
@@ -287,6 +287,8 @@ msgid ""
 "This range should include a few years after the year in which the liturgical "
 "event should cease to exist."
 msgstr ""
+"Cette période devrait inclure quelques années après l'année où l'événement "
+"liturgique devrait cesser d'exister."
 
 #: components/NewTestModal.php:40
 msgid "You can then remove any years that won't be needed."
@@ -353,7 +355,7 @@ msgstr ""
 
 #: components/NewTestModal.php:70
 msgid "The date input cannot be empty"
-msgstr ""
+msgstr "La date ne peut pas être vide"
 
 #: components/NewTestModal.php:88
 msgid "Close"
