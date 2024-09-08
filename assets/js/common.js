@@ -1,11 +1,11 @@
 // Define the common callback function
 const handleLanguageChange = (event) => {
     // Retrieve the ID of the clicked item
-    const itemId = event.target.id;
+    const itemId = event.currentTarget.id;
 
     // Extract the {key} value from the ID (assuming ID format is 'langChoice-{key}')
     const key = itemId.split('langChoice-')[1];
-    console.log(`item clicked: ${event.target.id}, lang selection: ${key}`);
+    console.log(`item clicked: ${itemId}, lang selection: ${key}`);
     // Set a cookie with the name 'currentLocale' and the extracted {key} value
     document.cookie = `currentLocale=${key}; path=/;`;
 
