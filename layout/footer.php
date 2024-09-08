@@ -27,6 +27,7 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
     <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@1.3.1/i18nextHttpBackend.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/js/bootstrap-multiselect.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="assets/js/common.js"></script>
     <script>const locale = '<?php echo $i18n->locale ?>';</script>
 <?php
 if ($pageName === 'admin') {
