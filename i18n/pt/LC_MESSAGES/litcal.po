@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-05 19:07+0000\n"
-"PO-Revision-Date: 2024-09-08 12:02+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2024-09-08 12:08+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Portuguese <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/pt/>\n"
 "Language: pt\n"
@@ -29,7 +29,7 @@ msgstr ""
 
 #: index.php:20
 msgid "Websocket connected successfully!"
-msgstr ""
+msgstr "Websocket conectado com sucesso!"
 
 #: index.php:28
 msgid "Websocket connection closed."
@@ -41,7 +41,7 @@ msgstr "Todos os testes completos!"
 
 #: index.php:50
 msgid "Liturgical Calendar"
-msgstr ""
+msgstr "Calendário Litúrgico"
 
 #: index.php:52
 msgid "General Roman"
@@ -49,7 +49,7 @@ msgstr "Geral Romano"
 
 #: index.php:56
 msgid "Response Format"
-msgstr ""
+msgstr "Formato de Resposta"
 
 #: index.php:68
 msgid "Run Tests"
@@ -70,19 +70,19 @@ msgstr "Tempo total para %s testes:"
 
 #: index.php:91
 msgid "VALIDATE SOURCE DATA"
-msgstr ""
+msgstr "VALIDAR DADOS DE ORIGEM"
 
 #: index.php:121
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"
-msgstr ""
+msgstr "VALIDAR DADOS DO CALENDÁRIO PARA OS ANOS DE 1970 ATÉ"
 
 #: index.php:152
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
-msgstr ""
+msgstr "EXECUTAR TESTES UNITÁRIOS PARA EVENTOS ESPECÍFICOS"
 
 #: index.php:186
 msgid "Loading..."
-msgstr ""
+msgstr "Carregando..."
 
 #: admin.php:45
 msgid "Define a Unit Test for a Liturgical event"
@@ -110,7 +110,7 @@ msgstr "Criar um Novo Teste"
 
 #: admin.php:61
 msgid "Calendar to test"
-msgstr ""
+msgstr "Calendário para teste"
 
 #: admin.php:66
 msgid "Test Type"
@@ -128,7 +128,7 @@ msgstr ""
 
 #: admin.php:71
 msgid "Exact date"
-msgstr ""
+msgstr "Data exata"
 
 #: admin.php:75
 msgid ""
@@ -146,7 +146,7 @@ msgstr ""
 
 #: admin.php:76
 msgid "Exact date since year"
-msgstr ""
+msgstr "Data exata desde o ano"
 
 #: admin.php:80
 msgid ""
@@ -181,7 +181,7 @@ msgstr ""
 
 #: admin.php:86
 msgid "Variable existence"
-msgstr ""
+msgstr "Existência da variável"
 
 #: admin.php:96
 msgid "Name of Test"
@@ -217,7 +217,7 @@ msgstr "Calendários"
 
 #: layout/topnavbar.php:15
 msgid "Resources"
-msgstr ""
+msgstr "Recursos"
 
 #: layout/topnavbar.php:19
 msgid "API Version"
@@ -245,7 +245,7 @@ msgstr "Executor de Testes Unitários"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
-msgstr ""
+msgstr "Teste de Correspondência Exata"
 
 #: components/NewTestModal.php:21
 msgid "Choose the liturgical event for which you would like to create a test"
@@ -256,10 +256,11 @@ msgid ""
 "This festivity does not seem to exist? Please choose from a value in the "
 "list."
 msgstr ""
+"Essa festividade parece não existir? Por favor, escolha um valor da lista."
 
 #: components/NewTestModal.php:33
 msgid "Years to test"
-msgstr ""
+msgstr "Anos para testar"
 
 #: components/NewTestModal.php:37 components/NewTestModal.php:45
 msgid ""
@@ -280,6 +281,8 @@ msgid ""
 "This range should include a few years after the year in which the liturgical "
 "event should cease to exist."
 msgstr ""
+"Esse intervalo deve incluir alguns anos após o ano em que o evento litúrgico "
+"deve deixar de existir."
 
 #: components/NewTestModal.php:40
 msgid "You can then remove any years that won't be needed."
@@ -290,6 +293,8 @@ msgid ""
 "Finally, set the year from which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
+"Finalmente, defina o ano a partir do qual o evento litúrgico deve existir "
+"clicando no ícone do martelo dentro de um dos anos do intervalo."
 
 #: components/NewTestModal.php:42
 msgid ""
