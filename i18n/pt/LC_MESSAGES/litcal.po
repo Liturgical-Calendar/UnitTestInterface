@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-05 19:07+0000\n"
 "PO-Revision-Date: 2024-09-08 12:08+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Portuguese <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/pt/>\n"
 "Language: pt\n"
@@ -301,6 +301,8 @@ msgid ""
 "Finally, set the year until which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
+"Finalmente, defina o ano até o qual o evento litúrgico deve existir clicando "
+"no ícone de martelo dentro de um dos anos do intervalo."
 
 #: components/NewTestModal.php:43
 msgid ""
@@ -313,6 +315,7 @@ msgstr ""
 #: components/NewTestModal.php:60
 msgid "Please set the year from which the liturgical event should exist"
 msgstr ""
+"Por favor, defina o ano a partir do qual o evento litúrgico deve existir"
 
 #: components/NewTestModal.php:61
 msgid "Please set the year until which the liturgical event should exist"
@@ -320,11 +323,11 @@ msgstr "Por favor, defina o ano até o qual o evento litúrgico deve existir"
 
 #: components/NewTestModal.php:62
 msgid "Please set the years in which the liturgical event should not exist"
-msgstr ""
+msgstr "Por favor, defina os anos em que o evento litúrgico não deve existir"
 
 #: components/NewTestModal.php:67
 msgid "Set the base date for this liturgical event"
-msgstr ""
+msgstr "Defina a data base para este evento litúrgico"
 
 #: components/NewTestModal.php:68
 msgid ""
@@ -338,7 +341,7 @@ msgstr ""
 
 #: components/NewTestModal.php:70
 msgid "The date input cannot be empty"
-msgstr ""
+msgstr "A entrada de data não pode estar vazia"
 
 #: components/NewTestModal.php:88
 msgid "Close"
@@ -346,4 +349,4 @@ msgstr "Fechar"
 
 #: components/NewTestModal.php:89
 msgid "Create test"
-msgstr ""
+msgstr "Criar teste"
