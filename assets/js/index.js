@@ -79,9 +79,26 @@ class ReadyToRunTests {
     static PageReady        = false;
     static SocketReady      = false;
     static AsyncDataReady   = false;
+    /**
+     * Check if all conditions are met to run tests.
+     * The conditions are:
+     * - PageReady: page has finished loading
+     * - SocketReady: Websocket connection is ready
+     * - AsyncDataReady: all relevant data has finished loading
+     * @return {boolean} true if all conditions are met
+     */
     static check() {
         return ( ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.AsyncDataReady === true );
     }
+    /**
+     * Check if all conditions are met to run tests and if so, enables the start test runner button.
+     * The conditions are:
+     * - PageReady: page has finished loading
+     * - SocketReady: Websocket connection is ready
+     * - AsyncDataReady: all relevant data has finished loading
+     * Additionally, the method makes sure that the #startTestRunnerBtnLbl is set to the stored value
+     * and that the page loader is hidden.
+     */
     static tryEnableBtn() {
         console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
         console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.AsyncDataReady );
@@ -98,6 +115,14 @@ class ReadyToRunTests {
     }
 }
 
+/**
+ * Converts a given time in milliseconds to a human readable string.
+ * The method tries to break down the given time into hours, minutes, seconds and milliseconds.
+ * If a time unit is not needed (e.g. if the given time is less than 1 hour), it is left out.
+ * Example: 10000ms is converted to '10 seconds'
+ * @param {number} ms time in milliseconds
+ * @return {string} human readable string
+ */
 const MsToTimeString = ( ms ) => {
     let timeString = [];
     let left = ms;
@@ -138,15 +163,40 @@ class TestState {
     static SpecificUnitTests            = new TestState( 'SpecificUnitTests' );
     static JobsFinished                 = new TestState( 'JobsFinished' );
 
+    /**
+     * @param {string} name The name of the TestState.
+     *                      Currently, the following names are possible:
+     *                      ReadyState, ExecutingValidations,
+     *                      ValidatingCalendarData, SpecificUnitTests,
+     *                      JobsFinished.
+     */
     constructor( name ) {
         this.name = name;
     }
+    /**
+     * Returns a string representation of this TestState.
+     * @return {string} The name of this TestState, prefixed with "TestState.".
+     */
     toString() {
         return `TestState.${this.name}`;
     }
 }
 
 
+/**
+ * Returns a string that represents the HTML template for a specific calendar.
+ * This template is used in the index page to represent the state of a calendar test.
+ * The template has the following structure:
+ * - A paragraph with the name of the calendar that is being tested.
+ * - Three div elements, each with a class that represents the state of the calendar test.
+ *   The classes are:
+ *   - `file-exists`: indicates whether the calendar data exists.
+ *   - `json-valid`: indicates whether the calendar data is valid JSON.
+ *   - `schema-valid`: indicates whether the calendar data is valid according to the schema.
+ * The template is used by the `calendarTemplate` function in `index.js`.
+ * @param {string} calendarName The name of the calendar that is being tested.
+ * @return {string} The HTML template as a string.
+ */
 const testTemplate = ( calendarName ) => {
     return `
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate(calendarName,22)}</p>
@@ -168,6 +218,14 @@ const testTemplate = ( calendarName ) => {
 `;
 }
 
+/**
+ * Returns a string that represents the HTML template for a specific year of calendar data testing.
+ * This template is used in the index page to represent the state of a calendar test.
+ * The template has the following structure:
+ * - A paragraph with the year of the calendar being tested.
+ * @param {number} idx The index of the year to be tested.
+ * @return {string} The HTML template as a string.
+ */
 const calDataTestTemplate = ( idx ) => {
     let i = Years.length - idx;
     let year = Years[ i ];
@@ -178,6 +236,21 @@ const calDataTestTemplate = ( idx ) => {
 `;
 }
 
+/**
+ * Returns a string that represents the HTML template for a specific source data check.
+ * The template has the following structure:
+ * - A paragraph with the name of the source data check.
+ * - Three div elements, each with a class that represents the state of the source data check.
+ *   The classes are:
+ *   - `file-exists`: indicates whether the source data exists.
+ *   - `json-valid`: indicates whether the source data is valid JSON.
+ *   - `schema-valid`: indicates whether the source data is valid according to the schema.
+ * The template is used by the `index.js` script.
+ * @param {string} check The name of the source data check.
+ * @param {string} category The category of source data being checked.
+ * @param {number} idx The index of the source data check.
+ * @return {string} The HTML template as a string.
+ */
 const sourceDataCheckTemplate = ( check, category, idx ) => {
     let categoryStr;
     switch(category){
@@ -545,6 +618,29 @@ let DiocesanCalendarTemplates   = [];
 let SpecificUnitTestCategories = [];
 let SpecificUnitTestYears = {};
 
+/**
+ * Manages the state of the test runner, executing tests and reporting results
+ * @function runTests
+ * @description
+ * This function is called by the test runner button, and it manages the state of
+ * the test runner, executing tests and reporting results. It transitions through
+ * several states, including:
+ * - ReadyState: The initial state of the test runner, which is entered when the
+ *   test runner button is clicked. In this state, the test runner uncollapses the
+ *   accordion for the current tests and sends the first source data test to the
+ *   worker.
+ * - ExecutingValidations: In this state, the test runner sends source data tests
+ *   to the worker, and when all source data tests have been sent, it transitions
+ *   to the ValidatingCalendarData state.
+ * - ValidatingCalendarData: In this state, the test runner sends calendar data
+ *   tests to the worker, and when all calendar data tests have been sent, it
+ *   transitions to the SpecificUnitTests state.
+ * - SpecificUnitTests: In this state, the test runner sends specific unit tests
+ *   to the worker, and when all specific unit tests have been sent, it transitions
+ *   to the JobsFinished state.
+ * - JobsFinished: In this state, the test runner reports that all jobs have been
+ *   finished, and it becomes ready to start a new test run.
+ */
 const runTests = () => {
     switch ( currentState ) {
         case TestState.ReadyState:
@@ -656,6 +752,14 @@ const runTests = () => {
     }
 }
 
+/**
+ * Connects to the websocket server at wss://litcal-test.johnromanodorazio.com
+ * and sets up event listeners for the open, message, close, and error events.
+ * If the connection is successful, it sets the state to ReadyState and tries
+ * to enable the test runner button. If the connection is closed, it sets the
+ * state to JobsFinished and tries to enable the test runner button. If an
+ * error occurs, it sets the state to JobsFinished and shows an error toast.
+ */
 const connectWebSocket = () => {
     conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
 
@@ -672,6 +776,17 @@ const connectWebSocket = () => {
         ReadyToRunTests.tryEnableBtn();
     };
 
+    /**
+     * Handles incoming messages from the websocket server.
+     * Each message is expected to be a JSON object with the following properties:
+     * - type: either "success" or "error"
+     * - classes: a string of CSS classes that identify which test is being reported
+     * - text: a string of text to display in case of an error
+     * If the message is a success, it updates the corresponding success count and
+     * marks the test as successful. If the message is an error, it updates the
+     * corresponding failed count and marks the test as failed. If the test is
+     * finished, it updates the total test time and displays it.
+     */
     conn.onmessage = ( e ) => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
@@ -738,6 +853,12 @@ const connectWebSocket = () => {
         }
     };
 
+    /**
+     * Handles the websocket connection being closed by the server.
+     * If the connection was closed by the server, it tries to reconnect
+     * after 3 seconds.
+     * @param {CloseEvent} e - The close event.
+     */
     conn.onclose = ( e ) => {
         console.log( 'Connection closed on remote end' );
         ReadyToRunTests.SocketReady = false;
@@ -753,6 +874,14 @@ const connectWebSocket = () => {
         }
     }
 
+    /**
+     * Handles websocket connection errors.
+     * If a connection error occurs, it sets the connection status to "error",
+     * shows an error toast, and stops the spinner.
+     * If there is no connection attempt currently running, it starts a new
+     * connection attempt after 3 seconds.
+     * @param {ErrorEvent} e - The error event.
+     */
     conn.onerror = ( e ) => {
         $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
             .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
@@ -768,10 +897,21 @@ const connectWebSocket = () => {
     }
 }
 
+/**
+ * Sets the text content of the #startTestRunnerBtnLbl element to the given
+ * string.
+ * @param {string} txt - The text to set.
+ */
 const setTestRunnerBtnLblTxt = (txt) => {
     document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
 }
 
+/**
+ * Fetches metadata and tests data from the server.
+ * If the promise resolves, it sets the MetaData and UnitTests variables.
+ * If the promise rejects, it logs an error message.
+ * @returns {Promise<void>}
+ */
 const fetchMetadataAndTests = () => {
     Promise.all([
         fetch( ENDPOINTS.METADATA, {
@@ -835,6 +975,11 @@ const fetchMetadataAndTests = () => {
     });
 }
 
+/**
+ * Appends an accordion item for a unit test with its assertions.
+ * @param {Object} obj - The unit test object with its assertions.
+ * @returns {undefined}
+ */
 const appendAccordionItem = (obj) => {
 
     let unitTestStr = '';
@@ -880,6 +1025,12 @@ const appendAccordionItem = (obj) => {
     $(`#total${obj.name}TestsCount`).text(specificUnitTestTotalCount);
 }
 
+/**
+ * Function to determine if a unit test should be filtered out based on its `appliesTo` or `applies_to` property
+ * @param {Object} unitTest - The unit test to check
+ * @param {String} appliesToOrFilter - The property to check, either 'appliesTo' or 'applies_to', or 'filter'
+ * @returns {Boolean} true if the unit test should be applied to the current national or diocesan calendar, false otherwise
+ */
 const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
     let shouldReturn = false;
     // TODO: the following two variables are needed to handle the switch to the /tests schema
@@ -928,6 +1079,15 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
     return shouldReturn;
 }
 
+/**
+ * Sets up the page by populating the calendar select list and setting up
+ * the calendar data tests.
+ *
+ * Additionally, it stores the original value of the #startTestRunnerBtnLbl for later use
+ * and makes sure that the page is ready to run tests.
+ *
+ * @return {void}
+ */
 const setupPage = () => {
     $( document ).ready(() => {
         // store the original value of the #startTestRunnerBtnLbl for later use
