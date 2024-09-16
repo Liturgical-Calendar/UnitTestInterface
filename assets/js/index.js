@@ -1158,7 +1158,11 @@ const setupPage = () => {
                     "category": "nationalcalendar"
             });
             MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].missals.forEach((missal) => {
-                let sourceFile = Object.values( RomanMissals ).filter(el => el.missal_id === missal)[0].data_path;
+                let missal = Object.values( RomanMissals ).filter(el => el.missal_id === missal);
+                let sourceFile = false;
+                if (missal.length && missal[0].hasOwnProperty('data_path')) {
+                    sourceFile = missal[0].data_path;
+                }
                 if( sourceFile !== false ) {
                     currentSourceDataChecks.push({
                         "validate": missal,
