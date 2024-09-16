@@ -1162,7 +1162,7 @@ const setupPage = () => {
                 let sourceFile = false;
                 let missalDef = Object.values( RomanMissals ).filter(el => el.missal_id === missal);
                 if (missalDef.length && missalDef[0].hasOwnProperty('data_path')) {
-                    sourceFile = missal[0].data_path;
+                    sourceFile = missalDef[0].data_path;
                     console.log('found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile);
                 } else {
                     console.warn('could not find Missal definition for missal: ' + missal);
