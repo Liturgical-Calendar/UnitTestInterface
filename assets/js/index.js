@@ -923,14 +923,14 @@ const fetchMetadataAndTests = () => {
             headers: {
                 Accept: "application/json"
             }
-        }).then(response => response.json()),
+        }),
         fetch( ENDPOINTS.TESTSINDEX, {
             method: "GET",
             //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
-        }).then(response => response.json()),
+        }),
         fetch( ENDPOINTS.MISSALS, {
             method: "GET",
             //mode: "no-cors",
@@ -938,7 +938,14 @@ const fetchMetadataAndTests = () => {
                 Accept: "application/json"
             }
         })
-    ]).then( dataArr => {
+    ])
+      .then((responses) => {
+        return Promise.all(responses.map((response) => {
+            if(response.ok) { return response.json(); }
+            else { throw new Error(`response.status = ${response.status}, response.statusText = ${response.statusText}`); }
+        }));
+      })
+      .then( dataArr => {
         dataArr.forEach(data => {
             console.log(data);
             if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
@@ -989,6 +996,8 @@ const fetchMetadataAndTests = () => {
                 }
             }
         });
+    }).catch((error) => {
+        console.error('Error fetching metadata and/or roman missals and/or tests data:', error);
     });
 }
 
