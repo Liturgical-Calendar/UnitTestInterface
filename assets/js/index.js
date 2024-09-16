@@ -10,7 +10,8 @@ const ENDPOINTS = {
     VERSION: "dev",
     METADATA: "",
     TESTSINDEX: "",
-    DECREES: ""
+    DECREES: "",
+    MISSALS: ""
 }
 
 const sourceDataChecks = [
@@ -64,6 +65,7 @@ const setEndpoints = (ev = null) => {
             ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars`;
             ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests`;
             ENDPOINTS.DECREES     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees`;
+            ENDPOINTS.MISSALS     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals`;
             break;
         case 'v3':
             ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
@@ -579,6 +581,7 @@ const IntlDTOptions = {
 
 let MetaData = null;
 let UnitTests = null;
+let RomanMissals = null;
 let currentState;
 let index;
 let calendarIndex;
@@ -927,7 +930,14 @@ const fetchMetadataAndTests = () => {
             headers: {
                 Accept: "application/json"
             }
-        }).then(response => response.json())
+        }).then(response => response.json()),
+        fetch( ENDPOINTS.MISSALS, {
+            method: "GET",
+            //mode: "no-cors",
+            headers: {
+                Accept: "application/json"
+            }
+        })
     ]).then( dataArr => {
         dataArr.forEach(data => {
             console.log(data);
@@ -949,9 +959,16 @@ const fetchMetadataAndTests = () => {
                 nations = national_calendars_keys;
                 nations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) )
                 CalendarNations.sort( ( a, b ) => countryNames.of( COUNTRIES[ a ] ).localeCompare( countryNames.of( COUNTRIES[ b ] ) ) );
-                if( UnitTests !== null ) {
+                if( UnitTests !== null && RomanMissals !== null ) {
                     ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that UnitTests was set first, now Metadata is also ready' );
+                    console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
+                    setupPage();
+                }
+            } else if ( data.hasOwnProperty( 'litcal_missals') ) {
+                RomanMissals = data.litcal_missals;
+                if( UnitTests !== null && MetaData !== null ) {
+                    ReadyToRunTests.AsyncDataReady = true;
+                    console.log( 'it seems that UnitTests and MetaData were set first, now RomanMissals is also ready' );
                     setupPage();
                 }
             } else {
@@ -962,12 +979,12 @@ const fetchMetadataAndTests = () => {
                 } else {
                     let arrayStatus = data instanceof Array ? 'true' : 'false';
                     let objStatus = data.hasOwnProperty('litcal_tests') ? 'true' : 'false';
-                    let message = `Could not decode tests data! Is it an array? ${arrayStatus} It it an object with property 'litcal_tests'? ${objStatus}`;
+                    let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
                     console.error(message);
                 }
-                if( MetaData !== null ) {
+                if( MetaData !== null && RomanMissals !== null ) {
                     ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that Metadata was set first, now UnitTests is also ready' );
+                    console.log( 'it seems that Metadata and RomanMissals were set first, now UnitTests is also ready' );
                     setupPage();
                 }
             }
@@ -1132,7 +1149,7 @@ const setupPage = () => {
                     "category": "nationalcalendar"
             });
             MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].missals.forEach((missal) => {
-                let sourceFile = Object.values( MetaData.roman_missals ).filter(el => el.missal_id === missal)[0].data_path;
+                let sourceFile = Object.values( RomanMissals ).filter(el => el.missal_id === missal)[0].data_path;
                 if( sourceFile !== false ) {
                     currentSourceDataChecks.push({
                         "validate": missal,
