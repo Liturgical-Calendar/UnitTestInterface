@@ -17,7 +17,7 @@ $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
 
 $ch = curl_init();
 
-if ($apiVersion === 'dev') {
+if ($apiVersion === 'dev' || $apiVersion === 'v4') {
     curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests");
 } else {
     curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/testsindex/");
@@ -30,7 +30,7 @@ if (curl_errno($ch)) {
     die($error_msg);
 }
 curl_close($ch);
-if ($apiVersion === 'dev') {
+if ($apiVersion === 'dev' || $apiVersion === 'v4') {
     $LitCalTests = json_decode($response)->litcal_tests;
 } else {
     $LitCalTests = json_decode($response);
@@ -181,6 +181,6 @@ include_once 'components/NewTestModal.php';
     <div id="responseMessage"></div>
 </div>
 <?php
-echo "<script>const LitCalTests = Object.freeze($response); let LitCalAllFestivities = Object.freeze($eventsRaw);</script>";
+echo "<script>const LitCalTests = Object.freeze($response); let litcal_events = Object.freeze($eventsRaw);</script>";
 include_once 'layout/footer.php';
 ?>
