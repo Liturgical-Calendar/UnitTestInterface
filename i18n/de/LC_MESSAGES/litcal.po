@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-17 22:25+0000\n"
-"PO-Revision-Date: 2024-09-17 22:23+0000\n"
+"PO-Revision-Date: 2024-09-17 22:41+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: German <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/de/>\n"
@@ -132,13 +132,6 @@ msgid "Exact date"
 msgstr "Genaues Datum"
 
 #: admin.php:85
-#, fuzzy
-#| msgid ""
-#| "When a liturgical event should only exist after a certain year, we assert "
-#| "that for a certain span of years before such year the liturgical event "
-#| "should not exist, while for a certain span of years after such year the "
-#| "liturgical event should exist and should fall on an expected date (date "
-#| "can optionally be defined differently for each given year)"
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -149,8 +142,8 @@ msgstr ""
 "Wenn ein liturgisches Ereignis erst nach einem bestimmten Jahr existieren "
 "soll, stellen wir sicher, dass es für einen bestimmten Zeitraum vor diesem "
 "Jahr nicht existieren sollte, während es für einen bestimmten Zeitraum nach "
-"diesem Jahr existieren sollte und an einem erwarteten Datum fallen sollte "
-"(das Datum kann optional für jedes Jahr unterschiedlich definiert werden)."
+"diesem Jahr existieren sollte und an einem erwarteten Datum fallen sollte ("
+"das Datum kann optional für jedes Jahr unterschiedlich definiert werden)."
 
 #: admin.php:86
 msgid "Exact date since year"
@@ -175,12 +168,6 @@ msgid "Exact date until year"
 msgstr "Genaues Datum bis Jahr"
 
 #: admin.php:95
-#, fuzzy
-#| msgid ""
-#| "When a liturgical event is expected to be overriden in various years for "
-#| "whatever reason, we assert that it should exist in certain given years on "
-#| "an expected date (date can optionally be defined differently for each "
-#| "given year), and that it should not exist for other given years"
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -334,8 +321,6 @@ msgstr ""
 "im Bereich klicken."
 
 #: components/NewTestModal.php:60
-#, fuzzy
-#| msgid "Please set the year from which the liturgical event should exist"
 msgid "Please set the year from which the liturgical event should exist."
 msgstr ""
 "Bitte legen Sie das Jahr fest, ab dem das liturgische Ereignis existieren "
@@ -348,16 +333,12 @@ msgstr ""
 "existieren soll."
 
 #: components/NewTestModal.php:62
-#, fuzzy
-#| msgid "Please set the years in which the liturgical event should not exist"
 msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
 "Bitte legen Sie die Jahre fest, in denen das liturgische Ereignis nicht "
 "existieren soll."
 
 #: components/NewTestModal.php:67
-#, fuzzy
-#| msgid "Set the base date for this liturgical event"
 msgid "Set the base date for this liturgical event."
 msgstr "Legen Sie das Basisdatum für dieses liturgische Ereignis fest."
 
@@ -372,8 +353,6 @@ msgstr ""
 "Datum später für jedes Jahr anpassen, falls erforderlich."
 
 #: components/NewTestModal.php:70
-#, fuzzy
-#| msgid "The date input cannot be empty"
 msgid "The date input cannot be empty."
 msgstr "Das Datumsfeld darf nicht leer sein."
 
