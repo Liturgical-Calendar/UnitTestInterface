@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 21:57+0000\n"
+"POT-Creation-Date: 2024-09-17 22:06+0000\n"
 "PO-Revision-Date: 2024-09-08 12:08+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Portuguese <https://translate.johnromanodorazio.com/projects/"
@@ -199,15 +199,15 @@ msgstr "Afirmações por ano"
 msgid "Save Unit Test"
 msgstr "Salvar Teste Unitário"
 
-#: admin.php:147
+#: admin.php:154
 msgid "Add or Edit Comment"
 msgstr "Adicionar ou Editar Comentário"
 
-#: admin.php:152
+#: admin.php:159
 msgid "Comment"
 msgstr "Comentário"
 
-#: admin.php:157
+#: admin.php:164
 msgid "Save"
 msgstr "Salvar"
 
