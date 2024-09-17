@@ -1,0 +1,5 @@
+{
+    "require": {
+        "liturgical-calendar/components": "^1.0"
+    }
+}

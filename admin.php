@@ -1,8 +1,10 @@
 <?php
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
-
+require_once 'vendor/autoload.php';
 require_once 'includes/auth.php';
+
+use LiturgicalCalendar\Components\CalendarSelect;
 
 if (!authenticated()) {
     header("WWW-Authenticate: Basic realm=\"Please insert your credentials\"");
@@ -16,7 +18,7 @@ $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
 $ch = curl_init();
 
 if ($apiVersion === 'dev') {
-    curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests/");
+    curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests");
 } else {
     curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/testsindex/");
 }
@@ -58,9 +60,17 @@ include_once 'layout/sidebar.php';
                 <label class="w-100 text-center fw-bold border border-top-0 border-start-0 border-end-0 border-secondary"><?php echo _('Create a New Test'); ?></label>
                 <div class="row justify-content-center align-items-start">
                     <div class="form-group col col-md-3 border border-top-0 border-bottom-0 border-end-0 border-secondary">
-                        <label for="APICalendarSelect"><?php echo _('Calendar to test'); ?></label>
-                        <select id="APICalendarSelect" class="form-select">
-                        </select>
+                        <?php
+                            $options = ['locale' => 'it']; // set the locale to Italian
+                            $CalendarSelect = new CalendarSelect($options); // use the default API url, but set the locale to Italian
+                            echo $CalendarSelect->getSelect([
+                                                    'class'    => 'form-select',
+                                                    'id'       => 'APICalendarSelect',
+                                                    'options'  => 'all',
+                                                    'label'    => true,
+                                                    'labelStr' => _('Calendar to test')
+                                                ]);
+                            ?>
                     </div>
                     <div class="form-group col col-md-9">
                         <label><?php echo _("Test Type"); ?></label>

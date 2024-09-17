@@ -1,0 +1,59 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "b9e651c20da5bfb3d061ab60111e72ac",
+    "packages": [
+        {
+            "name": "liturgical-calendar/components",
+            "version": "v1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Liturgical-Calendar/liturgy-components-php.git",
+                "reference": "7ebbff9c69a97ce9f724b0cb57e3ad7b9d310807"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Liturgical-Calendar/liturgy-components-php/zipball/7ebbff9c69a97ce9f724b0cb57e3ad7b9d310807",
+                "reference": "7ebbff9c69a97ce9f724b0cb57e3ad7b9d310807",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LiturgicalCalendar\\Components\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "John R. D'Orazio",
+                    "email": "priest@johnromanodorazio.com"
+                }
+            ],
+            "description": "Reusable frontend components for the Liturgical Calendar API",
+            "support": {
+                "issues": "https://github.com/Liturgical-Calendar/liturgy-components-php/issues",
+                "source": "https://github.com/Liturgical-Calendar/liturgy-components-php/tree/v1.0.2"
+            },
+            "time": "2024-09-15T23:11:30+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
+}

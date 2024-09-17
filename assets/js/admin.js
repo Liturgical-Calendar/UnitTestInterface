@@ -175,9 +175,10 @@ const setEndpoints = (ev = null) => {
     }
     switch(ENDPOINTS.VERSION) {
         case 'dev':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/calendars/`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/tests/`;
-            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/dev/events/`;
+        case 'v4':
+            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/calendars`;
+            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/tests`;
+            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/dev/events`;
         break;
         case 'v3':
             ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
@@ -189,44 +190,11 @@ const setEndpoints = (ev = null) => {
 
 setEndpoints();
 
-const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
+//const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
 let CalendarNations = [];
 let SelectOptions = {};
 let DiocesanCalendars;
-//const COUNTRIES is available from Countries.js, included in footer.php for admin.php
 
-fetch( ENDPOINTS.METADATA )
-    .then(data => data.json())
-    .then(jsonData => {
-        const { LitCalMetadata } = jsonData;
-        const { NationalCalendars } = LitCalMetadata;
-        ({DiocesanCalendars} = LitCalMetadata);
-        Object.freeze(DiocesanCalendars);
-        for( const [key,value] of Object.entries( DiocesanCalendars ) ) {
-            if( false === CalendarNations.includes(value.nation) ) {
-                CalendarNations.push(value.nation);
-                SelectOptions[value.nation] = [];
-            }
-            SelectOptions[value.nation].push(`<option data-calendartype="diocesancalendar" value="${key}">${value.diocese}</option>`);
-        }
-
-        let nations = Object.keys( NationalCalendars );
-        nations.sort((a, b) => COUNTRY_NAMES.of(COUNTRIES[a]).localeCompare(COUNTRY_NAMES.of(COUNTRIES[b])));
-        nations.forEach(item => {
-            if( false === CalendarNations.includes(item) ) {
-                const calName = item === 'VATICAN' ? 'Universal Roman' : COUNTRY_NAMES.of(COUNTRIES[item]);
-                $('#APICalendarSelect').append(`<option data-calendartype="nationalcalendar" value="${item}">${calName}</option>`);
-            }
-        });
-
-        CalendarNations.sort((a, b) => COUNTRY_NAMES.of(COUNTRIES[a]).localeCompare(COUNTRY_NAMES.of(COUNTRIES[b])));
-        CalendarNations.forEach(item => {
-            $('#APICalendarSelect').append(`<option data-calendartype="nationalcalendar" value="${item}">${COUNTRY_NAMES.of(COUNTRIES[item])}</option>`);
-            let $optGroup = $(`<optgroup label="${COUNTRY_NAMES.of(COUNTRIES[item])}">`);
-            $('#APICalendarSelect').append($optGroup);
-            SelectOptions[item].forEach(groupItem => $optGroup.append(groupItem));
-        });
-    });
 
 /** Prepare PUT new Unit Test */
 
