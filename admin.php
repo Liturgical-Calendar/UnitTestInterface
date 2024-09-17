@@ -82,17 +82,17 @@ include_once 'layout/sidebar.php';
                             </button>
                             <button type="button" class="btn btn-primary col col-md-4"
                                 data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo _("When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)"); ?>">
+                                title="<?php echo _("When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year)."); ?>">
                                 <small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _("Exact date since year"); ?></b></small>
                             </button>
                             <button type="button" class="btn btn-primary col col-md-4"
                                 data-testtype="exactCorrespondenceUntil" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo _("When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist"); ?>">
+                                title="<?php echo _("When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist."); ?>">
                                 <small><b><?php echo _("Exact date until year"); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small>
                             </button>
                             <button type="button" class="btn btn-primary col col-md-4"
                                 data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
-                                title="<?php echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years"); ?>">
+                                title="<?php echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years."); ?>">
                                 <small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence"); ?></b></small>
                             </button>
                         </div>
