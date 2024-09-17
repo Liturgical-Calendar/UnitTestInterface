@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-05 19:07+0000\n"
+"POT-Creation-Date: 2024-09-17 21:57+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -80,11 +80,11 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
-#: admin.php:45
+#: admin.php:47
 msgid "Define a Unit Test for a Liturgical event"
 msgstr ""
 
-#: admin.php:46
+#: admin.php:48
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "actually producing correct data, we can create Unit Tests that allow us to "
@@ -92,34 +92,34 @@ msgid ""
 "have expected dates from year to year."
 msgstr ""
 
-#: admin.php:49
+#: admin.php:51
 msgid "Edit an existing test"
 msgstr ""
 
-#: admin.php:58
+#: admin.php:60
 msgid "Create a New Test"
 msgstr ""
 
-#: admin.php:61
+#: admin.php:71
 msgid "Calendar to test"
 msgstr ""
 
-#: admin.php:66
+#: admin.php:76
 msgid "Test Type"
 msgstr ""
 
-#: admin.php:70
+#: admin.php:80
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
 "can optionally be defined differently for each given year)"
 msgstr ""
 
-#: admin.php:71
+#: admin.php:81
 msgid "Exact date"
 msgstr ""
 
-#: admin.php:75
+#: admin.php:85
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -128,11 +128,11 @@ msgid ""
 "optionally be defined differently for each given year)"
 msgstr ""
 
-#: admin.php:76
+#: admin.php:86
 msgid "Exact date since year"
 msgstr ""
 
-#: admin.php:80
+#: admin.php:90
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -141,11 +141,11 @@ msgid ""
 "such year the liturgical event should not exist"
 msgstr ""
 
-#: admin.php:81
+#: admin.php:91
 msgid "Exact date until year"
 msgstr ""
 
-#: admin.php:85
+#: admin.php:95
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -153,35 +153,35 @@ msgid ""
 "year), and that it should not exist for other given years"
 msgstr ""
 
-#: admin.php:86
+#: admin.php:96
 msgid "Variable existence"
 msgstr ""
 
-#: admin.php:96
+#: admin.php:106
 msgid "Name of Test"
 msgstr ""
 
-#: admin.php:102 components/NewTestModal.php:26
+#: admin.php:112 components/NewTestModal.php:26
 msgid "Description"
 msgstr ""
 
-#: admin.php:106
+#: admin.php:116
 msgid "Per year assertions"
 msgstr ""
 
-#: admin.php:114
+#: admin.php:124
 msgid "Save Unit Test"
 msgstr ""
 
-#: admin.php:137
+#: admin.php:147
 msgid "Add or Edit Comment"
 msgstr ""
 
-#: admin.php:142
+#: admin.php:152
 msgid "Comment"
 msgstr ""
 
-#: admin.php:147
+#: admin.php:157
 msgid "Save"
 msgstr ""
 
