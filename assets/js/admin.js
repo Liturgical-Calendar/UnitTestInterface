@@ -62,7 +62,7 @@ const sanitizeOnSetValue = {
                 if( typeof value !== 'string' ) {
                     console.warn(`property ${prop} of this object must be of type string`);
                     return;
-                } else if ( false === Object.keys(LitCalAllFestivities).includes(value) ) {
+                } else if ( false === Object.keys(litcal_events).includes(value) ) {
                     console.warn(`property ${prop} of this object must contain a valid Liturgical Event Key`);
                     return;
                 }
@@ -310,23 +310,23 @@ const rebuildFestivitiesOptions = (element) => {
     return fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` )
     .then(data => data.json())
     .then(json => {
-        ({LitCalAllFestivities} = json);
-        Object.freeze(LitCalAllFestivities);
+        ({litcal_events} = json);
+        Object.freeze(litcal_events);
         let htmlStr = '';
-        for (const [key, el] of Object.entries(LitCalAllFestivities)) {
+        for (const [key, el] of Object.entries(litcal_events)) {
             let dataMonth = '';
             let dataDay = '';
             let dataGrade = '';
-            if( el.hasOwnProperty( "MONTH" ) ) {
-                dataMonth = ` data-month="${el.MONTH}"`;
+            if( el.hasOwnProperty( "month" ) ) {
+                dataMonth = ` data-month="${el.month}"`;
             }
-            if( el.hasOwnProperty( "DAY" ) ) {
-                dataDay = ` data-day="${el.DAY}"`;
+            if( el.hasOwnProperty( "day" ) ) {
+                dataDay = ` data-day="${el.day}"`;
             }
-            if( el.hasOwnProperty( "GRADE" ) ) {
-                dataGrade = ` data-grade="${el.GRADE}"`;
+            if( el.hasOwnProperty( "grade" ) ) {
+                dataGrade = ` data-grade="${el.grade}"`;
             }
-            htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.NAME} (${el.GRADE_LCL})</option>`;
+            htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
         };
         document.querySelector('#existingFestivitiesList').innerHTML = htmlStr;
     });
@@ -376,7 +376,7 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
             document.querySelector('#APICalendarSelect').value = proxiedTest.appliesTo[calendarType];
             await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
             document.querySelector('#existingFestivityName').value = proxiedTest.eventkey;
-            AssertionsBuilder.test = LitCalAllFestivities[proxiedTest.eventkey];
+            AssertionsBuilder.test = litcal_events[proxiedTest.eventkey];
             AssertionsBuilder.appliesTo = proxiedTest.appliesTo[calendarType];
         }
         $( '#assertionsContainer' ).empty();
