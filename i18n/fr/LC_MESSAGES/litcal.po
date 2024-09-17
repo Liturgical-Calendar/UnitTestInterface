@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:21+0000\n"
+"POT-Creation-Date: 2024-09-17 22:24+0000\n"
 "PO-Revision-Date: 2024-09-08 12:08+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: French <https://translate.johnromanodorazio.com/projects/"
@@ -367,7 +367,9 @@ msgstr ""
 "doit pas exister"
 
 #: components/NewTestModal.php:67
-msgid "Set the base date for this liturgical event"
+#, fuzzy
+#| msgid "Set the base date for this liturgical event"
+msgid "Set the base date for this liturgical event."
 msgstr "Définir la date de base pour cet événement liturgique"
 
 #: components/NewTestModal.php:68
