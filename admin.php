@@ -131,12 +131,19 @@ include_once 'layout/sidebar.php';
 </main>
 <!-- End of Main Content -->
 <?php
-if ($apiVersion === 'dev') {
-    $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/dev/events/";
+if ($apiVersion === 'dev' || $apiVersion === 'v4') {
+    $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/dev/events";
+    $eventsRaw = file_get_contents("$eventsEndpoint?locale=" . $i18n->locale);
+    if ($eventsRaw === false) {
+        die('Could not fetch data from ' . $eventsEndpoint);
+    }
     [ "litcal_events" => $LitCalAllFestivities ] = json_decode(
-        file_get_contents("$eventsEndpoint?locale=" . $i18n->locale),
+        $eventsRaw,
         true
     );
+    if (JSON_ERROR_NONE !== json_last_error()) {
+        die('Could not parse JSON from ' . $eventsEndpoint . ' : ' . json_last_error_msg());
+    }
 }
 include_once 'components/NewTestModal.php';
 ?>
@@ -174,7 +181,6 @@ include_once 'components/NewTestModal.php';
     <div id="responseMessage"></div>
 </div>
 <?php
-$LitEventKeys = json_encode($LitCalAllFestivities);
-echo "<script>const LitCalTests = Object.freeze($response); let LitCalAllFestivities = Object.freeze($LitEventKeys);</script>";
+echo "<script>const LitCalTests = Object.freeze($response); let LitCalAllFestivities = Object.freeze($eventsRaw);</script>";
 include_once 'layout/footer.php';
 ?>
