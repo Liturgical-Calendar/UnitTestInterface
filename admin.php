@@ -61,8 +61,8 @@ include_once 'layout/sidebar.php';
                 <div class="row justify-content-center align-items-start">
                     <div class="form-group col col-md-3 border border-top-0 border-bottom-0 border-end-0 border-secondary">
                         <?php
-                            $options = ['locale' => 'it']; // set the locale to Italian
-                            $CalendarSelect = new CalendarSelect($options); // use the default API url, but set the locale to Italian
+                            $options = ['locale' => $i18n->locale];
+                            $CalendarSelect = new CalendarSelect($options);
                             echo $CalendarSelect->getSelect([
                                                     'class'    => 'form-select',
                                                     'id'       => 'APICalendarSelect',
