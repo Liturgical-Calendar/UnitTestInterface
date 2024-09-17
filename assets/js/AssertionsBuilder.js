@@ -50,7 +50,7 @@ class AssertionsBuilder {
         if( test.testType === TestType.ExactCorrespondenceSince ) {
             AssertionsBuilder.yearSince = test.yearSince;
         }
-        AssertionsBuilder.test = LitCalAllFestivities[test.eventkey];
+        AssertionsBuilder.test = litcal_events[test.eventkey];
         console.log( 'new instance of AssertionsBuilder, test = ');
         console.log(AssertionsBuilder.test);
     }
