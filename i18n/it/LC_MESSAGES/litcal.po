@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:20+0000\n"
+"POT-Creation-Date: 2024-09-17 22:21+0000\n"
 "PO-Revision-Date: 2024-09-17 22:19+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -336,16 +336,22 @@ msgstr ""
 "cliccando sull'icona del martello all'interno degli anni nell'intervallo."
 
 #: components/NewTestModal.php:60
-msgid "Please set the year from which the liturgical event should exist"
+#, fuzzy
+#| msgid "Please set the year from which the liturgical event should exist"
+msgid "Please set the year from which the liturgical event should exist."
 msgstr ""
 "Si prega di impostare l'anno da cui l'evento liturgico dovrebbe esistere"
 
 #: components/NewTestModal.php:61
-msgid "Please set the year until which the liturgical event should exist"
+#, fuzzy
+#| msgid "Please set the year until which the liturgical event should exist"
+msgid "Please set the year until which the liturgical event should exist."
 msgstr "Imposta l'anno fino al quale l'evento liturgico dovrebbe esistere"
 
 #: components/NewTestModal.php:62
-msgid "Please set the years in which the liturgical event should not exist"
+#, fuzzy
+#| msgid "Please set the years in which the liturgical event should not exist"
+msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
 "Si prega di impostare gli anni in cui l'evento liturgico non dovrebbe "
 "esistere"
