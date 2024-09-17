@@ -67,7 +67,7 @@
                                     <label class="fw-bold" for="baseDate"><?php echo _("Set the base date for this liturgical event.") ?></label><br>
                                     <small><small><p class="lh-sm"><?php echo _('If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against. In any case you will later be able to adjust the date for each year if needed.'); ?></p></small></small>
                                     <input type="date" id="baseDate" min="1970-01-01" max="2050-12-31" class="form-control mt-4 w-25" required>
-                                    <div class="invalid-feedback"><?php echo _("The date input cannot be empty"); ?></div>
+                                    <div class="invalid-feedback"><?php echo _("The date input cannot be empty."); ?></div>
                                 </div>
                             </div>
                         </form>
