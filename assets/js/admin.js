@@ -19,6 +19,14 @@ const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
 let proxiedTest = null;
 
 const sanitizeOnSetValue = {
+    /**
+     * @function
+     * @name sanitizeOnSetValue.get
+     * @description Proxy getter for sanitizing strings
+     * @param {Object} target The object that the property is being accessed on
+     * @param {string} prop The name of the property being accessed
+     * @returns {any} The sanitized property value
+     */
     get: (target, prop) => {
         if (typeof target[prop] === 'object' && target[prop] !== null) {
             return new Proxy(target[prop], sanitizeOnSetValue);
@@ -30,13 +38,22 @@ const sanitizeOnSetValue = {
             return Reflect.get(target, prop);
         }
     },
+    /**
+     * @function
+     * @name sanitizeOnSetValue.set
+     * @description Proxy setter for sanitizing strings and checking types and values
+     * @param {Object} target The object that the property is being set on
+     * @param {string} prop The name of the property being set
+     * @param {any} value The value that the property is being set to
+     * @returns {boolean} true if the set was successful, false otherwise
+     */
     set: (target, prop, value) => {
         switch( prop ) {
             case 'name':
                 //we don't allow the name to ever be different than eventkey+'Test'
-                value = (target['eventkey']) + 'Test';
+                value = (target['event_key']) + 'Test';
                 break;
-            case 'testType':
+            case 'test_type':
                 if( false === [TestType.ExactCorrespondence, TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil, TestType.VariableCorrespondence ].includes( value ) ) {
                     console.warn(`property ${prop} of this object must have a valid TestType value`);
                     return;
@@ -58,7 +75,7 @@ const sanitizeOnSetValue = {
                 //we'll just make sure the value doesn't contain any scripts or html
                 value = sanitizeInput(value);
                 break;
-            case 'eventkey':
+            case 'event_key':
                 if( typeof value !== 'string' ) {
                     console.warn(`property ${prop} of this object must be of type string`);
                     return;
@@ -68,8 +85,8 @@ const sanitizeOnSetValue = {
                 }
                 target['name'] = value + 'Test';
                 break;
-            case 'yearSince':
-                if( target['testType'] !== TestType.ExactCorrespondenceSince ) {
+            case 'year_since':
+                if( target['test_type'] !== TestType.ExactCorrespondenceSince ) {
                     console.warn(`property ${prop} of this object can only be set when testType property has value exactCorrespondenceSince`);
                     if( target.hasOwnProperty(prop) ) {
                         delete(target[prop]);
@@ -81,8 +98,8 @@ const sanitizeOnSetValue = {
                     return;
                 }
                 break;
-            case 'yearUntil':
-                if( target['testType'] !== TestType.ExactCorrespondenceUntil ) {
+            case 'year_until':
+                if( target['test_type'] !== TestType.ExactCorrespondenceUntil ) {
                     console.warn(`property ${prop} of this object can only be set when testType property has value exactCorrespondenceUntil`);
                     if( target.hasOwnProperty(prop) ) {
                         delete(target[prop]);
@@ -100,7 +117,7 @@ const sanitizeOnSetValue = {
                     return;
                 }
                 break;
-            case 'expectedValue':
+            case 'expected_value':
                 if( value !== null && (typeof value !== 'number' || value < -2851200 || value > 253402214400 || (Number(value) === value && value % 1 !== 0) ) ) {
                     console.warn(`property ${prop} of this object must be of type integer and have a value between -2851200 and 253402214400`);
                     return;
@@ -118,7 +135,7 @@ const sanitizeOnSetValue = {
                     }
                 }
                 break;
-            case 'appliesTo':
+            case 'applies_to':
                 if( false == value instanceof Object ) {
                     console.warn(`property ${prop} of this object must be of type object`);
                     return;
@@ -135,7 +152,7 @@ const sanitizeOnSetValue = {
                 }
                 break;
             case 'diocesancalendar':
-                if( typeof value !== 'string' || false === Object.keys(DiocesanCalendars).includes(value) ) {
+                if( typeof value !== 'string' || false === DiocesanCalendars.includes(value) ) {
                     console.warn(`The value of the "${prop}" property must correspond to an actual available Diocesan Calendar`);
                     return;
                 }
@@ -190,11 +207,17 @@ const setEndpoints = (ev = null) => {
 
 setEndpoints();
 
-//const COUNTRY_NAMES = new Intl.DisplayNames([locale], {type: 'region'});
-let CalendarNations = [];
-let SelectOptions = {};
-let DiocesanCalendars;
+let CalendarNations = null;
+let DiocesanCalendars = null;
 
+fetch(ENDPOINTS.METADATA)
+    .then(response => response.ok ? response.json() : Promise.reject(response))
+    .then(response => {
+        const { national_calendar_keys, diocesan_calendar_keys } = response;
+        CalendarNations = national_calendar_keys;
+        DiocesanCalendars = diocesan_calendar_keys;
+    })
+    .catch(error => console.error('Could not fetch', ENDPOINTS.METADATA, error));
 
 /** Prepare PUT new Unit Test */
 
@@ -273,32 +296,32 @@ const checkTargetInput = (target) => {
 const serializeUnitTest = () => {
     const eventkey = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
-    const testType = document.querySelector('#cardHeaderTestType').textContent;
-    const yearSince = testType === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
-    const yearUntil = testType === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
-    proxiedTest.eventkey = eventkey;
+    const test_type = document.querySelector('#cardHeaderTestType').textContent;
+    const year_since = test_type === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
+    const year_until = test_type === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
+    proxiedTest.event_key = eventkey;
     proxiedTest.description = description;
-    proxiedTest.testType = testType;
-    if( testType === 'exactCorrespondenceSince' ) {
-        proxiedTest.yearSince = yearSince;
+    proxiedTest.test_type = test_type;
+    if( test_type === 'exactCorrespondenceSince' ) {
+        proxiedTest.year_since = year_since;
     }
-    if( testType === 'exactCorrespondenceUntil' ) {
-        proxiedTest.yearUntil = yearUntil;
+    if( test_type === 'exactCorrespondenceUntil' ) {
+        proxiedTest.year_until = year_until;
     }
     proxiedTest.assertions = [];
     let assertionDivs = document.querySelectorAll('#assertionsContainer > div');
     assertionDivs.forEach(div => {
         const year = Number(div.querySelector('p.testYear').textContent);
-        const expectedValue = div.querySelector('div > span.expectedValue').textContent === '---' ? null : Number( div.querySelector('.expectedValue').getAttribute('data-value') );
+        const expected_value = div.querySelector('div > span.expectedValue').textContent === '---' ? null : Number( div.querySelector('.expectedValue').getAttribute('data-value') );
         const assert = div.querySelector('.assert').textContent;
         const assertion = div.querySelector('[contenteditable]').textContent;
         const hasComment = div.querySelector('.comment > svg').getAttribute('data-icon') === 'comment-dots';
         const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
-        proxiedTest.assertions.push(new Assertion(year, expectedValue, assert, assertion, comment));
+        proxiedTest.assertions.push(new Assertion(year, expected_value, assert, assertion, comment));
     });
     if( document.querySelector('#APICalendarSelect').value !== 'VATICAN' ) {
         const currentCalendarType = document.querySelector(`#APICalendarSelect [value="${document.querySelector('#APICalendarSelect').value}"]`).dataset.calendartype;
-        proxiedTest.appliesTo = {[currentCalendarType]: document.querySelector('#APICalendarSelect').value};
+        proxiedTest.applies_to = {[currentCalendarType]: document.querySelector('#APICalendarSelect').value};
     }
     return new UnitTest( proxiedTest );
 }
@@ -361,30 +384,30 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
 
         document.querySelector('#testName').textContent = proxiedTest.name;
         //$('#testType').val( proxiedTest.testType ).change();
-        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.testType;
+        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.test_type;
         document.querySelector('#description').setAttribute('rows', 1);
         document.querySelector('#description').value = proxiedTest.description;
         document.querySelector('#description').setAttribute('rows', Math.ceil( $('#description')[0].scrollHeight / 40 ));
-        if( proxiedTest.hasOwnProperty('yearSince') ) {
-            document.querySelector('#yearSince').value = proxiedTest.yearSince;
+        if( proxiedTest.hasOwnProperty('year_since') ) {
+            document.querySelector('#yearSince').value = proxiedTest.year_since;
         }
-        if( proxiedTest.hasOwnProperty('yearUntil') ) {
-            document.querySelector('#yearUntil').value = proxiedTest.yearUntil;
+        if( proxiedTest.hasOwnProperty('year_until') ) {
+            document.querySelector('#yearUntil').value = proxiedTest.year_until;
         }
-        if( proxiedTest.hasOwnProperty('appliesTo') ) {
-            const calendarType = Object.keys(proxiedTest.appliesTo)[0];
-            document.querySelector('#APICalendarSelect').value = proxiedTest.appliesTo[calendarType];
+        if( proxiedTest.hasOwnProperty('applies_to') ) {
+            const calendarType = Object.keys(proxiedTest.applies_to)[0];
+            document.querySelector('#APICalendarSelect').value = proxiedTest.applies_to[calendarType];
             await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
-            document.querySelector('#existingFestivityName').value = proxiedTest.eventkey;
-            AssertionsBuilder.test = litcal_events[proxiedTest.eventkey];
-            AssertionsBuilder.appliesTo = proxiedTest.appliesTo[calendarType];
+            document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
+            AssertionsBuilder.test = litcal_events[proxiedTest.event_key];
+            AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
         }
         $( '#assertionsContainer' ).empty();
         const assertionsBuilder = new AssertionsBuilder( proxiedTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
         $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
         document.querySelector('#perYearAssertions').classList.remove('invisible');
-        document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.testType;
+        document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.test_type;
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
         document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.setAttribute('disabled', 'disabled'));
     } else {
@@ -430,7 +453,7 @@ $(document).on('click', '.toggleAssert', ev => {
         $pNode.next()[0].classList.remove('bg-success', 'text-white');
         $pNode.next()[0].classList.add('bg-warning', 'text-dark');
         $pNode.next()[0].children[1].textContent = '---';
-        proxiedTest.assertions[assertionIndex].expectedValue = null;
+        proxiedTest.assertions[assertionIndex].expected_value = null;
     }
 });
 
@@ -439,7 +462,7 @@ $(document).on('change', '.expectedValue > [type=date]', ev => {
     const $grandpa = $(ev.currentTarget).closest('div');
     const $greatGrandpa = $grandpa.parent().closest('div');
     const assertionIndex = $greatGrandpa.prevAll(':has(.testYear)').length;
-    proxiedTest.assertions[assertionIndex].expectedValue = timestamp / 1000;
+    proxiedTest.assertions[assertionIndex].expected_value = timestamp / 1000;
     $grandpa[0].classList.remove('bg-warning','text-dark');
     $grandpa[0].classList.add('bg-success','text-white');
     console.log(ev.currentTarget.parentNode.dataset);
@@ -572,8 +595,8 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     let lightClass = '';
     if( 'edittest' in ev.relatedTarget.dataset ) {
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
-        document.querySelector('#existingFestivityName').value = proxiedTest.eventkey;
-        $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.eventkey + '"]');
+        document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
+        $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.event_key + '"]');
         console.log($existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
         minYear = Math.min(...years);
@@ -781,10 +804,10 @@ $(document).on('click', '#btnCreateTest', () => {
     } else {
         //let's build our new Unit Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
-        proxiedTest.eventkey = document.querySelector('#existingFestivityName').value;
+        proxiedTest.event_key = document.querySelector('#existingFestivityName').value;
         console.log(document.querySelector('#existingFestivityName').value);
         console.log(proxiedTest.name);
-        proxiedTest.testType = currentTestType;
+        proxiedTest.test_type = currentTestType;
         proxiedTest.description = document.querySelector('#newUnitTestDescription').value;
         const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
         let yearSinceUntil = null;
@@ -793,10 +816,10 @@ $(document).on('click', '#btnCreateTest', () => {
                 return this.nodeType === Node.TEXT_NODE;
             }).text());
             if( currentTestType === TestType.ExactCorrespondenceSince ) {
-                proxiedTest.yearSince = yearSinceUntil;
+                proxiedTest.year_since = yearSinceUntil;
                 document.querySelector('#yearSince').value = yearSinceUntil;
             } else {
-                proxiedTest.yearUntil = yearSinceUntil;
+                proxiedTest.year_until = yearSinceUntil;
                 document.querySelector('#yearUntil').value = yearSinceUntil;
             }
         }
@@ -826,7 +849,7 @@ $(document).on('click', '#btnCreateTest', () => {
             proxiedTest.assertions.push(new Assertion(year, dateX, assert, assertion));
         });
         $('#testName').text( proxiedTest.name );
-        $('#cardHeaderTestType').text( proxiedTest.testType );
+        $('#cardHeaderTestType').text( proxiedTest.test_type );
         $('#description').attr('rows', 2);
         $('#description').val( proxiedTest.description );
         $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
