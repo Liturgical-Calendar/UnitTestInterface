@@ -199,38 +199,38 @@ let DiocesanCalendars;
 /** Prepare PUT new Unit Test */
 
 class UnitTest {
-    constructor(eventkey, description, testType, assertions, yearSince = null, yearUntil = null ) {
+    constructor(event_key, description, test_type, assertions, year_since = null, year_until = null ) {
         if( arguments.length === 1 ) {
             if(
                 typeof arguments[0] === 'object'
                 && (Object.keys( arguments[0] ).length === 5 || Object.keys( arguments[0] ).length === 6)
-                && Object.keys( arguments[0] ).every(val => ['name', 'eventkey', 'description', 'testType', 'assertions', 'yearSince', 'yearUntil', 'appliesTo'].includes(val) )
+                && Object.keys( arguments[0] ).every(val => ['name', 'event_key', 'description', 'test_type', 'assertions', 'year_since', 'year_until', 'applies_to'].includes(val) )
             ) {
                 Object.assign(this, arguments[0]);
             } else {
                 console.log('there seem to be extra unexpected properties: ' + Object.keys( arguments[0] ).join(', ') );
             }
         } else {
-            this.name = eventkey + 'Test';
-            this.eventkey = eventkey;
+            this.name = event_key + 'Test';
+            this.event_key = event_key;
             this.description = description;
-            this.testType = testType;
+            this.test_type = test_type;
             this.assertions = assertions;
-            if( null !== yearSince ) {
-                this.yearSince = yearSince;
+            if( null !== year_since ) {
+                this.year_since = year_since;
             }
-            if( null !== yearUntil ) {
-                this.yearUntil = yearUntil;
+            if( null !== year_until ) {
+                this.year_until = year_until;
             }
         }
     }
 }
 
 class Assertion {
-    constructor(year, expectedValue, assert, assertion, comment = null) {
+    constructor(year, expected_value, assert, assertion, comment = null) {
         if( arguments.length === 4 || arguments.length === 5 ) {
             this.year = year;
-            this.expectedValue = expectedValue;
+            this.expected_value = expected_value;
             this.assert = assert;
             this.assertion = assertion;
             if( null !== comment ) {
@@ -240,7 +240,7 @@ class Assertion {
             if(
                 typeof arguments[0] === 'object'
                 && (Object.keys( arguments[0] ).length === 4 || Object.keys( arguments[0] ).length === 5)
-                && Object.keys( arguments[0] ).every(val => ['year', 'expectedValue', 'assert', 'assertion', 'comment'].includes(val) )
+                && Object.keys( arguments[0] ).every(val => ['year', 'expected_value', 'assert', 'assertion', 'comment'].includes(val) )
             ) {
                 Object.assign(this, arguments[0]);
             }
