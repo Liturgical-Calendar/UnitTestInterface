@@ -57,9 +57,9 @@
                                     </div>
                                     <div id="yearsToTestGrid"></div>
                                     <input type="number" class="invisible" id="yearSinceUntilShadow" value="1970" required>
-                                    <div class="invalid-feedback exactCorrespondenceSince d-none"><?php echo _("Please set the year from which the liturgical event should exist"); ?></div>
-                                    <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php echo _("Please set the year until which the liturgical event should exist"); ?></div>
-                                    <div class="invalid-feedback variableCorrespondence d-none"><?php echo _("Please set the years in which the liturgical event should not exist"); ?></div>
+                                    <div class="invalid-feedback exactCorrespondenceSince d-none"><?php echo _("Please set the year from which the liturgical event should exist."); ?></div>
+                                    <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php echo _("Please set the year until which the liturgical event should exist."); ?></div>
+                                    <div class="invalid-feedback variableCorrespondence d-none"><?php echo _("Please set the years in which the liturgical event should not exist."); ?></div>
                                 </div>
                             </div>
                             <div class="carousel-item" data-item='2'>
