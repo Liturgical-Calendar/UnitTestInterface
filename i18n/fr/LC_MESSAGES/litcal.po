@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:24+0000\n"
+"POT-Creation-Date: 2024-09-17 22:25+0000\n"
 "PO-Revision-Date: 2024-09-08 12:08+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: French <https://translate.johnromanodorazio.com/projects/"
@@ -383,7 +383,9 @@ msgstr ""
 "tard ajuster la date pour chaque année si nécessaire."
 
 #: components/NewTestModal.php:70
-msgid "The date input cannot be empty"
+#, fuzzy
+#| msgid "The date input cannot be empty"
+msgid "The date input cannot be empty."
 msgstr "La date ne peut pas être vide"
 
 #: components/NewTestModal.php:88

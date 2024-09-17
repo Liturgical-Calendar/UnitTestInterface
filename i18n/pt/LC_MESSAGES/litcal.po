@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:24+0000\n"
+"POT-Creation-Date: 2024-09-17 22:25+0000\n"
 "PO-Revision-Date: 2024-09-08 12:08+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Portuguese <https://translate.johnromanodorazio.com/projects/"
@@ -368,7 +368,9 @@ msgstr ""
 "data para cada ano, se necessário."
 
 #: components/NewTestModal.php:70
-msgid "The date input cannot be empty"
+#, fuzzy
+#| msgid "The date input cannot be empty"
+msgid "The date input cannot be empty."
 msgstr "A entrada de data não pode estar vazia"
 
 #: components/NewTestModal.php:88
