@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:21+0000\n"
+"POT-Creation-Date: 2024-09-17 22:24+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -287,7 +287,7 @@ msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
 
 #: components/NewTestModal.php:67
-msgid "Set the base date for this liturgical event"
+msgid "Set the base date for this liturgical event."
 msgstr ""
 
 #: components/NewTestModal.php:68
