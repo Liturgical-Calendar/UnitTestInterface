@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-17 22:25+0000\n"
-"PO-Revision-Date: 2024-09-08 12:08+0000\n"
+"PO-Revision-Date: 2024-09-17 22:41+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/es/>\n"
@@ -132,13 +132,6 @@ msgid "Exact date"
 msgstr "Fecha exacta"
 
 #: admin.php:85
-#, fuzzy
-#| msgid ""
-#| "When a liturgical event should only exist after a certain year, we assert "
-#| "that for a certain span of years before such year the liturgical event "
-#| "should not exist, while for a certain span of years after such year the "
-#| "liturgical event should exist and should fall on an expected date (date "
-#| "can optionally be defined differently for each given year)"
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -158,13 +151,6 @@ msgid "Exact date since year"
 msgstr "Fecha exacta desde el año"
 
 #: admin.php:90
-#, fuzzy
-#| msgid ""
-#| "When a liturgical event should no longer exist after a certain year, we "
-#| "assert that for a certain span of years before such year the liturgical "
-#| "event should fall on an expected date (date can optionally be defined "
-#| "differently for each given year), while for a certain span of years after "
-#| "such year the liturgical event should not exist"
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -177,19 +163,13 @@ msgstr ""
 "litúrgico debe caer en una fecha esperada (la fecha puede definirse "
 "opcionalmente de manera diferente para cada año dado), mientras que durante "
 "un cierto lapso de años después de dicho año el evento litúrgico no debe "
-"existir"
+"existir."
 
 #: admin.php:91
 msgid "Exact date until year"
 msgstr "Fecha exacta hasta el año"
 
 #: admin.php:95
-#, fuzzy
-#| msgid ""
-#| "When a liturgical event is expected to be overriden in various years for "
-#| "whatever reason, we assert that it should exist in certain given years on "
-#| "an expected date (date can optionally be defined differently for each "
-#| "given year), and that it should not exist for other given years"
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -335,31 +315,24 @@ msgstr ""
 "existir haciendo clic en el icono de martillo dentro de los años en el rango."
 
 #: components/NewTestModal.php:60
-#, fuzzy
-#| msgid "Please set the year from which the liturgical event should exist"
 msgid "Please set the year from which the liturgical event should exist."
 msgstr ""
-"Por favor, establece el año desde el cual el evento litúrgico debe existir"
+"Por favor, establece el año desde el cual el evento litúrgico debe existir."
 
 #: components/NewTestModal.php:61
-#, fuzzy
-#| msgid "Please set the year until which the liturgical event should exist"
 msgid "Please set the year until which the liturgical event should exist."
 msgstr ""
-"Por favor, establece el año hasta el cual el evento litúrgico debería existir"
+"Por favor, establece el año hasta el cual el evento litúrgico debería "
+"existir."
 
 #: components/NewTestModal.php:62
-#, fuzzy
-#| msgid "Please set the years in which the liturgical event should not exist"
 msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
-"Por favor, establece los años en los que el evento litúrgico no debe existir"
+"Por favor, establece los años en los que el evento litúrgico no debe existir."
 
 #: components/NewTestModal.php:67
-#, fuzzy
-#| msgid "Set the base date for this liturgical event"
 msgid "Set the base date for this liturgical event."
-msgstr "Establece la fecha base para este evento litúrgico"
+msgstr "Establece la fecha base para este evento litúrgico."
 
 #: components/NewTestModal.php:68
 msgid ""
@@ -372,10 +345,8 @@ msgstr ""
 "ajustar la fecha para cada año si es necesario."
 
 #: components/NewTestModal.php:70
-#, fuzzy
-#| msgid "The date input cannot be empty"
 msgid "The date input cannot be empty."
-msgstr "La fecha de entrada no puede estar vacía"
+msgstr "La fecha de entrada no puede estar vacía."
 
 #: components/NewTestModal.php:88
 msgid "Close"
