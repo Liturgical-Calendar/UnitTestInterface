@@ -353,8 +353,8 @@ let failedUnitTests = 0;
 let connectionAttempt = null;
 let conn;
 
-let currentSelectedCalendar     = "VATICAN";
-let currentNationalCalendar     = "VATICAN";
+let currentSelectedCalendar     = "VA";
+let currentNationalCalendar     = "VA";
 let currentCalendarCategory     = "nationalcalendar";
 let currentResponseType         = "JSON";
 let currentSourceDataChecks     = [];
@@ -882,7 +882,7 @@ const setupPage = () => {
             } );
         }
 
-        if( currentSelectedCalendar === 'VATICAN' ) {
+        if( currentSelectedCalendar === 'VA' ) {
             currentSourceDataChecks = [...sourceDataChecks];
         } else {
             let nation = currentCalendarCategory === 'nationalcalendar'
