@@ -22,7 +22,7 @@ const sourceDataChecks = [
     },
     {
         "validate": "PropriumDeTempore",
-        "sourceFile": "data/missals/propriumdetempore.json",
+        "sourceFile": "data/missals/propriumdetempore/propriumdetempore.json",
         "category": "universalcalendar"
     },
     {
