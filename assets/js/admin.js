@@ -319,7 +319,7 @@ const serializeUnitTest = () => {
         const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
         proxiedTest.assertions.push(new Assertion(year, expected_value, assert, assertion, comment));
     });
-    if( document.querySelector('#APICalendarSelect').value !== 'VATICAN' ) {
+    if( document.querySelector('#APICalendarSelect').value !== 'VA' ) {
         const currentCalendarType = document.querySelector(`#APICalendarSelect [value="${document.querySelector('#APICalendarSelect').value}"]`).dataset.calendartype;
         proxiedTest.applies_to = {[currentCalendarType]: document.querySelector('#APICalendarSelect').value};
     }
