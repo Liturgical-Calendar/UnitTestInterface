@@ -135,12 +135,12 @@ const sourceDataChecks = [
     },
     {
         "validate": "proprium-de-tempore",
-        "sourceFile": "data/missals/propriumdetempore.json",
+        "sourceFile": "data/missals/propriumdetempore/propriumdetempore.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore-i18n",
-        "sourceFolder": "data/missals/propriumdetempore/",
+        "sourceFolder": "data/missals/propriumdetempore/i18n/",
         "category": "sourceDataCheck"
     },
     {
