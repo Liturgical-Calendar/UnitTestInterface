@@ -888,14 +888,14 @@ const setupPage = () => {
             let nation = currentCalendarCategory === 'nationalcalendar'
                 ? currentSelectedCalendar
                 : MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].nation;
-            let sourceFile = `nations/${nation}/${nation}.json`;
+            let sourceFile = `data/nations/${nation}/${nation}.json`;
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
             currentSourceDataChecks = [...sourceDataChecks];
             MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].wider_regions.forEach((item) => {
                 currentSourceDataChecks.push({
                     "validate": item,
-                    "sourceFile": `nations/${item}.json`,
+                    "sourceFile": `data/wider_regions/${item}.json`,
                     "category": "widerregioncalendar"
                 });
             });
@@ -926,7 +926,7 @@ const setupPage = () => {
                 let diocese = MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].diocese;
                 currentSourceDataChecks.push({
                     "validate": currentSelectedCalendar,
-                    "sourceFile": `nations/${nation}/${diocese}.json`,
+                    "sourceFile": `data/nations/${nation}/${diocese}.json`,
                     "category": "diocesancalendar"
                 });
             }
