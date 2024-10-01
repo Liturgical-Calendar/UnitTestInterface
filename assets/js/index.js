@@ -22,22 +22,22 @@ const sourceDataChecks = [
     },
     {
         "validate": "PropriumDeTempore",
-        "sourceFile": "data/propriumdetempore.json",
+        "sourceFile": "data/missals/propriumdetempore.json",
         "category": "universalcalendar"
     },
     {
         "validate": "PropriumDeSanctis1970",
-        "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "sourceFile": "data/missals/propriumdesanctis_1970/propriumdesanctis_1970.json",
         "category": "universalcalendar"
     },
     {
         "validate": "PropriumDeSanctis2002",
-        "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "sourceFile": "data/missals/propriumdesanctis_2002/propriumdesanctis_2002.json",
         "category": "universalcalendar"
     },
     {
         "validate": "PropriumDeSanctis2008",
-        "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "sourceFile": "data/missals/propriumdesanctis_2008/propriumdesanctis_2008.json",
         "category": "universalcalendar"
     },
     {
@@ -47,7 +47,7 @@ const sourceDataChecks = [
     },
     {
         "validate": "RegionalCalendarsIndex",
-        "sourceFile": "nations/index.json",
+        "sourceFile": "data/nations/index.json",
         "category": "universalcalendar"
     }
 ];

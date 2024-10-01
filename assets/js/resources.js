@@ -95,57 +95,57 @@ const resourceDataChecks = [
 const sourceDataChecks = [
     {
         "validate": "memorials-from-decrees",
-        "sourceFile": "data/memorialsFromDecrees/memorialsFromDecrees.json",
+        "sourceFile": "data/decrees/decrees.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "memorials-from-decrees-i18n",
-        "sourceFolder": "data/memorialsFromDecrees/i18n",
+        "sourceFolder": "data/decrees/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-1970",
-        "sourceFile": "data/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "sourceFile": "data/missals/propriumdesanctis_1970/propriumdesanctis_1970.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-1970-i18n",
-        "sourceFolder": "data/propriumdesanctis_1970/i18n",
+        "sourceFolder": "data/missals/propriumdesanctis_1970/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2002",
-        "sourceFile": "data/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "sourceFile": "data/missals/propriumdesanctis_2002/propriumdesanctis_2002.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2002-i18n",
-        "sourceFolder": "data/propriumdesanctis_2002/i18n",
+        "sourceFolder": "data/missals/propriumdesanctis_2002/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2008",
-        "sourceFile": "data/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "sourceFile": "data/missals/propriumdesanctis_2008/propriumdesanctis_2008.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2008-i18n",
-        "sourceFolder": "data/propriumdesanctis_2008/i18n",
+        "sourceFolder": "data/missals/propriumdesanctis_2008/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore",
-        "sourceFile": "data/propriumdetempore.json",
+        "sourceFile": "data/missals/propriumdetempore.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore-i18n",
-        "sourceFolder": "data/propriumdetempore/",
+        "sourceFolder": "data/missals/propriumdetempore/",
         "category": "sourceDataCheck"
     },
     {
         "validate": "regional-calendars-index",
-        "sourceFile": "nations/index.json",
+        "sourceFile": "data/nations/index.json",
         "category": "sourceDataCheck"
     }
 ];
