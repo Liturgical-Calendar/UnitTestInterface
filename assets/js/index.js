@@ -713,6 +713,7 @@ const fetchMetadataAndTests = () => {
                 nations = national_calendars_keys;
                 nations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) )
                 CalendarNations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) );
+                console.log(`value of CalendarNations: ${CalendarNations}`);
                 if( UnitTests !== null && RomanMissals !== null ) {
                     ReadyToRunTests.AsyncDataReady = true;
                     console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
