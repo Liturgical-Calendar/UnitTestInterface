@@ -1,0 +1,352 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-17 22:25+0000\n"
+"PO-Revision-Date: 2024-09-30 22:40+0000\n"
+"Last-Translator: Milan Šalka <salka.milan@googlemail.com>\n"
+"Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
+"liturgical-calendar/unit-test-interface/sk/>\n"
+"Language: sk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Weblate 5.6.1\n"
+
+#: index.php:12
+msgid ""
+"There was an error opening the connection to the server over the websocket. "
+"Perhaps the server is offline?"
+msgstr ""
+"Došlo k chybe pri otváraní pripojenia k serveru cez websocket. Možno je "
+"server offline?"
+
+#: index.php:20
+msgid "Websocket connected successfully!"
+msgstr "Websocket úspešne pripojený!"
+
+#: index.php:28
+msgid "Websocket connection closed."
+msgstr "Websocketové pripojenie bolo ukončené."
+
+#: index.php:36
+msgid "All tests complete!"
+msgstr "Všetky testy dokončené!"
+
+#: index.php:50
+msgid "Liturgical Calendar"
+msgstr "Liturgický kalendár"
+
+#: index.php:52
+msgid "General Roman"
+msgstr "Všeobecný rímsky"
+
+#: index.php:56
+msgid "Response Format"
+msgstr "Formát odpovede"
+
+#: index.php:68
+msgid "Run Tests"
+msgstr "Spustiť testy"
+
+#: index.php:73 index.php:94 index.php:126 index.php:157
+msgid "Successful tests:"
+msgstr "Úspešné testy:"
+
+#: index.php:76 index.php:99 index.php:131 index.php:162
+msgid "Failed tests:"
+msgstr "Zlyhané testy:"
+
+#: index.php:80 index.php:104 index.php:136 index.php:167
+#, php-format
+msgid "Total time for %s tests:"
+msgstr "Celkový čas pre %s testov:"
+
+#: index.php:91
+msgid "VALIDATE SOURCE DATA"
+msgstr "OVERIŤ ZDROJOVÉ ÚDAJE"
+
+#: index.php:121
+msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"
+msgstr "OVERIŤ ÚDAJE KALENDÁRA PRE ROKY OD 1970 AŽ"
+
+#: index.php:152
+msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+msgstr "SPUSTI JEDNOTKOVÉ TESTY PRE ŠPECIFICKÉ UDALOSTI"
+
+#: index.php:186
+msgid "Loading..."
+msgstr "Načítava sa..."
+
+#: admin.php:47
+msgid "Define a Unit Test for a Liturgical event"
+msgstr "Definovať jednotkový test pre liturgickú udalosť"
+
+#: admin.php:48
+msgid ""
+"In order to verify that the liturgical calendar data produced by the API is "
+"actually producing correct data, we can create Unit Tests that allow us to "
+"verify that events were / were not created in the calendar, or that they "
+"have expected dates from year to year."
+msgstr ""
+"Aby sme overili, že údaje liturgického kalendára vytvorené API skutočne "
+"produkujú správne údaje, môžeme vytvoriť jednotkové testy, ktoré nám umožnia "
+"overiť, či boli udalosti vytvorené v kalendári alebo nie, alebo či majú "
+"očakávané dátumy z roka na rok."
+
+#: admin.php:51
+msgid "Edit an existing test"
+msgstr "Upraviť existujúci test"
+
+#: admin.php:60
+msgid "Create a New Test"
+msgstr "Vytvoriť nový test"
+
+#: admin.php:71
+msgid "Calendar to test"
+msgstr "Kalendár na testovanie"
+
+#: admin.php:76
+msgid "Test Type"
+msgstr "Typ testu"
+
+#: admin.php:80
+msgid ""
+"In the span of years for which we are making an assertion, we assert that "
+"the liturgical event should exist, and should fall on an expected date (date "
+"can optionally be defined differently for each given year)"
+msgstr ""
+"V časovom rozpätí, pre ktoré robíme tvrdenie, tvrdíme, že liturgická udalosť "
+"by mala existovať a mala by pripadnúť na očakávaný dátum (dátum môže byť "
+"voliteľne definovaný odlišne pre každý daný rok)"
+
+#: admin.php:81
+msgid "Exact date"
+msgstr "Presný dátum"
+
+#: admin.php:85
+msgid ""
+"When a liturgical event should only exist after a certain year, we assert "
+"that for a certain span of years before such year the liturgical event "
+"should not exist, while for a certain span of years after such year the "
+"liturgical event should exist and should fall on an expected date (date can "
+"optionally be defined differently for each given year)."
+msgstr ""
+"Keď by liturgická udalosť mala existovať až po určitom roku, tvrdíme, že "
+"počas určitého obdobia rokov pred týmto rokom by liturgická udalosť nemala "
+"existovať, zatiaľ čo počas určitého obdobia rokov po tomto roku by "
+"liturgická udalosť mala existovať a mala by pripadnúť na očakávaný dátum ("
+"dátum môže byť voliteľne definovaný inak pre každý daný rok)."
+
+#: admin.php:86
+msgid "Exact date since year"
+msgstr "Presný dátum od roku"
+
+#: admin.php:90
+msgid ""
+"When a liturgical event should no longer exist after a certain year, we "
+"assert that for a certain span of years before such year the liturgical "
+"event should fall on an expected date (date can optionally be defined "
+"differently for each given year), while for a certain span of years after "
+"such year the liturgical event should not exist."
+msgstr ""
+"Keď liturgická udalosť už nemá existovať po určitom roku, tvrdíme, že pre "
+"určitý časový úsek pred týmto rokom by mala liturgická udalosť pripadnúť na "
+"očakávaný dátum (dátum môže byť voliteľne definovaný inak pre každý daný rok)"
+", zatiaľ čo pre určitý časový úsek po tomto roku by liturgická udalosť "
+"nemala existovať."
+
+#: admin.php:91
+msgid "Exact date until year"
+msgstr "Presný dátum do roka"
+
+#: admin.php:95
+msgid ""
+"When a liturgical event is expected to be overriden in various years for "
+"whatever reason, we assert that it should exist in certain given years on an "
+"expected date (date can optionally be defined differently for each given "
+"year), and that it should not exist for other given years."
+msgstr ""
+"Keď sa očakáva, že liturgická udalosť bude v rôznych rokoch z akéhokoľvek "
+"dôvodu preložená, tvrdíme, že by mala existovať v určitých rokoch na "
+"očakávaný dátum (dátum môže byť voliteľne definovaný odlišne pre každý daný "
+"rok) a že by nemala existovať v iných rokoch."
+
+#: admin.php:96
+msgid "Variable existence"
+msgstr "Existencia premennej"
+
+#: admin.php:106
+msgid "Name of Test"
+msgstr "Názov testu"
+
+#: admin.php:112 components/NewTestModal.php:26
+msgid "Description"
+msgstr "Popis"
+
+#: admin.php:116
+msgid "Per year assertions"
+msgstr "Ročné tvrdenia"
+
+#: admin.php:124
+msgid "Save Unit Test"
+msgstr "Uložiť jednotkový test"
+
+#: admin.php:154
+msgid "Add or Edit Comment"
+msgstr "Pridať alebo upraviť komentár"
+
+#: admin.php:159
+msgid "Comment"
+msgstr "Komentár"
+
+#: admin.php:164
+msgid "Save"
+msgstr "Uložiť"
+
+#: layout/topnavbar.php:12
+msgid "Calendars"
+msgstr "Kalendáre"
+
+#: layout/topnavbar.php:15
+msgid "Resources"
+msgstr "Zdroje"
+
+#: layout/topnavbar.php:19
+msgid "API Version"
+msgstr "Verzia API"
+
+#: layout/topnavbar.php:58
+msgid "Websocket connection status"
+msgstr "Stav pripojenia Websocketu"
+
+#: layout/topnavbar.php:64
+msgid "LitCal Project"
+msgstr "Projekt LitCal"
+
+#: layout/topnavbar.php:72 layout/sidebar.php:23
+msgid "Unit Tests Admin"
+msgstr "Jednotkové testy Admin"
+
+#: layout/sidebar.php:13
+msgid "Catholic Liturgical Calendar"
+msgstr "Katolícky liturgický kalendár"
+
+#: layout/sidebar.php:19
+msgid "Unit Tests Runner"
+msgstr "Spúšťač jednotkových testov"
+
+#: components/NewTestModal.php:6
+msgid "Exact Correspondence Test"
+msgstr "Presný test zhody"
+
+#: components/NewTestModal.php:21
+msgid "Choose the liturgical event for which you would like to create a test"
+msgstr "Vyberte si liturgickú udalosť, pre ktorú by ste chceli vytvoriť test"
+
+#: components/NewTestModal.php:23
+msgid ""
+"This festivity does not seem to exist? Please choose from a value in the "
+"list."
+msgstr ""
+"Zdá sa, že táto slávnosť neexistuje. Prosím, vyberte si hodnotu zo zoznamu."
+
+#: components/NewTestModal.php:33
+msgid "Years to test"
+msgstr "Roky na testovanie"
+
+#: components/NewTestModal.php:37 components/NewTestModal.php:45
+msgid ""
+"First choose the maximum range of years that will belong to the Unit Test."
+msgstr ""
+"Najprv vyberte maximálny rozsah rokov, ktoré budú patriť do jednotkového "
+"testu."
+
+#: components/NewTestModal.php:38
+msgid ""
+"This range should include a few years before the year in which the "
+"liturgical event should start to exist."
+msgstr ""
+"Tento rozsah by mal zahŕňať niekoľko rokov pred rokom, v ktorom by mala "
+"liturgická udalosť začať existovať."
+
+#: components/NewTestModal.php:39
+msgid ""
+"This range should include a few years after the year in which the liturgical "
+"event should cease to exist."
+msgstr ""
+"Tento rozsah by mal zahŕňať niekoľko rokov po roku, v ktorom by liturgická "
+"udalosť mala prestať existovať."
+
+#: components/NewTestModal.php:40
+msgid "You can then remove any years that won't be needed."
+msgstr "Potom môžeš odstrániť všetky roky, ktoré nebudú potrebné."
+
+#: components/NewTestModal.php:41
+msgid ""
+"Finally, set the year from which the liturgical event should exist by "
+"clicking on the hammer icon inside one of the years in the range."
+msgstr ""
+"Nakoniec nastavte rok, od ktorého by mala liturgická udalosť existovať, "
+"kliknutím na ikonu kladiva v jednom z rokov v rozsahu."
+
+#: components/NewTestModal.php:42
+msgid ""
+"Finally, set the year until which the liturgical event should exist by "
+"clicking on the hammer icon inside one of the years in the range."
+msgstr ""
+"Nakoniec nastavte rok, do ktorého by mala liturgická udalosť existovať, "
+"kliknutím na ikonu kladiva v jednom z rokov v rozsahu."
+
+#: components/NewTestModal.php:43
+msgid ""
+"Finally, set the years in which the liturgical event shouldn't exist by "
+"clicking on the hammer icon inside the years in the range."
+msgstr ""
+"Nakoniec nastavte roky, v ktorých by liturgická udalosť nemala existovať, "
+"kliknutím na ikonu kladiva v rámci rokov."
+
+#: components/NewTestModal.php:60
+msgid "Please set the year from which the liturgical event should exist."
+msgstr "Prosím, nastavte rok, od ktorého by sa mala liturgická udalosť konať."
+
+#: components/NewTestModal.php:61
+msgid "Please set the year until which the liturgical event should exist."
+msgstr "Prosím, nastavte rok, do ktorého by mala liturgická udalosť existovať."
+
+#: components/NewTestModal.php:62
+msgid "Please set the years in which the liturgical event should not exist."
+msgstr ""
+"Prosím, nastavte roky, v ktorých by liturgická udalosť nemala existovať."
+
+#: components/NewTestModal.php:67
+msgid "Set the base date for this liturgical event."
+msgstr "Nastav základný dátum pre túto liturgickú udalosť."
+
+#: components/NewTestModal.php:68
+msgid ""
+"If the liturgical event is mobile rather than fixed, set the date for the "
+"first year you are testing against. In any case you will later be able to "
+"adjust the date for each year if needed."
+msgstr ""
+"Ak je liturgická udalosť pohyblivá a nie pevná, nastavte dátum na prvý rok, "
+"ktorý testujete. V každom prípade budete môcť neskôr upraviť dátum pre každý "
+"rok, ak to bude potrebné."
+
+#: components/NewTestModal.php:70
+msgid "The date input cannot be empty."
+msgstr "Dátumové pole nemôže byť prázdne."
+
+#: components/NewTestModal.php:88
+msgid "Close"
+msgstr "Zavrieť"
+
+#: components/NewTestModal.php:89
+msgid "Create test"
+msgstr "Vytvoriť test"
