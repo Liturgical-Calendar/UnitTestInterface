@@ -875,6 +875,7 @@ const setupPage = () => {
                 }
             } );
             CalendarNations.forEach( item => {
+                console.log( `retrieving localized data for ${item}, for display purposes...` );
                 $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of(item)}</option>` );
                 let $optGroup = $( `<optgroup label="${countryNames.of(item)}">` );
                 $( '#APICalendarSelect' ).append( $optGroup );
