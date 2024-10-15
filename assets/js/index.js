@@ -248,12 +248,11 @@ const calDataTestTemplate = ( idx ) => {
  *   - `json-valid`: indicates whether the source data is valid JSON.
  *   - `schema-valid`: indicates whether the source data is valid according to the schema.
  * The template is used by the `index.js` script.
- * @param {string} check The name of the source data check.
- * @param {string} category The category of source data being checked.
+ * @param {object} item An object containing the validate, category and sourceFile properties of the source data check.
  * @param {number} idx The index of the source data check.
  * @return {string} The HTML template as a string.
  */
-const sourceDataCheckTemplate = ( check, category, idx ) => {
+const sourceDataCheckTemplate = ( item, idx ) => {
     let categoryStr;
     switch(category){
         case 'nationalcalendar':
@@ -270,18 +269,18 @@ const sourceDataCheckTemplate = ( check, category, idx ) => {
             break;
     }
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${check}.json">${category !== 'universalcalendar' ? truncate(check,14) : truncate(check,22)}</span>${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
-    <div class="card text-white bg-info rounded-0 ${check} file-exists">
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate(item.validate,14) : truncate(item.validate,22)}</span>${item.category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
+    <div class="card text-white bg-info rounded-0 ${item.validate} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
         </div>
     </div>
-    <div class="card text-white bg-info rounded-0 ${check} json-valid">
+    <div class="card text-white bg-info rounded-0 ${item.validate} json-valid">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
         </div>
     </div>
-    <div class="card text-white bg-info rounded-0 ${check} schema-valid">
+    <div class="card text-white bg-info rounded-0 ${item.validate} schema-valid">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
         </div>
@@ -936,7 +935,7 @@ const setupPage = () => {
 
         $( '.sourcedata-tests' ).empty();
         currentSourceDataChecks.forEach( ( item, idx ) => {
-            $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item.validate, item.category, idx ) );
+            $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item, idx ) );
         } );
 
         if( $('.calendardata-tests').children().length === 0 ) {
