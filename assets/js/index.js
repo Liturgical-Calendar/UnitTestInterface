@@ -270,7 +270,7 @@ const sourceDataCheckTemplate = ( check, category, idx ) => {
             break;
     }
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${check}.json">${category !== 'universalcalendar' ? truncate(check,14) : truncate(check,22)}.json</span>${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${check}.json">${category !== 'universalcalendar' ? truncate(check,14) : truncate(check,22)}</span>${category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
     <div class="card text-white bg-info rounded-0 ${check} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
@@ -713,7 +713,7 @@ const fetchMetadataAndTests = () => {
                 nations = national_calendars_keys;
                 nations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) )
                 CalendarNations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) );
-                console.log(`value of CalendarNations: ${CalendarNations}`);
+                //console.log(`value of CalendarNations: ${CalendarNations}`);
                 if( UnitTests !== null && RomanMissals !== null ) {
                     ReadyToRunTests.AsyncDataReady = true;
                     console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
