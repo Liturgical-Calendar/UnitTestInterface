@@ -1,5 +1,9 @@
 <?php
 
+namespace LiturgicalCalendar\UnitTestInterface;
+
+use Locale;
+
 class I18n
 {
     public string $locale;
