@@ -254,7 +254,7 @@ const calDataTestTemplate = ( idx ) => {
  */
 const sourceDataCheckTemplate = ( item, idx ) => {
     let categoryStr;
-    switch(category){
+    switch(item.category){
         case 'nationalcalendar':
             categoryStr = 'National Calendar definition: defines any actions that need to be taken on the festivities already defined in the Universal Calendar, to adapt them to this specific National Calendar';
             break;
