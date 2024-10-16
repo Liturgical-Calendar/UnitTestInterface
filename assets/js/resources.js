@@ -1,9 +1,28 @@
 
+/**
+ * This class keeps track of the state of the page and the data it requires to run tests.
+ * It also provides a method to check if all conditions are met to run tests.
+ * The conditions are:
+ * - PageReady: page has finished loading
+ * - SocketReady: Websocket connection is ready
+ * - MetaDataReady: metadata has finished loading
+ * - MissalsReady: missal data has finished loading
+ * @class
+ */
 class ReadyToRunTests {
     static PageReady        = false;
     static SocketReady      = false;
     static MetaDataReady    = false;
     static MissalsReady     = false;
+    /**
+     * Check if all conditions are met to run tests.
+     * The conditions are:
+     * - PageReady: page has finished loading
+     * - SocketReady: Websocket connection is ready
+     * - MetaDataReady: all relevant metadata has finished loading
+     * - MissalsReady: missals data has finished loading
+     * @return {boolean} true if all conditions are met
+     */
     static check() {
         return (
             ReadyToRunTests.PageReady === true
@@ -12,6 +31,16 @@ class ReadyToRunTests {
             && ReadyToRunTests.MissalsReady === true
         );
     }
+    /**
+     * Checks if all conditions are met to run tests and if so, enables the start test runner button.
+     * The conditions are:
+     * - PageReady: page has finished loading
+     * - SocketReady: Websocket connection is ready
+     * - AsyncDataReady: all relevant metadata regarding calendars has finished loading
+     * - MissalsReady: all relevant data regarding Roman Missals has finished loading
+     * Additionally, the method makes sure that the #startTestRunnerBtnLbl is set to the stored value
+     * and that the page loader is hidden.
+     */
     static tryEnableBtn() {
         console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
         console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.MetaDataReady );
@@ -29,6 +58,20 @@ class ReadyToRunTests {
     }
 }
 
+/**
+ * The TestState class represents the different states the test runner can be in.
+ * These states are used to control the flow of the test runner.
+ * @class
+ * @property {TestState} NotReady The initial state of the test runner.
+ *        The web socket connection is not yet ready, or the page is not ready.
+ * @property {TestState} Ready The web socket connection is ready.
+ *        The test runner is ready to start.
+ * @property {TestState} ExecutingResourceValidations The test runner is currently
+ *        executing validation tests for the source data.
+ * @property {TestState} ExecutingSourceValidations The test runner is currently
+ *        executing validation tests for the resource data.
+ * @property {TestState} JobsFinished All validation tests have finished.
+ */
 class TestState {
     static NotReady                     = new TestState( 'NotReady' );
     static Ready                        = new TestState( 'Ready' );
@@ -36,15 +79,38 @@ class TestState {
     static ExecutingSourceValidations   = new TestState( 'ExecutingSourceValidations' );
     static JobsFinished                 = new TestState( 'JobsFinished' );
 
+    /**
+     * Constructs a new TestState object.
+     * @param {string} name The name of the TestState, which must be one of the
+     *                      following: NotReady, Ready,
+     *                      ExecutingResourceValidations,
+     *                      ExecutingSourceValidations, JobsFinished.
+     */
     constructor( name ) {
         this.name = name;
     }
+    /**
+     * Returns a string representation of this TestState.
+     * @return {string} The name of this TestState, prefixed with "TestState.".
+     */
     toString() {
         return `TestState.${this.name}`;
     }
 }
 
-
+/**
+ * Object containing all endpoints used in the application.
+ * @type {Object<string,string>}
+ * @property {string} VERSION - version of the API
+ * @property {string} CALENDARS - endpoint for calendars
+ * @property {string} TESTS - endpoint for tests
+ * @property {string} DECREES - endpoint for decrees
+ * @property {string} EVENTS - endpoint for events
+ * @property {string} MISSALS - endpoint for missals
+ * @property {string} EASTER - endpoint for easter calculations
+ * @property {string} DATA - endpoint for data
+ * @property {string} SCHEMAS - endpoint for schemas
+ */
 const ENDPOINTS = {
     VERSION: "dev",
     CALENDARS: "",
@@ -57,8 +123,16 @@ const ENDPOINTS = {
     SCHEMAS: ""
 }
 
-// rememeber that 'validate' must coincide with the class on the card,
-// that's how the Websocket backend (Health class) knows which classes to send back
+/**
+ * Array of objects that define the resource data checks.
+ * Each object must contain the following properties:
+ * - `validate`: the name of the class that will be used to match the response from the websocket backend.
+ *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
+ * - `sourceFile`: the URL of the resource to check.
+ * - `category`: a string that indicates the category of the resource data check.
+ *                Currently, the only category is 'resourceDataCheck'.
+ * @type {Array<{validate: string, sourceFile: string, category: string}>}
+ */
 const resourceDataChecks = [
     {
         "validate": "calendars-path",
@@ -92,6 +166,15 @@ const resourceDataChecks = [
     }
 ];
 
+/**
+ * An array of objects with the following properties:
+ * - `validate`: the name of the class that will be used to match the response from the websocket backend.
+ *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
+ * - `sourceFile`: the URL of the resource to check.
+ * - `category`: a string that indicates the category of the source data check.
+ *                Currently, the only category is 'sourceDataCheck'.
+ * @type {Array<{validate: string, sourceFile: string, category: string}>}
+ */
 const sourceDataChecks = [
     {
         "validate": "memorials-from-decrees",
@@ -150,6 +233,14 @@ const sourceDataChecks = [
     }
 ];
 
+
+/**
+ * Sets the API endpoints according to the version selected in the dropdown.
+ *
+ * @param {Event} [ev] - An optional event object.
+ *
+ * @return {void}
+ */
 const setEndpoints = (ev = null) => {
     if(ev !== null) {
         ENDPOINTS.VERSION = ev.currentTarget.value;
@@ -183,6 +274,17 @@ const setEndpoints = (ev = null) => {
     resourceDataChecks[5].sourceFile = ENDPOINTS.SCHEMAS;
 }
 
+/**
+ * Object containing API endpoint paths for resources
+ *
+ * @constant {Object<string,string>}
+ * @property {string} calendars-path - Path for calendar data
+ * @property {string} decrees-path   - Path for decree data
+ * @property {string} events-path    - Path for event data
+ * @property {string} easter-path    - Path for Easter date calculation
+ * @property {string} tests-path     - Path for test data
+ * @property {string} schemas-path   - Path for schema data
+ */
 const resourcePaths = {
     'calendars-path': '/calendars',
     'decrees-path':   '/decrees',
@@ -194,6 +296,15 @@ const resourcePaths = {
 };
 
 
+/**
+ * This function generates an HTML template for a specific resource based on the resource and index provided.
+ * The template includes a card structure with different classes to represent the existence, JSON validity, and schema validity of the resource.
+ * Each card has a specific icon and text to indicate the status of the resource.
+ *
+ * @param {string} resource The name of the resource.
+ * @param {number} idx The index of the resource.
+ * @returns {string} The HTML template for the resource.
+ */
 const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
     <p class="text-center mb-0 bg-secondary text-white"><span title="${resourcePaths[resource]}">${resourcePaths[resource]}</span></p>
     <div class="card text-white bg-info rounded-0 ${resource} file-exists">
@@ -216,7 +327,7 @@ const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || id
 /**
  * HTMLEncode function
  * kudos to https://stackoverflow.com/a/784765/394921
- * @param {*} str
+ * @param {string} str
  * @returns
  */
 const HTMLEncode = (str) => {
@@ -237,9 +348,23 @@ const HTMLEncode = (str) => {
     return aRet.join('');
 }
 
+/**
+ * Establishes a websocket connection to the test server.
+ * If the connection is successful, it sets the state to ReadyState and tries
+ * to enable the test runner button. If the connection is closed, it sets the
+ * state to JobsFinished and tries to enable the test runner button. If an
+ * error occurs, it sets the state to JobsFinished and shows an error toast.
+ * Also sets up event listeners for the open, message, close, and error events.
+ */
 const connectWebSocket = () => {
     conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
 
+    /**
+     * Event handler for the onopen event. Called when the websocket connection to the test server is established.
+     * Logs a message to the console, shows a toast to indicate the connection is established, and updates the state to ReadyState.
+     * Additionally, it stops the connection attempt timer, sets ReadyToRunTests.SocketReady to true, and tries to enable the test runner button.
+     * @param {Event} e - The onopen event object.
+     */
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
         $( '#websocket-connected' ).toast( 'show' );
@@ -253,6 +378,16 @@ const connectWebSocket = () => {
         ReadyToRunTests.tryEnableBtn();
     };
 
+    /**
+     * Handles incoming messages from the websocket server.
+     * Each message is expected to be a JSON object with the following properties:
+     * - type: either "success" or "error"
+     * - classes: a string of CSS classes that identify which test is being reported
+     * - text: a string of text to display in case of an error
+     * If the message is a success, it updates the corresponding success count and marks the test as successful.
+     * If the message is an error, it updates the corresponding failed count and marks the test as failed.
+     * If the test is not finished, it continues running tests and measures the total test time.
+     */
     conn.onmessage = ( e ) => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
@@ -304,6 +439,14 @@ const connectWebSocket = () => {
         }
     };
 
+    /**
+     * Handles the onclose event of the websocket connection.
+     * Logs a message to the console, shows a toast to indicate the connection is closed,
+     * and updates the state to JobsFinished.
+     * Additionally, it stops the connection attempt timer, sets ReadyToRunTests.SocketReady to false,
+     * and tries to enable the test runner button.
+     * @param {Event} e - The onclose event object.
+     */
     conn.onclose = ( e ) => {
         console.log( 'Connection closed on remote end' );
         ReadyToRunTests.SocketReady = false;
@@ -319,6 +462,14 @@ const connectWebSocket = () => {
         }
     }
 
+    /**
+     * Handles websocket connection errors.
+     * If a connection error occurs, it sets the connection status to "error",
+     * shows an error toast, and stops the spinner.
+     * If there is no connection attempt currently running, it starts a new
+     * connection attempt after 3 seconds.
+     * @param {ErrorEvent} e - The error event.
+     */
     conn.onerror = ( e ) => {
         $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
             .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
@@ -334,10 +485,19 @@ const connectWebSocket = () => {
     }
 }
 
+/**
+ * Updates the text content of the #startTestRunnerBtnLbl element.
+ * @param {string} txt - The text to set as the label of the start test runner button.
+ */
 const setTestRunnerBtnLblTxt = (txt) => {
     document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
 }
 
+/**
+ * Sets up the page by populating the page with the resource data tests and setting the page status to ready.
+ * The page status is set to ready after the page has finished loading and the resource data tests have been
+ * populated.
+ */
 const setupPage = () => {
     $(document).ready(() =>  {
         if (startTestRunnerBtnLbl === '') {
@@ -364,15 +524,20 @@ let connectionAttempt           = null;
 let conn;
 
 let messageCounter;
-let successfulTests = 0;
-let failedTests = 0;
-
-let successfulSourceDataTests = 0;
-let failedSourceDataTests = 0;
-
+let successfulTests             = 0;
+let failedTests                 = 0;
+let successfulSourceDataTests   = 0;
+let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
-let failedResourceDataTests = 0;
+let failedResourceDataTests     = 0;
 
+/**
+ * Loads all the asynchronous data needed for the page to function.
+ * This includes the calendars metadata and the missals metadata.
+ * When the data is loaded, it sets the necessary variables and proceeds to
+ * set up the page by populating the page with the resource data tests and setting
+ * the page status to ready.
+ */
 const loadAsyncData = () => {
     Promise.all([
         fetch( ENDPOINTS.CALENDARS, {
@@ -477,6 +642,16 @@ const loadAsyncData = () => {
     });
 }
 
+/**
+ * Manages the execution of resource validation tests and transitions through different test states.
+ *
+ * This function handles the following states:
+ * - ReadyState: Initializes test indices, marks the start of resource data tests, and sends the first test for execution.
+ * - ExecutingResourceValidations: Manages the execution loop for resource validation tests, sending new tests when a cycle is complete, and transitioning to JobsFinished when all tests are done.
+ * - JobsFinished: Indicates all tests have been completed, updates UI to reflect the completion state.
+ *
+ * Utilizes performance marks to track test execution time and updates the UI to show test progress.
+ */
 const runTests = () => {
     switch ( currentState ) {
         case TestState.ReadyState:
@@ -525,6 +700,14 @@ const runTests = () => {
     }
 }
 
+/**
+ * Converts a given time in milliseconds to a human readable string.
+ * The method tries to break down the given time into hours, minutes, seconds and milliseconds.
+ * If a time unit is not needed (e.g. if the given time is less than 1 hour), it is left out.
+ * Example: 10000ms is converted to '10 seconds'
+ * @param {number} ms time in milliseconds
+ * @return {string} human readable string
+ */
 const MsToTimeString = ( ms ) => {
     let timeString = [];
     let left = ms;
