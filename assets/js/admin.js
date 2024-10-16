@@ -406,6 +406,33 @@ const serializeUnitTest = () => {
     return new UnitTest( proxiedTest );
 }
 
+const API = {
+    get path() {
+        if( this.calendartype === 'nationalcalendar' ) {
+            return `${ENDPOINTS.EVENTS}/nation/${this.calendar_id}`;
+        }
+        if( this.calendartype === 'diocesancalendar' ) {
+            return `${ENDPOINTS.EVENTS}/diocese/${this.calendar_id}`;
+        }
+        throw new Error('calendartype must be either "nationalcalendar" or "diocesancalendar"');
+    },
+    set path(val) {
+        throw new Error('path is a computed property and cannot be set');
+    },
+    get calendartype() {
+        return this._calendartype;
+    },
+    set calendartype(val) {
+        this._calendartype = val;
+    },
+    get calendar_id() {
+        return this._calendar_id;
+    },
+    set calendar_id(val) {
+        this._calendar_id = val;
+    }
+};
+
 /**
  * Rebuilds the options for the select element containing the list of existing
  * festivities for the currently selected API calendar.
@@ -420,8 +447,10 @@ const rebuildFestivitiesOptions = async (element) => {
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
-    console.log(`fetching data from ${ENDPOINTS.EVENTS}?${calendarType}=${element.value}`);
-    const data_1 = await fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` );
+    API.calendartype = calendarType;
+    API.calendar_id = element.value;
+    console.log(`fetching data from API.path = ${API.path}`);
+    const data_1 = await fetch( API.path );
     const json = await data_1.json();
     litcal_events = json.litcal_events;
     let htmlStr = '';
