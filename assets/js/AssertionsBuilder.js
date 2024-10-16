@@ -100,6 +100,7 @@ class AssertionsBuilder {
         AssertionsBuilder.test = litcal_events[test.event_key];
         console.log( 'new instance of AssertionsBuilder, test = ');
         console.log(AssertionsBuilder.test);
+        console.log(litcal_events);
     }
 
     /**
