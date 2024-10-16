@@ -9,8 +9,7 @@ while (baseYear <= twentyFiveYearsFromNow ) {
 const currentLocale = document.cookie
   .split('; ')
   .find(row => row.startsWith('currentLocale='))
-  .split('=')[1];
-console.log(`currentLocale = ${currentLocale}`);
+  .split('=')[1] || 'en';
 
 const ENDPOINTS = {
     VERSION: "dev",
@@ -363,7 +362,7 @@ let currentNationalCalendar     = "VA";
 let currentCalendarCategory     = "nationalcalendar";
 let currentResponseType         = "JSON";
 let currentSourceDataChecks     = [];
-let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
+let countryNames                = new Intl.DisplayNames(currentLocale, { type: 'region' } );
 let CalendarNations             = [];
 let selectOptions               = {};
 //let NationalCalendarsArr        = [];
@@ -765,10 +764,10 @@ const appendAccordionItem = (obj) => {
     obj.assertions.forEach(assertion => {
         let dateStr = '';
         if( assertion.hasOwnProperty('expectedValue') && null !== assertion.expectedValue ) {
-            dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( assertion.expectedValue * 1000 );
+            dateStr = new Intl.DateTimeFormat(currentLocale, IntlDTOptions).format( assertion.expectedValue * 1000 );
         }
         else if ( assertion.hasOwnProperty('expected_value') && null !== assertion.expected_value ) {
-            dateStr = new Intl.DateTimeFormat("en-US", IntlDTOptions).format( assertion.expected_value * 1000 );
+            dateStr = new Intl.DateTimeFormat(currentLocale, IntlDTOptions).format( assertion.expected_value * 1000 );
         }
         unitTestStr += `
             <div class="col-1 ${idy===0 || idy % 11 === 0 ? 'offset-1' : ''}">
