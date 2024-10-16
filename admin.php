@@ -187,6 +187,6 @@ include_once 'components/NewTestModal.php';
 <?php
 $testsIndex = json_encode($LitCalTests);
 $litcal_events = json_encode($LitCalAllFestivities);
-echo "<script>const LitCalTests = Object.freeze($testsIndex); let litcal_events = Object.freeze($litcal_events);</script>";
+echo "<script>const LitCalTests = Object.freeze($testsIndex); let litcal_events = $litcal_events;</script>";
 include_once 'layout/footer.php';
 ?>
