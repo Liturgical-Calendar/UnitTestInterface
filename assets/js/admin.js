@@ -486,7 +486,8 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
             document.querySelector('#APICalendarSelect').value = proxiedTest.applies_to[calendarType];
             await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
             document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
-            console.log(`keys of litcal_events after rebuildFestivitiesOptions: ${Object.keys(litcal_events)}`);
+            console.log(`keys of litcal_events after rebuildFestivitiesOptions:`);
+            console.log(Object.keys(litcal_events));
             AssertionsBuilder.test = litcal_events[proxiedTest.event_key];
             AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
         }
