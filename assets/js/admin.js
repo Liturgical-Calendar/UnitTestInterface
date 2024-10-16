@@ -412,6 +412,7 @@ const serializeUnitTest = () => {
  * @returns {Promise<void>}
  */
 const rebuildFestivitiesOptions = (element) => {
+    console.log(`rebuildFestivitiesOptions: ${element.value}`);
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
