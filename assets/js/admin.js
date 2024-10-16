@@ -18,6 +18,15 @@ const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
 
 let proxiedTest = null;
 
+/**
+ * @function
+ * @name sanitizeOnSetValue.set
+ * @description Proxy setter for sanitizing strings and checking types and values
+ * @param {Object} target The object that the property is being set on
+ * @param {string} prop The name of the property being set
+ * @param {any} value The value that the property is being set to
+ * @returns {boolean} true if the set was successful, false otherwise
+ */
 const sanitizeOnSetValue = {
     /**
      * @function
@@ -184,6 +193,14 @@ const ENDPOINTS = {
     TESTSINDEX: "",
     EVENTS: ""
 }
+
+/**
+ * Sets the API endpoints according to the version selected in the dropdown.
+ *
+ * @param {Event} [ev] - An optional event object.
+ *
+ * @return {void}
+ */
 const setEndpoints = (ev = null) => {
     if(ev) {
         ENDPOINTS.VERSION = ev.currentTarget.value;
@@ -193,14 +210,14 @@ const setEndpoints = (ev = null) => {
     switch(ENDPOINTS.VERSION) {
         case 'dev':
         case 'v4':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/dev/calendars`;
+            ENDPOINTS.METADATA   = `https://litcal.johnromanodorazio.com/api/dev/calendars`;
             ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/tests`;
-            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/dev/events`;
+            ENDPOINTS.EVENTS     = `https://litcal.johnromanodorazio.com/api/dev/events`;
         break;
         case 'v3':
-            ENDPOINTS.METADATA = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
+            ENDPOINTS.METADATA   = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
             ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
-            ENDPOINTS.EVENTS = `https://litcal.johnromanodorazio.com/api/v4/LitCalAllFestivities.php/`;
+            ENDPOINTS.EVENTS     = `https://litcal.johnromanodorazio.com/api/v4/LitCalAllFestivities.php/`;
         break;
     }
 }
@@ -221,7 +238,20 @@ fetch(ENDPOINTS.METADATA)
 
 /** Prepare PUT new Unit Test */
 
+/**
+ * Class representing a unit test for a liturgical event.
+ * @class
+ */
 class UnitTest {
+    /**
+     * Constructs a new UnitTest instance.
+     * @param {string} event_key - the event key of the event that this unit test is for.
+     * @param {string} description - the description of this unit test.
+     * @param {TestType} test_type - the type of the test.
+     * @param {Assertion[]} assertions - the assertions of this test.
+     * @param {number} [year_since=null] - the year since which the test applies (only for TestType.ExactCorrespondenceSince).
+     * @param {number} [year_until=null] - the year until which the test applies (only for TestType.ExactCorrespondenceUntil).
+     */
     constructor(event_key, description, test_type, assertions, year_since = null, year_until = null ) {
         if( arguments.length === 1 ) {
             if(
@@ -249,7 +279,23 @@ class UnitTest {
     }
 }
 
+/**
+ * Class representing an assertion for a liturgical event in a unit test.
+ * @class
+ */
 class Assertion {
+    /**
+     * @description
+     *      Creates a new instance of Assertion.
+     *      The constructor can be called with 4 or 5 arguments, or with a single object argument.
+     *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
+     *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
+     * @param {number} year - The year of the assertion.
+     * @param {number} expected_value - The expected value of the assertion.
+     * @param {'EventTypeExact'|'EventNotExists'} assert - The assert type of the assertion.
+     * @param {string} assertion - The assertion.
+     * @param {string} [comment] - The comment associated with the assertion.
+     */
     constructor(year, expected_value, assert, assertion, comment = null) {
         if( arguments.length === 4 || arguments.length === 5 ) {
             this.year = year;
@@ -271,12 +317,34 @@ class Assertion {
     }
 }
 
-//kudos to https://stackoverflow.com/a/47140708/394921 for the idea
+/**
+ * Sanitizes the given input string to prevent XSS attacks.
+ *
+ * It uses the DOMParser to parse the string as HTML and then extracts the
+ * text content of the parsed HTML document. This effectively strips any HTML
+ * tags from the input string.
+ * kudos to https://stackoverflow.com/a/47140708/394921 for the idea
+ *
+ * @function
+ * @param {string} input - The input string to sanitize.
+ * @returns {string} The sanitized string.
+ */
 const sanitizeInput = (input) => {
     let doc = new DOMParser().parseFromString(input, 'text/html');
     return doc.body.textContent || "";
 }
 
+/**
+ * Sanitizes the input of the given target element to prevent XSS attacks.
+ *
+ * It uses the sanitizeInput helper function to strip any HTML tags from the
+ * target element's text content and then checks if the sanitized text is
+ * different from the original text content. If so, it updates the target
+ * element's text content with the sanitized text and shows a warning alert to
+ * the user.
+ *
+ * @param {Element} target - The element to sanitize.
+ */
 const checkTargetInput = (target) => {
     let sanitizedInput = sanitizeInput( target.textContent );
     if( sanitizedInput !== target.textContent ) {
@@ -293,6 +361,18 @@ const checkTargetInput = (target) => {
     }
 }
 
+/**
+ * Serializes the current state of the unit test form into a UnitTest object.
+ *
+ * This function extracts values from the DOM elements representing the unit test,
+ * including the event key, description, test type, and any assertions. It assigns
+ * these values to the `proxiedTest` object and creates an array of `Assertion`
+ * instances for each assertion found in the DOM. If applicable, it also sets the
+ * calendar type that the test applies to. Finally, it returns a new `UnitTest`
+ * object initialized with the serialized test data.
+ *
+ * @returns {UnitTest} The serialized UnitTest object based on the current form data.
+ */
 const serializeUnitTest = () => {
     const eventkey = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
@@ -326,6 +406,11 @@ const serializeUnitTest = () => {
     return new UnitTest( proxiedTest );
 }
 
+/**
+ * Fetches the list of festivities for the selected calendar and updates the datalist options.
+ * @param {HTMLSelectElement} element - The select element that has changed.
+ * @returns {Promise<void>}
+ */
 const rebuildFestivitiesOptions = (element) => {
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
@@ -353,7 +438,6 @@ const rebuildFestivitiesOptions = (element) => {
         };
         document.querySelector('#existingFestivitiesList').innerHTML = htmlStr;
     });
-
 }
 
 /**

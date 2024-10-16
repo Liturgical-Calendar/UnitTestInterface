@@ -1,4 +1,7 @@
-
+/**
+ * Enum-like constant that represents the different types of assertions for liturgical events tests.
+ * @readonly
+ */
 const TestType = Object.freeze({
     ExactCorrespondence:        'exactCorrespondence',
     ExactCorrespondenceSince:   'exactCorrespondenceSince',
@@ -6,11 +9,32 @@ const TestType = Object.freeze({
     VariableCorrespondence:     'variableCorrespondence'
 });
 
+/**
+ * Enum-like constant that represents the different types of assertions for liturgical events.
+ * @readonly
+ * @enum {string}
+ * @property {string} EventNotExists - Represents that the liturgical event does not exist.
+ * @property {string} EventTypeExact - Represents that the liturgical event exists and has the expected timestamp.
+ */
 const AssertType = Object.freeze({
     EventNotExists:             'eventNotExists',
     EventTypeExact:             'eventExists AND hasExpectedTimestamp'
 });
 
+/**
+ * Enum-like constant that represents the different liturgical grades or ranks, from lowest to highest.
+ * @readonly
+ * @enum {number}
+ * @property {number} WEEKDAY - The liturgical grade of a weekday (Feria).
+ * @property {number} COMMEMORATION - The liturgical grade of a Commemoration.
+ * @property {number} OPTIONAL_MEMORIAL - The liturgical grade of an Optional Memorial.
+ * @property {number} MEMORIAL - The liturgical grade of a Memorial.
+ * @property {number} FEAST - The liturgical grade of a Feast.
+ * @property {number} FEAST_OF_THE_LORD - The liturgical grade of a Feast of the Lord.
+ * @property {number} SOLEMNITY - The liturgical grade of a Solemnity.
+ * @property {number} HIGHER_SOLEMNITY - The liturgical grade of a Higher Solemnity.
+ * @property {string[]} stringVals - An array of string values for each of the above constants, in the same order as the constants.
+ */
 const LitGrade = Object.freeze({
     WEEKDAY:            0,
     COMMEMORATION:      1,
@@ -33,7 +57,13 @@ const LitGrade = Object.freeze({
     toString: ( n ) => LitGrade.stringVals[parseInt(n)]
 });
 
-
+/**
+ * Class AssertionsBuilder
+ *
+ * @description
+ * This class is responsible for managing the interaction with the user when a new Unit Test is created.
+ * It will build the HTML for the form that will allow the user to build the assertions for the Unit Test.
+ */
 class AssertionsBuilder {
     // set some default initial values
     static testType     = TestType.ExactCorrespondence;
@@ -44,6 +74,23 @@ class AssertionsBuilder {
     static currentTest  = null;
 
 
+    /**
+     * constructor
+     *
+     * @param {object} test - a single testUnit (Unitest instance).
+     *
+     * @description
+     *      This constructor creates a new AssertionsBuilder instance from a given single testUnit (Unitest instance).
+     *      The testUnit is expected to have the following properties:
+     *          - assertions: an array of objects with the following properties: year, expected_value, assert, assertion, comment
+     *          - event_key: the event_key of the event for which the testUnit has been created
+     *          - test_type: the type of the testUnit, which can be one of the values in TestType
+     *          - year_since: only useful in case of TestType.ExactCorrespondenceSince, the year from which the testUnit applies
+     *
+     *      It maps the assertions array to an array of Assertion instances.
+     *      It sets the AssertionsBuilder.testType, and if the test_type is TestType.ExactCorrespondenceSince, it also sets the AssertionsBuilder.yearSince.
+     *      It sets the AssertionsBuilder.test to the event with the event_key of the testUnit.
+     */
     constructor( test ) {
         this.assertions = test.assertions.map(el => new Assertion(el));
         AssertionsBuilder.testType = test.test_type;
@@ -55,6 +102,20 @@ class AssertionsBuilder {
         console.log(AssertionsBuilder.test);
     }
 
+
+    /**
+     * @private
+     * @static
+     * @method #setColors
+     * @param {Assertion} assertion - the assertion for which to set the colors
+     * @description
+     *      A private static method that sets the colors for the AssertionsBuilder to be used in the buildHtml method.
+     *      It takes an assertion as argument and sets the backgroundColor and textColor of the AssertionsBuilder instance based on the assert property of the assertion.
+     *      The colors are set as follows:
+     *          - if assert is AssertType.EventNotExists, the backgroundColor is set to 'bg-warning' and the textColor is set to 'text-dark'
+     *          - if assert is AssertType.EventTypeExact, the backgroundColor is set to 'bg-success' and the textColor is set to 'text-white'
+     *          - otherwise, the backgroundColor is set to 'bg-success' and the textColor is set to 'text-white'
+     */
     static #setColors( assertion ) {
         switch( assertion.assert ) {
             case AssertType.EventNotExists:
@@ -71,6 +132,20 @@ class AssertionsBuilder {
         }
     }
 
+    /**
+     * buildHtml
+     *
+     * @description
+     *      Builds the html for the assertions in the AssertionsBuilder instance.
+     *      It loops through all assertions in the assertions array and creates a div for each one.
+     *      The div contains the year of the assertion, a span indicating whether the assertion applies to the currently selected calendar, the assert property of the assertion (which is an AssertType), and the expected value of the assertion.
+     *      The assert property and the expected value are each in a div that can be clicked to toggle the assert property between AssertType.EventNotExists and AssertType.EventTypeExact, and to edit the expected value respectively.
+     *      The div also contains a span with the assertion (which is editable) and a span with the comment (if any) for the assertion.
+     *      The div is styled with a background color and text color based on the assert property of the assertion.
+     *      The method returns the built html as a jquery object.
+     *
+     * @returns {jQuery} the built html as a jquery object
+     */
     buildHtml() {
         let assertionBuildStr = '';
         //console.log(this.assertions);
@@ -103,6 +178,19 @@ class AssertionsBuilder {
     }
 }
 
+/**
+ * commentIcon
+ *
+ * @description
+ *      Creates a comment icon depending on whether there is a comment or not.
+ *      If there is a comment, it creates a button with a comment icon and the comment as title.
+ *      If there is no comment, it creates a button with a comment-medical icon and 'add a comment' as title.
+ *      The button is meant to be used as a toggle to show the modal for adding or editing a comment.
+ *
+ * @param {boolean} hasComment - whether there is a comment or not
+ * @param {string} [value=null] - the comment value, if any
+ * @returns {string} the comment icon as a string of html
+ */
 const commentIcon = (hasComment, value = null) => {
     return hasComment
     /*? `<i title="${value}" class="fas fa-comment-dots fa-fw mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>`
