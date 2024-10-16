@@ -133,8 +133,12 @@ include_once 'layout/sidebar.php';
 <?php
 if ($apiVersion === 'dev' || $apiVersion === 'v4') {
     $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/dev/events";
-    $eventsRaw = file_get_contents("$eventsEndpoint?locale=" . $i18n->locale);
-    if ($eventsRaw === false) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $eventsEndpoint);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Accept-Language: " . $i18n->locale]);
+    $eventsRaw = curl_exec($ch);
+    if (curl_errno($ch)) {
         die('Could not fetch data from ' . $eventsEndpoint);
     }
     [ "litcal_events" => $LitCalAllFestivities ] = json_decode(
@@ -182,6 +186,7 @@ include_once 'components/NewTestModal.php';
 </div>
 <?php
 $testsIndex = json_encode($LitCalTests);
-echo "<script>const LitCalTests = Object.freeze($testsIndex); let litcal_events = Object.freeze($eventsRaw);</script>";
+$litcal_events = json_encode($LitCalAllFestivities);
+echo "<script>const LitCalTests = Object.freeze($testsIndex); let litcal_events = Object.freeze($litcal_events);</script>";
 include_once 'layout/footer.php';
 ?>
