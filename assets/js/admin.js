@@ -423,7 +423,6 @@ const rebuildFestivitiesOptions = async (element) => {
     const data_1 = await fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` );
     const json = await data_1.json();
     ( { litcal_events } = json );
-    Object.freeze( litcal_events );
     let htmlStr = '';
     for ( const [ key, el ] of Object.entries( litcal_events ) ) {
         let dataMonth = '';
