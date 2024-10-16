@@ -102,7 +102,6 @@ class AssertionsBuilder {
         console.log(AssertionsBuilder.test);
     }
 
-
     /**
      * @private
      * @static
@@ -147,6 +146,7 @@ class AssertionsBuilder {
      * @returns {jQuery} the built html as a jquery object
      */
     buildHtml() {
+        console.log(`building html for AssertionsBuilder with test = ${AssertionsBuilder.test}`);
         let assertionBuildStr = '';
         //console.log(this.assertions);
         this.assertions.forEach( (assertion, idy) => {
