@@ -24,7 +24,7 @@
  * @global
  * This variable is defined globally in the admin.php file, and can be updated in an API call.
  */
-let litcal_events = litcal_events;
+let litcal_events = LitcalEvents; // eslint-disable-line
 
 /**
  * Represents the DateTime format used for displaying full dates in the UTC timezone.
