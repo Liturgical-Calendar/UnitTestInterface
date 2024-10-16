@@ -6,6 +6,12 @@ while (baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
 }
 
+const currentLocale = document.cookie
+  .split('; ')
+  .find(row => row.startsWith('currentLocale='))
+  .split('=')[1];
+console.log(`currentLocale = ${currentLocale}`);
+
 const ENDPOINTS = {
     VERSION: "dev",
     METADATA: "",
@@ -363,9 +369,8 @@ let selectOptions               = {};
 //let NationalCalendarsArr        = [];
 let NationalCalendarTemplates   = [ testTemplate( currentSelectedCalendar ) ];
 let DiocesanCalendarTemplates   = [];
-
-let SpecificUnitTestCategories = [];
-let SpecificUnitTestYears = {};
+let SpecificUnitTestCategories  = [];
+let SpecificUnitTestYears       = {};
 
 /**
  * Manages the state of the test runner, executing tests and reporting results
