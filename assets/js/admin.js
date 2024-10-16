@@ -1,21 +1,60 @@
 
 /** DEFINE OUR GLOBAL VARIABLES */
 
+/**
+ * @typedef {Object} LitCalEvent
+ * @property {string} event_key - The "key" or "tag" or "id" of the liturgical event
+ * @property {string} name - The name of the liturgical event according to the requested locale
+ * @property {int} month - The month of the liturgical event
+ * @property {int} day - The day of the liturgical event
+ * @property {int} grade - The liturgical grade of the liturgical event
+ * @property {array} common - An array of the liturgical commons of the liturgical event
+ * @property {array} color - An array of the liturgical colors of the liturgical event
+ * @property {string} grade_lcl - The liturgical grade of the liturgical event in the requested locale
+ * @property {string} common_lcl - The liturgical commons of the liturgical event in the requested locale
+ */
+
+/**
+ * Typedef for the JSON data containing all the liturgical events.
+ * @typedef {Object<string, LitCalEvent>} LitCalEvents
+ */
+
+/**
+ * @type {LitCalEvents}
+ */
+let litcal_events;
+
+/**
+ * Represents the DateTime format used for displaying full dates in the UTC timezone.
+ * @type {Object}
+ */
 const DTFormat = new Intl.DateTimeFormat(locale, {
     dateStyle: 'full',
     //timeStyle: 'long',
     timeZone: 'UTC'
   });
 
+/**
+ * Represents the DateTime format used for displaying month and day in the UTC timezone.
+ * @type {Object}
+ */
 const MonthDayFmt = new Intl.DateTimeFormat(locale, {
     month: 'long',
     day: 'numeric'
 });
 
+/**
+ * Represents the DateTime format used for displaying the day of the week in the UTC timezone.
+ * @type {Intl.DateTimeFormat}
+ */
 const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
     weekday: 'long'
 });
 
+/**
+ * A proxy for a Test object that is being edited, used for determining if we need to save the changes or not.
+ * @type {Object|null}
+ */
 let proxiedTest = null;
 
 /**
