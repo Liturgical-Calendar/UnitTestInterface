@@ -407,9 +407,13 @@ const serializeUnitTest = () => {
 }
 
 /**
- * Fetches the list of festivities for the selected calendar and returns the litcal_events object.
- * @param {HTMLSelectElement} element - The select element that has changed.
- * @returns {object} litcal_events - The litcal_events object.
+ * Rebuilds the options for the select element containing the list of existing
+ * festivities for the currently selected API calendar.
+ *
+ * @param {HTMLSelectElement} element - The select element containing the list of
+ * existing festivities.
+ * @async
+ * @returns {Promise<void>}
  */
 const rebuildFestivitiesOptions = async (element) => {
     console.log(`rebuildFestivitiesOptions: ${element.value}`);
@@ -437,7 +441,6 @@ const rebuildFestivitiesOptions = async (element) => {
         htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
     }
     document.querySelector( '#existingFestivitiesList' ).innerHTML = htmlStr;
-    return litcal_events;
 }
 
 /**
@@ -481,8 +484,9 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
         if( proxiedTest.hasOwnProperty('applies_to') ) {
             const calendarType = Object.keys(proxiedTest.applies_to)[0];
             document.querySelector('#APICalendarSelect').value = proxiedTest.applies_to[calendarType];
-            const litcal_events = await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
+            await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
             document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
+            console.log(`keys of litcal_events after rebuildFestivitiesOptions: ${Object.keys(litcal_events)}`);
             AssertionsBuilder.test = litcal_events[proxiedTest.event_key];
             AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
         }
