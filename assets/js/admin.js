@@ -407,38 +407,37 @@ const serializeUnitTest = () => {
 }
 
 /**
- * Fetches the list of festivities for the selected calendar and updates the datalist options.
+ * Fetches the list of festivities for the selected calendar and returns the litcal_events object.
  * @param {HTMLSelectElement} element - The select element that has changed.
- * @returns {Promise<void>}
+ * @returns {object} litcal_events - The litcal_events object.
  */
-const rebuildFestivitiesOptions = (element) => {
+const rebuildFestivitiesOptions = async (element) => {
     console.log(`rebuildFestivitiesOptions: ${element.value}`);
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
-    return fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` )
-    .then(data => data.json())
-    .then(json => {
-        ({litcal_events} = json);
-        Object.freeze(litcal_events);
-        let htmlStr = '';
-        for (const [key, el] of Object.entries(litcal_events)) {
-            let dataMonth = '';
-            let dataDay = '';
-            let dataGrade = '';
-            if( el.hasOwnProperty( "month" ) ) {
-                dataMonth = ` data-month="${el.month}"`;
-            }
-            if( el.hasOwnProperty( "day" ) ) {
-                dataDay = ` data-day="${el.day}"`;
-            }
-            if( el.hasOwnProperty( "grade" ) ) {
-                dataGrade = ` data-grade="${el.grade}"`;
-            }
-            htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
-        };
-        document.querySelector('#existingFestivitiesList').innerHTML = htmlStr;
-    });
+    const data_1 = await fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` );
+    const json = await data_1.json();
+    ( { litcal_events } = json );
+    Object.freeze( litcal_events );
+    let htmlStr = '';
+    for ( const [ key, el ] of Object.entries( litcal_events ) ) {
+        let dataMonth = '';
+        let dataDay = '';
+        let dataGrade = '';
+        if ( el.hasOwnProperty( "month" ) ) {
+            dataMonth = ` data-month="${el.month}"`;
+        }
+        if ( el.hasOwnProperty( "day" ) ) {
+            dataDay = ` data-day="${el.day}"`;
+        }
+        if ( el.hasOwnProperty( "grade" ) ) {
+            dataGrade = ` data-grade="${el.grade}"`;
+        }
+        htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
+    }
+    document.querySelector( '#existingFestivitiesList' ).innerHTML = htmlStr;
+    return litcal_events;
 }
 
 /**
@@ -482,7 +481,7 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
         if( proxiedTest.hasOwnProperty('applies_to') ) {
             const calendarType = Object.keys(proxiedTest.applies_to)[0];
             document.querySelector('#APICalendarSelect').value = proxiedTest.applies_to[calendarType];
-            await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
+            const litcal_events = await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
             document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
             AssertionsBuilder.test = litcal_events[proxiedTest.event_key];
             AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
