@@ -420,6 +420,7 @@ const rebuildFestivitiesOptions = async (element) => {
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
+    console.log(`fetching data from ${ENDPOINTS.EVENTS}?${calendarType}=${element.value}`);
     const data_1 = await fetch( `${ENDPOINTS.EVENTS}?${calendarType}=${element.value}` );
     const json = await data_1.json();
     litcal_events = json.litcal_events;
