@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:25+0000\n"
+"POT-Creation-Date: 2024-10-16 20:44+0000\n"
 "PO-Revision-Date: 2024-09-30 22:40+0000\n"
 "Last-Translator: Milan Šalka <salka.milan@googlemail.com>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
@@ -141,8 +141,8 @@ msgstr ""
 "Keď by liturgická udalosť mala existovať až po určitom roku, tvrdíme, že "
 "počas určitého obdobia rokov pred týmto rokom by liturgická udalosť nemala "
 "existovať, zatiaľ čo počas určitého obdobia rokov po tomto roku by "
-"liturgická udalosť mala existovať a mala by pripadnúť na očakávaný dátum ("
-"dátum môže byť voliteľne definovaný inak pre každý daný rok)."
+"liturgická udalosť mala existovať a mala by pripadnúť na očakávaný dátum "
+"(dátum môže byť voliteľne definovaný inak pre každý daný rok)."
 
 #: admin.php:86
 msgid "Exact date since year"
@@ -158,8 +158,8 @@ msgid ""
 msgstr ""
 "Keď liturgická udalosť už nemá existovať po určitom roku, tvrdíme, že pre "
 "určitý časový úsek pred týmto rokom by mala liturgická udalosť pripadnúť na "
-"očakávaný dátum (dátum môže byť voliteľne definovaný inak pre každý daný rok)"
-", zatiaľ čo pre určitý časový úsek po tomto roku by liturgická udalosť "
+"očakávaný dátum (dátum môže byť voliteľne definovaný inak pre každý daný "
+"rok), zatiaľ čo pre určitý časový úsek po tomto roku by liturgická udalosť "
 "nemala existovať."
 
 #: admin.php:91
@@ -198,15 +198,15 @@ msgstr "Ročné tvrdenia"
 msgid "Save Unit Test"
 msgstr "Uložiť jednotkový test"
 
-#: admin.php:154
+#: admin.php:158
 msgid "Add or Edit Comment"
 msgstr "Pridať alebo upraviť komentár"
 
-#: admin.php:159
+#: admin.php:163
 msgid "Comment"
 msgstr "Komentár"
 
-#: admin.php:164
+#: admin.php:168
 msgid "Save"
 msgstr "Uložiť"
 

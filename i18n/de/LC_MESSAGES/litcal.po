@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 22:25+0000\n"
+"POT-Creation-Date: 2024-10-16 20:44+0000\n"
 "PO-Revision-Date: 2024-09-17 22:41+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: German <https://translate.johnromanodorazio.com/projects/"
@@ -142,8 +142,8 @@ msgstr ""
 "Wenn ein liturgisches Ereignis erst nach einem bestimmten Jahr existieren "
 "soll, stellen wir sicher, dass es für einen bestimmten Zeitraum vor diesem "
 "Jahr nicht existieren sollte, während es für einen bestimmten Zeitraum nach "
-"diesem Jahr existieren sollte und an einem erwarteten Datum fallen sollte ("
-"das Datum kann optional für jedes Jahr unterschiedlich definiert werden)."
+"diesem Jahr existieren sollte und an einem erwarteten Datum fallen sollte "
+"(das Datum kann optional für jedes Jahr unterschiedlich definiert werden)."
 
 #: admin.php:86
 msgid "Exact date since year"
@@ -200,15 +200,15 @@ msgstr "Jährliche Überprüfungen"
 msgid "Save Unit Test"
 msgstr "Unit-Test speichern"
 
-#: admin.php:154
+#: admin.php:158
 msgid "Add or Edit Comment"
 msgstr "Kommentar hinzufügen oder bearbeiten"
 
-#: admin.php:159
+#: admin.php:163
 msgid "Comment"
 msgstr "Kommentar"
 
-#: admin.php:164
+#: admin.php:168
 msgid "Save"
 msgstr "Speichern"
 
