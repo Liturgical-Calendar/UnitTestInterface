@@ -24,7 +24,8 @@
  * @global
  * This variable is defined globally in the admin.php file, and can be updated in an API call.
  */
-let litcal_events = LitcalEvents; // eslint-disable-line
+//@ts-ignore
+let litcal_events = LitcalEvents;
 
 /**
  * Represents the DateTime format used for displaying full dates in the UTC timezone.
@@ -32,7 +33,6 @@ let litcal_events = LitcalEvents; // eslint-disable-line
  */
 const DTFormat = new Intl.DateTimeFormat(locale, {
     dateStyle: 'full',
-    //timeStyle: 'long',
     timeZone: 'UTC'
   });
 
@@ -54,7 +54,7 @@ const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
 });
 
 /**
- * A proxy for a Test object that is being edited, used for determining if we need to save the changes or not.
+ * A proxy for a Test object that is being edited, used for sanitizing the values set on the object.
  * @type {Object|null}
  */
 let proxiedTest = null;

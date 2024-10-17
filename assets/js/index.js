@@ -6,11 +6,16 @@ while (baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
 }
 
-const currentLocale = document.cookie
-  .split('; ')
-  .find(row => row.startsWith('currentLocale='))
-  .split('=')[1] || 'en';
-
+/**
+ * An enum-like constant that represents the different endpoints used in the application.
+ * @readonly
+ * @enum {string}
+ * @property {string} VERSION - version of the API
+ * @property {string} METADATA - endpoint for the index of available calendars
+ * @property {string} TESTSINDEX - endpoint for the index of available tests
+ * @property {string} DECREES - endpoint for decrees
+ * @property {string} MISSALS - endpoint for missals
+ */
 const ENDPOINTS = {
     VERSION: "dev",
     METADATA: "",
@@ -19,6 +24,16 @@ const ENDPOINTS = {
     MISSALS: ""
 }
 
+/**
+ * Array of objects that define the source data checks.
+ * Each object must contain the following properties:
+ * - `validate`: the name of the class that will be used to match the response from the websocket backend.
+ *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
+ * - `sourceFile`: the URL of the resource to check.
+ * - `category`: a string that indicates the category of the source data check.
+ *                Currently, the only category is 'universalcalendar'.
+ * @type {Array<{validate: string, sourceFile: string, category: string}>}
+ */
 const sourceDataChecks = [
     {
         "validate": "LitCalMetadata",
@@ -57,6 +72,13 @@ const sourceDataChecks = [
     }
 ];
 
+/**
+ * Sets the API endpoints according to the version selected in the dropdown.
+ *
+ * @param {Event} [ev] - An optional event object.
+ *
+ * @return {void}
+ */
 const setEndpoints = (ev = null) => {
     if(ev !== null) {
         ENDPOINTS.VERSION = ev.currentTarget.value;
@@ -171,11 +193,11 @@ class TestState {
     static JobsFinished                 = new TestState( 'JobsFinished' );
 
     /**
-     * @param {string} name The name of the TestState.
-     *                      Currently, the following names are possible:
-     *                      ReadyState, ExecutingValidations,
-     *                      ValidatingCalendarData, SpecificUnitTests,
-     *                      JobsFinished.
+     * Constructs a new TestState object.
+     * @param {string} name The name of the TestState, which must be one of the
+     *                      following: NotReady, Ready,
+     *                      ExecutingResourceValidations,
+     *                      ExecutingSourceValidations, JobsFinished.
      */
     constructor( name ) {
         this.name = name;
@@ -321,6 +343,16 @@ const HTMLEncode = (str) => {
     return aRet.join('');
 }
 
+/**
+ * The options used to format the date in the assertions.
+ * @constant
+ * @type {Object}
+ * @property {string} weekday - The representation of the weekday. Possible values include "long", "short", "narrow".
+ * @property {string} year - The representation of the year. Possible values include "numeric", "2-digit".
+ * @property {string} month - The representation of the month. Possible values include "long", "short", "narrow".
+ * @property {string} day - The representation of the day. Possible values include "numeric", "2-digit".
+ * @property {string} timeZone - The time zone to use. The only value currently supported is "UTC".
+ */
 const IntlDTOptions = {
     weekday: 'short',
     year: 'numeric',
@@ -362,7 +394,7 @@ let currentNationalCalendar     = "VA";
 let currentCalendarCategory     = "nationalcalendar";
 let currentResponseType         = "JSON";
 let currentSourceDataChecks     = [];
-let countryNames                = new Intl.DisplayNames(currentLocale, { type: 'region' } );
+let countryNames                = new Intl.DisplayNames(locale, { type: 'region' } );
 let CalendarNations             = [];
 let selectOptions               = {};
 //let NationalCalendarsArr        = [];
@@ -764,10 +796,10 @@ const appendAccordionItem = (obj) => {
     obj.assertions.forEach(assertion => {
         let dateStr = '';
         if( assertion.hasOwnProperty('expectedValue') && null !== assertion.expectedValue ) {
-            dateStr = new Intl.DateTimeFormat(currentLocale, IntlDTOptions).format( assertion.expectedValue * 1000 );
+            dateStr = new Intl.DateTimeFormat(locale, IntlDTOptions).format( assertion.expectedValue * 1000 );
         }
         else if ( assertion.hasOwnProperty('expected_value') && null !== assertion.expected_value ) {
-            dateStr = new Intl.DateTimeFormat(currentLocale, IntlDTOptions).format( assertion.expected_value * 1000 );
+            dateStr = new Intl.DateTimeFormat(locale, IntlDTOptions).format( assertion.expected_value * 1000 );
         }
         unitTestStr += `
             <div class="col-1 ${idy===0 || idy % 11 === 0 ? 'offset-1' : ''}">
