@@ -178,57 +178,57 @@ const resourceDataChecks = [
 const sourceDataChecks = [
     {
         "validate": "memorials-from-decrees",
-        "sourceFile": "data/decrees/decrees.json",
+        "sourceFile": "jsondata/sourcedata/decrees/decrees.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "memorials-from-decrees-i18n",
-        "sourceFolder": "data/decrees/i18n",
+        "sourceFolder": "jsondata/sourcedata/decrees/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-1970",
-        "sourceFile": "data/missals/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_1970/propriumdesanctis_1970.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-1970-i18n",
-        "sourceFolder": "data/missals/propriumdesanctis_1970/i18n",
+        "sourceFolder": "jsondata/sourcedata/missals/propriumdesanctis_1970/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2002",
-        "sourceFile": "data/missals/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_2002/propriumdesanctis_2002.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2002-i18n",
-        "sourceFolder": "data/missals/propriumdesanctis_2002/i18n",
+        "sourceFolder": "jsondata/sourcedata/missals/propriumdesanctis_2002/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2008",
-        "sourceFile": "data/missals/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_2008/propriumdesanctis_2008.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-sanctis-2008-i18n",
-        "sourceFolder": "data/missals/propriumdesanctis_2008/i18n",
+        "sourceFolder": "jsondata/sourcedata/missals/propriumdesanctis_2008/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore",
-        "sourceFile": "data/missals/propriumdetempore/propriumdetempore.json",
+        "sourceFile": "jsondata/sourcedata/missals/propriumdetempore/propriumdetempore.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore-i18n",
-        "sourceFolder": "data/missals/propriumdetempore/i18n/",
+        "sourceFolder": "jsondata/sourcedata/missals/propriumdetempore/i18n/",
         "category": "sourceDataCheck"
     },
     {
         "validate": "regional-calendars-index",
-        "sourceFile": "data/nations/index.json",
+        "sourceFile": "jsondata/sourcedata/nations/index.json",
         "category": "sourceDataCheck"
     }
 ];
@@ -582,12 +582,24 @@ const loadAsyncData = () => {
                         "sourceFile": ENDPOINTS.DATA + `/nation/${nation}`,
                         "category": "resourceDataCheck"
                     });
+                    resourcePaths[`events-path-nation-${nation}`] = `/events/nation/${nation}`;
+                    resourceDataChecks.push({
+                        "validate": `events-path-nation-${nation}`,
+                        "sourceFile": ENDPOINTS.EVENTS + `/nation/${nation}`,
+                        "category": "resourceDataCheck"
+                    });
                 });
                 DiocesanCalendarsArr.forEach(diocese => {
                     resourcePaths[`data-path-diocese-${diocese}`] = `/data/diocese/${diocese}`;
                     resourceDataChecks.push({
                         "validate": `data-path-diocese-${diocese}`,
                         "sourceFile": ENDPOINTS.DATA + `/diocese/${diocese}`,
+                        "category": "resourceDataCheck"
+                    });
+                    resourcePaths[`events-path-diocese-${diocese}`] = `/events/diocese/${diocese}`;
+                    resourceDataChecks.push({
+                        "validate": `events-path-diocese-${diocese}`,
+                        "sourceFile": ENDPOINTS.EVENTS + `/diocese/${diocese}`,
                         "category": "resourceDataCheck"
                     });
                 });
