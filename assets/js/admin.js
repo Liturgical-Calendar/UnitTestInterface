@@ -24,7 +24,7 @@
  * @global
  * This variable is defined globally in the admin.php file, and can be updated in an API call.
  */
-//@ts-ignore
+// @ts-ignore 2570 LitcalEvents is defined in admin.php
 let litcal_events = LitcalEvents;
 
 /**
