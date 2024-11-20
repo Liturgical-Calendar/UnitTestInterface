@@ -557,7 +557,7 @@ const loadAsyncData = () => {
                         "category": "sourceDataCheck"
                     });
                     sourceDataChecks.push({
-                        "validate": `wider-region-i18n-${region.name}`,
+                        "validate": `wider-region-${region.name}-i18n`,
                         "sourceFolder": region.i18n_path,
                         "category": "sourceDataCheck"
                     });
