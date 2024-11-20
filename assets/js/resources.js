@@ -14,6 +14,7 @@ class ReadyToRunTests {
     static SocketReady      = false;
     static MetaDataReady    = false;
     static MissalsReady     = false;
+    static TestsReady       = false;
     /**
      * Check if all conditions are met to run tests.
      * The conditions are:
@@ -29,6 +30,7 @@ class ReadyToRunTests {
             && ReadyToRunTests.SocketReady === true
             && ReadyToRunTests.MetaDataReady === true
             && ReadyToRunTests.MissalsReady === true
+            && ReadyToRunTests.TestsReady === true
         );
     }
     /**
@@ -46,6 +48,7 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.MetaDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
+        console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
         let testsReady = ReadyToRunTests.check();
         $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
         // always make sure we have the fa-rotate class, ready to start spinning on button press
@@ -521,6 +524,13 @@ let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
 
+const methodAndHeaders = Object.freeze({
+    method: "GET",
+    headers: {
+        Accept: "application/json"
+    }
+});
+
 /**
  * Loads all the asynchronous data needed for the page to function.
  * This includes the calendars metadata and the missals metadata.
@@ -530,20 +540,9 @@ let failedResourceDataTests     = 0;
  */
 const loadAsyncData = () => {
     Promise.all([
-        fetch( ENDPOINTS.CALENDARS, {
-            method: "GET",
-            headers: {
-                Accept: "application/json"
-            }
-        }).then(response => response.json()),
-        fetch( ENDPOINTS.MISSALS, {
-            //TODO: using 'POST' method is giving a Cors error, why?
-            //      https://litcal-tests.johnromanodorazio.com is set as an allowed origin
-            method: "GET",
-            headers: {
-                Accept: "application/json"
-            }
-        }).then(response => response.json())
+        fetch( ENDPOINTS.CALENDARS, methodAndHeaders).then(response => response.json()),
+        fetch( ENDPOINTS.MISSALS, methodAndHeaders).then(response => response.json()),
+        fetch( ENDPOINTS.TESTS, methodAndHeaders).then(response => response.json())
     ]).then(dataArr => {
         dataArr.forEach(data => {
             if(data.hasOwnProperty('litcal_metadata')) {
@@ -665,6 +664,16 @@ const loadAsyncData = () => {
                     console.log('MetaData was set first, proceeding to setup page...');
                     setupPage();
                 }
+            }
+            else if(data.hasOwnProperty('litcal_tests')) {
+                data.litcal_tests.forEach(test => {
+                    sourceDataChecks.push({
+                        "validate": `tests-${test.name}`,
+                        "sourceFile": `jsondata/tests/${test.name}.json`,
+                        "category": "sourceDataCheck"
+                    });
+                })
+                ReadyToRunTests.TestsReady = true;
             }
         });
     });
