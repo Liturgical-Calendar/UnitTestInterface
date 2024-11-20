@@ -708,7 +708,12 @@ const runTests = () => {
             if( $('#resourceDataTests').hasClass('show') === false ) {
                 $('#resourceDataTests').collapse('show');
             }
-            conn.send( JSON.stringify( { action: 'executeValidation', ...resourceDataChecks[ index++ ] } ) );
+            conn.send(
+                JSON.stringify({
+                    action: 'executeValidation',
+                    ...resourceDataChecks[ index++ ]
+                })
+            );
             break;
         case TestState.ExecutingResourceValidations:
             if ( ++messageCounter === 3 ) {
@@ -723,21 +728,20 @@ const runTests = () => {
                     );
                 } else {
                     console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
-                    currentState = TestState.ExecutingSourceValidations;
                     index = 0;
-                    calendarIndex = 0;
+                    currentState = TestState.ExecutingSourceValidations;
                     performance.mark( 'sourceDataTestsStart' );
+                    $('#sourceDataTests').collapse('show');
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
                             ...sourceDataChecks[ index++ ]
                         })
                     );
-                    $('#sourceDataTests').collapse('show');
                 }
             }
             break;
-        case TestState.ExecustingSourceValidations:
+        case TestState.ExecutingSourceValidations:
             if ( ++messageCounter === 3 ) {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
