@@ -715,7 +715,12 @@ const runTests = () => {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
                 if ( index < resourceDataChecks.length ) {
-                    conn.send( JSON.stringify( { action: 'executeValidation', ...resourceDataChecks[ index++ ] } ) );
+                    conn.send(
+                        JSON.stringify({
+                            action: 'executeValidation',
+                            ...resourceDataChecks[ index++ ]
+                        })
+                    );
                 } else {
                     console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
                     currentState = TestState.ExecutingSourceValidations;
@@ -724,7 +729,7 @@ const runTests = () => {
                     performance.mark( 'sourceDataTestsStart' );
                     conn.send(
                         JSON.stringify({
-                            action: 'executeSourceValidation',
+                            action: 'executeValidation',
                             ...sourceDataChecks[ index++ ]
                         })
                     );
@@ -737,7 +742,12 @@ const runTests = () => {
                 console.log( 'one cycle complete, passing to next test..' );
                 messageCounter = 0;
                 if ( index < sourceDataChecks.length ) {
-                    conn.send( JSON.stringify( { action: 'executeSourceValidation', ...sourceDataChecks[ index++ ] } ) );
+                    conn.send(
+                        JSON.stringify({
+                            action: 'executeValidation',
+                            ...sourceDataChecks[ index++ ]
+                        })
+                    );
                 } else {
                     currentState = TestState.JobsFinished;
                 }
