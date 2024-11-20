@@ -737,6 +737,7 @@ const runTests = () => {
                     );
                 } else {
                     currentState = TestState.JobsFinished;
+                    runTests();
                 }
             }
             break;
