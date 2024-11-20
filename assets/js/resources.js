@@ -233,6 +233,9 @@ const sourceDataChecks = [
     }
 ];
 
+const nationalCalendarDataPath = (nation) => `jsondata/sourcedata/nations/${nation}/${nation}.json`;
+const diocesanCalendarDataPath = (nation, diocese) => `jsondata/sourcedata/nations/${nation}/${diocese}.json`;
+
 
 /**
  * Sets the API endpoints according to the version selected in the dropdown.
@@ -537,10 +540,6 @@ let MetaData                    = null;
 let Missals                     = null;
 let startTestRunnerBtnLbl       = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
-let NationalCalendarsArr        = [];
-let DiocesanCalendarsArr        = [];
-let WiderRegionsArr             = [];
-let MissalsArr                  = [];
 let connectionAttempt           = null;
 let conn;
 
@@ -579,8 +578,7 @@ const loadAsyncData = () => {
         dataArr.forEach(data => {
             if(data.hasOwnProperty('litcal_metadata')) {
                 MetaData = data.litcal_metadata;
-                const { national_calendars_keys, diocesan_calendars_keys, wider_regions, wider_regions_keys } = MetaData;
-                DiocesanCalendarsArr = diocesan_calendars_keys;
+                const { national_calendars_keys, diocesan_calendars_keys, diocesan_calendars, wider_regions, wider_regions_keys } = MetaData;
                 NationalCalendarsArr = national_calendars_keys.slice(1);
                 wider_regions.forEach(region => {
                     sourceDataChecks.push({
@@ -594,7 +592,7 @@ const loadAsyncData = () => {
                         "category": "sourceDataCheck"
                     });
                 });
-                WiderRegionsArr = wider_regions_keys;
+
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of(a).localeCompare( countryNames.of(b) ) );
                 NationalCalendarsArr.forEach(nation => {
                     resourcePaths[`data-path-nation-${nation}`] = `/data/nation/${nation}`;
@@ -610,18 +608,13 @@ const loadAsyncData = () => {
                         "category": "resourceDataCheck"
                     });
                     sourceDataChecks.push({
-                        "validate": `wider-region-${region.name}`,
-                        "sourceFile": region.data_path,
+                        "validate": `national-calendar-${nation}`,
+                        "sourceFile": nationalCalendarDataPath(nation),
                         "category": "sourceDataCheck"
                     });
-                    sourceDataChecks.push({
-                        "validate": `wider-region-i18n-${region.name}`,
-                        "sourceFolder": region.i18n_path,
-                        "category": "sourceDataCheck"
-                    });
-
                 });
-                DiocesanCalendarsArr.forEach(diocese => {
+
+                diocesan_calendars_keys.forEach(diocese => {
                     resourcePaths[`data-path-diocese-${diocese}`] = `/data/diocese/${diocese}`;
                     resourceDataChecks.push({
                         "validate": `data-path-diocese-${diocese}`,
@@ -635,7 +628,8 @@ const loadAsyncData = () => {
                         "category": "resourceDataCheck"
                     });
                 });
-                WiderRegionsArr.forEach(widerRegion => {
+
+                wider_regions_keys.forEach(widerRegion => {
                     // we need to request a locale for widerRegion on the data path
                     // so let's retrieve the first available locale from the metadata
                     console.log(wider_regions);
@@ -651,6 +645,15 @@ const loadAsyncData = () => {
                         "category": "resourceDataCheck"
                     });
                 });
+
+                diocesan_calendars.forEach(diocese => {
+                    sourceDataChecks.push({
+                        "validate": `diocesan-calendar-${diocese.calendar_id}`,
+                        "sourceFile": diocesanCalendarDataPath(diocese.nation, diocese.calendar_id),
+                        "category": "sourceDataCheck"
+                    });
+                })
+
                 ReadyToRunTests.MetaDataReady = true;
                 console.log( 'Metadata is ready' );
                 if(Missals !== null) {
@@ -667,7 +670,6 @@ const loadAsyncData = () => {
                     "category": "resourceDataCheck"
                 });
                 Missals.forEach(missal => {
-                    MissalsArr.push(missal.missal_id);
                     resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
                     resourceDataChecks.push({
                         "validate": `missals-path-${missal.missal_id}`,
