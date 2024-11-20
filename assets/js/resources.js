@@ -187,36 +187,6 @@ const sourceDataChecks = [
         "category": "sourceDataCheck"
     },
     {
-        "validate": "proprium-de-sanctis-1970",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_1970/propriumdesanctis_1970.json",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-sanctis-1970-i18n",
-        "sourceFolder": "jsondata/sourcedata/missals/propriumdesanctis_1970/i18n",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-sanctis-2002",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_2002/propriumdesanctis_2002.json",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-sanctis-2002-i18n",
-        "sourceFolder": "jsondata/sourcedata/missals/propriumdesanctis_2002/i18n",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-sanctis-2008",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_2008/propriumdesanctis_2008.json",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-sanctis-2008-i18n",
-        "sourceFolder": "jsondata/sourcedata/missals/propriumdesanctis_2008/i18n",
-        "category": "sourceDataCheck"
-    },
-    {
         "validate": "proprium-de-tempore",
         "sourceFile": "jsondata/sourcedata/missals/propriumdetempore/propriumdetempore.json",
         "category": "sourceDataCheck"
@@ -676,6 +646,18 @@ const loadAsyncData = () => {
                         "sourceFile": ENDPOINTS.MISSALS + `/${missal.missal_id}`,
                         "category": "resourceDataCheck"
                     });
+                    sourceDataChecks.push({
+                        "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}`,
+                        "sourceFile": missal.data_path,
+                        "category": "sourceDataCheck"
+                    });
+                    if (missal.hasOwnProperty('i18n_path')) {
+                        sourceDataChecks.push({
+                            "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}-i18n`,
+                            "sourceFolder": missal.i18n_path,
+                            "category": "sourceDataCheck"
+                        });
+                    }
                 });
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
@@ -687,6 +669,7 @@ const loadAsyncData = () => {
         });
     });
 }
+
 
 /**
  * Manages the execution of resource validation tests and transitions through different test states.
