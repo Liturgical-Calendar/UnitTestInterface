@@ -24,6 +24,8 @@ const ENDPOINTS = {
     MISSALS: ""
 }
 
+const SOURCE_DATA_PATH = "jsondata/sourcedata";
+
 /**
  * Array of objects that define the source data checks.
  * Each object must contain the following properties:
@@ -42,22 +44,22 @@ const sourceDataChecks = [
     },
     {
         "validate": "PropriumDeTempore",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdetempore/propriumdetempore.json",
+        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
         "category": "universalcalendar"
     },
     {
         "validate": "PropriumDeSanctis1970",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_1970/propriumdesanctis_1970.json",
+        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdesanctis_1970/propriumdesanctis_1970.json`,
         "category": "universalcalendar"
     },
     {
         "validate": "PropriumDeSanctis2002",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_2002/propriumdesanctis_2002.json",
+        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdesanctis_2002/propriumdesanctis_2002.json`,
         "category": "universalcalendar"
     },
     {
         "validate": "PropriumDeSanctis2008",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdesanctis_2008/propriumdesanctis_2008.json",
+        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdesanctis_2008/propriumdesanctis_2008.json`,
         "category": "universalcalendar"
     },
     {
@@ -67,7 +69,7 @@ const sourceDataChecks = [
     },
     {
         "validate": "RegionalCalendarsIndex",
-        "sourceFile": "jsondata/sourcedata/nations/index.json",
+        "sourceFile": `${SOURCE_DATA_PATH}/nations/index.json`,
         "category": "universalcalendar"
     }
 ];
@@ -925,23 +927,25 @@ const setupPage = () => {
             let nation = currentCalendarCategory === 'nationalcalendar'
                 ? currentSelectedCalendar
                 : MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].nation;
-            let sourceFile = `data/nations/${nation}/${nation}.json`;
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
             currentSourceDataChecks = [...sourceDataChecks];
-            MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].wider_regions.forEach((item) => {
+            let sourceFile;
+            let nationalCalendarData = MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0];
+            nationalCalendarData.wider_regions.forEach((item) => {
+                sourceFile = MetaData.wider_regions.filter(widerRegion => widerRegion.name === item)[0].data_path;
                 currentSourceDataChecks.push({
                     "validate": item,
-                    "sourceFile": `data/wider_regions/${item}.json`,
+                    "sourceFile": sourceFile,
                     "category": "widerregioncalendar"
                 });
             });
             currentSourceDataChecks.push({
                     "validate": nation,
-                    "sourceFile": sourceFile,
+                    "sourceFile": API_,
                     "category": "nationalcalendar"
             });
-            MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0].missals.forEach((missal) => {
+            nationalCalendarData.missals.forEach((missal) => {
                 console.log('retrieving Missal definition for missal: ' + missal);
                 let sourceFile = false;
                 let missalDef = Object.values( RomanMissals ).filter(el => el.missal_id === missal);
@@ -963,7 +967,7 @@ const setupPage = () => {
                 let diocese = MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].diocese;
                 currentSourceDataChecks.push({
                     "validate": currentSelectedCalendar,
-                    "sourceFile": `data/nations/${nation}/${diocese}.json`,
+                    "sourceFile": `${SOURCE_DATA_PATH}/nations/${nation}/${diocese}.json`,
                     "category": "diocesancalendar"
                 });
             }
