@@ -717,9 +717,7 @@ const runTests = () => {
                 if ( index < resourceDataChecks.length ) {
                     conn.send( JSON.stringify( { action: 'executeValidation', ...resourceDataChecks[ index++ ] } ) );
                 } else {
-                    console.log( 'Rsource file validation jobs are finished! Now continuing to check source data...' );
-                    currentState = TestState.JobsFinished;
-                    /*
+                    console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
                     currentState = TestState.ExecutingSourceValidations;
                     index = 0;
                     calendarIndex = 0;
@@ -731,7 +729,17 @@ const runTests = () => {
                         })
                     );
                     $('#sourceDataTests').collapse('show');
-                    */
+                }
+            }
+            break;
+        case TestState.ExecustingSourceValidations:
+            if ( ++messageCounter === 3 ) {
+                console.log( 'one cycle complete, passing to next test..' );
+                messageCounter = 0;
+                if ( index < sourceDataChecks.length ) {
+                    conn.send( JSON.stringify( { action: 'executeSourceValidation', ...sourceDataChecks[ index++ ] } ) );
+                } else {
+                    currentState = TestState.JobsFinished;
                 }
             }
             break;
