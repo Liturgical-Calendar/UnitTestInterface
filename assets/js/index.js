@@ -942,7 +942,7 @@ const setupPage = () => {
             });
             currentSourceDataChecks.push({
                     "validate": nation,
-                    "sourceFile": API_,
+                    "sourceFile": `${SOURCE_DATA_PATH}/nations/${nation}/${nation}.json`,
                     "category": "nationalcalendar"
             });
             nationalCalendarData.missals.forEach((missal) => {
