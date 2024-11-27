@@ -198,11 +198,6 @@ const sourceDataChecks = [
         "validate": "proprium-de-tempore-i18n",
         "sourceFolder": "jsondata/sourcedata/missals/propriumdetempore/i18n/",
         "category": "sourceDataCheck"
-    },
-    {
-        "validate": "regional-calendars-index",
-        "sourceFile": "jsondata/sourcedata/nations/index.json",
-        "category": "sourceDataCheck"
     }
 ];
 
