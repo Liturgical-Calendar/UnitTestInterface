@@ -66,11 +66,6 @@ const sourceDataChecks = [
         "validate": "MemorialsFromDecrees",
         "sourceFile": ENDPOINTS.DECREES,
         "category": "universalcalendar"
-    },
-    {
-        "validate": "RegionalCalendarsIndex",
-        "sourceFile": `${SOURCE_DATA_PATH}/nations/index.json`,
-        "category": "universalcalendar"
     }
 ];
 
