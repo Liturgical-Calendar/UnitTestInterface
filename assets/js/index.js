@@ -958,9 +958,9 @@ const setupPage = () => {
             if( currentCalendarCategory === 'diocesancalendar' ) {
                 let diocese = MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].diocese;
                 currentSourceDataChecks.push({
-                    "validate": currentSelectedCalendar,
-                    "sourceFile": `${SOURCE_DATA_PATH}/nations/${nation}/${diocese}.json`,
-                    "category": "diocesancalendar"
+                    "validate": `diocesan-calendar-${currentSelectedCalendar}`,
+                    "sourceFile": currentSelectedCalendar,
+                    "category": "sourceDataCheck"
                 });
             }
         }
