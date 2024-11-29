@@ -545,7 +545,7 @@ const loadAsyncData = () => {
                 wider_regions.forEach(region => {
                     sourceDataChecks.push({
                         "validate": `wider-region-${region.name}`,
-                        "sourceFile": region.data_path,
+                        "sourceFile": region.name,
                         "category": "sourceDataCheck"
                     });
                     sourceDataChecks.push({
