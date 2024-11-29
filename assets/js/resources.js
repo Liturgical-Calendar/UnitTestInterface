@@ -550,7 +550,7 @@ const loadAsyncData = () => {
                     });
                     sourceDataChecks.push({
                         "validate": `wider-region-${region.name}-i18n`,
-                        "sourceFolder": region.i18n_path,
+                        "sourceFolder": region.name,
                         "category": "sourceDataCheck"
                     });
                 });
