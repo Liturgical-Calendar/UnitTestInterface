@@ -925,20 +925,17 @@ const setupPage = () => {
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
             currentSourceDataChecks = [...sourceDataChecks];
-            let sourceFile;
+
             let nationalCalendarData = MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0];
-            nationalCalendarData.wider_regions.forEach((item) => {
-                sourceFile = MetaData.wider_regions.filter(widerRegion => widerRegion.name === item)[0].data_path;
-                currentSourceDataChecks.push({
-                    "validate": item,
-                    "sourceFile": sourceFile,
-                    "category": "widerregioncalendar"
-                });
+            currentSourceDataChecks.push({
+                "validate": `wider-region-${nationalCalendarData.wider_region}`,
+                "sourceFile": nationalCalendarData.wider_region,
+                "category": "sourceDataCheck"
             });
             currentSourceDataChecks.push({
-                    "validate": nation,
-                    "sourceFile": `${SOURCE_DATA_PATH}/nations/${nation}/${nation}.json`,
-                    "category": "nationalcalendar"
+                    "validate": `national-calendar-${nation}`,
+                    "sourceFile": nation,
+                    "category": "sourceDataCheck"
             });
             nationalCalendarData.missals.forEach((missal) => {
                 console.log('retrieving Missal definition for missal: ' + missal);
