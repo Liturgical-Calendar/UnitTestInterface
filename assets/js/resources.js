@@ -201,8 +201,6 @@ const sourceDataChecks = [
     }
 ];
 
-const nationalCalendarDataPath = (nation) => `jsondata/sourcedata/nations/${nation}/${nation}.json`;
-const diocesanCalendarDataPath = (nation, diocese) => `jsondata/sourcedata/nations/${nation}/${diocese}.json`;
 
 
 /**
@@ -577,7 +575,7 @@ const loadAsyncData = () => {
                     })
                     sourceDataChecks.push({
                         "validate": `national-calendar-${nation}`,
-                        "sourceFile": nationalCalendarDataPath(nation),
+                        "sourceFile": nation,
                         "category": "sourceDataCheck"
                     });
                 });
@@ -617,7 +615,7 @@ const loadAsyncData = () => {
                 diocesan_calendars.forEach(diocese => {
                     sourceDataChecks.push({
                         "validate": `diocesan-calendar-${diocese.calendar_id}`,
-                        "sourceFile": diocesanCalendarDataPath(diocese.nation, diocese.calendar_id),
+                        "sourceFile": diocese.calendar_id,
                         "category": "sourceDataCheck"
                     });
                 })
