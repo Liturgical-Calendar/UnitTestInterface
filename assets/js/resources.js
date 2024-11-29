@@ -543,7 +543,7 @@ const loadAsyncData = () => {
             if(data.hasOwnProperty('litcal_metadata')) {
                 MetaData = data.litcal_metadata;
                 const { national_calendars, diocesan_calendars_keys, diocesan_calendars, wider_regions, wider_regions_keys } = MetaData;
-                const NationalCalendarsArr = national_calendars.slice(1);
+
                 wider_regions.forEach(region => {
                     sourceDataChecks.push({
                         "validate": `wider-region-${region.name}`,
@@ -557,19 +557,20 @@ const loadAsyncData = () => {
                     });
                 });
 
+                const NationalCalendarsArr = national_calendars.slice(1);
                 //NationalCalendarsArr.sort( ( a, b ) => countryNames.of(a).localeCompare( countryNames.of(b) ) );
                 NationalCalendarsArr.forEach(nationalCalendar => {
                     nation = nationalCalendar.calendar_id;
                     nationalCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/nation/${nation}?locale=${locale}`;
                         resourceDataChecks.push({
-                            "validate": `data-path-nation-${nation}`,
+                            "validate": `data-path-nation-${nation}-${locale}`,
                             "sourceFile": ENDPOINTS.DATA + `/nation/${nation}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
                         resourcePaths[`events-path-nation-${nation}-${locale}`] = `/events/nation/${nation}?locale=${locale}`;
                         resourceDataChecks.push({
-                            "validate": `events-path-nation-${nation}`,
+                            "validate": `events-path-nation-${nation}-${locale}`,
                             "sourceFile": ENDPOINTS.EVENTS + `/nation/${nation}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
