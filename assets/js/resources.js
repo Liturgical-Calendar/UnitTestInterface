@@ -644,13 +644,13 @@ const loadAsyncData = () => {
                     });
                     sourceDataChecks.push({
                         "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}`,
-                        "sourceFile": missal.data_path,
+                        "sourceFile": missal.missal_id,
                         "category": "sourceDataCheck"
                     });
-                    if (missal.hasOwnProperty('i18n_path')) {
+                    if (missal.hasOwnProperty('locales')) {
                         sourceDataChecks.push({
                             "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}-i18n`,
-                            "sourceFolder": missal.i18n_path,
+                            "sourceFolder": missal.missal_id,
                             "category": "sourceDataCheck"
                         });
                     }
