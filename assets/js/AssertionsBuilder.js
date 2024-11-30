@@ -97,7 +97,7 @@ class AssertionsBuilder {
         if( test.test_type === TestType.ExactCorrespondenceSince ) {
             AssertionsBuilder.yearSince = test.year_since;
         }
-        AssertionsBuilder.test = litcal_events[test.event_key];
+        AssertionsBuilder.test = litcal_events.filter(el => el.event_key === test.event_key)[0] ?? null;
         console.log( 'new instance of AssertionsBuilder, test = ');
         console.log(AssertionsBuilder.test);
         console.log(litcal_events);
