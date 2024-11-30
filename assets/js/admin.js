@@ -26,6 +26,7 @@
  */
 // @ts-ignore 2570 LitcalEvents is defined in admin.php
 let litcal_events = LitcalEvents;
+let litcal_events_keys = litcal_events.map( event => event.event_key );
 
 /**
  * Represents the DateTime format used for displaying full dates in the UTC timezone.
@@ -129,7 +130,7 @@ const sanitizeOnSetValue = {
                 if( typeof value !== 'string' ) {
                     console.warn(`property ${prop} of this object must be of type string`);
                     return;
-                } else if ( false === Object.keys(litcal_events).includes(value) ) {
+                } else if ( false === litcal_events_keys.includes(value) ) {
                     console.warn(`property ${prop} of this object must contain a valid Liturgical Event Key`);
                     return;
                 }
@@ -494,8 +495,9 @@ const rebuildFestivitiesOptions = async (element) => {
     const data_1 = await fetch( API.path );
     const json = await data_1.json();
     litcal_events = Object.freeze(json.litcal_events);
+    litcal_events_keys = litcal_events.map( event => event.event_key );
     let htmlStr = '';
-    for ( const [ key, el ] of Object.entries( litcal_events ) ) {
+    for ( const el of litcal_events ) {
         let dataMonth = '';
         let dataDay = '';
         let dataGrade = '';
@@ -508,7 +510,7 @@ const rebuildFestivitiesOptions = async (element) => {
         if ( el.hasOwnProperty( "grade" ) ) {
             dataGrade = ` data-grade="${el.grade}"`;
         }
-        htmlStr += `<option value="${key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
+        htmlStr += `<option value="${el.event_key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
     }
     document.querySelector( '#existingFestivitiesList' ).innerHTML = htmlStr;
 }
@@ -557,8 +559,8 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
             await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
             document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
             console.log(`keys of litcal_events after rebuildFestivitiesOptions:`);
-            console.log(Object.keys(litcal_events).sort());
-            AssertionsBuilder.test = litcal_events[proxiedTest.event_key];
+            console.log(litcal_events_keys.sort());
+            AssertionsBuilder.test = litcal_events.filter(el => el.event_key === proxiedTest.event_key)[0] ?? null;
             AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
         }
         $( '#assertionsContainer' ).empty();
