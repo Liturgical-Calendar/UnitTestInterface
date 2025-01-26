@@ -76,27 +76,27 @@ const sourceDataChecks = [
  *
  * @return {void}
  */
-const setEndpoints = (ev = null) => {
-    if(ev !== null) {
-        ENDPOINTS.VERSION = ev.currentTarget.value;
+const setEndpoints = (ev) => {
+    let API_PATH;
+    if (APP_ENV==='production') {
+        if(undefined !== ev) {
+            ENDPOINTS.VERSION = ev.currentTarget.value;
+        } else {
+            ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+        }
+        document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
+        API_PATH = `/api/${ENDPOINTS.VERSION}`;
     } else {
-        ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+        ENDPOINTS.VERSION = '';
+        API_PATH = '';
     }
-    console.info('ENDPOINTS.VERSION set to ' + ENDPOINTS.VERSION);
-    switch(ENDPOINTS.VERSION) {
-        case 'dev':
-        case 'v4':
-            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars`;
-            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests`;
-            ENDPOINTS.DECREES     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees`;
-            ENDPOINTS.MISSALS     = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals`;
-            break;
-        case 'v3':
-            ENDPOINTS.METADATA    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
-            ENDPOINTS.TESTSINDEX  = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
-            break;
-    }
-    document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
+    const API_PORT_STR = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
+    ENDPOINTS.METADATA    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
+    ENDPOINTS.TESTSINDEX  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
+    ENDPOINTS.DECREES     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
+    ENDPOINTS.MISSALS     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
+    console.info(`APP_ENV: ${APP_ENV}, API_PATH: ${API_PATH}, API_PROTOCOL: ${API_PROTOCOL}, API_HOST: ${API_HOST}, API_PORT: ${API_PORT}, API_PORT_STR: ${API_PORT_STR}, ENDPOINTS.VERSION: ${ENDPOINTS.VERSION}, ENDPOINTS.METADATA: ${ENDPOINTS.METADATA}, ENDPOINTS.TESTSINDEX: ${ENDPOINTS.TESTSINDEX}, ENDPOINTS.DECREES: ${ENDPOINTS.DECREES}, ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS}`);
+
     sourceDataChecks[0].sourceFile = ENDPOINTS.METADATA;
     sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
 }
@@ -391,10 +391,12 @@ let currentNationalCalendar     = "VA";
 let currentCalendarCategory     = "nationalcalendar";
 let currentResponseType         = "JSON";
 let currentSourceDataChecks     = [];
+/**
+ * The locale variable is defined in footer.php
+*/
 let countryNames                = new Intl.DisplayNames(locale, { type: 'region' } );
 let CalendarNations             = [];
 let selectOptions               = {};
-//let NationalCalendarsArr        = [];
 let NationalCalendarTemplates   = [ testTemplate( currentSelectedCalendar ) ];
 let DiocesanCalendarTemplates   = [];
 let SpecificUnitTestCategories  = [];
@@ -543,7 +545,9 @@ const runTests = () => {
  * error occurs, it sets the state to JobsFinished and shows an error toast.
  */
 const connectWebSocket = () => {
-    conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
+    console.log( `Connecting to websocket... WS_PROTOCOL: ${WS_PROTOCOL}, WS_HOST: ${WS_HOST}, WS_PORT: ${WS_PORT}` );
+    const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[443,80].includes(WS_PORT) ? '' : `:${WS_PORT}`}`;
+    conn = new WebSocket( websocketURL );
 
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );

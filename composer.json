@@ -1,5 +1,6 @@
 {
     "require": {
-        "liturgical-calendar/components": "^1.0"
+        "liturgical-calendar/components": "^3.1",
+        "vlucas/phpdotenv": "^5.6"
     }
 }

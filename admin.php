@@ -17,11 +17,7 @@ $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
 
 $ch = curl_init();
 
-if ($apiVersion === 'dev' || $apiVersion === 'v4') {
-    curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests");
-} else {
-    curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/testsindex/");
-}
+curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 if (curl_errno($ch)) {
