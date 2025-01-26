@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-16 20:44+0000\n"
+"POT-Creation-Date: 2025-01-26 21:21+0000\n"
 "PO-Revision-Date: 2024-09-17 22:41+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
@@ -84,11 +84,11 @@ msgstr "EJECUTAR PRUEBAS UNITARIAS PARA EVENTOS ESPECÍFICOS"
 msgid "Loading..."
 msgstr "Cargando..."
 
-#: admin.php:47
+#: admin.php:43
 msgid "Define a Unit Test for a Liturgical event"
 msgstr "Definir una prueba unitaria para un evento litúrgico"
 
-#: admin.php:48
+#: admin.php:44
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "actually producing correct data, we can create Unit Tests that allow us to "
@@ -100,23 +100,23 @@ msgstr ""
 "que los eventos fueron/no fueron creados en el calendario, o que tienen "
 "fechas esperadas de año en año."
 
-#: admin.php:51
+#: admin.php:47
 msgid "Edit an existing test"
 msgstr "Editar una prueba existente"
 
-#: admin.php:60
+#: admin.php:56
 msgid "Create a New Test"
 msgstr "Crear una nueva prueba"
 
-#: admin.php:71
+#: admin.php:67
 msgid "Calendar to test"
 msgstr "Calendario a probar"
 
-#: admin.php:76
+#: admin.php:72
 msgid "Test Type"
 msgstr "Tipo de prueba"
 
-#: admin.php:80
+#: admin.php:76
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
@@ -127,11 +127,11 @@ msgstr ""
 "esperada (la fecha puede definirse opcionalmente de manera diferente para "
 "cada año dado)"
 
-#: admin.php:81
+#: admin.php:77
 msgid "Exact date"
 msgstr "Fecha exacta"
 
-#: admin.php:85
+#: admin.php:81
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -146,11 +146,11 @@ msgstr ""
 "una fecha esperada (la fecha puede definirse opcionalmente de manera "
 "diferente para cada año dado)."
 
-#: admin.php:86
+#: admin.php:82
 msgid "Exact date since year"
 msgstr "Fecha exacta desde el año"
 
-#: admin.php:90
+#: admin.php:86
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -165,11 +165,11 @@ msgstr ""
 "un cierto lapso de años después de dicho año el evento litúrgico no debe "
 "existir."
 
-#: admin.php:91
+#: admin.php:87
 msgid "Exact date until year"
 msgstr "Fecha exacta hasta el año"
 
-#: admin.php:95
+#: admin.php:91
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -181,35 +181,35 @@ msgstr ""
 "fecha esperada (la fecha puede definirse opcionalmente de manera diferente "
 "para cada año dado), y que no debería existir en otros años dados."
 
-#: admin.php:96
+#: admin.php:92
 msgid "Variable existence"
 msgstr "Existencia de variable"
 
-#: admin.php:106
+#: admin.php:102
 msgid "Name of Test"
 msgstr "Nombre de la prueba"
 
-#: admin.php:112 components/NewTestModal.php:26
+#: admin.php:108 components/NewTestModal.php:26
 msgid "Description"
 msgstr "Descripción"
 
-#: admin.php:116
+#: admin.php:112
 msgid "Per year assertions"
 msgstr "Afirmaciones por año"
 
-#: admin.php:124
+#: admin.php:120
 msgid "Save Unit Test"
 msgstr "Guardar prueba unitaria"
 
-#: admin.php:158
+#: admin.php:154
 msgid "Add or Edit Comment"
 msgstr "Agregar o editar comentario"
 
-#: admin.php:163
+#: admin.php:159
 msgid "Comment"
 msgstr "Comentario"
 
-#: admin.php:168
+#: admin.php:164
 msgid "Save"
 msgstr "Guardar"
 
@@ -225,15 +225,15 @@ msgstr "Recursos"
 msgid "API Version"
 msgstr "Versión de la API"
 
-#: layout/topnavbar.php:58
+#: layout/topnavbar.php:59
 msgid "Websocket connection status"
 msgstr "Estado de la conexión de websocket"
 
-#: layout/topnavbar.php:64
+#: layout/topnavbar.php:65
 msgid "LitCal Project"
 msgstr "Proyecto LitCal"
 
-#: layout/topnavbar.php:72 layout/sidebar.php:23
+#: layout/topnavbar.php:73 layout/sidebar.php:23
 msgid "Unit Tests Admin"
 msgstr "Administración de pruebas unitarias"
 

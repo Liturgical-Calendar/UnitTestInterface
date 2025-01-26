@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-16 20:44+0000\n"
+"POT-Creation-Date: 2025-01-26 21:21+0000\n"
 "PO-Revision-Date: 2024-09-30 22:40+0000\n"
 "Last-Translator: Milan Šalka <salka.milan@googlemail.com>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
@@ -84,11 +84,11 @@ msgstr "SPUSTI JEDNOTKOVÉ TESTY PRE ŠPECIFICKÉ UDALOSTI"
 msgid "Loading..."
 msgstr "Načítava sa..."
 
-#: admin.php:47
+#: admin.php:43
 msgid "Define a Unit Test for a Liturgical event"
 msgstr "Definovať jednotkový test pre liturgickú udalosť"
 
-#: admin.php:48
+#: admin.php:44
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "actually producing correct data, we can create Unit Tests that allow us to "
@@ -100,23 +100,23 @@ msgstr ""
 "overiť, či boli udalosti vytvorené v kalendári alebo nie, alebo či majú "
 "očakávané dátumy z roka na rok."
 
-#: admin.php:51
+#: admin.php:47
 msgid "Edit an existing test"
 msgstr "Upraviť existujúci test"
 
-#: admin.php:60
+#: admin.php:56
 msgid "Create a New Test"
 msgstr "Vytvoriť nový test"
 
-#: admin.php:71
+#: admin.php:67
 msgid "Calendar to test"
 msgstr "Kalendár na testovanie"
 
-#: admin.php:76
+#: admin.php:72
 msgid "Test Type"
 msgstr "Typ testu"
 
-#: admin.php:80
+#: admin.php:76
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
@@ -126,11 +126,11 @@ msgstr ""
 "by mala existovať a mala by pripadnúť na očakávaný dátum (dátum môže byť "
 "voliteľne definovaný odlišne pre každý daný rok)"
 
-#: admin.php:81
+#: admin.php:77
 msgid "Exact date"
 msgstr "Presný dátum"
 
-#: admin.php:85
+#: admin.php:81
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -144,11 +144,11 @@ msgstr ""
 "liturgická udalosť mala existovať a mala by pripadnúť na očakávaný dátum "
 "(dátum môže byť voliteľne definovaný inak pre každý daný rok)."
 
-#: admin.php:86
+#: admin.php:82
 msgid "Exact date since year"
 msgstr "Presný dátum od roku"
 
-#: admin.php:90
+#: admin.php:86
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -162,11 +162,11 @@ msgstr ""
 "rok), zatiaľ čo pre určitý časový úsek po tomto roku by liturgická udalosť "
 "nemala existovať."
 
-#: admin.php:91
+#: admin.php:87
 msgid "Exact date until year"
 msgstr "Presný dátum do roka"
 
-#: admin.php:95
+#: admin.php:91
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -178,35 +178,35 @@ msgstr ""
 "očakávaný dátum (dátum môže byť voliteľne definovaný odlišne pre každý daný "
 "rok) a že by nemala existovať v iných rokoch."
 
-#: admin.php:96
+#: admin.php:92
 msgid "Variable existence"
 msgstr "Existencia premennej"
 
-#: admin.php:106
+#: admin.php:102
 msgid "Name of Test"
 msgstr "Názov testu"
 
-#: admin.php:112 components/NewTestModal.php:26
+#: admin.php:108 components/NewTestModal.php:26
 msgid "Description"
 msgstr "Popis"
 
-#: admin.php:116
+#: admin.php:112
 msgid "Per year assertions"
 msgstr "Ročné tvrdenia"
 
-#: admin.php:124
+#: admin.php:120
 msgid "Save Unit Test"
 msgstr "Uložiť jednotkový test"
 
-#: admin.php:158
+#: admin.php:154
 msgid "Add or Edit Comment"
 msgstr "Pridať alebo upraviť komentár"
 
-#: admin.php:163
+#: admin.php:159
 msgid "Comment"
 msgstr "Komentár"
 
-#: admin.php:168
+#: admin.php:164
 msgid "Save"
 msgstr "Uložiť"
 
@@ -222,15 +222,15 @@ msgstr "Zdroje"
 msgid "API Version"
 msgstr "Verzia API"
 
-#: layout/topnavbar.php:58
+#: layout/topnavbar.php:59
 msgid "Websocket connection status"
 msgstr "Stav pripojenia Websocketu"
 
-#: layout/topnavbar.php:64
+#: layout/topnavbar.php:65
 msgid "LitCal Project"
 msgstr "Projekt LitCal"
 
-#: layout/topnavbar.php:72 layout/sidebar.php:23
+#: layout/topnavbar.php:73 layout/sidebar.php:23
 msgid "Unit Tests Admin"
 msgstr "Jednotkové testy Admin"
 
