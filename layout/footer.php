@@ -55,7 +55,7 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
         const WS_PORT = <?php echo ($_ENV['WS_PORT'] ?? 443); ?>;
         const WS_HOST = '<?php echo ($_ENV['WS_HOST'] ?? 'litcal-test.johnromanodorazio.com'); ?>';
         const API_PROTOCOL = '<?php echo ($_ENV['API_PROTOCOL'] ?? 'https'); ?>';
-        const API_PORT = '<?php echo ($_ENV['API_PORT'] ?? 443); ?>';
+        const API_PORT = <?php echo ($_ENV['API_PORT'] ?? 443); ?>;
         const API_HOST = '<?php echo ($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>';
         const APP_ENV = '<?php echo ($_ENV['APP_ENV'] ?? 'production'); ?>';
     </script>
