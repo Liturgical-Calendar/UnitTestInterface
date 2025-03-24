@@ -608,6 +608,17 @@ const loadAsyncData = () => {
 
                 national_calendars.slice(1).forEach(nationalCalendar => {
                     const nation = nationalCalendar.calendar_id;
+                    sourceDataChecks.push({
+                        "validate": `national-calendar-${nation}`,
+                        "sourceFile": nation,
+                        "category": "sourceDataCheck"
+                    });
+                    sourceDataChecks.push({
+                        "validate": `national-calendar-${nation}-i18n`,
+                        "sourceFolder": nation,
+                        "category": "sourceDataCheck"
+                    });
+
                     nationalCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/nation/${nation}?locale=${locale}`;
                         resourceDataChecks.push({
@@ -622,15 +633,22 @@ const loadAsyncData = () => {
                             "category": "resourceDataCheck"
                         });
                     })
-                    sourceDataChecks.push({
-                        "validate": `national-calendar-${nation}`,
-                        "sourceFile": nation,
-                        "category": "sourceDataCheck"
-                    });
                 });
 
                 diocesan_calendars.forEach(diocesanCalendar => {
                     const diocese = diocesanCalendar.calendar_id;
+                    sourceDataChecks.push({
+                        "validate": `diocesan-calendar-${diocese}`,
+                        "sourceFile": diocese,
+                        "category": "sourceDataCheck"
+                    });
+                    sourceDataChecks.push({
+                        "validate": `diocesan-calendar-${diocese}-i18n`,
+                        "sourceFolder": diocese,
+                        "category": "sourceDataCheck"
+                    });
+
+
                     diocesanCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-diocese-${diocese}-${locale}`] = `/data/diocese/${diocese}?locale=${locale}`;
                         resourceDataChecks.push({
@@ -644,12 +662,6 @@ const loadAsyncData = () => {
                             "sourceFile": ENDPOINTS.EVENTS + `/diocese/${diocese}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
-                    });
-
-                    sourceDataChecks.push({
-                        "validate": `diocesan-calendar-${diocese}`,
-                        "sourceFile": diocese,
-                        "category": "sourceDataCheck"
                     });
                 });
 
