@@ -311,7 +311,7 @@ const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || id
     </div>
     <div class="card text-white bg-info rounded-0 ${resource} json-valid">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> JSON valid</span></p>
+            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> ${currentResponseType} valid</span></p>
         </div>
     </div>
     <div class="card text-white bg-info rounded-0 ${resource} schema-valid">
@@ -544,6 +544,7 @@ let startTestRunnerBtnLbl       = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let connectionAttempt           = null;
 let conn;
+let currentResponseType         = "JSON";
 
 let messageCounter;
 let successfulTests             = 0;
@@ -747,6 +748,7 @@ const runTests = () => {
             conn.send(
                 JSON.stringify({
                     action: 'executeValidation',
+                    responsetype: currentResponseType,
                     ...resourceDataChecks[ index++ ]
                 })
             );
@@ -759,6 +761,7 @@ const runTests = () => {
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
+                            responsetype: currentResponseType,
                             ...resourceDataChecks[ index++ ]
                         })
                     );
@@ -871,6 +874,16 @@ $(document).on('click', '#startTestRunnerBtn', () => {
         console.warn('Please do not try to start a test run while tests are running!');
     }
 });
+
+$( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
+    $( '.page-loader' ).show();
+    ReadyToRunTests.PageReady = false;
+    currentResponseType = ev.currentTarget.value;
+    console.log( `currentResponseType: ${currentResponseType}` );
+    setupPage();
+    ReadyToRunTests.tryEnableBtn();
+});
+
 
 setEndpoints();
 loadAsyncData();
