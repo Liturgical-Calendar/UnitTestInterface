@@ -11,17 +11,25 @@ while (baseYear <= twentyFiveYearsFromNow ) {
  * @readonly
  * @enum {string}
  * @property {string} VERSION - version of the API
- * @property {string} METADATA - endpoint for the index of available calendars
- * @property {string} TESTSINDEX - endpoint for the index of available tests
+ * @property {string} CALENDARS - endpoint for the index of available calendars
+ * @property {string} TESTS - endpoint for the index of available tests
  * @property {string} DECREES - endpoint for decrees
  * @property {string} MISSALS - endpoint for missals
+ * @property {string} DATA - endpoint for data
+ * @property {string} EVENTS - endpoint for events
+ * @property {string} EASTER - endpoint for easter calculations
+ * @property {string} SCHEMAS - endpoint for schemas
  */
 const ENDPOINTS = {
     VERSION: "dev",
-    METADATA: "",
-    TESTSINDEX: "",
+    CALENDARS: "",
+    TESTS: "",
     DECREES: "",
-    MISSALS: ""
+    MISSALS: "",
+    DATA: "",
+    EVENTS: "",
+    EASTER: "",
+    SCHEMAS: ""
 }
 
 const SOURCE_DATA_PATH = "jsondata/sourcedata";
@@ -39,7 +47,7 @@ const SOURCE_DATA_PATH = "jsondata/sourcedata";
 const sourceDataChecks = [
     {
         "validate": "LitCalMetadata",
-        "sourceFile": ENDPOINTS.METADATA,
+        "sourceFile": ENDPOINTS.CALENDARS,
         "category": "universalcalendar"
     },
     {
@@ -91,13 +99,25 @@ const setEndpoints = (ev) => {
         API_PATH = '';
     }
     const API_PORT_STR = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
-    ENDPOINTS.METADATA    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
-    ENDPOINTS.TESTSINDEX  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
+    ENDPOINTS.CALENDARS    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
+    ENDPOINTS.TESTS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
     ENDPOINTS.DECREES     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
     ENDPOINTS.MISSALS     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
-    console.info(`APP_ENV: ${APP_ENV}, API_PATH: ${API_PATH}, API_PROTOCOL: ${API_PROTOCOL}, API_HOST: ${API_HOST}, API_PORT: ${API_PORT}, API_PORT_STR: ${API_PORT_STR}, ENDPOINTS.VERSION: ${ENDPOINTS.VERSION}, ENDPOINTS.METADATA: ${ENDPOINTS.METADATA}, ENDPOINTS.TESTSINDEX: ${ENDPOINTS.TESTSINDEX}, ENDPOINTS.DECREES: ${ENDPOINTS.DECREES}, ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS}`);
+    console.info(
+        `APP_ENV: ${APP_ENV},
+        API_PATH: ${API_PATH},
+        API_PROTOCOL: ${API_PROTOCOL},
+        API_HOST: ${API_HOST},
+        API_PORT: ${API_PORT},
+        API_PORT_STR: ${API_PORT_STR},
+        ENDPOINTS.VERSION: ${ENDPOINTS.VERSION},
+        ENDPOINTS.CALENDARS: ${ENDPOINTS.CALENDARS},
+        ENDPOINTS.TESTS: ${ENDPOINTS.TESTS},
+        ENDPOINTS.DECREES: ${ENDPOINTS.DECREES},
+        ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS}`
+    );
 
-    sourceDataChecks[0].sourceFile = ENDPOINTS.METADATA;
+    sourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
 }
 
@@ -105,6 +125,7 @@ class ReadyToRunTests {
     static PageReady        = false;
     static SocketReady      = false;
     static AsyncDataReady   = false;
+
     /**
      * Check if all conditions are met to run tests.
      * The conditions are:
@@ -116,6 +137,7 @@ class ReadyToRunTests {
     static check() {
         return ( ReadyToRunTests.PageReady === true && ReadyToRunTests.SocketReady === true && ReadyToRunTests.AsyncDataReady === true );
     }
+
     /**
      * Check if all conditions are met to run tests and if so, enables the start test runner button.
      * The conditions are:
@@ -199,6 +221,7 @@ class TestState {
     constructor( name ) {
         this.name = name;
     }
+
     /**
      * Returns a string representation of this TestState.
      * @return {string} The name of this TestState, prefixed with "TestState.".
@@ -700,14 +723,14 @@ const setTestRunnerBtnLblTxt = (txt) => {
  */
 const fetchMetadataAndTests = () => {
     Promise.all([
-        fetch( ENDPOINTS.METADATA, {
+        fetch( ENDPOINTS.CALENDARS, {
             method: "GET",
             //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
         }),
-        fetch( ENDPOINTS.TESTSINDEX, {
+        fetch( ENDPOINTS.TESTS, {
             method: "GET",
             //mode: "no-cors",
             headers: {
@@ -923,30 +946,31 @@ const setupPage = () => {
         if( currentSelectedCalendar === 'VA' ) {
             currentSourceDataChecks = [...sourceDataChecks];
         } else {
-            let nation = currentCalendarCategory === 'nationalcalendar'
+            const nation = currentCalendarCategory === 'nationalcalendar'
                 ? currentSelectedCalendar
-                : MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].nation;
+                : MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).nation;
             console.log('sourceDataChecks:');
             console.log(sourceDataChecks);
             currentSourceDataChecks = [...sourceDataChecks];
 
-            let nationalCalendarData = MetaData.national_calendars.filter(nationalCalendar => nationalCalendar.calendar_id === nation)[0];
+            const nationalCalendarData = MetaData.national_calendars.find(nationalCalendar => nationalCalendar.calendar_id === nation);
             currentSourceDataChecks.push({
                 "validate": `wider-region-${nationalCalendarData.wider_region}`,
                 "sourceFile": nationalCalendarData.wider_region,
                 "category": "sourceDataCheck"
             });
             currentSourceDataChecks.push({
-                    "validate": `national-calendar-${nation}`,
-                    "sourceFile": nation,
-                    "category": "sourceDataCheck"
+                "validate": `national-calendar-${nation}`,
+                "sourceFile": nation,
+                "category": "sourceDataCheck"
             });
+
             nationalCalendarData.missals.forEach((missal) => {
                 console.log('retrieving Missal definition for missal: ' + missal);
                 let sourceFile = false;
-                let missalDef = Object.values( RomanMissals ).filter(el => el.missal_id === missal);
-                if (missalDef.length && missalDef[0].hasOwnProperty('data_path')) {
-                    sourceFile = missalDef[0].data_path;
+                let missalDef = Object.values( RomanMissals ).find(el => el.missal_id === missal);
+                if (missalDef !== undefined && missalDef.hasOwnProperty('data_path')) {
+                    sourceFile = missalDef.data_path;
                     console.log('found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile);
                 } else {
                     console.warn('could not find Missal definition for missal: ' + missal);
@@ -959,8 +983,9 @@ const setupPage = () => {
                     });
                 }
             });
+
             if( currentCalendarCategory === 'diocesancalendar' ) {
-                let diocese = MetaData.diocesan_calendars.filter(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar)[0].diocese;
+                //let diocese = MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).diocese;
                 currentSourceDataChecks.push({
                     "validate": `diocesan-calendar-${currentSelectedCalendar}`,
                     "sourceFile": currentSelectedCalendar,

@@ -15,6 +15,7 @@ class ReadyToRunTests {
     static MetaDataReady    = false;
     static MissalsReady     = false;
     static TestsReady       = false;
+
     /**
      * Check if all conditions are met to run tests.
      * The conditions are:
@@ -33,6 +34,7 @@ class ReadyToRunTests {
             && ReadyToRunTests.TestsReady === true
         );
     }
+
     /**
      * Checks if all conditions are met to run tests and if so, enables the start test runner button.
      * The conditions are:
@@ -92,6 +94,7 @@ class TestState {
     constructor( name ) {
         this.name = name;
     }
+
     /**
      * Returns a string representation of this TestState.
      * @return {string} The name of this TestState, prefixed with "TestState.".
@@ -134,6 +137,8 @@ const ENDPOINTS = {
  * - `sourceFile`: the URL of the resource to check.
  * - `category`: a string that indicates the category of the resource data check.
  *                Currently, the only category is 'resourceDataCheck'.
+ * Tne only API path that we don't include here is /data, since it requires more parameters,
+ * it cannot be accessed or checked on it's own.
  * @type {Array<{validate: string, sourceFile: string, category: string}>}
  */
 const resourceDataChecks = [
@@ -165,6 +170,11 @@ const resourceDataChecks = [
     {
         "validate": "schemas-path",
         "sourceFile": ENDPOINTS.SCHEMAS,
+        "category": "resourceDataCheck"
+    },
+    {
+        "validate": "missals-path",
+        "sourceFile": ENDPOINTS.MISSALS,
         "category": "resourceDataCheck"
     }
 ];
@@ -210,30 +220,46 @@ const sourceDataChecks = [
  *
  * @return {void}
  */
-const setEndpoints = (ev = null) => {
-    if(ev !== null) {
-        ENDPOINTS.VERSION = ev.currentTarget.value;
+const setEndpoints = (ev) => {
+    let API_PATH;
+    if (APP_ENV==='production') {
+        if(undefined !== ev) {
+            ENDPOINTS.VERSION = ev.currentTarget.value;
+        } else {
+            ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+        }
+        document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
+        API_PATH = `/api/${ENDPOINTS.VERSION}`;
     } else {
-        ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+        ENDPOINTS.VERSION = '';
+        API_PATH = '';
     }
-    console.info('ENDPOINTS.VERSION set to ' + ENDPOINTS.VERSION);
-    switch(ENDPOINTS.VERSION) {
-        case 'dev':
-        case 'v4':
-            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/calendars`;
-            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/tests`;
-            ENDPOINTS.DECREES      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/decrees`;
-            ENDPOINTS.MISSALS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/missals`;
-            ENDPOINTS.DATA         = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/data`;
-            ENDPOINTS.EVENTS       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/events`;
-            ENDPOINTS.EASTER       = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/easter`;
-            ENDPOINTS.SCHEMAS      = `https://litcal.johnromanodorazio.com/api/${ENDPOINTS.VERSION}/schemas`;
-            break;
-        case 'v3':
-            ENDPOINTS.CALENDARS    = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
-            ENDPOINTS.TESTS        = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
-            break;
-    }
+    const API_PORT_STR = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
+    ENDPOINTS.CALENDARS    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
+    ENDPOINTS.DECREES     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
+    ENDPOINTS.TESTS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
+    ENDPOINTS.EVENTS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/events`;
+    ENDPOINTS.EASTER  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/easter`;
+    ENDPOINTS.SCHEMAS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/schemas`;
+    ENDPOINTS.MISSALS     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
+    ENDPOINTS.DATA  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/data`;
+    console.info(
+        `APP_ENV: ${APP_ENV},
+        API_PATH: ${API_PATH},
+        API_PROTOCOL: ${API_PROTOCOL},
+        API_HOST: ${API_HOST},
+        API_PORT: ${API_PORT},
+        API_PORT_STR: ${API_PORT_STR},
+        ENDPOINTS.VERSION: ${ENDPOINTS.VERSION},
+        ENDPOINTS.CALENDARS: ${ENDPOINTS.CALENDARS},
+        ENDPOINTS.DECREES: ${ENDPOINTS.DECREES},
+        ENDPOINTS.TESTS: ${ENDPOINTS.TESTS},
+        ENDPOINTS.EVENTS: ${ENDPOINTS.EVENTS},
+        ENDPOINTS.EASTER: ${ENDPOINTS.EASTER},
+        ENDPOINTS.SCHEMAS: ${ENDPOINTS.SCHEMAS},
+        ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS},
+        ENDPOINTS.DATA: ${ENDPOINTS.DATA}`
+    );
     document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
     resourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     resourceDataChecks[1].sourceFile = ENDPOINTS.DECREES;
@@ -241,6 +267,7 @@ const setEndpoints = (ev = null) => {
     resourceDataChecks[3].sourceFile = ENDPOINTS.EVENTS;
     resourceDataChecks[4].sourceFile = ENDPOINTS.EASTER;
     resourceDataChecks[5].sourceFile = ENDPOINTS.SCHEMAS;
+    resourceDataChecks[6].sourceFile = ENDPOINTS.MISSALS;
 }
 
 /**
@@ -249,19 +276,20 @@ const setEndpoints = (ev = null) => {
  * @constant {Object<string,string>}
  * @property {string} calendars-path - Path for calendar data
  * @property {string} decrees-path   - Path for decree data
+ * @property {string} tests-path     - Path for test data
  * @property {string} events-path    - Path for event data
  * @property {string} easter-path    - Path for Easter date calculation
- * @property {string} tests-path     - Path for test data
  * @property {string} schemas-path   - Path for schema data
+ * @property {string} missals-path   - Path for missal data
  */
 const resourcePaths = {
     'calendars-path': '/calendars',
     'decrees-path':   '/decrees',
+    'tests-path':     '/tests',
     'events-path':    '/events',
     'easter-path':    '/easter',
-    'tests-path':     '/tests',
-    'easter-path':    '/easter',
-    'schemas-path':   '/schemas'
+    'schemas-path':   '/schemas',
+    'missals-path':   '/missals'
 };
 
 
@@ -283,7 +311,7 @@ const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || id
     </div>
     <div class="card text-white bg-info rounded-0 ${resource} json-valid">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> JSON valid</span></p>
+            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> ${currentResponseType} valid</span></p>
         </div>
     </div>
     <div class="card text-white bg-info rounded-0 ${resource} schema-valid">
@@ -293,6 +321,12 @@ const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || id
     </div>
 </div>`;
 
+/**
+ * Template for a source item in the resource list.
+ * @param {object} sourceItem - An object containing the resource's source file or folder.
+ * @param {number} idx - The index of the source item in the list.
+ * @returns {string} A string containing the HTML for the source item.
+ */
 const sourceTemplate = (sourceItem, idx) => `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
 <div class="text-center mt-1 mb-0 bg-secondary text-white h-25"><span title="${sourceItem.sourceFile ?? sourceItem.sourceFolder}" class="text-break d-inline-block w-75">${sourceItem.validate}</span></div>
 <div class="card text-white bg-info rounded-0 ${sourceItem.validate} file-exists">
@@ -345,7 +379,9 @@ const HTMLEncode = (str) => {
  * Also sets up event listeners for the open, message, close, and error events.
  */
 const connectWebSocket = () => {
-    conn = new WebSocket( 'wss://litcal-test.johnromanodorazio.com' );
+    console.log( `Connecting to websocket... WS_PROTOCOL: ${WS_PROTOCOL}, WS_HOST: ${WS_HOST}, WS_PORT: ${WS_PORT}` );
+    const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[443,80].includes(WS_PORT) ? '' : `:${WS_PORT}`}`;
+    conn = new WebSocket( websocketURL );
 
     /**
      * Event handler for the onopen event. Called when the websocket connection to the test server is established.
@@ -508,6 +544,7 @@ let startTestRunnerBtnLbl       = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let connectionAttempt           = null;
 let conn;
+let currentResponseType         = "JSON";
 
 let messageCounter;
 let successfulTests             = 0;
@@ -540,25 +577,49 @@ const loadAsyncData = () => {
         dataArr.forEach(data => {
             if(data.hasOwnProperty('litcal_metadata')) {
                 MetaData = data.litcal_metadata;
-                const { national_calendars, diocesan_calendars_keys, diocesan_calendars, wider_regions, wider_regions_keys } = MetaData;
+                const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
 
                 wider_regions.forEach(region => {
+                    const widerRegion = region.name;
                     sourceDataChecks.push({
-                        "validate": `wider-region-${region.name}`,
-                        "sourceFile": region.name,
+                        "validate": `wider-region-${widerRegion}`,
+                        "sourceFile": widerRegion,
                         "category": "sourceDataCheck"
                     });
                     sourceDataChecks.push({
-                        "validate": `wider-region-${region.name}-i18n`,
-                        "sourceFolder": region.name,
+                        "validate": `wider-region-${widerRegion}-i18n`,
+                        "sourceFolder": widerRegion,
                         "category": "sourceDataCheck"
                     });
+
+                    // we need to request a locale for widerRegion on the data path
+                    // so let's retrieve the first available locale from the metadata
+                    console.log(widerRegion);
+                    console.log(region);
+                    const widerRegionFirstLang = region.locales[0];
+                    console.log(widerRegionFirstLang);
+                    resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}`;
+                    resourceDataChecks.push({
+                        "validate": `data-path-wider-region-${widerRegion}`,
+                        "sourceFile": ENDPOINTS.DATA + `/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
+                        "category": "resourceDataCheck"
+                    });
+
                 });
 
-                const NationalCalendarsArr = national_calendars.slice(1);
-                //NationalCalendarsArr.sort( ( a, b ) => countryNames.of(a).localeCompare( countryNames.of(b) ) );
-                NationalCalendarsArr.forEach(nationalCalendar => {
-                    nation = nationalCalendar.calendar_id;
+                national_calendars.slice(1).forEach(nationalCalendar => {
+                    const nation = nationalCalendar.calendar_id;
+                    sourceDataChecks.push({
+                        "validate": `national-calendar-${nation}`,
+                        "sourceFile": nation,
+                        "category": "sourceDataCheck"
+                    });
+                    sourceDataChecks.push({
+                        "validate": `national-calendar-${nation}-i18n`,
+                        "sourceFolder": nation,
+                        "category": "sourceDataCheck"
+                    });
+
                     nationalCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/nation/${nation}?locale=${locale}`;
                         resourceDataChecks.push({
@@ -573,52 +634,39 @@ const loadAsyncData = () => {
                             "category": "resourceDataCheck"
                         });
                     })
-                    sourceDataChecks.push({
-                        "validate": `national-calendar-${nation}`,
-                        "sourceFile": nation,
-                        "category": "sourceDataCheck"
-                    });
                 });
 
-                diocesan_calendars_keys.forEach(diocese => {
-                    resourcePaths[`data-path-diocese-${diocese}`] = `/data/diocese/${diocese}`;
-                    resourceDataChecks.push({
-                        "validate": `data-path-diocese-${diocese}`,
-                        "sourceFile": ENDPOINTS.DATA + `/diocese/${diocese}`,
-                        "category": "resourceDataCheck"
+                diocesan_calendars.forEach(diocesanCalendar => {
+                    const diocese = diocesanCalendar.calendar_id;
+                    sourceDataChecks.push({
+                        "validate": `diocesan-calendar-${diocese}`,
+                        "sourceFile": diocese,
+                        "category": "sourceDataCheck"
                     });
-                    resourcePaths[`events-path-diocese-${diocese}`] = `/events/diocese/${diocese}`;
-                    resourceDataChecks.push({
-                        "validate": `events-path-diocese-${diocese}`,
-                        "sourceFile": ENDPOINTS.EVENTS + `/diocese/${diocese}`,
-                        "category": "resourceDataCheck"
+                    sourceDataChecks.push({
+                        "validate": `diocesan-calendar-${diocese}-i18n`,
+                        "sourceFolder": diocese,
+                        "category": "sourceDataCheck"
+                    });
+
+
+                    diocesanCalendar.locales.forEach(locale => {
+                        resourcePaths[`data-path-diocese-${diocese}-${locale}`] = `/data/diocese/${diocese}?locale=${locale}`;
+                        resourceDataChecks.push({
+                            "validate": `data-path-diocese-${diocese}-${locale}`,
+                            "sourceFile": ENDPOINTS.DATA + `/diocese/${diocese}?locale=${locale}`,
+                            "category": "resourceDataCheck"
+                        });
+                        resourcePaths[`events-path-diocese-${diocese}-${locale}`] = `/events/diocese/${diocese}?locale=${locale}`;
+                        resourceDataChecks.push({
+                            "validate": `events-path-diocese-${diocese}-${locale}`,
+                            "sourceFile": ENDPOINTS.EVENTS + `/diocese/${diocese}?locale=${locale}`,
+                            "category": "resourceDataCheck"
+                        });
                     });
                 });
 
                 console.log(wider_regions);
-                wider_regions_keys.forEach(widerRegion => {
-                    // we need to request a locale for widerRegion on the data path
-                    // so let's retrieve the first available locale from the metadata
-                    let widerRegionObj = wider_regions.filter(region => region.name === widerRegion)[0];
-                    console.log(widerRegion);
-                    console.log(widerRegionObj);
-                    let widerRegionFirstLang = widerRegionObj.locales[0];
-                    console.log(widerRegionFirstLang);
-                    resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}`;
-                    resourceDataChecks.push({
-                        "validate": `data-path-wider-region-${widerRegion}`,
-                        "sourceFile": ENDPOINTS.DATA + `/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
-                        "category": "resourceDataCheck"
-                    });
-                });
-
-                diocesan_calendars.forEach(diocese => {
-                    sourceDataChecks.push({
-                        "validate": `diocesan-calendar-${diocese.calendar_id}`,
-                        "sourceFile": diocese.calendar_id,
-                        "category": "sourceDataCheck"
-                    });
-                })
 
                 ReadyToRunTests.MetaDataReady = true;
                 console.log( 'Metadata is ready' );
@@ -700,6 +748,7 @@ const runTests = () => {
             conn.send(
                 JSON.stringify({
                     action: 'executeValidation',
+                    responsetype: currentResponseType,
                     ...resourceDataChecks[ index++ ]
                 })
             );
@@ -712,6 +761,7 @@ const runTests = () => {
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
+                            responsetype: currentResponseType,
                             ...resourceDataChecks[ index++ ]
                         })
                     );
@@ -824,6 +874,16 @@ $(document).on('click', '#startTestRunnerBtn', () => {
         console.warn('Please do not try to start a test run while tests are running!');
     }
 });
+
+$( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
+    $( '.page-loader' ).show();
+    ReadyToRunTests.PageReady = false;
+    currentResponseType = ev.currentTarget.value;
+    console.log( `currentResponseType: ${currentResponseType}` );
+    setupPage();
+    ReadyToRunTests.tryEnableBtn();
+});
+
 
 setEndpoints();
 loadAsyncData();
