@@ -118,23 +118,30 @@ include_once('layout/head.php');
                         >
                             <div class="col-4">
                                 <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
-                                    echo _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL");
-                                ?>&nbsp;<span class="yearMax"></span>
+                                    echo sprintf(
+                                        /* translators: %s: <span class="yearMax"></span> */
+                                        _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"),
+                                        "&nbsp;<span class=\"yearMax\"></span>"
+                                    );
+                                ?>
                             </div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">
-                                <i class="fas fa-circle-check fa-fw"></i> <?php
+                                <i class="fas fa-circle-check fa-fw"></i>&nbsp;<?php
                                     echo _("Successful tests:");
-                                ?> <span id="successfulCalendarDataTestsCount" class="successfulCount">0</span>
+                                ?>&nbsp;<span id="successfulCalendarDataTestsCount" class="successfulCount">0</span>
                             </div>
                             <div class="col-2 text-white p-2 text-center test-results bg-danger">
-                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
+                                <i class="fas fa-circle-xmark fa-fw"></i>&nbsp;<?php
                                     echo _("Failed tests:");
-                                ?> <span id="failedCalendarDataTestsCount" class="failedCount">0</span>
+                                ?>&nbsp;<span id="failedCalendarDataTestsCount" class="failedCount">0</span>
                             </div>
                             <div class="col-3 text-white p-2 text-center test-results bg-dark">
-                                <i class="fas fa-stopwatch fa-fw"></i> <?php
-                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalCalendarDataTestsCount\"></span>");
-                                ?> <span id="totalCalendarDataTestsTime">0</span>
+                                <i class="fas fa-stopwatch fa-fw"></i>&nbsp;<?php
+                                    echo sprintf(
+                                        _("Total time for %s tests:"),
+                                        "<span id=\"totalCalendarDataTestsCount\"></span>"
+                                    );
+                                ?>&nbsp;<span id="totalCalendarDataTestsTime">0</span>
                             </div>
                         </button>
                     </h2>
@@ -164,7 +171,11 @@ include_once('layout/head.php');
                             </div>
                             <div class="col-3 text-white p-2 text-center test-results bg-dark">
                                 <i class="fas fa-stopwatch fa-fw"></i> <?php
-                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalUnitTestsCount\"></span>");
+                                    echo sprintf(
+                                        /* translators: %s: <span id="totalUnitTestsCount"></span> */
+                                        _("Total time for %s tests:"),
+                                        "<span id=\"totalUnitTestsCount\"></span>"
+                                    );
                                 ?> <span id="totalUnitTestsTime">0</span>
                             </div>
                         </button>
