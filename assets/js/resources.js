@@ -452,13 +452,13 @@ const connectWebSocket = () => {
         switch( currentState ) {
             case TestState.ExecutingResourceValidations:
                 performance.mark( 'resourceDataTestsEnd' );
-                let totalResourceDataTestTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
-                $( '#totalResourceDataTestsTime' ).text( MsToTimeString( Math.round( totalResourceDataTestTime.duration ) ) );
+                let totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
+                $( '#totalResourceDataTestsTime' ).text( MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ) );
                 break;
             case TestState.ExecutingSourceValidations:
                 performance.mark( 'sourceDataTestsEnd' );
-                let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ) );
+                let totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ) );
                 break;
         }
     };
