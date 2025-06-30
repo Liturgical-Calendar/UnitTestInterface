@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-26 21:21+0000\n"
+"POT-Creation-Date: 2025-06-30 17:57+0000\n"
 "PO-Revision-Date: 2025-04-25 20:30+0000\n"
 "Last-Translator: Jarek Niewiadomski <jarekn2008@gmail.com>\n"
 "Language-Team: Polish <https://translate.johnromanodorazio.com/projects/"
@@ -56,15 +56,16 @@ msgstr "Format odpowiedzi"
 msgid "Run Tests"
 msgstr "Uruchom testy"
 
-#: index.php:73 index.php:94 index.php:126 index.php:157
+#: index.php:73 index.php:94 index.php:130 index.php:164
 msgid "Successful tests:"
 msgstr "Testy zakończone sukcesem:"
 
-#: index.php:76 index.php:99 index.php:131 index.php:162
+#: index.php:76 index.php:99 index.php:135 index.php:169
 msgid "Failed tests:"
 msgstr "Testy zakończone niepowodzeniem:"
 
-#: index.php:80 index.php:104 index.php:136 index.php:167
+#. translators: %s: <span id="totalUnitTestsCount"></span>
+#: index.php:80 index.php:104 index.php:141 index.php:176
 #, php-format
 msgid "Total time for %s tests:"
 msgstr "Całkowity czas %s testów:"
@@ -73,15 +74,18 @@ msgstr "Całkowity czas %s testów:"
 msgid "VALIDATE SOURCE DATA"
 msgstr "WERYFIKACJA DANYCH ŹRÓDŁOWYCH"
 
-#: index.php:121
-msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"
+#. translators: %s: <span class="yearMax"></span>
+#: index.php:123
+#, fuzzy, php-format
+#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"
+msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "WALIDACJA DANYCH KALENDARZOWYCH DLA LAT OD 1970 DO"
 
-#: index.php:152
+#: index.php:159
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
 msgstr "WYKONYWANIE TESTÓW JEDNOSTKOWYCH DLA OKREŚLONYCH ZDARZEŃ"
 
-#: index.php:186
+#: index.php:197
 msgid "Loading..."
 msgstr "Ładowanie..."
 
@@ -320,7 +324,8 @@ msgstr "Należy określić rok, od którego wydarzenie liturgiczne ma istnieć."
 
 #: components/NewTestModal.php:61
 msgid "Please set the year until which the liturgical event should exist."
-msgstr "Należy określić rok, do którego wydarzenie liturgiczne powinno istnieć."
+msgstr ""
+"Należy określić rok, do którego wydarzenie liturgiczne powinno istnieć."
 
 #: components/NewTestModal.php:62
 msgid "Please set the years in which the liturgical event should not exist."
