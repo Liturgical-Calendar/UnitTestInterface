@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-26 21:21+0000\n"
-"PO-Revision-Date: 2025-06-30 17:28+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2025-06-30 17:56+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
 "Language: hu\n"
@@ -20,56 +20,46 @@ msgstr ""
 "X-Generator: Weblate 5.12.2\n"
 
 #: index.php:12
-#, fuzzy
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
 msgstr ""
-"Hiba történt a szerverhez való csatlakozás megnyitásakor a webszerveren "
+"Hiba történt a szerverhez való csatlakozás megnyitásakor a websocket "
 "keresztül. Talán a szerver offline?"
 
 #: index.php:20
-#, fuzzy
 msgid "Websocket connected successfully!"
 msgstr "Websocket sikeresen csatlakozott!"
 
 #: index.php:28
-#, fuzzy
 msgid "Websocket connection closed."
 msgstr "Websocket kapcsolat lezárva."
 
 #: index.php:36
-#, fuzzy
 msgid "All tests complete!"
 msgstr "Minden teszt befejeződött!"
 
 #: index.php:50
-#, fuzzy
 msgid "Liturgical Calendar"
-msgstr "Liturgikus naptár"
+msgstr "Liturgikus Naptár"
 
 #: index.php:52
-#, fuzzy
 msgid "General Roman"
-msgstr "Általános római"
+msgstr "Általános Római"
 
 #: index.php:56
-#, fuzzy
 msgid "Response Format"
-msgstr "Válasz formátuma"
+msgstr "Válasz formátum"
 
 #: index.php:68
-#, fuzzy
 msgid "Run Tests"
-msgstr "Teszt futtatása"
+msgstr "Futtatása tesztek"
 
 #: index.php:73 index.php:94 index.php:126 index.php:157
-#, fuzzy
 msgid "Successful tests:"
 msgstr "Sikeres tesztek:"
 
 #: index.php:76 index.php:99 index.php:131 index.php:162
-#, fuzzy
 msgid "Failed tests:"
 msgstr "Sikertelen tesztek:"
 
@@ -79,9 +69,8 @@ msgid "Total time for %s tests:"
 msgstr "Összes idő %s teszthez:"
 
 #: index.php:91
-#, fuzzy
 msgid "VALIDATE SOURCE DATA"
-msgstr "FORRÁSADATOK ÉRVÉNYESÍTÉSE"
+msgstr "ÉRVÉNYESÍTSE A FORRÁSADATOKAT"
 
 #: index.php:121
 #, fuzzy
