@@ -234,15 +234,15 @@ const setEndpoints = (ev) => {
         ENDPOINTS.VERSION = '';
         API_PATH = '';
     }
-    const API_PORT_STR = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
-    ENDPOINTS.CALENDARS    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
-    ENDPOINTS.DECREES     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
-    ENDPOINTS.TESTS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
-    ENDPOINTS.EVENTS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/events`;
-    ENDPOINTS.EASTER  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/easter`;
-    ENDPOINTS.SCHEMAS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/schemas`;
-    ENDPOINTS.MISSALS     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
-    ENDPOINTS.DATA  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/data`;
+    const API_PORT_STR  = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
+    ENDPOINTS.CALENDARS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
+    ENDPOINTS.DECREES   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
+    ENDPOINTS.TESTS     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
+    ENDPOINTS.EVENTS    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/events`;
+    ENDPOINTS.EASTER    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/easter`;
+    ENDPOINTS.SCHEMAS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/schemas`;
+    ENDPOINTS.MISSALS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
+    ENDPOINTS.DATA      = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/data`;
     console.info(
         `APP_ENV: ${APP_ENV},
         API_PATH: ${API_PATH},
@@ -452,13 +452,13 @@ const connectWebSocket = () => {
         switch( currentState ) {
             case TestState.ExecutingResourceValidations:
                 performance.mark( 'resourceDataTestsEnd' );
-                let totalSourceDataTestTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
-                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ) );
+                let totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
+                $( '#totalResourceDataTestsTime' ).text( MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ) );
                 break;
             case TestState.ExecutingSourceValidations:
                 performance.mark( 'sourceDataTestsEnd' );
-                let totalCalendarDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                $( '#totalCalendarDataTestsTime' ).text( MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) ) );
+                let totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ) );
                 break;
         }
     };
