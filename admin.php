@@ -137,7 +137,7 @@ if ($apiVersion === 'dev' || $apiVersion === 'v4') {
     if (curl_errno($ch)) {
         die('Could not fetch data from ' . $eventsEndpoint);
     }
-    [ "litcal_events" => $LitCalAllFestivities ] = json_decode(
+    [ "litcal_events" => $LitCalAllLitEvents ] = json_decode(
         $eventsRaw,
         true
     );
@@ -182,7 +182,7 @@ include_once 'components/NewTestModal.php';
 </div>
 <?php
 $testsIndex = json_encode($LitCalTests);
-$litcal_events = json_encode($LitCalAllFestivities);
+$litcal_events = json_encode($LitCalAllLitEvents);
 echo "<script>const LitCalTests = Object.freeze($testsIndex); const LitcalEvents = Object.freeze($litcal_events);</script>";
 include_once 'layout/footer.php';
 ?>

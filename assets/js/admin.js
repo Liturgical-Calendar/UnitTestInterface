@@ -259,7 +259,7 @@ const setEndpoints = (ev = null) => {
         case 'v3':
             ENDPOINTS.METADATA   = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
             ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
-            ENDPOINTS.EVENTS     = `https://litcal.johnromanodorazio.com/api/v4/LitCalAllFestivities.php/`;
+            ENDPOINTS.EVENTS     = `https://litcal.johnromanodorazio.com/api/v4/LitCalAllLitEvents.php/`;
         break;
     }
 }
@@ -477,15 +477,15 @@ const API = {
 
 /**
  * Rebuilds the options for the select element containing the list of existing
- * festivities for the currently selected API calendar.
+ * liturgical events for the currently selected API calendar.
  *
  * @param {HTMLSelectElement} element - The select element containing the list of
- * existing festivities.
+ * existing liturgical events.
  * @async
  * @returns {Promise<void>}
  */
-const rebuildFestivitiesOptions = async (element) => {
-    console.log(`rebuildFestivitiesOptions: ${element.value}`);
+const rebuildLitEventsOptions = async (element) => {
+    console.log(`rebuildLitEventsOptions: ${element.value}`);
     const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
@@ -512,7 +512,7 @@ const rebuildFestivitiesOptions = async (element) => {
         }
         htmlStr += `<option value="${el.event_key}"${dataMonth}${dataDay}${dataGrade}>${el.name} (${el.grade_lcl})</option>`;
     }
-    document.querySelector( '#existingFestivitiesList' ).innerHTML = htmlStr;
+    document.querySelector( '#existingLitEventsList' ).innerHTML = htmlStr;
 }
 
 /**
@@ -556,9 +556,9 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
         if( proxiedTest.hasOwnProperty('applies_to') ) {
             const calendarType = Object.keys(proxiedTest.applies_to)[0];
             document.querySelector('#APICalendarSelect').value = proxiedTest.applies_to[calendarType];
-            await rebuildFestivitiesOptions(document.querySelector('#APICalendarSelect'));
-            document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
-            console.log(`keys of litcal_events after rebuildFestivitiesOptions:`);
+            await rebuildLitEventsOptions(document.querySelector('#APICalendarSelect'));
+            document.querySelector('#existingLitEventName').value = proxiedTest.event_key;
+            console.log(`keys of litcal_events after rebuildLitEventsOptions:`);
             console.log(litcal_events_keys.sort());
             AssertionsBuilder.test = litcal_events.filter(el => el.event_key === proxiedTest.event_key)[0] ?? null;
             AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
@@ -577,7 +577,7 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
 });
 
 $(document).on('change', '#APICalendarSelect', async (ev) => {
-    await rebuildFestivitiesOptions( ev.currentTarget );
+    await rebuildLitEventsOptions( ev.currentTarget );
 });
 
 $(document).on('click', '.editDate', ev => {
@@ -756,8 +756,8 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     let lightClass = '';
     if( 'edittest' in ev.relatedTarget.dataset ) {
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
-        document.querySelector('#existingFestivityName').value = proxiedTest.event_key;
-        $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + proxiedTest.event_key + '"]');
+        document.querySelector('#existingLitEventName').value = proxiedTest.event_key;
+        $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + proxiedTest.event_key + '"]');
         console.log($existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
         minYear = Math.min(...years);
@@ -824,8 +824,8 @@ $(document).on('slid.bs.carousel', ev => {
     if( ev.to === 2 ) {
         let firstYear = document.querySelector('#lowerRange').value;
         let monthDay = '-01-01';
-        const selectedEventVal = document.querySelector('#existingFestivityName').value;
-        const $selectedOption = $('#existingFestivitiesList').find('option[value="' + selectedEventVal + '"]');
+        const selectedEventVal = document.querySelector('#existingLitEventName').value;
+        const $selectedOption = $('#existingLitEventsList').find('option[value="' + selectedEventVal + '"]');
         if( $selectedOption.length && $selectedOption[0].dataset.month && $selectedOption[0].dataset.month !== '' && $selectedOption[0].dataset.day && $selectedOption[0].dataset.day !== '' ) {
             const month = $selectedOption[0].dataset.month.padStart(2, '0');
             const day = $selectedOption[0].dataset.day.padStart(2, '0');
@@ -839,7 +839,7 @@ $(document).on('slid.bs.carousel', ev => {
 
 /** SLIDER 1 INTERACTIONS */
 
-$(document).on('change', '#existingFestivityName', ev => {
+$(document).on('change', '#existingLitEventName', ev => {
     const currentVal = ev.currentTarget.value;
     console.log(currentVal);
     // Determine whether an option exists with the current value of the input.
@@ -895,8 +895,8 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     let htmlStr = '';
     let titleAttr = '';
     let lightClass = '';
-    const currentEventKey = document.querySelector('#existingFestivityName').value;
-    $existingOption = $(document.querySelector('#existingFestivityName').list).find('option[value="' + currentEventKey + '"]');
+    const currentEventKey = document.querySelector('#existingLitEventName').value;
+    $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + currentEventKey + '"]');
     for( let year = minYear; year <= maxYear; year++ ) {
         eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
         if( eventDate.getUTCDay() === 0 ) {
@@ -965,8 +965,8 @@ $(document).on('click', '#btnCreateTest', () => {
     } else {
         //let's build our new Unit Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
-        proxiedTest.event_key = document.querySelector('#existingFestivityName').value;
-        console.log(document.querySelector('#existingFestivityName').value);
+        proxiedTest.event_key = document.querySelector('#existingLitEventName').value;
+        console.log(document.querySelector('#existingLitEventName').value);
         console.log(proxiedTest.name);
         proxiedTest.test_type = currentTestType;
         proxiedTest.description = document.querySelector('#newUnitTestDescription').value;

@@ -123,7 +123,7 @@ include_once('layout/head.php');
                                         _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"),
                                         "&nbsp;<span class=\"yearMax\"></span>"
                                     );
-                                ?>
+                                    ?>
                             </div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">
                                 <i class="fas fa-circle-check fa-fw"></i>&nbsp;<?php
@@ -141,7 +141,7 @@ include_once('layout/head.php');
                                         _("Total time for %s tests:"),
                                         "<span id=\"totalCalendarDataTestsCount\"></span>"
                                     );
-                                ?>&nbsp;<span id="totalCalendarDataTestsTime">0</span>
+                                    ?>&nbsp;<span id="totalCalendarDataTestsTime">0</span>
                             </div>
                         </button>
                     </h2>
@@ -176,7 +176,7 @@ include_once('layout/head.php');
                                         _("Total time for %s tests:"),
                                         "<span id=\"totalUnitTestsCount\"></span>"
                                     );
-                                ?> <span id="totalUnitTestsTime">0</span>
+                                    ?> <span id="totalUnitTestsTime">0</span>
                             </div>
                         </button>
                     </h2>

@@ -27,3 +27,21 @@ body {
     width: 4rem;
     height: 4rem;
 }
+
+.wide-tooltip .tooltip-inner {
+    max-width: 800px;
+    white-space: pre;
+    text-align: left;
+    font-size: 0.8rem;
+    overflow-x: auto;
+}
+
+.wide-tooltip .tooltip-inner a {
+    color: #9ab8de;
+    transition: color 300ms 100ms;
+}
+
+.wide-tooltip .tooltip-inner a:hover {
+    color: #e8d2d2;
+    transition: color 300ms 100ms;
+}

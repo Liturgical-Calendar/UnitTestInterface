@@ -303,16 +303,16 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     let categoryStr;
     switch(item.category){
         case 'nationalcalendar':
-            categoryStr = 'National Calendar definition: defines any actions that need to be taken on the festivities already defined in the Universal Calendar, to adapt them to this specific National Calendar';
+            categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
             break;
         case 'widerregioncalendar':
-            categoryStr = 'Wider Region definition: contains any festivities that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
+            categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
             break;
         case 'propriumdesanctis':
-            categoryStr = 'Proprium de Sanctis data: contains any festivities defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
+            categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
             break;
         case 'diocesancalendar':
-            categoryStr = 'Diocesan Calendar definition: contains any festivities that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
+            categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
             break;
     }
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
@@ -361,6 +361,14 @@ const HTMLEncode = (str) => {
         }
     }
     return aRet.join('');
+}
+
+const escapeQuotesAndLinkifyUrls = (str) => {
+    str = str.replaceAll(
+        /(https?:\/\/.+?)(?=\s|$)/g,
+        (url) => `<a href="${url}" target="_blank">${url}</a>`
+    );
+    return str.replaceAll('"', '&quot;');
 }
 
 /**
@@ -620,7 +628,7 @@ const connectWebSocket = () => {
         else if ( responseData.type === "error" ) {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find('.card-text').append(`<span title="${HTMLEncode( responseData.text )}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
+            $( responseData.classes ).find('.card-text').append(`<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-message-exclamation"></i></span>`);
             $( '#failedCount' ).text( ++failedTests );
             switch( currentState ) {
                 case TestState.ExecutingValidations:
@@ -928,6 +936,7 @@ const setupPage = () => {
         if(startTestRunnerBtnLbl === '') {
             startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
         }
+
         if( $('#APICalendarSelect').children().length === 1 ) {
             nations.forEach( item => {
                 if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
@@ -1008,6 +1017,8 @@ const setupPage = () => {
                 $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
                 $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
             }
+        } else {
+            document.querySelectorAll('.error-tooltip').forEach(el => el.remove());
         }
 
         $('#specificUnitTestsAccordion').empty();
@@ -1105,7 +1116,7 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
-        currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
+        currentState = ( conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ) ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
             console.warn( conn.readyState.toString );
@@ -1122,6 +1133,51 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
     }
 });
 
+// Store tooltips so we can hide them later
+const tooltipMap = new Map();
+
+// Show tooltip on click
+document.body.addEventListener('click', function (event) {
+  const target = event.target.closest('[data-bs-toggle="tooltip"]');
+  if (!target) {
+    // Clicked elsewhere: hide all tooltips
+    tooltipMap.forEach(t => t.hide());
+    tooltipMap.clear();
+    return;
+  }
+
+  event.stopPropagation(); // Prevent document click from immediately hiding it
+
+  // If tooltip already exists, show it
+  let tooltip = tooltipMap.get(target);
+  if (!tooltip) {
+    tooltip = new bootstrap.Tooltip(target, {
+      trigger: 'manual',
+      html: true,
+      customClass: 'wide-tooltip'
+    });
+    tooltipMap.set(target, tooltip);
+  }
+
+  tooltip.show();
+});
+
+// Optional: Hide tooltip on ESC key
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape') {
+    tooltipMap.forEach(t => t.hide());
+    tooltipMap.clear();
+  }
+});
+
+/*
+const tooltip = new bootstrap.Tooltip(document.body, {
+  selector: '[data-bs-toggle="tooltip"]',
+  html: true,
+  customClass: 'wide-tooltip',
+  trigger: 'hover focus'
+});
+*/
 setEndpoints();
 fetchMetadataAndTests();
 connectWebSocket();
