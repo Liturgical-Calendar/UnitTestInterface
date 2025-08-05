@@ -29,11 +29,12 @@ body {
 }
 
 .wide-tooltip .tooltip-inner {
-    max-width: 800px;
+    max-width: 1200px;
+    max-height: 500px;
     white-space: pre;
     text-align: left;
     font-size: 0.8rem;
-    overflow-x: auto;
+    overflow: auto;
 }
 
 .wide-tooltip .tooltip-inner a {

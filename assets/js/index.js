@@ -2,7 +2,7 @@ const Years = [];
 const thisYear = new Date().getFullYear();
 const twentyFiveYearsFromNow = thisYear + 25;
 let baseYear = 1970;
-while (baseYear <= twentyFiveYearsFromNow ) {
+while ( baseYear <= twentyFiveYearsFromNow ) {
     Years.push( baseYear++ );
 }
 
@@ -84,25 +84,25 @@ const sourceDataChecks = [
  *
  * @return {void}
  */
-const setEndpoints = (ev) => {
+const setEndpoints = ( ev ) => {
     let API_PATH;
-    if (APP_ENV==='production') {
-        if(undefined !== ev) {
+    if ( APP_ENV === 'production' ) {
+        if ( undefined !== ev ) {
             ENDPOINTS.VERSION = ev.currentTarget.value;
         } else {
-            ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
+            ENDPOINTS.VERSION = document.querySelector( '#apiVersionsDropdownItems' ).value;
         }
-        document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
+        document.querySelector( '#admin_url' ).setAttribute( 'href', `/admin.php?apiversion=${ENDPOINTS.VERSION}` );
         API_PATH = `/api/${ENDPOINTS.VERSION}`;
     } else {
         ENDPOINTS.VERSION = '';
         API_PATH = '';
     }
-    const API_PORT_STR = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
-    ENDPOINTS.CALENDARS    = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
-    ENDPOINTS.TESTS  = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
-    ENDPOINTS.DECREES     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
-    ENDPOINTS.MISSALS     = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
+    const API_PORT_STR = [ 443, 80 ].includes( API_PORT ) ? '' : `:${API_PORT}`;
+    ENDPOINTS.CALENDARS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
+    ENDPOINTS.TESTS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
+    ENDPOINTS.DECREES = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
+    ENDPOINTS.MISSALS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
     console.info(
         `APP_ENV: ${APP_ENV},
         API_PATH: ${API_PATH},
@@ -117,14 +117,14 @@ const setEndpoints = (ev) => {
         ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS}`
     );
 
-    sourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
-    sourceDataChecks[5].sourceFile = ENDPOINTS.DECREES;
+    sourceDataChecks[ 0 ].sourceFile = ENDPOINTS.CALENDARS;
+    sourceDataChecks[ 5 ].sourceFile = ENDPOINTS.DECREES;
 }
 
 class ReadyToRunTests {
-    static PageReady        = false;
-    static SocketReady      = false;
-    static AsyncDataReady   = false;
+    static PageReady = false;
+    static SocketReady = false;
+    static AsyncDataReady = false;
 
     /**
      * Check if all conditions are met to run tests.
@@ -148,17 +148,17 @@ class ReadyToRunTests {
      * and that the page loader is hidden.
      */
     static tryEnableBtn() {
-        console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
-        console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.AsyncDataReady );
-        console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
+        console.log( 'ReadyToRunTests.SocketReady = ' + ReadyToRunTests.SocketReady );
+        console.log( 'ReadyToRunTests.AsyncDataReady = ' + ReadyToRunTests.AsyncDataReady );
+        console.log( 'ReadyToRunTests.PageReady = ' + ReadyToRunTests.PageReady );
         let testsReady = ReadyToRunTests.check();
         $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
         $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
-        if( testsReady ) {
+        if ( testsReady ) {
             // only try to set the #startTestRunnerBtnLbl with the stored value when the page is ready
             // to prevent if from being set to an empty value (before we have actually stored the original value)
-            setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
-            $( '.page-loader' ).fadeOut('slow');
+            setTestRunnerBtnLblTxt( startTestRunnerBtnLbl );
+            $( '.page-loader' ).fadeOut( 'slow' );
         }
     }
 }
@@ -178,7 +178,7 @@ const MsToTimeString = ( ms ) => {
         left = ms % 3600000;
         ms -= left;
         let hours = ms / 3600000;
-        if( hours > 0 ) {
+        if ( hours > 0 ) {
             timeString.push( `${hours} ${hours > 1 ? 'hours' : 'hour'}` );
         }
     }
@@ -187,7 +187,7 @@ const MsToTimeString = ( ms ) => {
         left = ms % 60000;
         ms -= left;
         let minutes = ms / 60000;
-        if( minutes > 0 ) {
+        if ( minutes > 0 ) {
             timeString.push( `${minutes} ${minutes > 1 ? 'minutes' : 'minute'}` );
         }
     }
@@ -205,11 +205,11 @@ const MsToTimeString = ( ms ) => {
 }
 
 class TestState {
-    static ReadyState                   = new TestState( 'ReadyState' );
-    static ExecutingValidations         = new TestState( 'ExecutingValidations' );
-    static ValidatingCalendarData       = new TestState( 'ValidatingCalendarData' );
-    static SpecificUnitTests            = new TestState( 'SpecificUnitTests' );
-    static JobsFinished                 = new TestState( 'JobsFinished' );
+    static ReadyState = new TestState( 'ReadyState' );
+    static ExecutingValidations = new TestState( 'ExecutingValidations' );
+    static ValidatingCalendarData = new TestState( 'ValidatingCalendarData' );
+    static SpecificUnitTests = new TestState( 'SpecificUnitTests' );
+    static JobsFinished = new TestState( 'JobsFinished' );
 
     /**
      * Constructs a new TestState object.
@@ -248,7 +248,7 @@ class TestState {
  */
 const testTemplate = ( calendarName ) => {
     return `
-<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate(calendarName,22)}</p>
+<p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
 <div class="card text-white bg-info rounded-0 file-exists calendar-${calendarName}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
@@ -301,7 +301,7 @@ const calDataTestTemplate = ( idx ) => {
  */
 const sourceDataCheckTemplate = ( item, idx ) => {
     let categoryStr;
-    switch(item.category){
+    switch ( item.category ) {
         case 'nationalcalendar':
             categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
             break;
@@ -316,7 +316,7 @@ const sourceDataCheckTemplate = ( item, idx ) => {
             break;
     }
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate(item.validate,14) : truncate(item.validate,22)}</span>${item.category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>`:''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate( item.validate, 14 ) : truncate( item.validate, 22 )}</span>${item.category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>` : ''}</p>
     <div class="card text-white bg-info rounded-0 ${item.validate} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
@@ -337,7 +337,7 @@ const sourceDataCheckTemplate = ( item, idx ) => {
 }
 
 
-const truncate = (source, size) => source.length > size ? source.slice(0, size - 1) + "*" : source;
+const truncate = ( source, size ) => source.length > size ? source.slice( 0, size - 1 ) + "*" : source;
 
 /**
  * HTMLEncode function
@@ -345,31 +345,38 @@ const truncate = (source, size) => source.length > size ? source.slice(0, size -
  * @param {*} str
  * @returns
  */
-const HTMLEncode = (str) => {
+const HTMLEncode = ( str ) => {
     // avoid a double encoding!
-    str = str.replaceAll('&#039;', '"');
-    str = [...str];
+    str = str.replaceAll( '&#039;', '"' );
+    str = [ ...str ];
     //    ^ es20XX spread to Array: keeps surrogate pairs
     let i = str.length, aRet = [];
 
-    while (i--) {
-        var iC = str[i].codePointAt(0);
-        if (iC < 65 || iC > 127 || (iC>90 && iC<97)) {
-            aRet[i] = '&#'+iC+';';
+    while ( i-- ) {
+        var iC = str[ i ].codePointAt( 0 );
+        if ( iC < 65 || iC > 127 || ( iC > 90 && iC < 97 ) ) {
+            aRet[ i ] = '&#' + iC + ';';
         } else {
-            aRet[i] = str[i];
+            aRet[ i ] = str[ i ];
         }
     }
-    return aRet.join('');
+    return aRet.join( '' );
 }
 
 const escapeQuotesAndLinkifyUrls = (str) => {
-    str = str.replaceAll(
-        /(https?:\/\/.+?)(?=\s|$)/g,
-        (url) => `<a href="${url}" target="_blank">${url}</a>`
-    );
-    return str.replaceAll('"', '&quot;');
-}
+  return str.replace(
+    /(?<prefix>["'({\[])?(https?:\/\/[^\s"'<>(){}\[\]]+)(?<suffix>[)"'\]}.,;:]?)/g,
+    (match, prefix, url, suffix) => {
+      // If prefix and suffix form a known pair, keep them outside the link
+      const pairs = { '"': '"', "'": "'", '(': ')', '{': '}', '[': ']' };
+      if (prefix && pairs[prefix] === suffix) {
+        return `${prefix}<a href="${url}" target="_blank">${url}</a>${suffix}`;
+      } else {
+        return `<a href="${url}" target="_blank">${url}</a>${suffix || ''}`;
+      }
+    }
+  ).replaceAll('"', '&quot;');
+};
 
 /**
  * The options used to format the date in the assertions.
@@ -417,21 +424,21 @@ let failedUnitTests = 0;
 let connectionAttempt = null;
 let conn;
 
-let currentSelectedCalendar     = "VA";
-let currentNationalCalendar     = "VA";
-let currentCalendarCategory     = "nationalcalendar";
-let currentResponseType         = "JSON";
-let currentSourceDataChecks     = [];
+let currentSelectedCalendar = "VA";
+let currentNationalCalendar = "VA";
+let currentCalendarCategory = "nationalcalendar";
+let currentResponseType = "JSON";
+let currentSourceDataChecks = [];
 /**
  * The locale variable is defined in footer.php
 */
-let countryNames                = new Intl.DisplayNames(locale, { type: 'region' } );
-let CalendarNations             = [];
-let selectOptions               = {};
-let NationalCalendarTemplates   = [ testTemplate( currentSelectedCalendar ) ];
-let DiocesanCalendarTemplates   = [];
-let SpecificUnitTestCategories  = [];
-let SpecificUnitTestYears       = {};
+let countryNames = new Intl.DisplayNames( locale, { type: 'region' } );
+let CalendarNations = [];
+let selectOptions = {};
+let NationalCalendarTemplates = [ testTemplate( currentSelectedCalendar ) ];
+let DiocesanCalendarTemplates = [];
+let SpecificUnitTestCategories = [];
+let SpecificUnitTestYears = {};
 
 /**
  * Manages the state of the test runner, executing tests and reporting results
@@ -463,8 +470,8 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
-            if( $('#sourceDataTests').hasClass('show') === false ) {
-                $('#sourceDataTests').collapse('show');
+            if ( $( '#sourceDataTests' ).hasClass( 'show' ) === false ) {
+                $( '#sourceDataTests' ).collapse( 'show' );
             }
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
@@ -481,15 +488,15 @@ const runTests = () => {
                     calendarIndex = 0;
                     performance.mark( 'calendarDataTestsStart' );
                     conn.send(
-                        JSON.stringify({
+                        JSON.stringify( {
                             action: 'validateCalendar',
                             year: Years[ index++ ],
                             calendar: currentSelectedCalendar,
                             category: currentCalendarCategory,
                             responsetype: currentResponseType
-                        })
+                        } )
                     );
-                    $('#calendarDataTests').collapse('show');
+                    $( '#calendarDataTests' ).collapse( 'show' );
                 }
             }
             break;
@@ -508,14 +515,14 @@ const runTests = () => {
                     console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                     performance.mark( 'specificUnitTestsStart' );
                     performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                    conn.send( JSON.stringify({
+                    conn.send( JSON.stringify( {
                         ...SpecificUnitTestCategories[ index ],
                         year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                         calendar: currentSelectedCalendar,
                         category: currentCalendarCategory
-                    }) );
-                    $('#specificUnitTests').collapse('show');
-                    $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
+                    } ) );
+                    $( '#specificUnitTests' ).collapse( 'show' );
+                    $( `#specificUnitTest-${SpecificUnitTestCategories[ index ].test}` ).collapse( 'show' );
                 }
             }
             break;
@@ -535,13 +542,13 @@ const runTests = () => {
                 );
                 $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                conn.send( JSON.stringify({
+                conn.send( JSON.stringify( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
-                }) );
-                $(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`).collapse('show');
+                } ) );
+                $( `#specificUnitTest-${SpecificUnitTestCategories[ index ].test}` ).collapse( 'show' );
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
@@ -562,7 +569,7 @@ const runTests = () => {
             let $btnPrimary = $( '.fa-spin' ).closest( '.btn-primary' );
             $btnPrimary.prop( 'disabled', true ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' );
             $( '.fa-spin' ).removeClass( 'fa-spin' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
-            setTestRunnerBtnLblTxt('Tests Complete');
+            setTestRunnerBtnLblTxt( 'Tests Complete' );
             break;
     }
 }
@@ -577,7 +584,7 @@ const runTests = () => {
  */
 const connectWebSocket = () => {
     console.log( `Connecting to websocket... WS_PROTOCOL: ${WS_PROTOCOL}, WS_HOST: ${WS_HOST}, WS_PORT: ${WS_PORT}` );
-    const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[443,80].includes(WS_PORT) ? '' : `:${WS_PORT}`}`;
+    const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[ 443, 80 ].includes( WS_PORT ) ? '' : `:${WS_PORT}`}`;
     conn = new WebSocket( websocketURL );
 
     conn.onopen = ( e ) => {
@@ -611,7 +618,7 @@ const connectWebSocket = () => {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-success' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
             $( '#successfulCount' ).text( ++successfulTests );
-            switch( currentState ) {
+            switch ( currentState ) {
                 case TestState.ExecutingValidations:
                     $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
                     break;
@@ -620,17 +627,17 @@ const connectWebSocket = () => {
                     break;
                 case TestState.SpecificUnitTests:
                     $( '#successfulUnitTestsCount' ).text( ++successfulUnitTests );
-                    let specificUnitTestSuccessCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-success').length;
-                    $(`#successful${responseData.test}TestsCount`).text(specificUnitTestSuccessCount);
+                    let specificUnitTestSuccessCount = $( `#specificUnitTest-${responseData.test}` ).find( '.bg-success' ).length;
+                    $( `#successful${responseData.test}TestsCount` ).text( specificUnitTestSuccessCount );
                     break;
             }
         }
         else if ( responseData.type === "error" ) {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find('.card-text').append(`<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-message-exclamation"></i></span>`);
+            $( responseData.classes ).find( '.card-text' ).append( `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>` );
             $( '#failedCount' ).text( ++failedTests );
-            switch( currentState ) {
+            switch ( currentState ) {
                 case TestState.ExecutingValidations:
                     $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
                     break;
@@ -639,8 +646,8 @@ const connectWebSocket = () => {
                     break;
                 case TestState.SpecificUnitTests:
                     $( '#failedUnitTestsCount' ).text( ++failedUnitTests );
-                    let specificUnitTestFailedCount = $(`#specificUnitTest-${responseData.test}`).find('.bg-danger').length;
-                    $(`#failed${responseData.test}TestsCount`).text(specificUnitTestFailedCount);
+                    let specificUnitTestFailedCount = $( `#specificUnitTest-${responseData.test}` ).find( '.bg-danger' ).length;
+                    $( `#failed${responseData.test}TestsCount` ).text( specificUnitTestFailedCount );
                     break;
             }
         }
@@ -651,7 +658,7 @@ const connectWebSocket = () => {
         let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
-        switch( currentState ) {
+        switch ( currentState ) {
             case TestState.ExecutingValidations:
                 performance.mark( 'sourceDataTestsEnd' );
                 let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
@@ -719,8 +726,8 @@ const connectWebSocket = () => {
  * string.
  * @param {string} txt - The text to set.
  */
-const setTestRunnerBtnLblTxt = (txt) => {
-    document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
+const setTestRunnerBtnLblTxt = ( txt ) => {
+    document.querySelector( '#startTestRunnerBtnLbl' ).textContent = txt;
 }
 
 /**
@@ -730,90 +737,90 @@ const setTestRunnerBtnLblTxt = (txt) => {
  * @returns {Promise<void>}
  */
 const fetchMetadataAndTests = () => {
-    Promise.all([
+    Promise.all( [
         fetch( ENDPOINTS.CALENDARS, {
             method: "GET",
             //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
-        }),
+        } ),
         fetch( ENDPOINTS.TESTS, {
             method: "GET",
             //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
-        }),
+        } ),
         fetch( ENDPOINTS.MISSALS, {
             method: "GET",
             //mode: "no-cors",
             headers: {
                 Accept: "application/json"
             }
-        })
-    ])
-      .then((responses) => {
-        return Promise.all(responses.map((response) => {
-            if(response.ok) { return response.json(); }
-            else { throw new Error(`response.status = ${response.status}, response.statusText = ${response.statusText}`); }
-        }));
-      })
-      .then( dataArr => {
-        dataArr.forEach(data => {
-            console.log(data);
-            if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
-                MetaData = data.litcal_metadata;
-                const { national_calendars_keys, diocesan_calendars, diocesan_calendars_keys } = MetaData;
-                for ( const calendar of diocesan_calendars_keys ) {
-                    DiocesanCalendarTemplates.push( testTemplate( calendar ) );
-                }
-                diocesan_calendars.forEach(diocesanCalendar => {
-                    if ( CalendarNations.indexOf( diocesanCalendar.nation ) === -1 ) {
-                        CalendarNations.push( diocesanCalendar.nation );
-                        selectOptions[ diocesanCalendar.nation ] = [];
+        } )
+    ] )
+        .then( ( responses ) => {
+            return Promise.all( responses.map( ( response ) => {
+                if ( response.ok ) { return response.json(); }
+                else { throw new Error( `response.status = ${response.status}, response.statusText = ${response.statusText}` ); }
+            } ) );
+        } )
+        .then( dataArr => {
+            dataArr.forEach( data => {
+                console.log( data );
+                if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
+                    MetaData = data.litcal_metadata;
+                    const { national_calendars_keys, diocesan_calendars, diocesan_calendars_keys } = MetaData;
+                    for ( const calendar of diocesan_calendars_keys ) {
+                        DiocesanCalendarTemplates.push( testTemplate( calendar ) );
                     }
-                    selectOptions[ diocesanCalendar.nation ].push(
-                        `<option data-calendartype="diocesancalendar" data-nationalcalendar="${diocesanCalendar.nation}" value="${diocesanCalendar.calendar_id}">${diocesanCalendar.diocese}</option>`
-                    );
-                })
-                nations = national_calendars_keys;
-                nations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) )
-                CalendarNations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) );
-                //console.log(`value of CalendarNations: ${CalendarNations}`);
-                if( UnitTests !== null && RomanMissals !== null ) {
-                    ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
-                    setupPage();
-                }
-            } else if ( data.hasOwnProperty( 'litcal_missals') ) {
-                RomanMissals = data.litcal_missals;
-                if( UnitTests !== null && MetaData !== null ) {
-                    ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that UnitTests and MetaData were set first, now RomanMissals is also ready' );
-                    setupPage();
-                }
-            } else {
-                if (data instanceof Array) {
-                    UnitTests = data;
-                } else if (data.hasOwnProperty('litcal_tests')) {
-                    UnitTests = data.litcal_tests;
+                    diocesan_calendars.forEach( diocesanCalendar => {
+                        if ( CalendarNations.indexOf( diocesanCalendar.nation ) === -1 ) {
+                            CalendarNations.push( diocesanCalendar.nation );
+                            selectOptions[ diocesanCalendar.nation ] = [];
+                        }
+                        selectOptions[ diocesanCalendar.nation ].push(
+                            `<option data-calendartype="diocesancalendar" data-nationalcalendar="${diocesanCalendar.nation}" value="${diocesanCalendar.calendar_id}">${diocesanCalendar.diocese}</option>`
+                        );
+                    } )
+                    nations = national_calendars_keys;
+                    nations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) )
+                    CalendarNations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) );
+                    //console.log(`value of CalendarNations: ${CalendarNations}`);
+                    if ( UnitTests !== null && RomanMissals !== null ) {
+                        ReadyToRunTests.AsyncDataReady = true;
+                        console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
+                        setupPage();
+                    }
+                } else if ( data.hasOwnProperty( 'litcal_missals' ) ) {
+                    RomanMissals = data.litcal_missals;
+                    if ( UnitTests !== null && MetaData !== null ) {
+                        ReadyToRunTests.AsyncDataReady = true;
+                        console.log( 'it seems that UnitTests and MetaData were set first, now RomanMissals is also ready' );
+                        setupPage();
+                    }
                 } else {
-                    let arrayStatus = data instanceof Array ? 'true' : 'false';
-                    let objStatus = data.hasOwnProperty('litcal_tests') ? 'true' : 'false';
-                    let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
-                    console.error(message);
+                    if ( data instanceof Array ) {
+                        UnitTests = data;
+                    } else if ( data.hasOwnProperty( 'litcal_tests' ) ) {
+                        UnitTests = data.litcal_tests;
+                    } else {
+                        let arrayStatus = data instanceof Array ? 'true' : 'false';
+                        let objStatus = data.hasOwnProperty( 'litcal_tests' ) ? 'true' : 'false';
+                        let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
+                        console.error( message );
+                    }
+                    if ( MetaData !== null && RomanMissals !== null ) {
+                        ReadyToRunTests.AsyncDataReady = true;
+                        console.log( 'it seems that Metadata and RomanMissals were set first, now UnitTests is also ready' );
+                        setupPage();
+                    }
                 }
-                if( MetaData !== null && RomanMissals !== null ) {
-                    ReadyToRunTests.AsyncDataReady = true;
-                    console.log( 'it seems that Metadata and RomanMissals were set first, now UnitTests is also ready' );
-                    setupPage();
-                }
-            }
-        });
-    }).catch((error) => {
-        console.error('Error fetching metadata and/or roman missals and/or tests data:', error);
-    });
+            } );
+        } ).catch( ( error ) => {
+            console.error( 'Error fetching metadata and/or roman missals and/or tests data:', error );
+        } );
 }
 
 /**
@@ -821,20 +828,20 @@ const fetchMetadataAndTests = () => {
  * @param {Object} obj - The unit test object with its assertions.
  * @returns {undefined}
  */
-const appendAccordionItem = (obj) => {
+const appendAccordionItem = ( obj ) => {
 
     let unitTestStr = '';
     let idy = 0;
-    obj.assertions.forEach(assertion => {
+    obj.assertions.forEach( assertion => {
         let dateStr = '';
-        if( assertion.hasOwnProperty('expectedValue') && null !== assertion.expectedValue ) {
-            dateStr = new Intl.DateTimeFormat(locale, IntlDTOptions).format( assertion.expectedValue * 1000 );
+        if ( assertion.hasOwnProperty( 'expectedValue' ) && null !== assertion.expectedValue ) {
+            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( assertion.expectedValue * 1000 );
         }
-        else if ( assertion.hasOwnProperty('expected_value') && null !== assertion.expected_value ) {
-            dateStr = new Intl.DateTimeFormat(locale, IntlDTOptions).format( assertion.expected_value * 1000 );
+        else if ( assertion.hasOwnProperty( 'expected_value' ) && null !== assertion.expected_value ) {
+            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( assertion.expected_value * 1000 );
         }
         unitTestStr += `
-            <div class="col-1 ${idy===0 || idy % 11 === 0 ? 'offset-1' : ''}">
+            <div class="col-1 ${idy === 0 || idy % 11 === 0 ? 'offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
                 <div class="card text-white bg-info rounded-0 ${obj.name} year-${assertion.year} test-valid">
@@ -845,13 +852,13 @@ const appendAccordionItem = (obj) => {
             </div>
         `;
         ++idy;
-    });
+    } );
 
-    $('#specificUnitTestsAccordion').append(`
+    $( '#specificUnitTestsAccordion' ).append( `
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${obj.name}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${obj.name}" aria-expanded="false" aria-controls="specificUnitTest-${obj.name}">
-                    <div class="col-4">${obj.name.length>50 ? '<small>': ''}<i class="fas fa-flask-vial fa-fw me-2"></i>${obj.name}<i class="fas fa-circle-info ms-2" title="${obj.description}"></i>${obj.name.length>50 ? '</small>': ''}</div>
+                    <div class="col-4">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2"></i>${obj.name}<i class="fas fa-circle-info ms-2" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
                     <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${obj.name}TestsCount" class="successfulCount">0</span></div>
                     <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${obj.name}TestsCount" class="failedCount">0</span></div>
                     <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${obj.name}TestsCount"></span> tests: <span id="total${obj.name}TestsTime">0 seconds, 0ms</span></div>
@@ -862,8 +869,8 @@ const appendAccordionItem = (obj) => {
             </div>
         </div>
     `);
-    let specificUnitTestTotalCount = $(`#specificUnitTest-${obj.name}`).find('.test-valid').length;
-    $(`#total${obj.name}TestsCount`).text(specificUnitTestTotalCount);
+    let specificUnitTestTotalCount = $( `#specificUnitTest-${obj.name}` ).find( '.test-valid' ).length;
+    $( `#total${obj.name}TestsCount` ).text( specificUnitTestTotalCount );
 }
 
 /**
@@ -876,41 +883,41 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
     let shouldReturn = false;
     // TODO: the following two variables are needed to handle the switch to the /tests schema
     //      When the older schema is deprecated we can clean up and simplify this code
-    let appliesToProp = unitTest.hasOwnProperty('appliesTo') ? 'appliesTo' : 'applies_to';
+    let appliesToProp = unitTest.hasOwnProperty( 'appliesTo' ) ? 'appliesTo' : 'applies_to';
     let searchProp = appliesToOrFilter === 'appliesTo' ? appliesToProp : appliesToOrFilter;
-    let prop = Object.keys( unitTest[searchProp] )[0];
-    switch( prop ) {
+    let prop = Object.keys( unitTest[ searchProp ] )[ 0 ];
+    switch ( prop ) {
         case 'national_calendar':
-            if( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = (currentNationalCalendar !== unitTest[appliesToProp].national_calendar);
+            if ( appliesToOrFilter === 'appliesTo' ) {
+                shouldReturn = ( currentNationalCalendar !== unitTest[ appliesToProp ].national_calendar );
             } else {
-                shouldReturn = (currentNationalCalendar === unitTest[appliesToProp].national_calendar);
+                shouldReturn = ( currentNationalCalendar === unitTest[ appliesToProp ].national_calendar );
             }
             break;
         case 'national_calendars':
-            if( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = (false === unitTest[appliesToProp].national_calendars.includes( currentNationalCalendar ));
+            if ( appliesToOrFilter === 'appliesTo' ) {
+                shouldReturn = ( false === unitTest[ appliesToProp ].national_calendars.includes( currentNationalCalendar ) );
             } else {
-                shouldReturn = ( unitTest[appliesToProp].national_calendars.includes( currentNationalCalendar ) );
+                shouldReturn = ( unitTest[ appliesToProp ].national_calendars.includes( currentNationalCalendar ) );
             }
-        break;
+            break;
         case 'diocesan_calendar':
-            if( currentCalendarCategory === 'diocesancalendar' ) {
-                if( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( currentSelectedCalendar !== unitTest[appliesToProp].diocesan_calendar );
+            if ( currentCalendarCategory === 'diocesancalendar' ) {
+                if ( appliesToOrFilter === 'appliesTo' ) {
+                    shouldReturn = ( currentSelectedCalendar !== unitTest[ appliesToProp ].diocesan_calendar );
                 } else {
-                    shouldReturn = ( currentSelectedCalendar === unitTest[appliesToProp].diocesan_calendar );
+                    shouldReturn = ( currentSelectedCalendar === unitTest[ appliesToProp ].diocesan_calendar );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
             }
             break;
         case 'diocesan_calendars':
-            if( currentCalendarCategory === 'diocesancalendar' ) {
-                if( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( false === unitTest[appliesToProp].diocesan_calendars.includes( currentSelectedCalendar ) );
+            if ( currentCalendarCategory === 'diocesancalendar' ) {
+                if ( appliesToOrFilter === 'appliesTo' ) {
+                    shouldReturn = ( false === unitTest[ appliesToProp ].diocesan_calendars.includes( currentSelectedCalendar ) );
                 } else {
-                    shouldReturn = ( unitTest[appliesToProp].diocesan_calendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( unitTest[ appliesToProp ].diocesan_calendars.includes( currentSelectedCalendar ) );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
@@ -930,76 +937,76 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
  * @return {void}
  */
 const setupPage = () => {
-    $( document ).ready(() => {
+    $( document ).ready( () => {
         // store the original value of the #startTestRunnerBtnLbl for later use
         // but only if it hasn't been set yet (only the first time we do a page setup)
-        if(startTestRunnerBtnLbl === '') {
-            startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        if ( startTestRunnerBtnLbl === '' ) {
+            startTestRunnerBtnLbl = document.querySelector( '#startTestRunnerBtnLbl' ).textContent;
         }
 
-        if( $('#APICalendarSelect').children().length === 1 ) {
+        if ( $( '#APICalendarSelect' ).children().length === 1 ) {
             nations.forEach( item => {
                 if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
-                    $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of(item)}</option>` );
+                    $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>` );
                 }
             } );
             CalendarNations.forEach( item => {
                 console.log( `retrieving localized data for ${item}, for display purposes...` );
-                $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of(item)}</option>` );
-                let $optGroup = $( `<optgroup label="${countryNames.of(item)}">` );
+                $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>` );
+                let $optGroup = $( `<optgroup label="${countryNames.of( item )}">` );
                 $( '#APICalendarSelect' ).append( $optGroup );
                 selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
             } );
         }
 
-        if( currentSelectedCalendar === 'VA' ) {
-            currentSourceDataChecks = [...sourceDataChecks];
+        if ( currentSelectedCalendar === 'VA' ) {
+            currentSourceDataChecks = [ ...sourceDataChecks ];
         } else {
             const nation = currentCalendarCategory === 'nationalcalendar'
                 ? currentSelectedCalendar
-                : MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).nation;
-            console.log('sourceDataChecks:');
-            console.log(sourceDataChecks);
-            currentSourceDataChecks = [...sourceDataChecks];
+                : MetaData.diocesan_calendars.find( diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar ).nation;
+            console.log( 'sourceDataChecks:' );
+            console.log( sourceDataChecks );
+            currentSourceDataChecks = [ ...sourceDataChecks ];
 
-            const nationalCalendarData = MetaData.national_calendars.find(nationalCalendar => nationalCalendar.calendar_id === nation);
-            currentSourceDataChecks.push({
+            const nationalCalendarData = MetaData.national_calendars.find( nationalCalendar => nationalCalendar.calendar_id === nation );
+            currentSourceDataChecks.push( {
                 "validate": `wider-region-${nationalCalendarData.wider_region}`,
                 "sourceFile": nationalCalendarData.wider_region,
                 "category": "sourceDataCheck"
-            });
-            currentSourceDataChecks.push({
+            } );
+            currentSourceDataChecks.push( {
                 "validate": `national-calendar-${nation}`,
                 "sourceFile": nation,
                 "category": "sourceDataCheck"
-            });
+            } );
 
-            nationalCalendarData.missals.forEach((missal) => {
-                console.log('retrieving Missal definition for missal: ' + missal);
+            nationalCalendarData.missals.forEach( ( missal ) => {
+                console.log( 'retrieving Missal definition for missal: ' + missal );
                 let sourceFile = false;
-                let missalDef = Object.values( RomanMissals ).find(el => el.missal_id === missal);
-                if (missalDef !== undefined && missalDef.hasOwnProperty('data_path')) {
+                let missalDef = Object.values( RomanMissals ).find( el => el.missal_id === missal );
+                if ( missalDef !== undefined && missalDef.hasOwnProperty( 'data_path' ) ) {
                     sourceFile = missalDef.data_path;
-                    console.log('found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile);
+                    console.log( 'found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile );
                 } else {
-                    console.warn('could not find Missal definition for missal: ' + missal);
+                    console.warn( 'could not find Missal definition for missal: ' + missal );
                 }
-                if( sourceFile !== false ) {
-                    currentSourceDataChecks.push({
+                if ( sourceFile !== false ) {
+                    currentSourceDataChecks.push( {
                         "validate": missal,
                         "sourceFile": sourceFile,
                         "category": "propriumdesanctis"
-                    });
+                    } );
                 }
-            });
+            } );
 
-            if( currentCalendarCategory === 'diocesancalendar' ) {
+            if ( currentCalendarCategory === 'diocesancalendar' ) {
                 //let diocese = MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).diocese;
-                currentSourceDataChecks.push({
+                currentSourceDataChecks.push( {
                     "validate": `diocesan-calendar-${currentSelectedCalendar}`,
                     "sourceFile": currentSelectedCalendar,
                     "category": "sourceDataCheck"
-                });
+                } );
             }
         }
 
@@ -1008,7 +1015,7 @@ const setupPage = () => {
             $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item, idx ) );
         } );
 
-        if( $('.calendardata-tests').children().length === 0 ) {
+        if ( $( '.calendardata-tests' ).children().length === 0 ) {
             $( '.yearMax' ).text( twentyFiveYearsFromNow );
             let idx;
             for ( let i = Years.length; i > 0; i-- ) {
@@ -1018,63 +1025,63 @@ const setupPage = () => {
                 $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
             }
         } else {
-            document.querySelectorAll('.error-tooltip').forEach(el => el.remove());
+            document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
         }
 
-        $('#specificUnitTestsAccordion').empty();
+        $( '#specificUnitTestsAccordion' ).empty();
         SpecificUnitTestCategories = [];
         UnitTests.forEach( unitTest => {
             //console.log( unitTest );
-            if( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
-                if( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
+            if ( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
+                if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                     return;
                 }
             }
-            else if( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1  ) {
-                if( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
+            else if ( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1 ) {
+                if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                     return;
                 }
             }
-            if( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
-                if( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
+            if ( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
+                if ( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
                     return;
                 }
             }
 
-            SpecificUnitTestCategories.push({
+            SpecificUnitTestCategories.push( {
                 "action": "executeUnitTest",
                 "test": unitTest.name
-            });
-            SpecificUnitTestYears[unitTest.name] = unitTest.assertions.reduce((prev,cur) => { prev.push(cur.year); return prev; },[]);
-            appendAccordionItem(unitTest);
-        });
+            } );
+            SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
+            appendAccordionItem( unitTest );
+        } );
 
-        $( '.currentSelectedCalendar' ).text( truncate(currentSelectedCalendar,20) ).attr('title', currentSelectedCalendar);
-        let totalTestsCount = $('.file-exists,.json-valid,.schema-valid,.test-valid').length;
-        $('#total-tests-count').text(totalTestsCount);
-        let totalSourceDataTestsCount = $('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
+        $( '.currentSelectedCalendar' ).text( truncate( currentSelectedCalendar, 20 ) ).attr( 'title', currentSelectedCalendar );
+        let totalTestsCount = $( '.file-exists,.json-valid,.schema-valid,.test-valid' ).length;
+        $( '#total-tests-count' ).text( totalTestsCount );
+        let totalSourceDataTestsCount = $( '.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid' ).length;
         let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
         let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
-        $( '#totalSourceDataTestsCount' ).text(totalSourceDataTestsCount);
-        $( '#totalCalendarDataTestsCount' ).text(totalCalendarDataTestsCount);
-        $( '#totalUnitTestsCount' ).text(totalUnitTestsCount);
+        $( '#totalSourceDataTestsCount' ).text( totalSourceDataTestsCount );
+        $( '#totalCalendarDataTestsCount' ).text( totalCalendarDataTestsCount );
+        $( '#totalUnitTestsCount' ).text( totalUnitTestsCount );
         successfulSourceDataTests = 0;
         successfulCalendarDataTests = 0;
         successfulUnitTests = 0;
         failedSourceDataTests = 0;
         failedCalendarDataTests = 0;
         failedUnitTests = 0;
-        $('.successfulCount,.failedCount').text(0);
+        $( '.successfulCount,.failedCount' ).text( 0 );
         $testCells = $( '.calendardata-tests' );
         $testCells.find( '.bg-success,.bg-danger' ).removeClass( 'bg-success bg-danger' ).addClass( 'bg-info' );
         $testCells.find( '.fa-circle-check,.fa-circle-xmark' ).removeClass( 'fa-circle-check fa-circle-xmark' ).addClass( 'fa-circle-question' );
         ReadyToRunTests.PageReady = true;
         ReadyToRunTests.tryEnableBtn();
-        $( '.page-loader' ).fadeOut('slow');
-    });
+        $( '.page-loader' ).fadeOut( 'slow' );
+    } );
 }
 
-$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
+$( document ).on( 'change', '#apiVersionsDropdownItems', setEndpoints );
 
 $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     $( '.page-loader' ).show();
@@ -1082,7 +1089,7 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     const oldSelectedCalendar = currentSelectedCalendar;
     currentSelectedCalendar = ev.currentTarget.value;
     currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
-    if( currentCalendarCategory === 'diocesancalendar' ) {
+    if ( currentCalendarCategory === 'diocesancalendar' ) {
         currentNationalCalendar = $( '#APICalendarSelect :selected' ).data( 'nationalcalendar' );
     } else {
         currentNationalCalendar = currentSelectedCalendar;
@@ -1091,7 +1098,7 @@ $( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
     $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
     setupPage();
     ReadyToRunTests.tryEnableBtn();
-});
+} );
 
 $( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
     $( '.page-loader' ).show();
@@ -1099,17 +1106,17 @@ $( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
     const oldResponseType = currentResponseType;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
-    $( `.calendar-${currentSelectedCalendar}.json-valid .card-text` ).each((idx,el) => {
-        $(el).html( $(el).html().replace(`${oldResponseType} valid`,`${currentResponseType} valid`) )
-    });
+    $( `.calendar-${currentSelectedCalendar}.json-valid .card-text` ).each( ( idx, el ) => {
+        $( el ).html( $( el ).html().replace( `${oldResponseType} valid`, `${currentResponseType} valid` ) )
+    } );
     //$( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
     setupPage();
     ReadyToRunTests.tryEnableBtn();
 
-});
+} );
 
 $( document ).on( 'click', '#startTestRunnerBtn', () => {
-    if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
+    if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
         index = 0;
         calendarIndex = 0;
         yearIndex = 0;
@@ -1123,61 +1130,77 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
         } else {
             performance.mark( 'litcalTestRunnerStart' );
             $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
-            setTestRunnerBtnLblTxt('Tests Running...');
+            setTestRunnerBtnLblTxt( 'Tests Running...' );
             console.log( `currentState = ${currentState}` );
             runTests();
         }
     } else {
         //TODO: perhaps we could allow to interrupt running tests?
-        console.warn('Please do not try to start a test run while tests are running!');
+        console.warn( 'Please do not try to start a test run while tests are running!' );
     }
-});
+} );
 
 // Store tooltips so we can hide them later
 const tooltipMap = new Map();
 
-// Show tooltip on click
-document.body.addEventListener('click', function (event) {
-  const target = event.target.closest('[data-bs-toggle="tooltip"]');
-  if (!target) {
-    // Clicked elsewhere: hide all tooltips
-    tooltipMap.forEach(t => t.hide());
-    tooltipMap.clear();
-    return;
-  }
+// Show tooltip on click, hide on click outside, or copy to clipboard
+document.body.addEventListener( 'click', function ( event ) {
+    if ( event.target.closest( '.btn-copy' ) !== null ) {
+        const tooltipElement = event.target.closest( '.tooltip' );
+        const content = tooltipElement.querySelector( '.tooltip-content' ).outerHTML;
+        const clipboardItem = new ClipboardItem({
+            'text/html': new Blob([content], { type: 'text/html' }),
+            'text/plain': new Blob([content], { type: 'text/plain' })
+        });
 
-  event.stopPropagation(); // Prevent document click from immediately hiding it
+        // Copy content to the clipboard
+        navigator.clipboard.write( [clipboardItem] ).then( () => {
+            console.info( 'Copied to clipboard!' );
+        } ).catch( err => {
+            console.error( 'Could not copy tooltip content: ', err );
+        } );
 
-  // If tooltip already exists, show it
-  let tooltip = tooltipMap.get(target);
-  if (!tooltip) {
-    tooltip = new bootstrap.Tooltip(target, {
-      trigger: 'manual',
-      html: true,
-      customClass: 'wide-tooltip'
-    });
-    tooltipMap.set(target, tooltip);
-  }
+        return;
+    }
 
-  tooltip.show();
-});
+    const target = event.target.closest( '[data-bs-toggle="tooltip"]' );
+    const tooltipEl = event.target.closest( '.wide-tooltip' );
+
+    // When a click occurs anywhere except on the trigger element or the tooltip itself, hide the tooltip
+    if ( !target && !tooltipEl ) {
+        tooltipMap.forEach( t => t.hide() );
+        tooltipMap.clear();
+        return;
+    }
+
+    event.stopPropagation(); // Prevent document click from immediately hiding it
+
+    // If tooltip already exists, show it
+    let tooltip = tooltipMap.get( target );
+    if ( !tooltip ) {
+        // Create tooltip content with a "Copy to Clipboard" button
+
+        tooltip = new bootstrap.Tooltip( target, {
+            trigger: 'manual',
+            html: true,
+            customClass: 'wide-tooltip',
+            sanitize: false
+        } );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        tooltipMap.set( target, tooltip );
+    }
+
+    tooltip.show();
+} );
 
 // Optional: Hide tooltip on ESC key
-document.addEventListener('keydown', function (event) {
-  if (event.key === 'Escape') {
-    tooltipMap.forEach(t => t.hide());
-    tooltipMap.clear();
-  }
-});
+document.addEventListener( 'keydown', function ( event ) {
+    if ( event.key === 'Escape' ) {
+        tooltipMap.forEach( t => t.hide() );
+        tooltipMap.clear();
+    }
+} );
 
-/*
-const tooltip = new bootstrap.Tooltip(document.body, {
-  selector: '[data-bs-toggle="tooltip"]',
-  html: true,
-  customClass: 'wide-tooltip',
-  trigger: 'hover focus'
-});
-*/
 setEndpoints();
 fetchMetadataAndTests();
 connectWebSocket();

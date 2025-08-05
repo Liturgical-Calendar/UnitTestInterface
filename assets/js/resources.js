@@ -350,7 +350,7 @@ const sourceTemplate = (sourceItem, idx) => `<div class="col-1 ${idx === 0 || id
  * HTMLEncode function
  * kudos to https://stackoverflow.com/a/784765/394921
  * @param {string} str
- * @returns
+ * @returns {string} The processed string.
  */
 const HTMLEncode = (str) => {
     // avoid a double encoding!
@@ -369,6 +369,26 @@ const HTMLEncode = (str) => {
     }
     return aRet.join('');
 }
+
+/**
+ * Replaces all URLs in a string with a link to the URL and escapes double quotes.
+ * @param {string} str - The string to process.
+ * @returns {string} The processed string.
+ */
+const escapeQuotesAndLinkifyUrls = (str) => {
+  return str.replace(
+    /(?<prefix>["'({\[])?(https?:\/\/[^\s"'<>(){}\[\]]+)(?<suffix>[)"'\]}.,;:]?)/g,
+    (match, prefix, url, suffix) => {
+      // If prefix and suffix form a known pair, keep them outside the link
+      const pairs = { '"': '"', "'": "'", '(': ')', '{': '}', '[': ']' };
+      if (prefix && pairs[prefix] === suffix) {
+        return `${prefix}<a href="${url}" target="_blank">${url}</a>${suffix}`;
+      } else {
+        return `<a href="${url}" target="_blank">${url}</a>${suffix || ''}`;
+      }
+    }
+  ).replaceAll('"', '&quot;');
+};
 
 /**
  * Establishes a websocket connection to the test server.
@@ -431,7 +451,7 @@ const connectWebSocket = () => {
         else if ( responseData.type === "error" ) {
             $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
             $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find('.card-text').append(`<span title="${HTMLEncode( responseData.text )}" role="button" class="float-right"><i class="fas fa-message-exclamation"></i></span>`);
+            $( responseData.classes ).find('.card-text').append(`<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
             $( '#failedCount' ).text( ++failedTests );
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
@@ -884,6 +904,66 @@ $( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
     ReadyToRunTests.tryEnableBtn();
 });
 
+// Store tooltips so we can hide them later
+const tooltipMap = new Map();
+
+// Show tooltip on click, hide on click outside, or copy to clipboard
+document.body.addEventListener( 'click', function ( event ) {
+    if ( event.target.closest( '.btn-copy' ) !== null ) {
+        const tooltipElement = event.target.closest( '.tooltip' );
+        const content = tooltipElement.querySelector( '.tooltip-content' ).outerHTML;
+        const clipboardItem = new ClipboardItem({
+            'text/html': new Blob([content], { type: 'text/html' }),
+            'text/plain': new Blob([content], { type: 'text/plain' })
+        });
+
+        // Copy content to the clipboard
+        navigator.clipboard.write( [clipboardItem] ).then( () => {
+            console.info( 'Copied to clipboard!' );
+        } ).catch( err => {
+            console.error( 'Could not copy tooltip content: ', err );
+        } );
+
+        return;
+    }
+
+    const target = event.target.closest( '[data-bs-toggle="tooltip"]' );
+    const tooltipEl = event.target.closest( '.wide-tooltip' );
+
+    // When a click occurs anywhere except on the trigger element or the tooltip itself, hide the tooltip
+    if ( !target && !tooltipEl ) {
+        tooltipMap.forEach( t => t.hide() );
+        tooltipMap.clear();
+        return;
+    }
+
+    event.stopPropagation(); // Prevent document click from immediately hiding it
+
+    // If tooltip already exists, show it
+    let tooltip = tooltipMap.get( target );
+    if ( !tooltip ) {
+        // Create tooltip content with a "Copy to Clipboard" button
+
+        tooltip = new bootstrap.Tooltip( target, {
+            trigger: 'manual',
+            html: true,
+            customClass: 'wide-tooltip',
+            sanitize: false
+        } );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        tooltipMap.set( target, tooltip );
+    }
+
+    tooltip.show();
+} );
+
+// Optional: Hide tooltip on ESC key
+document.addEventListener( 'keydown', function ( event ) {
+    if ( event.key === 'Escape' ) {
+        tooltipMap.forEach( t => t.hide() );
+        tooltipMap.clear();
+    }
+} );
 
 setEndpoints();
 loadAsyncData();
