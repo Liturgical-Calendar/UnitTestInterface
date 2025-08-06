@@ -1,6 +1,9 @@
 <?php
+
+// phpcs:disable PSR1.Files.SideEffects
 define('SIDEBAR', false);
 include_once('layout/head.php');
+
 ?>
     <!-- Toasts -->
     <div aria-live="polite" aria-atomic="true" class="position-relative" style="z-index:9999;">
@@ -8,7 +11,9 @@ include_once('layout/head.php');
             <div class="toast align-items-center text-white bg-danger border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-error">
                 <div class="d-flex">
                     <div class="toast-body">
-                        <i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("There was an error opening the connection to the server over the websocket. Perhaps the server is offline?"); ?>
+                        <i class="fas fa-circle-xmark fa-fw"></i> <?php
+                            echo _("There was an error opening the connection to the server over the websocket. Perhaps the server is offline?");
+                        ?>
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
@@ -60,13 +65,13 @@ include_once('layout/head.php');
                         echo _("Run Tests");
                     ?></span></button>
                 </div>
-                <div class="col-2 text-white bg-success p-2">
+                <div class="col-2 text-white bg-success px-1 py-2">
                     <i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCount" class="successfulCount">0</span>
                 </div>
-                <div class="col-2 text-white bg-danger p-2">
+                <div class="col-2 text-white bg-danger px-1 py-2">
                     <i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCount" class="failedCount">0</span>
                 </div>
-                <div class="col-3 text-white bg-dark p-2">
+                <div class="col-3 text-white bg-dark px-1 py-2">
                     <i class="fas fa-stopwatch fa-fw"></i> <?php
                         echo sprintf(_("Total time for %s tests:"), "<span id=\"total-tests-count\"></span>");
                     ?> <span id="total-time">0 seconds, 0ms</span>
