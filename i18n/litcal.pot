@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-02 09:38+0000\n"
+"POT-Creation-Date: 2025-08-06 20:38+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,69 +17,69 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: index.php:12
+#: index.php:15
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
 msgstr ""
 
-#: index.php:20
+#: index.php:24
 msgid "Websocket connected successfully!"
 msgstr ""
 
-#: index.php:28
+#: index.php:32
 msgid "Websocket connection closed."
 msgstr ""
 
-#: index.php:36
+#: index.php:40
 msgid "All tests complete!"
 msgstr ""
 
-#: index.php:50
+#: index.php:54
 msgid "Liturgical Calendar"
 msgstr ""
 
-#: index.php:52
+#: index.php:56
 msgid "General Roman"
 msgstr ""
 
-#: index.php:56
+#: index.php:60
 msgid "Response Format"
 msgstr ""
 
-#: index.php:68
+#: index.php:72
 msgid "Run Tests"
 msgstr ""
 
-#: index.php:73 index.php:94 index.php:130 index.php:164
+#: index.php:77 index.php:98 index.php:134 index.php:168
 msgid "Successful tests:"
 msgstr ""
 
-#: index.php:76 index.php:99 index.php:135 index.php:169
+#: index.php:80 index.php:103 index.php:139 index.php:173
 msgid "Failed tests:"
 msgstr ""
 
 #. translators: %s: <span id="totalUnitTestsCount"></span>
-#: index.php:80 index.php:104 index.php:141 index.php:176
+#: index.php:84 index.php:108 index.php:145 index.php:180
 #, php-format
 msgid "Total time for %s tests:"
 msgstr ""
 
-#: index.php:91
+#: index.php:95
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
 #. translators: %s: <span class="yearMax"></span>
-#: index.php:123
+#: index.php:127
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr ""
 
-#: index.php:159
+#: index.php:163
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:197
+#: index.php:201
 msgid "Loading..."
 msgstr ""
 
