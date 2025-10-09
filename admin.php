@@ -1,10 +1,13 @@
 <?php
-error_reporting(E_ALL);
-ini_set("display_errors", 1);
+
+ini_set('date.timezone', 'Europe/Vatican');
+
 require_once 'vendor/autoload.php';
 require_once 'includes/auth.php';
 
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
+use Dotenv\Dotenv;
 
 if (!authenticated()) {
     header("WWW-Authenticate: Basic realm=\"Please insert your credentials\"");
@@ -13,11 +16,63 @@ if (!authenticated()) {
     die();
 }
 
+/**
+ * Returns true if the server is running on localhost.
+ *
+ * @return bool true if the server is running on localhost, false otherwise
+ */
+function isLocalhost(): bool
+{
+    $serverAddress      = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '';
+    $remoteAddress      = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+    $serverName         = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '';
+    $localhostAddresses = ['127.0.0.1', '::1', '0.0.0.0'];
+    $localhostNames     = ['localhost', ...$localhostAddresses];
+    return in_array($serverAddress, $localhostAddresses) ||
+            in_array($remoteAddress, $localhostAddresses) ||
+            in_array($serverName, $localhostNames);
+}
+
+$dotenv = Dotenv::createMutable($projectFolder, ['.env', '.env.local', '.env.development', '.env.production'], false);
+$dotenv->safeLoad();
+
+$dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
+$dotenv->ifPresent(['API_PROTOCOL'])->allowedValues(['http', 'https']);
+$dotenv->ifPresent(['API_PORT'])->isInteger();
+$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'production']);
+
+$logsFolder = 'logs';
+if (!file_exists($logsFolder)) {
+    if (!mkdir($logsFolder, 0755, true)) {
+        throw new RuntimeException('Failed to create logs directory: ' . $logsFolder);
+    }
+}
+$logFile = $logsFolder . DIRECTORY_SEPARATOR . 'litcaltests-error.log';
+
+if (
+    isLocalhost() || ( isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development' )
+) {
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    ini_set('log_errors', 1);
+    ini_set('error_log', $logFile);
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    ini_set('log_errors', 1);
+    ini_set('error_log', $logFile);
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+}
+
+$schema = isset($_ENV['API_PROTOCOL']) ? $_ENV['API_PROTOCOL'] : (isLocalhost() ? 'http' : 'https');
+$host   = isset($_ENV['API_HOST']) ? $_ENV['API_HOST'] : (isLocalhost() ? 'localhost' : 'litcal.johnromanodorazio.com');
+$port   = isset($_ENV['API_PORT']) ? (int) $_ENV['API_PORT'] : (isLocalhost() ? 8000 : 443);
 $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
+$ch         = curl_init();
+$baseUrl    = isLocalhost() ? "$schema://$host:$port" : "$schema://$host/api/$apiVersion";
 
-$ch = curl_init();
-
-curl_setopt($ch, CURLOPT_URL, "https://litcal.johnromanodorazio.com/api/$apiVersion/tests");
+curl_setopt($ch, CURLOPT_URL, "$baseUrl/tests");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 if (curl_errno($ch)) {
@@ -26,11 +81,8 @@ if (curl_errno($ch)) {
     die($error_msg);
 }
 curl_close($ch);
-if ($apiVersion === 'dev' || $apiVersion === 'v4') {
-    $LitCalTests = json_decode($response)->litcal_tests;
-} else {
-    $LitCalTests = json_decode($response);
-}
+
+$LitCalTests = json_decode($response)->litcal_tests;
 
 include_once 'layout/head.php';
 include_once 'layout/sidebar.php';
@@ -57,16 +109,15 @@ include_once 'layout/sidebar.php';
                 <div class="row justify-content-center align-items-start">
                     <div class="form-group col col-md-3 border border-top-0 border-bottom-0 border-end-0 border-secondary">
                         <?php
-                            $options = ['locale' => $i18n->locale];
-                            $CalendarSelect = new CalendarSelect($options);
-                            echo $CalendarSelect->getSelect([
-                                                    'class'    => 'form-select',
-                                                    'id'       => 'APICalendarSelect',
-                                                    'options'  => 'all',
-                                                    'label'    => true,
-                                                    'labelStr' => _('Calendar to test')
-                                                ]);
-                            ?>
+                            $options = ['locale' => $i18n->locale, 'url' => $baseUrl];
+                            $CalendarSelect = new CalendarSelect($options)
+                                                    ->class('form-select')
+                                                    ->id('APICalendarSelect')
+                                                    ->label(true)
+                                                    ->labelText(_('Calendar to test'))
+                                                    ->setOptions(OptionsType::ALL);
+                            echo $CalendarSelect->getSelect();
+                        ?>
                     </div>
                     <div class="form-group col col-md-9">
                         <label><?php echo _("Test Type"); ?></label>
@@ -127,23 +178,21 @@ include_once 'layout/sidebar.php';
 </main>
 <!-- End of Main Content -->
 <?php
-if ($apiVersion === 'dev' || $apiVersion === 'v4') {
-    $eventsEndpoint = "https://litcal.johnromanodorazio.com/api/dev/events";
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $eventsEndpoint);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Accept-Language: " . $i18n->locale]);
-    $eventsRaw = curl_exec($ch);
-    if (curl_errno($ch)) {
-        die('Could not fetch data from ' . $eventsEndpoint);
-    }
-    [ "litcal_events" => $LitCalAllLitEvents ] = json_decode(
-        $eventsRaw,
-        true
-    );
-    if (JSON_ERROR_NONE !== json_last_error()) {
-        die('Could not parse JSON from ' . $eventsEndpoint . ' : ' . json_last_error_msg());
-    }
+$eventsEndpoint = "$baseUrl/events";
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $eventsEndpoint);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["Accept-Language: " . $i18n->locale]);
+$eventsRaw = curl_exec($ch);
+if (curl_errno($ch)) {
+    die('Could not fetch data from ' . $eventsEndpoint);
+}
+[ "litcal_events" => $LitCalAllLitEvents ] = json_decode(
+    $eventsRaw,
+    true
+);
+if (JSON_ERROR_NONE !== json_last_error()) {
+    die('Could not parse JSON from ' . $eventsEndpoint . ' : ' . json_last_error_msg());
 }
 include_once 'components/NewTestModal.php';
 ?>
@@ -181,8 +230,15 @@ include_once 'components/NewTestModal.php';
     <div id="responseMessage"></div>
 </div>
 <?php
-$testsIndex = json_encode($LitCalTests);
+$testsIndex    = json_encode($LitCalTests);
 $litcal_events = json_encode($LitCalAllLitEvents);
-echo "<script>const LitCalTests = Object.freeze($testsIndex); const LitcalEvents = Object.freeze($litcal_events);</script>";
+$javascript    = <<<SCRIPT
+    <script>
+        const LitCalTests = Object.freeze($testsIndex);
+        const LitcalEvents = Object.freeze($litcal_events);
+        const baseUrl = '$baseUrl';
+    </script>
+SCRIPT;
+echo $javascript;
 include_once 'layout/footer.php';
 ?>

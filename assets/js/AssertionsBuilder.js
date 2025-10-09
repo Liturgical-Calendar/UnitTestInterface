@@ -18,7 +18,7 @@ const TestType = Object.freeze({
  */
 const AssertType = Object.freeze({
     EventNotExists:             'eventNotExists',
-    EventTypeExact:             'eventExists AND hasExpectedTimestamp'
+    EventTypeExact:             'eventExists AND hasExpectedDate'
 });
 
 /**
@@ -98,9 +98,8 @@ class AssertionsBuilder {
             AssertionsBuilder.yearSince = test.year_since;
         }
         AssertionsBuilder.test = litcal_events.filter(el => el.event_key === test.event_key)[0] ?? null;
-        console.log( 'new instance of AssertionsBuilder, test = ');
-        console.log(AssertionsBuilder.test);
-        console.log(litcal_events);
+        console.log('new instance of AssertionsBuilder, test = ', AssertionsBuilder.test);
+        console.log('litcal_events = ', litcal_events);
     }
 
     /**
@@ -147,18 +146,17 @@ class AssertionsBuilder {
      * @returns {jQuery} the built html as a jquery object
      */
     buildHtml() {
-        console.log(`building html for AssertionsBuilder with test = ${AssertionsBuilder.test}`);
+        console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
         let assertionBuildStr = '';
         //console.log(this.assertions);
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
             //console.log(assertion);
-            const expectedDateStr = assertion.expected_value !== null ? DTFormat.format(assertion.expected_value * 1000) : '---';
+            const expectedDateStr = assertion.expected_value !== null ? assertion.expected_value : '---';
             const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
             let sundayCheck = '';
             if(AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
-                const eventDate = new Date(assertion.expected_value*1000);
-                //console.log( DTFormat.format(assertion.expected_value*1000) );
+                const eventDate = new Date(assertion.expected_value);
                 if( eventDate.getUTCDay() === 0 ) {
                     //console.log('this day is a Sunday!');
                     sundayCheck = 'bg-warning text-dark';

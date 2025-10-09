@@ -2,3 +2,6 @@ vendor/
 .env
 .env.*
 !.env.example
+logs/
+*.log
+credentials.php

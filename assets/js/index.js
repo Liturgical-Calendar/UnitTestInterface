@@ -93,18 +93,18 @@ const setEndpoints = ( ev ) => {
             ENDPOINTS.VERSION = document.querySelector( '#apiVersionsDropdownItems' ).value;
         }
         document.querySelector( '#admin_url' ).setAttribute( 'href', `/admin.php?apiversion=${ENDPOINTS.VERSION}` );
-        API_PATH = `/api/${ENDPOINTS.VERSION}`;
+        API_PATH = `/api/${ENDPOINTS.VERSION}/`;
     } else {
-        ENDPOINTS.VERSION = '';
-        API_PATH = '';
+        ENDPOINTS.VERSION = document.querySelector( '#apiVersionsDropdownItems' ).value;
+        API_PATH = '/';
     }
     const API_PORT_STR = [ 443, 80 ].includes( API_PORT ) ? '' : `:${API_PORT}`;
-    ENDPOINTS.CALENDARS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/calendars`;
-    ENDPOINTS.TESTS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/tests`;
-    ENDPOINTS.DECREES = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/decrees`;
-    ENDPOINTS.MISSALS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
-    console.info(
-        `APP_ENV: ${APP_ENV},
+    ENDPOINTS.CALENDARS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}calendars`;
+    ENDPOINTS.TESTS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}tests`;
+    ENDPOINTS.DECREES = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}decrees`;
+    ENDPOINTS.MISSALS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}missals`;
+    console.info(`
+        APP_ENV: ${APP_ENV},
         API_PATH: ${API_PATH},
         API_PROTOCOL: ${API_PROTOCOL},
         API_HOST: ${API_HOST},
@@ -763,7 +763,17 @@ const fetchMetadataAndTests = () => {
         .then( ( responses ) => {
             return Promise.all( responses.map( ( response ) => {
                 if ( response.ok ) { return response.json(); }
-                else { throw new Error( `response.status = ${response.status}, response.statusText = ${response.statusText}` ); }
+                else {
+                    if (response.headers.get('Content-Type') === 'application/problem+json') {
+                        return response.json().then(errorData => {
+                            console.error('Error:', errorData);
+                            // Handle the error data here
+                        });
+                    } else {
+                        console.error('Error:', response.status, response.statusText);
+                    }
+                    //throw new Error( `response.status = ${response.status}, response.statusText = ${response.statusText}`);
+                }
             } ) );
         } )
         .then( dataArr => {
@@ -835,10 +845,12 @@ const appendAccordionItem = ( obj ) => {
     obj.assertions.forEach( assertion => {
         let dateStr = '';
         if ( assertion.hasOwnProperty( 'expectedValue' ) && null !== assertion.expectedValue ) {
-            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( assertion.expectedValue * 1000 );
+            let date = new Date( assertion.expectedValue );
+            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( date );
         }
         else if ( assertion.hasOwnProperty( 'expected_value' ) && null !== assertion.expected_value ) {
-            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( assertion.expected_value * 1000 );
+            let date = new Date( assertion.expected_value );
+            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( date );
         }
         unitTestStr += `
             <div class="col-1 ${idy === 0 || idy % 11 === 0 ? 'offset-1' : ''}">

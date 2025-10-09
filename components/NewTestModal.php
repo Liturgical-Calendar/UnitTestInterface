@@ -18,9 +18,13 @@
                         <form class="row justify-content-left needs-validation" novalidate>
                             <div class="carousel-item active" data-item='0'>
                                 <div class="form-group">
-                                    <label for="existingLitEventName" class="fw-bold"><?php echo _("Choose the liturgical event for which you would like to create a test"); ?>:</label>
+                                    <label for="existingLitEventName" class="fw-bold"><?php
+                                        echo _("Choose the liturgical event for which you would like to create a test");
+                                    ?>:</label>
                                     <input list="existingLitEventsList" class="form-control existingLitEventName" id="existingLitEventName" required>
-                                    <div class="invalid-feedback"><?php echo _("This liturgical event does not seem to exist? Please choose from a value in the list."); ?></div>
+                                    <div class="invalid-feedback"><?php
+                                        echo _("This liturgical event does not seem to exist? Please choose from a value in the list.");
+                                    ?></div>
                                 </div>
                                 <div class="form-group mt-5">
                                     <label for="newUnitTestDescription"><?php echo _('Description') ?></label>
@@ -94,20 +98,20 @@
 
 <datalist id="existingLitEventsList">
 <?php
-foreach ($LitCalAllLitEvents as $key => $litEvent) {
+foreach ($LitCalAllLitEvents as $litEvent) {
     $dataMonth = '';
     $dataDay = '';
     $dataGrade = '';
-    if (isset($litEvent["MONTH"])) {
-        $dataMonth = " data-month=\"{$litEvent["MONTH"]}\"";
+    if (isset($litEvent["month"])) {
+        $dataMonth = " data-month=\"{$litEvent["month"]}\"";
     }
-    if (isset($litEvent["DAY"])) {
-        $dataDay = " data-day=\"{$litEvent["DAY"]}\"";
+    if (isset($litEvent["day"])) {
+        $dataDay = " data-day=\"{$litEvent["day"]}\"";
     }
-    if (isset($litEvent["GRADE"])) {
-        $dataGrade = " data-grade=\"{$litEvent["GRADE"]}\"";
+    if (isset($litEvent["grade"])) {
+        $dataGrade = " data-grade=\"{$litEvent["grade"]}\"";
     }
-    echo "<option value=\"{$key}\"{$dataMonth}{$dataDay}{$dataGrade}>{$litEvent["NAME"]} ({$litEvent["GRADE_LCL"]})</option>";
+    echo "<option value=\"{$litEvent["event_key"]}\"{$dataMonth}{$dataDay}{$dataGrade}>{$litEvent["name"]} ({$litEvent["grade_lcl"]})</option>";
 }
 ?>
 </datalist>

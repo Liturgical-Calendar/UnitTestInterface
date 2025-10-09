@@ -34,7 +34,7 @@
             }
         },
         {
-            "label": "php-server",
+            "label": "litcal-tests-webui",
             "type": "shell",
             "command": "php -S ${APP_HOST}:${APP_PORT}",
             "group": {

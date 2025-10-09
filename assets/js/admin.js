@@ -169,8 +169,9 @@ const sanitizeOnSetValue = {
                 }
                 break;
             case 'expected_value':
-                if( value !== null && (typeof value !== 'number' || value < -2851200 || value > 253402214400 || (Number(value) === value && value % 1 !== 0) ) ) {
-                    console.warn(`property ${prop} of this object must be of type integer and have a value between -2851200 and 253402214400`);
+                const dateRegex = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(\+|\-)(0[0-9]|1[0-2]):([0-5][0-9])$/;
+                if( value !== null && (typeof value !== 'string' || !dateRegex.test(value) || new Date(value) < new Date('1969-11-29T00:00:00+00:00') || new Date(value) > new Date('9999-12-31T00:00:00+00:00') ) ) {
+                    console.warn(`property ${prop} of this object must be an RFC 3339 date-time string and have a value between '1969-11-29T00:00:00+00:00' and '9999-12-31T00:00:00+00:00'`);
                     return;
                 }
                 break;
@@ -226,14 +227,11 @@ const sanitizeOnSetValue = {
     }
 };
 
-/**
- * LOAD METADATA FOR EXISTING CALENDARS
- */
 const ENDPOINTS = {
     VERSION: "dev",
-    METADATA: "",
-    TESTSINDEX: "",
-    EVENTS: ""
+    METADATA: `${baseUrl}/calendars`,
+    TESTSINDEX: `${baseUrl}/tests`,
+    EVENTS: `${baseUrl}/events`
 }
 
 /**
@@ -249,23 +247,15 @@ const setEndpoints = (ev = null) => {
     } else {
         ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
     }
-    switch(ENDPOINTS.VERSION) {
-        case 'dev':
-        case 'v4':
-            ENDPOINTS.METADATA   = `https://litcal.johnromanodorazio.com/api/dev/calendars`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/dev/tests`;
-            ENDPOINTS.EVENTS     = `https://litcal.johnromanodorazio.com/api/dev/events`;
-        break;
-        case 'v3':
-            ENDPOINTS.METADATA   = `https://litcal.johnromanodorazio.com/api/v3/LitCalMetadata.php`;
-            ENDPOINTS.TESTSINDEX = `https://litcal.johnromanodorazio.com/api/v3/LitCalTestsIndex.php`;
-            ENDPOINTS.EVENTS     = `https://litcal.johnromanodorazio.com/api/v4/LitCalAllLitEvents.php/`;
-        break;
-    }
 }
 
+document.querySelector('#apiVersionsDropdownItems').value = 'dev';
+document.querySelector('#apiVersionsDropdownItems').disabled = true;
 setEndpoints();
 
+/**
+ * LOAD METADATA FOR EXISTING CALENDARS
+ */
 let CalendarNations = null;
 let DiocesanCalendars = null;
 
@@ -333,7 +323,7 @@ class Assertion {
      *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
      *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
      * @param {number} year - The year of the assertion.
-     * @param {number} expected_value - The expected value of the assertion.
+     * @param {string|null} expected_value - The expected value of the assertion.
      * @param {'EventTypeExact'|'EventNotExists'} assert - The assert type of the assertion.
      * @param {string} assertion - The assertion.
      * @param {string} [comment] - The comment associated with the assertion.
@@ -434,7 +424,7 @@ const serializeUnitTest = () => {
     let assertionDivs = document.querySelectorAll('#assertionsContainer > div');
     assertionDivs.forEach(div => {
         const year = Number(div.querySelector('p.testYear').textContent);
-        const expected_value = div.querySelector('div > span.expectedValue').textContent === '---' ? null : Number( div.querySelector('.expectedValue').getAttribute('data-value') );
+        const expected_value = div.querySelector('div > span.expectedValue').textContent === '---' ? null :div.querySelector('.expectedValue').getAttribute('data-value');
         const assert = div.querySelector('.assert').textContent;
         const assertion = div.querySelector('[contenteditable]').textContent;
         const hasComment = div.querySelector('.comment > svg').getAttribute('data-icon') === 'comment-dots';
@@ -451,6 +441,9 @@ const serializeUnitTest = () => {
 const API = {
     get path() {
         if( this.calendartype === 'nationalcalendar' ) {
+            if (this.calendar_id === 'VA') {
+                return `${ENDPOINTS.EVENTS}`;
+            }
             return `${ENDPOINTS.EVENTS}/nation/${this.calendar_id}`;
         }
         if( this.calendartype === 'diocesancalendar' ) {
@@ -491,8 +484,13 @@ const rebuildLitEventsOptions = async (element) => {
     const calendarType = selectedOption.dataset.calendartype;
     API.calendartype = calendarType;
     API.calendar_id = element.value;
-    console.log(`fetching data from API.path = ${API.path}`);
-    const data_1 = await fetch( API.path );
+    // TODO: we might want to cache the results for each request to avoid multiple requests
+    console.log(`fetching data from API.path = ${API.path}, locale = ${locale}`);
+    let options = {};
+    if ( element.value === 'VA' ) {
+        options.headers = { 'Accept-Language': locale };
+    }
+    const data_1 = await fetch( API.path, options );
     const json = await data_1.json();
     litcal_events = Object.freeze(json.litcal_events);
     litcal_events_keys = litcal_events.map( event => event.event_key );
@@ -531,13 +529,13 @@ $(document).on('click', '.sidebarToggle', event => {
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
 
-$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
+//$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
 
 $(document).on('change', '#litCalTestsSelect', async (ev) => {
     //console.log(ev.currentTarget.value);
     if( ev.currentTarget.value !== '' ) {
         const currentTest = LitCalTests.filter(el => el.name === ev.currentTarget.value)[0];
-        console.log(currentTest);
+        console.log('currentTest', currentTest);
         currentTest.assertions = currentTest.assertions.map(el => new Assertion(el));
         proxiedTest = new Proxy(currentTest, sanitizeOnSetValue);
 
@@ -562,7 +560,16 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
             console.log(litcal_events_keys.sort());
             AssertionsBuilder.test = litcal_events.filter(el => el.event_key === proxiedTest.event_key)[0] ?? null;
             AssertionsBuilder.appliesTo = proxiedTest.applies_to[calendarType];
+        } else {
+            const currentCalendarValue = document.querySelector('#APICalendarSelect').value;
+            if ( currentCalendarValue !== 'VA' ) {
+                document.querySelector('#APICalendarSelect').value = 'VA';
+                await rebuildLitEventsOptions(document.querySelector('#APICalendarSelect'));
+            }
+            //document.querySelector('#APICalendarSelect').value = 'VA';
+            //await rebuildLitEventsOptions(document.querySelector('#APICalendarSelect'));
         }
+
         $( '#assertionsContainer' ).empty();
         const assertionsBuilder = new AssertionsBuilder( proxiedTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
@@ -619,17 +626,17 @@ $(document).on('click', '.toggleAssert', ev => {
 });
 
 $(document).on('change', '.expectedValue > [type=date]', ev => {
-    const timestamp = Date.parse(ev.currentTarget.value+'T00:00:00Z');
+    const dateTimeString = ev.currentTarget.value + 'T00:00:00+00:00';
     const $grandpa = $(ev.currentTarget).closest('div');
     const $greatGrandpa = $grandpa.parent().closest('div');
     const assertionIndex = $greatGrandpa.prevAll(':has(.testYear)').length;
-    proxiedTest.assertions[assertionIndex].expected_value = timestamp / 1000;
+    proxiedTest.assertions[assertionIndex].expected_value = dateTimeString;
     $grandpa[0].classList.remove('bg-warning','text-dark');
     $grandpa[0].classList.add('bg-success','text-white');
     console.log(ev.currentTarget.parentNode.dataset);
     ev.currentTarget.parentNode.dataset.value = timestamp / 1000;
     console.log(ev.currentTarget.parentNode.dataset);
-    ev.currentTarget.parentNode.textContent = DTFormat.format(timestamp);
+    ev.currentTarget.parentNode.textContent = dateTimeString;
 });
 
 $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
@@ -755,10 +762,13 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     let titleAttr = '';
     let lightClass = '';
     if( 'edittest' in ev.relatedTarget.dataset ) {
+        console.log('we are editing an existing test: description and event_key will be pre-filled');
+        console.log('description: ', proxiedTest.description);
+        console.log('event_key: ', proxiedTest.event_key);
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
         document.querySelector('#existingLitEventName').value = proxiedTest.event_key;
         $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + proxiedTest.event_key + '"]');
-        console.log($existingOption);
+        console.log('existingOption', $existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
         minYear = Math.min(...years);
         maxYear = Math.max(...years);
@@ -1003,7 +1013,7 @@ $(document).on('click', '#btnCreateTest', () => {
                 assertion = proxiedTest.description.replace('should fall on', 'should not exist on');
             } else {
                 baseDate.setUTCFullYear(year);
-                assert = 'eventExists AND hasExpectedTimestamp';
+                assert = 'eventExists AND hasExpectedDate';
                 dateX = Date.parse(`${baseDate.toISOString()}`) / 1000;
                 assertion = proxiedTest.description;
             }
