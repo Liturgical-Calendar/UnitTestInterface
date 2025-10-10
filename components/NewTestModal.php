@@ -34,19 +34,42 @@
                             </div>
                             <div class="carousel-item" data-item='1'>
                                 <div class="form-group">
-                                    <label class="fw-bold" for="yearSinceUntilShadow"><?php echo _("Years to test"); ?></label><br>
+                                    <label class="fw-bold" for="yearSinceUntilShadow"><?php echo _('Years to test'); ?></label><br>
                                     <div>
                                         <small>
                                             <p class="text-muted lh-sm">
-                                                <small><?php echo _("First choose the maximum range of years that will belong to the Unit Test."); ?></small>
-                                                <small class="exactCorrespondenceSince d-none"> &#x28;<i><?php echo _("This range should include a few years before the year in which the liturgical event should start to exist."); ?></i>&#x29; </small>
-                                                <small class="exactCorrespondenceUntil d-none"> &#x28;<i><?php echo _("This range should include a few years after the year in which the liturgical event should cease to exist."); ?></i>&#x29; </small>
-                                                <small><?php echo _("You can then remove any years that won't be needed."); ?></small>
-                                                <small class="exactCorrespondenceSince d-none"> <?php echo _("Finally, set the year from which the liturgical event should exist by clicking on the hammer icon inside one of the years in the range."); ?> </small>
-                                                <small class="exactCorrespondenceUntil d-none"> <?php echo _("Finally, set the year until which the liturgical event should exist by clicking on the hammer icon inside one of the years in the range."); ?> </small>
-                                                <small class="variableCorrespondence d-none"> <?php echo _("Finally, set the years in which the liturgical event shouldn't exist by clicking on the hammer icon inside the years in the range."); ?></small>
+                                                <small><?php echo _('First choose the maximum range of years that will belong to the Unit Test.'); ?></small>
+                                                <small class="exactCorrespondenceSince d-none"> &#x28;<i><?php
+                                                    echo _('This range should include a few years before the year in which the liturgical event should start to exist.');
+                                                ?></i>&#x29; </small>
+                                                <small class="exactCorrespondenceUntil d-none"> &#x28;<i><?php
+                                                    echo _('This range should include a few years after the year in which the liturgical event should cease to exist.');
+                                                ?></i>&#x29; </small>
+                                                <small><?php
+                                                    echo _('You can then remove any years that won\'t be needed.');
+                                                ?></small>
+                                                <small class="exactCorrespondenceSince d-none"> <?php
+                                                    echo _(
+                                                        'Finally, set the year from which the liturgical event should exist '
+                                                        . 'by clicking on the hammer icon inside one of the years in the range.'
+                                                    );
+                                                    ?> </small>
+                                                <small class="exactCorrespondenceUntil d-none"> <?php
+                                                    echo _(
+                                                        'Finally, set the year until which the liturgical event should exist '
+                                                        . 'by clicking on the hammer icon inside one of the years in the range.'
+                                                    );
+                                                    ?> </small>
+                                                <small class="variableCorrespondence d-none"> <?php
+                                                    echo _(
+                                                        'Finally, set the years in which the liturgical event shouldn\'t exist '
+                                                        . 'by clicking on the hammer icon inside the years in the range.'
+                                                    );
+                                                    ?></small>
                                             </p>
-                                            <p class="text-muted lh-sm"><?php _("First choose the maximum range of years that will belong to the Unit Test.") ?></p>
+                                            <p class="text-muted lh-sm"><?php
+                                                echo _("First choose the maximum range of years that will belong to the Unit Test.");
+                                            ?></p>
                                         </small>
                                     </div>
                                     <!-- Double range slider (flat design)  -->
@@ -61,15 +84,26 @@
                                     </div>
                                     <div id="yearsToTestGrid"></div>
                                     <input type="number" class="invisible" id="yearSinceUntilShadow" value="1970" required>
-                                    <div class="invalid-feedback exactCorrespondenceSince d-none"><?php echo _("Please set the year from which the liturgical event should exist."); ?></div>
-                                    <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php echo _("Please set the year until which the liturgical event should exist."); ?></div>
-                                    <div class="invalid-feedback variableCorrespondence d-none"><?php echo _("Please set the years in which the liturgical event should not exist."); ?></div>
+                                    <div class="invalid-feedback exactCorrespondenceSince d-none"><?php
+                                        echo _("Please set the year from which the liturgical event should exist.");
+                                    ?></div>
+                                    <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php
+                                        echo _("Please set the year until which the liturgical event should exist.");
+                                    ?></div>
+                                    <div class="invalid-feedback variableCorrespondence d-none"><?php
+                                        echo _("Please set the years in which the liturgical event should not exist.");
+                                    ?></div>
                                 </div>
                             </div>
                             <div class="carousel-item" data-item='2'>
                                 <div class="form-group">
                                     <label class="fw-bold" for="baseDate"><?php echo _("Set the base date for this liturgical event.") ?></label><br>
-                                    <small><small><p class="lh-sm"><?php echo _('If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against. In any case you will later be able to adjust the date for each year if needed.'); ?></p></small></small>
+                                    <small><small><p class="lh-sm"><?php
+                                        echo _(
+                                            'If the liturgical event is mobile rather than fixed, set the date for the first year you are testing against. '
+                                            . 'In any case you will later be able to adjust the date for each year if needed.'
+                                        );
+                                        ?></p></small></small>
                                     <input type="date" id="baseDate" min="1970-01-01" max="2050-12-31" class="form-control mt-4 w-25" required>
                                     <div class="invalid-feedback"><?php echo _("The date input cannot be empty."); ?></div>
                                 </div>

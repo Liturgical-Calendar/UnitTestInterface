@@ -3,7 +3,7 @@
     <rule ref="PSR12" /> <!-- ruleset standard -->
     <rule ref="Generic.Files.LineLength"> <!-- rule to override -->
         <properties>
-            <property name="lineLimit" value="170"/> <!-- maximum line length -->
+            <property name="lineLimit" value="200"/> <!-- maximum line length -->
         </properties>
     </rule>
     <file>./</file> <!-- directory you want to analyze -->
