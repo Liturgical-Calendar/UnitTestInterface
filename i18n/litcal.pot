@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-09 22:27+0000\n"
+"POT-Creation-Date: 2025-10-10 09:24+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -238,76 +238,76 @@ msgstr ""
 msgid "Years to test"
 msgstr ""
 
-#: components/NewTestModal.php:41 components/NewTestModal.php:49
+#: components/NewTestModal.php:41 components/NewTestModal.php:71
 msgid ""
 "First choose the maximum range of years that will belong to the Unit Test."
 msgstr ""
 
-#: components/NewTestModal.php:42
+#: components/NewTestModal.php:43
 msgid ""
 "This range should include a few years before the year in which the "
 "liturgical event should start to exist."
 msgstr ""
 
-#: components/NewTestModal.php:43
+#: components/NewTestModal.php:46
 msgid ""
 "This range should include a few years after the year in which the liturgical "
 "event should cease to exist."
 msgstr ""
 
-#: components/NewTestModal.php:44
+#: components/NewTestModal.php:49
 msgid "You can then remove any years that won't be needed."
 msgstr ""
 
-#: components/NewTestModal.php:45
+#: components/NewTestModal.php:53
 msgid ""
 "Finally, set the year from which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
 
-#: components/NewTestModal.php:46
+#: components/NewTestModal.php:59
 msgid ""
 "Finally, set the year until which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
 
-#: components/NewTestModal.php:47
+#: components/NewTestModal.php:65
 msgid ""
 "Finally, set the years in which the liturgical event shouldn't exist by "
 "clicking on the hammer icon inside the years in the range."
 msgstr ""
 
-#: components/NewTestModal.php:64
+#: components/NewTestModal.php:88
 msgid "Please set the year from which the liturgical event should exist."
 msgstr ""
 
-#: components/NewTestModal.php:65
+#: components/NewTestModal.php:91
 msgid "Please set the year until which the liturgical event should exist."
 msgstr ""
 
-#: components/NewTestModal.php:66
+#: components/NewTestModal.php:94
 msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
 
-#: components/NewTestModal.php:71
+#: components/NewTestModal.php:100
 msgid "Set the base date for this liturgical event."
 msgstr ""
 
-#: components/NewTestModal.php:72
+#: components/NewTestModal.php:103
 msgid ""
 "If the liturgical event is mobile rather than fixed, set the date for the "
 "first year you are testing against. In any case you will later be able to "
 "adjust the date for each year if needed."
 msgstr ""
 
-#: components/NewTestModal.php:74
+#: components/NewTestModal.php:108
 msgid "The date input cannot be empty."
 msgstr ""
 
-#: components/NewTestModal.php:92
+#: components/NewTestModal.php:126
 msgid "Close"
 msgstr ""
 
-#: components/NewTestModal.php:93
+#: components/NewTestModal.php:127
 msgid "Create test"
 msgstr ""
