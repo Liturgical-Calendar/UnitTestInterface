@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2024-09-30 22:40+0000\n"
-"Last-Translator: Milan Šalka <salka.milan@googlemail.com>\n"
+"PO-Revision-Date: 2025-10-11 22:18+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/sk/>\n"
 "Language: sk\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 5.6.1\n"
+"X-Generator: Weblate 5.13.3\n"
 
 #: index.php:15
 msgid ""
@@ -75,10 +75,9 @@ msgstr "OVERIŤ ZDROJOVÉ ÚDAJE"
 
 #. translators: %s: <span class="yearMax"></span>
 #: index.php:127
-#, fuzzy, php-format
-#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL"
+#, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
-msgstr "OVERIŤ ÚDAJE KALENDÁRA PRE ROKY OD 1970 AŽ"
+msgstr "OVERIŤ ÚDAJE O KALENDÁRI NA ROKY OD 1970 DO %s"
 
 #: index.php:163
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
