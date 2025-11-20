@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2025-10-11 22:18+0000\n"
+"PO-Revision-Date: 2025-11-21 03:22+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/it/>\n"
@@ -255,16 +255,11 @@ msgid "Choose the liturgical event for which you would like to create a test"
 msgstr "Scegli l'evento liturgico per il quale desideri creare un test"
 
 #: components/NewTestModal.php:26
-#, fuzzy
-#| msgid ""
-#| "This festivity does not seem to exist? Please choose from a value in the "
-#| "list."
 msgid ""
 "This liturgical event does not seem to exist? Please choose from a value in "
 "the list."
 msgstr ""
-"Questa festività non sembra esistere? Si prega scegliere da un valore "
-"nell'elenco."
+"Questo evento liturgico non sembra esistere. Scegli un valore dalla lista."
 
 #: components/NewTestModal.php:37
 msgid "Years to test"
