@@ -1,14 +1,13 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2025-11-21 03:22+0000\n"
+"PO-Revision-Date: 2025-11-30 05:22+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/sk/>\n"
@@ -258,7 +257,7 @@ msgid ""
 "This liturgical event does not seem to exist? Please choose from a value in "
 "the list."
 msgstr ""
-"Táto liturgická udalosť sa zdá, že neexistuje. Prosím, vyberte hodnotu zo "
+"Zdá sa, že táto liturgická udalosť neexistuje. Prosím, vyberte hodnotu zo "
 "zoznamu."
 
 #: components/NewTestModal.php:37
