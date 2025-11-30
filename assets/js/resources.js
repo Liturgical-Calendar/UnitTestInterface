@@ -483,7 +483,7 @@ const connectWebSocket = () => {
                 }
                 const cardText = el.querySelector('.card-text');
                 if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
                 }
             });
             updateText('failedCount', ++failedTests);
@@ -1016,7 +1016,7 @@ document.body.addEventListener( 'click', function ( event ) {
             customClass: 'wide-tooltip',
             sanitize: false
         } );
-        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
         tooltipMap.set( target, tooltip );
     }
 

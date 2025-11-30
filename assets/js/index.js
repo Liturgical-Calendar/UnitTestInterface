@@ -269,17 +269,17 @@ const testTemplate = ( calendarName ) => {
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
 <div class="card text-white bg-info rounded-0 file-exists calendar-${calendarSlug}">
     <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
+        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</p>
     </div>
 </div>
 <div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}">
     <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> <span class="response-type">JSON</span> valid</p>
+        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</p>
     </div>
 </div>
 <div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}">
     <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
+        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</p>
     </div>
 </div>
 `;
@@ -330,22 +330,22 @@ const sourceDataCheckTemplate = ( item, idx ) => {
         categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
     }
     const validateSlug = slugify(item.validate);
-    const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${categoryStr}"><i class="fas fa-circle-info fa-fw"></i></span>` : '';
+    const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${categoryStr}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
     <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate( item.validate, 14 ) : truncate( item.validate, 22 )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
         </div>
     </div>
     <div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> <span class="response-type">JSON</span> valid</span></p>
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</span></p>
         </div>
     </div>
     <div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</span></p>
         </div>
     </div>
 </div>
@@ -677,7 +677,7 @@ const connectWebSocket = () => {
                 }
                 const cardText = el.querySelector('.card-text');
                 if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
                 }
             });
             updateText('failedCount', ++failedTests);
@@ -930,7 +930,7 @@ const appendAccordionItem = ( obj ) => {
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
                 <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} test-valid">
                     <div class="card-body">
-                        <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"></i></p>
+                        <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> test valid</span><i class="fas fa-circle-info" aria-hidden="true" title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"></i></p>
                     </div>
                 </div>
             </div>
@@ -941,10 +941,10 @@ const appendAccordionItem = ( obj ) => {
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${nameSlug}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${nameSlug}" aria-expanded="false" aria-controls="specificUnitTest-${nameSlug}">
-                    <div class="col-4">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2"></i>${obj.name}<i class="fas fa-circle-info ms-2" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${nameSlug}TestsCount" class="successfulCount">0</span></div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${nameSlug}TestsCount" class="failedCount">0</span></div>
-                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${nameSlug}TestsCount"></span> tests: <span id="total${nameSlug}TestsTime">0 seconds, 0ms</span></div>
+                    <div class="col-4">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<i class="fas fa-circle-info ms-2" aria-hidden="true" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw" aria-hidden="true"></i> Successful tests: <span id="successful${nameSlug}TestsCount" class="successfulCount">0</span></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw" aria-hidden="true"></i> Failed tests: <span id="failed${nameSlug}TestsCount" class="failedCount">0</span></div>
+                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw" aria-hidden="true"></i> Total time for <span id="total${nameSlug}TestsCount"></span> tests: <span id="total${nameSlug}TestsTime">0 seconds, 0ms</span></div>
                 </button>
             </h2>
             <div id="specificUnitTest-${nameSlug}" class="accordion-collapse collapse" aria-labelledby="${nameSlug}Header" data-bs-parent="#specificUnitTestsAccordion">
@@ -1362,7 +1362,7 @@ document.body.addEventListener( 'click', function ( event ) {
             customClass: 'wide-tooltip',
             sanitize: false
         } );
-        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
         tooltipMap.set( target, tooltip );
     }
 
