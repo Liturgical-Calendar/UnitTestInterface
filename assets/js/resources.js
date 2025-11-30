@@ -503,16 +503,18 @@ const connectWebSocket = () => {
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
         switch( currentState ) {
-            case TestState.ExecutingResourceValidations:
+            case TestState.ExecutingResourceValidations: {
                 performance.mark( 'resourceDataTestsEnd' );
                 let totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
                 document.querySelector('#totalResourceDataTestsTime').textContent = MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) );
                 break;
-            case TestState.ExecutingSourceValidations:
+            }
+            case TestState.ExecutingSourceValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
                 let totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
                 document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) );
                 break;
+            }
         }
     };
 
@@ -858,7 +860,7 @@ const runTests = () => {
                 }
             }
             break;
-        case TestState.JobsFinished:
+        case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
             bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
             const spinIcon = document.querySelector('.fa-spin');
@@ -874,6 +876,7 @@ const runTests = () => {
             }
             setTestRunnerBtnLblTxt('Tests Complete');
             break;
+        }
     }
 }
 
