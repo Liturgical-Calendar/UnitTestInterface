@@ -148,23 +148,21 @@ class AssertionsBuilder {
     buildHtml() {
         console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
         let assertionBuildStr = '';
-        const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
+        const dateFormatter = new Intl.DateTimeFormat(locale || navigator.language, { dateStyle: 'medium', timeZone: 'UTC' });
         //console.log(this.assertions);
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
             //console.log(assertion);
-            const expectedDateStr = assertion.expected_value !== null
-                ? dateFormatter.format(new Date(assertion.expected_value))
+            const eventDate = assertion.expected_value ? new Date(assertion.expected_value) : null;
+            const expectedDateStr = eventDate !== null
+                ? dateFormatter.format(eventDate)
                 : '---';
             const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
             let sundayCheck = '';
-            if(AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
-                const eventDate = new Date(assertion.expected_value);
+            if(eventDate !== null && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
                 if( eventDate.getUTCDay() === 0 ) {
                     //console.log('this day is a Sunday!');
                     sundayCheck = 'bg-warning text-dark';
-                } else {
-                    sundayCheck = '';
                 }
             }
             //unfortunately Firefox does not implement the "plaintext-only" value for [contenteditable], so we won't use it yet
