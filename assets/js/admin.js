@@ -643,7 +643,11 @@ $(document).on('change', '.expectedValue > [type=date]', ev => {
     $grandpa[0].classList.remove('bg-warning','text-dark');
     $grandpa[0].classList.add('bg-success','text-white');
     ev.currentTarget.parentNode.dataset.value = dateTimeString;
-    ev.currentTarget.parentNode.textContent = dateTimeString;
+    // Format date for display, matching AssertionsBuilder.buildHtml format
+    const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
+    const parsedDate = new Date(dateTimeString);
+    const displayText = isNaN(parsedDate.getTime()) ? dateTimeString : dateFormatter.format(parsedDate);
+    ev.currentTarget.parentNode.textContent = displayText;
 });
 
 $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
