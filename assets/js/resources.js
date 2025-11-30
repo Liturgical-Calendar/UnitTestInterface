@@ -53,6 +53,10 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
         const testsReady = ReadyToRunTests.check();
         const startBtn = document.querySelector('#startTestRunnerBtn');
+        if (!startBtn) {
+            console.warn('Start button not found');
+            return;
+        }
         startBtn.disabled = !testsReady;
         startBtn.classList.remove('btn-secondary');
         startBtn.classList.add('btn-primary');
@@ -66,10 +70,12 @@ class ReadyToRunTests {
         setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
         if (testsReady) {
             const pageLoader = document.querySelector('.page-loader');
-            pageLoader.style.opacity = '0';
-            setTimeout(() => {
-                pageLoader.style.display = 'none';
-            }, 500);
+            if (pageLoader) {
+                pageLoader.style.opacity = '0';
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            }
         }
     }
 }
@@ -424,11 +430,15 @@ const connectWebSocket = () => {
         console.log( "Websocket connection established!" );
         bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-connected')).show();
         const wsStatus = document.querySelector('#websocket-status');
-        wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
-        wsStatus.classList.add('bg-success');
-        const wsSvg = wsStatus.querySelector('svg');
-        wsSvg.classList.remove('fa-plug', 'fa-plug-circle-xmark', 'fa-plug-circle-exclamation');
-        wsSvg.classList.add('fa-plug-circle-check');
+        if (wsStatus) {
+            wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
+            wsStatus.classList.add('bg-success');
+            const wsSvg = wsStatus.querySelector('svg');
+            if (wsSvg) {
+                wsSvg.classList.remove('fa-plug', 'fa-plug-circle-xmark', 'fa-plug-circle-exclamation');
+                wsSvg.classList.add('fa-plug-circle-check');
+            }
+        }
         if ( connectionAttempt !== null ) {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
@@ -532,11 +542,15 @@ const connectWebSocket = () => {
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
             const wsStatus = document.querySelector('#websocket-status');
-            wsStatus.classList.remove('bg-secondary', 'bg-danger', 'bg-success');
-            wsStatus.classList.add('bg-warning');
-            const wsSvg = wsStatus.querySelector('svg');
-            wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-exclamation');
-            wsSvg.classList.add('fa-plug-circle-xmark');
+            if (wsStatus) {
+                wsStatus.classList.remove('bg-secondary', 'bg-danger', 'bg-success');
+                wsStatus.classList.add('bg-warning');
+                const wsSvg = wsStatus.querySelector('svg');
+                if (wsSvg) {
+                    wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-exclamation');
+                    wsSvg.classList.add('fa-plug-circle-xmark');
+                }
+            }
             bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-closed')).show();
             document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
             setTimeout( function () {
@@ -555,11 +569,15 @@ const connectWebSocket = () => {
      */
     conn.onerror = ( e ) => {
         const wsStatus = document.querySelector('#websocket-status');
-        wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-success');
-        wsStatus.classList.add('bg-danger');
-        const wsSvg = wsStatus.querySelector('svg');
-        wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-xmark');
-        wsSvg.classList.add('fa-plug-circle-exclamation');
+        if (wsStatus) {
+            wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-success');
+            wsStatus.classList.add('bg-danger');
+            const wsSvg = wsStatus.querySelector('svg');
+            if (wsSvg) {
+                wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-xmark');
+                wsSvg.classList.add('fa-plug-circle-exclamation');
+            }
+        }
         console.error( 'Websocket connection error:' );
         console.log( e );
         bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-error')).show();
