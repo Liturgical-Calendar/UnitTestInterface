@@ -80,6 +80,20 @@ const safeToastShow = (selector) => {
     }
 };
 
+/**
+ * Updates the text content of an element by ID.
+ * @param {string} id - The element ID (without #).
+ * @param {string|number} value - The value to set as textContent.
+ */
+const updateText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.textContent = value;
+    } else {
+        console.warn(`#${id} not found, skipping text update`);
+    }
+};
+
 // Define the common callback function
 const handleLanguageChange = (event) => {
     // Retrieve the ID of the clicked item

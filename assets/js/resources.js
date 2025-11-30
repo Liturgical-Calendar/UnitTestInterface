@@ -456,13 +456,13 @@ const connectWebSocket = () => {
                     questionIcon.classList.add('fa-circle-check');
                 }
             });
-            document.querySelector('#successfulCount').textContent = ++successfulTests;
+            updateText('successfulCount', ++successfulTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
-                    document.querySelector('#successfulResourceDataTestsCount').textContent = ++successfulResourceDataTests;
+                    updateText('successfulResourceDataTestsCount', ++successfulResourceDataTests);
                     break;
                 case TestState.ExecutingSourceValidations:
-                    document.querySelector('#successfulSourceDataTestsCount').textContent = ++successfulSourceDataTests;
+                    updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
                     break;
             }
         }
@@ -480,13 +480,13 @@ const connectWebSocket = () => {
                     cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
                 }
             });
-            document.querySelector('#failedCount').textContent = ++failedTests;
+            updateText('failedCount', ++failedTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
-                    document.querySelector('#failedResourceDataTestsCount').textContent = ++failedResourceDataTests;
+                    updateText('failedResourceDataTestsCount', ++failedResourceDataTests);
                     break;
                 case TestState.ExecutingSourceValidations:
-                    document.querySelector('#failedSourceDataTestsCount').textContent = ++failedSourceDataTests;
+                    updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
                     break;
             }
         }
@@ -496,18 +496,18 @@ const connectWebSocket = () => {
         performance.mark( 'litcalTestRunnerEnd' );
         const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
-        document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
+        updateText('total-time', MsToTimeString( Math.round( totalTestTime.duration ) ));
         switch( currentState ) {
             case TestState.ExecutingResourceValidations: {
                 performance.mark( 'resourceDataTestsEnd' );
                 const totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
-                document.querySelector('#totalResourceDataTestsTime').textContent = MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) );
+                updateText('totalResourceDataTestsTime', MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ));
                 break;
             }
             case TestState.ExecutingSourceValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
                 const totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) );
+                updateText('totalSourceDataTestsTime', MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ));
                 break;
             }
         }
@@ -580,7 +580,7 @@ const connectWebSocket = () => {
  * @param {string} txt - The text to set as the label of the start test runner button.
  */
 const setTestRunnerBtnLblTxt = (txt) => {
-    document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
+    updateText('startTestRunnerBtnLbl', txt);
 }
 
 /**

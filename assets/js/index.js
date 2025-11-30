@@ -648,20 +648,20 @@ const connectWebSocket = () => {
                     questionIcon.classList.add('fa-circle-check');
                 }
             });
-            document.querySelector('#successfulCount').textContent = ++successfulTests;
+            updateText('successfulCount', ++successfulTests);
             switch ( currentState ) {
                 case TestState.ExecutingValidations: {
-                    document.querySelector('#successfulSourceDataTestsCount').textContent = ++successfulSourceDataTests;
+                    updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
                     break;
                 }
                 case TestState.ValidatingCalendarData: {
-                    document.querySelector('#successfulCalendarDataTestsCount').textContent = ++successfulCalendarDataTests;
+                    updateText('successfulCalendarDataTestsCount', ++successfulCalendarDataTests);
                     break;
                 }
                 case TestState.SpecificUnitTests: {
-                    document.querySelector('#successfulUnitTestsCount').textContent = ++successfulUnitTests;
+                    updateText('successfulUnitTestsCount', ++successfulUnitTests);
                     const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-success`).length;
-                    document.querySelector(`#successful${responseData.test}TestsCount`).textContent = specificUnitTestSuccessCount;
+                    updateText(`successful${responseData.test}TestsCount`, specificUnitTestSuccessCount);
                     break;
                 }
             }
@@ -680,20 +680,20 @@ const connectWebSocket = () => {
                     cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
                 }
             });
-            document.querySelector('#failedCount').textContent = ++failedTests;
+            updateText('failedCount', ++failedTests);
             switch ( currentState ) {
                 case TestState.ExecutingValidations: {
-                    document.querySelector('#failedSourceDataTestsCount').textContent = ++failedSourceDataTests;
+                    updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
                     break;
                 }
                 case TestState.ValidatingCalendarData: {
-                    document.querySelector('#failedCalendarDataTestsCount').textContent = ++failedCalendarDataTests;
+                    updateText('failedCalendarDataTestsCount', ++failedCalendarDataTests);
                     break;
                 }
                 case TestState.SpecificUnitTests: {
-                    document.querySelector('#failedUnitTestsCount').textContent = ++failedUnitTests;
+                    updateText('failedUnitTestsCount', ++failedUnitTests);
                     const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-danger`).length;
-                    document.querySelector(`#failed${responseData.test}TestsCount`).textContent = specificUnitTestFailedCount;
+                    updateText(`failed${responseData.test}TestsCount`, specificUnitTestFailedCount);
                     break;
                 }
             }
@@ -704,24 +704,24 @@ const connectWebSocket = () => {
         performance.mark( 'litcalTestRunnerEnd' );
         const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
-        document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
+        updateText('total-time', MsToTimeString( Math.round( totalTestTime.duration ) ));
         switch ( currentState ) {
             case TestState.ExecutingValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
                 const totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestTime.duration ) );
+                updateText('totalSourceDataTestsTime', MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ));
                 break;
             }
             case TestState.ValidatingCalendarData: {
                 performance.mark( 'calendarDataTestsEnd' );
                 const totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
-                document.querySelector('#totalCalendarDataTestsTime').textContent = MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) );
+                updateText('totalCalendarDataTestsTime', MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) ));
                 break;
             }
             case TestState.SpecificUnitTests: {
                 performance.mark( 'specificUnitTestsEnd' );
                 const totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
-                document.querySelector('#totalUnitTestsTime').textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
+                updateText('totalUnitTestsTime', MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
                 break;
             }
         }
@@ -1167,13 +1167,13 @@ const setupPage = () => {
         el.setAttribute('title', currentSelectedCalendar);
     });
     let totalTestsCount = document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length;
-    document.querySelector('#total-tests-count').textContent = totalTestsCount;
+    updateText('total-tests-count', totalTestsCount);
     let totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
     let totalCalendarDataTestsCount = document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length;
     let totalUnitTestsCount = document.querySelectorAll('.specificunittests .test-valid').length;
-    document.querySelector('#totalSourceDataTestsCount').textContent = totalSourceDataTestsCount;
-    document.querySelector('#totalCalendarDataTestsCount').textContent = totalCalendarDataTestsCount;
-    document.querySelector('#totalUnitTestsCount').textContent = totalUnitTestsCount;
+    updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
+    updateText('totalCalendarDataTestsCount', totalCalendarDataTestsCount);
+    updateText('totalUnitTestsCount', totalUnitTestsCount);
     successfulSourceDataTests = 0;
     successfulCalendarDataTests = 0;
     successfulUnitTests = 0;
