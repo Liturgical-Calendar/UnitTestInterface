@@ -128,6 +128,81 @@ All markdown files must conform to `.markdownlint.yml`:
 - JavaScript's `new Date()` parses this format correctly
 - Use `Intl.DateTimeFormat` with `timeZone: 'UTC'` for display
 
+## WebSocket Messaging
+
+The test interface communicates with the LiturgicalCalendarAPI's Health websocket server (`LiturgicalCalendarAPI/src/Health.php`).
+
+### Message Actions
+
+Messages sent to the server must include an `action` property:
+
+| Action              | Purpose                                      | Required Properties                              |
+|---------------------|----------------------------------------------|--------------------------------------------------|
+| `executeValidation` | Validate source data files against schemas   | `category`, `validate`, `sourceFile`             |
+| `validateCalendar`  | Validate generated calendar data             | `category`, `calendar`, `year`, `responsetype`   |
+| `executeUnitTest`   | Run a specific unit test                     | `category`, `calendar`, `year`, `test`           |
+
+### Source Data Validation Categories
+
+**IMPORTANT:** For source data validation (`executeValidation`), the `category` field determines how the server resolves file paths.
+
+Use `category: "sourceDataCheck"` for validating source files:
+
+```javascript
+// Wider region check
+{
+    "validate": "wider-region-Europe",
+    "sourceFile": "Europe",
+    "category": "sourceDataCheck"  // NOT "widerregioncalendar"
+}
+
+// National calendar check
+{
+    "validate": "national-calendar-IT",
+    "sourceFile": "IT",
+    "category": "sourceDataCheck"  // NOT "nationalcalendar"
+}
+
+// Diocesan calendar check
+{
+    "validate": "diocesan-calendar-roma_lazio_it",
+    "sourceFile": "roma_lazio_it",
+    "category": "sourceDataCheck"  // NOT "diocesancalendar"
+}
+```
+
+The server's `Health.php` uses regex patterns to transform these `validate` values into full file paths:
+
+- `wider-region-{Region}` → `JsonData::WIDER_REGION_FILE` path
+- `national-calendar-{CC}` → `JsonData::NATIONAL_CALENDAR_FILE` path
+- `diocesan-calendar-{id}` → `JsonData::DIOCESAN_CALENDAR_FILE` path
+
+Using incorrect categories (like `widerregioncalendar`) causes the server to use the raw `sourceFile` value as the path, which fails.
+
+### Server Response Format
+
+Server responses include:
+
+```javascript
+{
+    "type": "success" | "error",
+    "text": "Human-readable message",
+    "classes": ".selector.for.card.update"
+}
+```
+
+### CSS Class Slugification
+
+The server sends CSS class selectors with original casing (e.g., `.MaryMotherChurchTest`), but the client creates cards with slugified class names (e.g., `.marymotherchurchtest`).
+
+Use `slugifySelector()` from `common.js` to transform server selectors before querying the DOM:
+
+```javascript
+document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
+    // Update card classes
+});
+```
+
 ## Authentication
 
 - HTTP Basic Auth required for all pages
