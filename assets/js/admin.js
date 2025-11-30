@@ -727,6 +727,13 @@ document.querySelector('#modalAddEditComment').addEventListener('show.bs.modal',
     btnSaveComment.addEventListener('click', saveCommentHandler);
 });
 
+// Blur any focused element inside the modal before it hides to prevent aria-hidden warning
+document.querySelector('#modalAddEditComment').addEventListener('hide.bs.modal', ev => {
+    const activeEl = ev.currentTarget.querySelector(':focus');
+    if (activeEl) {
+        activeEl.blur();
+    }
+});
 
 const contenteditableHandler = ev => {
     const target = ev.target.closest('[contenteditable]');
@@ -864,6 +871,11 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
 });
 
 document.querySelector('#modalDefineTest').addEventListener('hide.bs.modal', ev => {
+    // Blur any focused element inside the modal before it hides to prevent aria-hidden warning
+    const activeEl = ev.currentTarget.querySelector(':focus');
+    if (activeEl) {
+        activeEl.blur();
+    }
     ev.currentTarget.querySelectorAll(`.${currentTestType}`).forEach(el => el.classList.add('d-none'));
 });
 
