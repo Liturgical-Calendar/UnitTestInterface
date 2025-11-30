@@ -319,23 +319,20 @@ const calDataTestTemplate = ( idx ) => {
  */
 const sourceDataCheckTemplate = ( item, idx ) => {
     let categoryStr;
-    switch ( item.category ) {
-        case 'nationalcalendar':
-            categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
-            break;
-        case 'widerregioncalendar':
-            categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
-            break;
-        case 'propriumdesanctis':
-            categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
-            break;
-        case 'diocesancalendar':
-            categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
-            break;
+    // Determine category description from validate field prefix (since category is now "sourceDataCheck")
+    if ( item.validate.startsWith('national-calendar-') ) {
+        categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
+    } else if ( item.validate.startsWith('wider-region-') ) {
+        categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
+    } else if ( item.validate.startsWith('diocesan-calendar-') ) {
+        categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
+    } else if ( item.category === 'propriumdesanctis' ) {
+        categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
     }
     const validateSlug = slugify(item.validate);
+    const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${categoryStr}"><i class="fas fa-circle-info fa-fw"></i></span>` : '';
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate( item.validate, 14 ) : truncate( item.validate, 22 )}</span>${item.category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>` : ''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate( item.validate, 14 ) : truncate( item.validate, 22 )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
