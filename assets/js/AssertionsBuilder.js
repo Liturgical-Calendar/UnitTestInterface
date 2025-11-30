@@ -160,12 +160,11 @@ class AssertionsBuilder {
      */
     buildHtml() {
         console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
-        let assertionBuildStr = '';
+        const fragment = document.createDocumentFragment();
         const dateFormatter = AssertionsBuilder.getDateFormatter();
-        //console.log(this.assertions);
+
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
-            //console.log(assertion);
             let eventDate = null;
             let expectedDateStr = '---';
             if (assertion.expected_value) {
@@ -175,46 +174,133 @@ class AssertionsBuilder {
                     expectedDateStr = dateFormatter.format(eventDate);
                 }
             }
-            const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
             let sundayCheck = '';
             if(eventDate !== null && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
                 if( eventDate.getUTCDay() === 0 ) {
-                    //console.log('this day is a Sunday!');
                     sundayCheck = 'bg-warning text-dark';
                 }
             }
-            const editDateDisabled = (assertion.expected_value === null || eventDate === null) ? ' disabled' : '';
-            assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
-                <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
-                <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>${AssertionsBuilder.appliesTo}</span></p>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">ASSERT THAT: </span><span class="ms-2 text-end assert">${assertion.assert}</span><span role="button" class="btn btn-xs btn-danger ms-1 toggleAssert"><i class="fas fa-repeat" aria-hidden="true"></i></span></div>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 ${sundayCheck !== '' ? sundayCheck : AssertionsBuilder.bgColor + ' ' + AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue" data-value="${assertion.expected_value}">${expectedDateStr}</span><span role="button" class="btn btn-xs ms-1 editDate${editDateDisabled ? ' btn-secondary' : ' btn-danger'}"><i class="fas fa-pen-to-square" aria-hidden="true"></i></span></div>
-                <div class="flex-grow-1 d-flex flex-column text-white p-3" style="background-color: cadetblue;"><span class="fw-bold">ASSERTION:${commentStr}</span><span contenteditable="plaintext-only">${assertion.assertion}</span></div>
-                </div>`;
+            const editDateDisabled = (assertion.expected_value === null || eventDate === null);
+
+            // Build container div
+            const container = document.createElement('div');
+            container.className = `d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}`;
+
+            // Year paragraph
+            const yearP = document.createElement('p');
+            yearP.className = 'text-center mb-0 fw-bold testYear';
+            yearP.textContent = assertion.year;
+            container.appendChild(yearP);
+
+            // Applies to paragraph
+            const appliesP = document.createElement('p');
+            appliesP.className = 'text-center mb-0 bg-secondary text-white';
+            const appliesLabel = document.createElement('span');
+            appliesLabel.className = 'me-2 fw-bold text-center';
+            appliesLabel.textContent = 'Applies to: ';
+            const appliesValue = document.createElement('span');
+            appliesValue.textContent = AssertionsBuilder.appliesTo;
+            appliesP.appendChild(appliesLabel);
+            appliesP.appendChild(appliesValue);
+            container.appendChild(appliesP);
+
+            // Assert that div
+            const assertDiv = document.createElement('div');
+            assertDiv.className = `d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}`;
+            assertDiv.style.minHeight = '3em';
+            const assertLabel = document.createElement('span');
+            assertLabel.className = 'me-2 fw-bold w-25';
+            assertLabel.textContent = 'ASSERT THAT: ';
+            const assertValue = document.createElement('span');
+            assertValue.className = 'ms-2 text-end assert';
+            assertValue.textContent = assertion.assert;
+            const toggleBtn = document.createElement('span');
+            toggleBtn.setAttribute('role', 'button');
+            toggleBtn.className = 'btn btn-xs btn-danger ms-1 toggleAssert';
+            const toggleIcon = document.createElement('i');
+            toggleIcon.className = 'fas fa-repeat';
+            toggleIcon.setAttribute('aria-hidden', 'true');
+            toggleBtn.appendChild(toggleIcon);
+            assertDiv.appendChild(assertLabel);
+            assertDiv.appendChild(assertValue);
+            assertDiv.appendChild(toggleBtn);
+            container.appendChild(assertDiv);
+
+            // Expected value div
+            const expectDiv = document.createElement('div');
+            const expectDivClass = sundayCheck !== '' ? sundayCheck : `${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}`;
+            expectDiv.className = `d-flex justify-content-between align-items-center ps-2 pe-1 ${expectDivClass}`;
+            expectDiv.style.minHeight = '3em';
+            const expectLabel = document.createElement('span');
+            expectLabel.className = 'me-2 fw-bold w-25';
+            expectLabel.textContent = 'EXPECT VALUE: ';
+            const expectValue = document.createElement('span');
+            expectValue.className = 'ms-2 expectedValue';
+            expectValue.setAttribute('data-value', assertion.expected_value ?? '');
+            expectValue.textContent = expectedDateStr;
+            const editBtn = document.createElement('span');
+            editBtn.setAttribute('role', 'button');
+            editBtn.className = `btn btn-xs ms-1 editDate${editDateDisabled ? ' btn-secondary disabled' : ' btn-danger'}`;
+            const editIcon = document.createElement('i');
+            editIcon.className = 'fas fa-pen-to-square';
+            editIcon.setAttribute('aria-hidden', 'true');
+            editBtn.appendChild(editIcon);
+            expectDiv.appendChild(expectLabel);
+            expectDiv.appendChild(expectValue);
+            expectDiv.appendChild(editBtn);
+            container.appendChild(expectDiv);
+
+            // Assertion div
+            const assertionDiv = document.createElement('div');
+            assertionDiv.className = 'flex-grow-1 d-flex flex-column text-white p-3';
+            assertionDiv.style.backgroundColor = 'cadetblue';
+            const assertionLabel = document.createElement('span');
+            assertionLabel.className = 'fw-bold';
+            assertionLabel.textContent = 'ASSERTION:';
+            assertionLabel.appendChild(createCommentIcon(assertion.hasOwnProperty('comment'), assertion?.comment));
+            const assertionText = document.createElement('span');
+            assertionText.setAttribute('contenteditable', 'plaintext-only');
+            assertionText.textContent = assertion.assertion;
+            assertionDiv.appendChild(assertionLabel);
+            assertionDiv.appendChild(assertionText);
+            container.appendChild(assertionDiv);
+
+            fragment.appendChild(container);
         });
-        const template = document.createElement('template');
-        template.innerHTML = assertionBuildStr;
-        return template.content;
+
+        return fragment;
     }
 }
 
 /**
- * commentIcon
+ * createCommentIcon
  *
  * @description
- *      Creates a comment icon depending on whether there is a comment or not.
+ *      Creates a comment icon DOM element depending on whether there is a comment or not.
  *      If there is a comment, it creates a button with a comment icon and the comment as title.
  *      If there is no comment, it creates a button with a comment-medical icon and 'add a comment' as title.
  *      The button is meant to be used as a toggle to show the modal for adding or editing a comment.
  *
  * @param {boolean} hasComment - whether there is a comment or not
  * @param {string} [value=null] - the comment value, if any
- * @returns {string} the comment icon as a string of html
+ * @returns {HTMLSpanElement} the comment icon as a DOM element
  */
-const commentIcon = (hasComment, value = null) => {
-    return hasComment
-    /*? `<i title="${value}" class="fas fa-comment-dots fa-fw mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>`
-    : ' <i title="add a comment" class="fas fa-comment-medical fa-fw mb-1 btn btn-xs btn-secondary float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>'*/
-    ? ` <span title="${value}" class="mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-dots fa-fw" aria-hidden="true"></i></span>`
-    : ' <span title="add a comment" class="mb-1 btn btn-xs btn-secondary float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-medical fa-fw" aria-hidden="true"></i></span>';
+const createCommentIcon = (hasComment, value = null) => {
+    const span = document.createElement('span');
+    span.className = hasComment
+        ? 'mb-1 btn btn-xs btn-dark float-end comment'
+        : 'mb-1 btn btn-xs btn-secondary float-end comment';
+    span.setAttribute('role', 'button');
+    span.setAttribute('data-bs-toggle', 'modal');
+    span.setAttribute('data-bs-target', '#modalAddEditComment');
+    span.setAttribute('title', hasComment && value ? value : 'add a comment');
+
+    const icon = document.createElement('i');
+    icon.className = hasComment
+        ? 'fas fa-comment-dots fa-fw'
+        : 'fas fa-comment-medical fa-fw';
+    icon.setAttribute('aria-hidden', 'true');
+
+    span.appendChild(icon);
+    return span;
 }
