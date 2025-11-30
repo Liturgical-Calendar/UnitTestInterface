@@ -1022,6 +1022,82 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
  *
  * @return {void}
  */
+
+/**
+ * Builds source data checks for non-VA (non-Vatican) calendars.
+ * Adds checks for wider region, national calendar, missals, and optionally diocesan calendar.
+ *
+ * @param {string} calendarId - The calendar ID (national or diocesan).
+ * @param {string} calendarCategory - The category: 'nationalcalendar' or 'diocesancalendar'.
+ * @returns {Array|null} Array of source data check objects, or null if metadata is missing.
+ */
+const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
+    let nation = calendarId;
+
+    // For diocesan calendars, find the parent nation
+    if (calendarCategory !== 'nationalcalendar') {
+        const diocesanData = MetaData.diocesan_calendars.find(
+            diocesanCalendar => diocesanCalendar.calendar_id === calendarId
+        );
+        if (!diocesanData) {
+            console.error('No diocesan calendar metadata found for', calendarId);
+            return null;
+        }
+        nation = diocesanData.nation;
+    }
+
+    const checks = [...sourceDataChecks];
+
+    const nationalCalendarData = MetaData.national_calendars.find(
+        nationalCalendar => nationalCalendar.calendar_id === nation
+    );
+    if (!nationalCalendarData) {
+        console.error('No national calendar metadata found for', nation);
+        return null;
+    }
+
+    // Add wider region check
+    checks.push({
+        "validate": `wider-region-${nationalCalendarData.wider_region}`,
+        "sourceFile": nationalCalendarData.wider_region,
+        "category": "widerregioncalendar"
+    });
+
+    // Add national calendar check
+    checks.push({
+        "validate": `national-calendar-${nation}`,
+        "sourceFile": nation,
+        "category": "nationalcalendar"
+    });
+
+    // Add missal checks
+    nationalCalendarData.missals.forEach((missal) => {
+        console.log('retrieving Missal definition for missal: ' + missal);
+        const missalDef = Object.values(RomanMissals).find(el => el.missal_id === missal);
+        if (missalDef?.data_path) {
+            console.log('found Missal definition for missal: ' + missal + ', sourceFile: ' + missalDef.data_path);
+            checks.push({
+                "validate": missal,
+                "sourceFile": missalDef.data_path,
+                "category": "propriumdesanctis"
+            });
+        } else {
+            console.warn('could not find Missal definition for missal: ' + missal);
+        }
+    });
+
+    // Add diocesan calendar check if applicable
+    if (calendarCategory === 'diocesancalendar') {
+        checks.push({
+            "validate": `diocesan-calendar-${calendarId}`,
+            "sourceFile": calendarId,
+            "category": "diocesancalendar"
+        });
+    }
+
+    return checks;
+};
+
 const setupPage = () => {
     // store the original value of the #startTestRunnerBtnLbl for later use
     // but only if it hasn't been set yet (only the first time we do a page setup)
@@ -1052,62 +1128,11 @@ const setupPage = () => {
     if ( currentSelectedCalendar === 'VA' ) {
         currentSourceDataChecks = [ ...sourceDataChecks ];
     } else {
-        let nation = currentSelectedCalendar;
-        if (currentCalendarCategory !== 'nationalcalendar') {
-            const diocesanData = MetaData.diocesan_calendars.find( diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar );
-            if (!diocesanData) {
-                console.error('No diocesan calendar metadata found for', currentSelectedCalendar);
-                return;
-            }
-            nation = diocesanData.nation;
-        }
-        console.log( 'sourceDataChecks:' );
-        console.log( sourceDataChecks );
-        currentSourceDataChecks = [ ...sourceDataChecks ];
-
-        const nationalCalendarData = MetaData.national_calendars.find( nationalCalendar => nationalCalendar.calendar_id === nation );
-        if (!nationalCalendarData) {
-            console.error('No national calendar metadata found for', nation);
+        const checks = buildNonVASourceDataChecks(currentSelectedCalendar, currentCalendarCategory);
+        if (checks === null) {
             return;
         }
-        currentSourceDataChecks.push( {
-            "validate": `wider-region-${nationalCalendarData.wider_region}`,
-            "sourceFile": nationalCalendarData.wider_region,
-            "category": "sourceDataCheck"
-        } );
-        currentSourceDataChecks.push( {
-            "validate": `national-calendar-${nation}`,
-            "sourceFile": nation,
-            "category": "sourceDataCheck"
-        } );
-
-        nationalCalendarData.missals.forEach( ( missal ) => {
-            console.log( 'retrieving Missal definition for missal: ' + missal );
-            let sourceFile = false;
-            let missalDef = Object.values( RomanMissals ).find( el => el.missal_id === missal );
-            if ( missalDef !== undefined && missalDef.hasOwnProperty( 'data_path' ) ) {
-                sourceFile = missalDef.data_path;
-                console.log( 'found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile );
-            } else {
-                console.warn( 'could not find Missal definition for missal: ' + missal );
-            }
-            if ( sourceFile !== false ) {
-                currentSourceDataChecks.push( {
-                    "validate": missal,
-                    "sourceFile": sourceFile,
-                    "category": "propriumdesanctis"
-                } );
-            }
-        } );
-
-        if ( currentCalendarCategory === 'diocesancalendar' ) {
-            //let diocese = MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).diocese;
-            currentSourceDataChecks.push( {
-                "validate": `diocesan-calendar-${currentSelectedCalendar}`,
-                "sourceFile": currentSelectedCalendar,
-                "category": "sourceDataCheck"
-            } );
-        }
+        currentSourceDataChecks = checks;
     }
 
     document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');
