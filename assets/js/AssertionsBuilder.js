@@ -153,10 +153,15 @@ class AssertionsBuilder {
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
             //console.log(assertion);
-            const eventDate = assertion.expected_value ? new Date(assertion.expected_value) : null;
-            const expectedDateStr = eventDate !== null
-                ? dateFormatter.format(eventDate)
-                : '---';
+            let eventDate = null;
+            let expectedDateStr = '---';
+            if (assertion.expected_value) {
+                const parsed = new Date(assertion.expected_value);
+                if (!isNaN(parsed.getTime())) {
+                    eventDate = parsed;
+                    expectedDateStr = dateFormatter.format(eventDate);
+                }
+            }
             const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
             let sundayCheck = '';
             if(eventDate !== null && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
