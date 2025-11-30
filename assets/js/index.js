@@ -1184,18 +1184,22 @@ const setupPage = () => {
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
     const pageLoader = document.querySelector('.page-loader');
-    pageLoader.style.opacity = '0';
-    setTimeout(() => {
-        pageLoader.style.display = 'none';
-    }, 500);
+    if (pageLoader) {
+        pageLoader.style.opacity = '0';
+        setTimeout(() => {
+            pageLoader.style.display = 'none';
+        }, 500);
+    }
 }
 
 document.querySelector('#apiVersionsDropdownItems').addEventListener('change', setEndpoints);
 
 document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) => {
     const pageLoader = document.querySelector('.page-loader');
-    pageLoader.style.display = 'block';
-    pageLoader.style.opacity = '1';
+    if (pageLoader) {
+        pageLoader.style.display = 'block';
+        pageLoader.style.opacity = '1';
+    }
     ReadyToRunTests.PageReady = false;
     const oldSelectedCalendar = currentSelectedCalendar;
     currentSelectedCalendar = ev.currentTarget.value;
