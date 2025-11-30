@@ -1334,6 +1334,12 @@ document.body.addEventListener( 'click', function ( event ) {
         return;
     }
 
+    // If clicking on tooltip itself (not trigger), just keep it open
+    if ( !target && tooltipEl ) {
+        event.stopPropagation();
+        return;
+    }
+
     event.stopPropagation(); // Prevent document click from immediately hiding it
 
     // If tooltip already exists, show it
