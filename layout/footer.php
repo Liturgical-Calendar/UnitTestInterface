@@ -25,7 +25,7 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
 ?>
     <!-- Bootstrap / sb-admin JavaScript-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"
-        integrity="sha512-xyvPrJ5kLOUDpsCBdQcosCc5R6EINKNdEUVl+w2F1MHvM0k6UcuP1RSXR1RggfptmLlUhThB5qFOiCpV7Vsj9g=="
+        integrity="sha512-HvOjJrdwNpDbkGJIG2ZNqDlVqMo77qbs4Me4cah0HoDrfhrbA+8SBlZn1KrvAQw7cILLPFJvdwIgphzQmMm+Pw=="
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin@7.0.7/dist/js/scripts.js"></script>
