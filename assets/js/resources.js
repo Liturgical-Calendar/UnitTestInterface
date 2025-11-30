@@ -603,6 +603,7 @@ const setupPage = () => {
     const sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
     document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
     ReadyToRunTests.PageReady = true;
+    ReadyToRunTests.tryEnableBtn();
     connectWebSocket();
 }
 
