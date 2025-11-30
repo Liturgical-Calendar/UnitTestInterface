@@ -476,7 +476,7 @@ let SpecificUnitTestYears = {};
  */
 const runTests = () => {
     switch ( currentState ) {
-        case TestState.ReadyState:
+        case TestState.ReadyState: {
             index = 0;
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
@@ -487,6 +487,7 @@ const runTests = () => {
             }
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
+        }
         case TestState.ExecutingValidations:
             if ( ++messageCounter === 3 ) {
                 console.log( 'one cycle complete, passing to next test..' )
@@ -575,7 +576,7 @@ const runTests = () => {
                 runTests();
             }
             break;
-        case TestState.JobsFinished:
+        case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
             bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
             const spinIcon = document.querySelector('.fa-spin');
@@ -591,6 +592,7 @@ const runTests = () => {
             }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
             break;
+        }
     }
 }
 
@@ -651,17 +653,20 @@ const connectWebSocket = () => {
             });
             document.querySelector('#successfulCount').textContent = ++successfulTests;
             switch ( currentState ) {
-                case TestState.ExecutingValidations:
+                case TestState.ExecutingValidations: {
                     document.querySelector('#successfulSourceDataTestsCount').textContent = ++successfulSourceDataTests;
                     break;
-                case TestState.ValidatingCalendarData:
+                }
+                case TestState.ValidatingCalendarData: {
                     document.querySelector('#successfulCalendarDataTestsCount').textContent = ++successfulCalendarDataTests;
                     break;
-                case TestState.SpecificUnitTests:
+                }
+                case TestState.SpecificUnitTests: {
                     document.querySelector('#successfulUnitTestsCount').textContent = ++successfulUnitTests;
                     let specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-success`).length;
                     document.querySelector(`#successful${responseData.test}TestsCount`).textContent = specificUnitTestSuccessCount;
                     break;
+                }
             }
         }
         else if ( responseData.type === "error" ) {
@@ -680,17 +685,20 @@ const connectWebSocket = () => {
             });
             document.querySelector('#failedCount').textContent = ++failedTests;
             switch ( currentState ) {
-                case TestState.ExecutingValidations:
+                case TestState.ExecutingValidations: {
                     document.querySelector('#failedSourceDataTestsCount').textContent = ++failedSourceDataTests;
                     break;
-                case TestState.ValidatingCalendarData:
+                }
+                case TestState.ValidatingCalendarData: {
                     document.querySelector('#failedCalendarDataTestsCount').textContent = ++failedCalendarDataTests;
                     break;
-                case TestState.SpecificUnitTests:
+                }
+                case TestState.SpecificUnitTests: {
                     document.querySelector('#failedUnitTestsCount').textContent = ++failedUnitTests;
                     let specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-danger`).length;
                     document.querySelector(`#failed${responseData.test}TestsCount`).textContent = specificUnitTestFailedCount;
                     break;
+                }
             }
         }
         if ( currentState !== TestState.JobsFinished ) {
@@ -701,21 +709,24 @@ const connectWebSocket = () => {
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
         switch ( currentState ) {
-            case TestState.ExecutingValidations:
+            case TestState.ExecutingValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
                 let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
                 document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestTime.duration ) );
                 break;
-            case TestState.ValidatingCalendarData:
+            }
+            case TestState.ValidatingCalendarData: {
                 performance.mark( 'calendarDataTestsEnd' );
                 let totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
                 document.querySelector('#totalCalendarDataTestsTime').textContent = MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) );
                 break;
-            case TestState.SpecificUnitTests:
+            }
+            case TestState.SpecificUnitTests: {
                 performance.mark( 'specificUnitTestsEnd' );
                 let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
                 document.querySelector('#totalUnitTestsTime').textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
                 break;
+            }
         }
     };
 
