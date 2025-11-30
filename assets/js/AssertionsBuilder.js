@@ -72,6 +72,19 @@ class AssertionsBuilder {
     static bgColor      = 'bg-success';
     static txtColor     = 'text-dark';
     static currentTest  = null;
+    static #dateFormatter = null;
+
+    /**
+     * Gets a cached Intl.DateTimeFormat instance for efficiency.
+     * @returns {Intl.DateTimeFormat}
+     */
+    static getDateFormatter() {
+        if (!AssertionsBuilder.#dateFormatter) {
+            const loc = typeof locale !== 'undefined' ? locale : navigator.language;
+            AssertionsBuilder.#dateFormatter = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeZone: 'UTC' });
+        }
+        return AssertionsBuilder.#dateFormatter;
+    }
 
 
     /**
@@ -148,7 +161,7 @@ class AssertionsBuilder {
     buildHtml() {
         console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
         let assertionBuildStr = '';
-        const dateFormatter = new Intl.DateTimeFormat(locale || navigator.language, { dateStyle: 'medium', timeZone: 'UTC' });
+        const dateFormatter = AssertionsBuilder.getDateFormatter();
         //console.log(this.assertions);
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
