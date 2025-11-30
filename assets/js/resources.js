@@ -632,6 +632,8 @@ let successfulSourceDataTests   = 0;
 let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
+let index                       = 0;
+let calendarIndex               = 0;
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
