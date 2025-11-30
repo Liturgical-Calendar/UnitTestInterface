@@ -1068,13 +1068,15 @@ document.querySelector('#btnCreateTest').addEventListener('click', () => {
         let yearSinceUntil = null;
         if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
             const bgInfoEl = document.querySelector('.testYearSpan.bg-info');
-            yearSinceUntil = parseInt(getTextNodeContent(bgInfoEl));
-            if (currentTestType === TestType.ExactCorrespondenceSince) {
-                proxiedTest.year_since = yearSinceUntil;
-                document.querySelector('#yearSince').value = yearSinceUntil;
-            } else {
-                proxiedTest.year_until = yearSinceUntil;
-                document.querySelector('#yearUntil').value = yearSinceUntil;
+            if (bgInfoEl) {
+                yearSinceUntil = parseInt(getTextNodeContent(bgInfoEl));
+                if (currentTestType === TestType.ExactCorrespondenceSince) {
+                    proxiedTest.year_since = yearSinceUntil;
+                    document.querySelector('#yearSince').value = yearSinceUntil;
+                } else {
+                    proxiedTest.year_until = yearSinceUntil;
+                    document.querySelector('#yearUntil').value = yearSinceUntil;
+                }
             }
         }
         let yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt(getTextNodeContent(el)));
