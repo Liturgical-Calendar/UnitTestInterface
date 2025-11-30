@@ -796,7 +796,7 @@ const loadAsyncData = () => {
  */
 const runTests = () => {
     switch ( currentState ) {
-        case TestState.ReadyState:
+        case TestState.ReadyState: {
             index = 0;
             messageCounter = 0;
             currentState = TestState.ExecutingResourceValidations;
@@ -813,6 +813,7 @@ const runTests = () => {
                 })
             );
             break;
+        }
         case TestState.ExecutingResourceValidations:
             if ( ++messageCounter === 3 ) {
                 console.log( 'one cycle complete, passing to next test..' );
