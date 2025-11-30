@@ -795,7 +795,7 @@ const connectWebSocket = () => {
  * @param {string} txt - The text to set.
  */
 const setTestRunnerBtnLblTxt = ( txt ) => {
-    document.querySelector( '#startTestRunnerBtnLbl' ).textContent = txt;
+    updateText('startTestRunnerBtnLbl', txt);
 }
 
 /**
