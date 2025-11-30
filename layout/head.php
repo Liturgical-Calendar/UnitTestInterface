@@ -26,6 +26,9 @@ $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
     <!-- Custom styles for this template-->
     <link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin@7.0.7/dist/css/styles.css" rel="stylesheet">
 <?php
+if (in_array($pageName, ['index', 'resources'], true)) {
+    echo "<link href=\"assets/css/common.css\" rel=\"stylesheet\">";
+}
 if (file_exists("assets/css/{$pageName}.css")) {
     echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
 }
