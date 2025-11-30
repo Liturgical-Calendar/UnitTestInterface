@@ -7,7 +7,7 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(dirname(__DIR__), ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
 $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
 $dotenv->ifPresent(['API_PORT', 'WS_PORT'])->isInteger();
-$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'production']);
+$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'staging', 'production']);
 $dotenv->ifPresent('WS_PROTOCOL')->notEmpty()->allowedValues(['ws', 'wss']);
 $dotenv->ifPresent('WS_HOST')->notEmpty();
 $dotenv->safeLoad();
