@@ -554,9 +554,9 @@ document.querySelector('#litCalTestsSelect').addEventListener('change', async (e
         currentTest.assertions = currentTest.assertions.map(el => new Assertion(el));
         proxiedTest = new Proxy(currentTest, sanitizeOnSetValue);
 
-        document.querySelector('#testName').textContent = proxiedTest.name;
+        updateText('testName', proxiedTest.name);
         //$('#testType').val( proxiedTest.testType ).change();
-        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.test_type;
+        updateText('cardHeaderTestType', proxiedTest.test_type);
         const descEl = document.querySelector('#description');
         descEl.setAttribute('rows', 1);
         descEl.value = proxiedTest.description;
@@ -836,7 +836,7 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
         layoutMode: 'fitRows'
     });
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
-    document.querySelector('#defineTestModalLabel').textContent = modalLabel[currentTestType];
+    updateText('defineTestModalLabel', modalLabel[currentTestType]);
     if ('edittest' in ev.relatedTarget.dataset) {
         carousel.to(1);
     }
@@ -1077,8 +1077,8 @@ document.querySelector('#btnCreateTest').addEventListener('click', () => {
             }
             proxiedTest.assertions.push(new Assertion(year, dateX, assert, assertion));
         });
-        document.querySelector('#testName').textContent = proxiedTest.name;
-        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.test_type;
+        updateText('testName', proxiedTest.name);
+        updateText('cardHeaderTestType', proxiedTest.test_type);
         document.querySelector('#description').setAttribute('rows', '2');
         const descriptionEl = document.querySelector('#description');
         descriptionEl.value = proxiedTest.description;
