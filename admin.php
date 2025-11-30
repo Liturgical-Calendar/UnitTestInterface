@@ -33,7 +33,7 @@ function isLocalhost(): bool
             in_array($serverName, $localhostNames);
 }
 
-$dotenv = Dotenv::createMutable($projectFolder, ['.env', '.env.local', '.env.development', '.env.production'], false);
+$dotenv = Dotenv::createImmutable($projectFolder, ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
 $dotenv->safeLoad();
 
 $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();

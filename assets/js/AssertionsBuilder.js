@@ -14,7 +14,7 @@ const TestType = Object.freeze({
  * @readonly
  * @enum {string}
  * @property {string} EventNotExists - Represents that the liturgical event does not exist.
- * @property {string} EventTypeExact - Represents that the liturgical event exists and has the expected timestamp.
+ * @property {string} EventTypeExact - Represents that the liturgical event exists and has the expected date.
  */
 const AssertType = Object.freeze({
     EventNotExists:             'eventNotExists',
@@ -148,11 +148,14 @@ class AssertionsBuilder {
     buildHtml() {
         console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
         let assertionBuildStr = '';
+        const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
         //console.log(this.assertions);
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
             //console.log(assertion);
-            const expectedDateStr = assertion.expected_value !== null ? assertion.expected_value : '---';
+            const expectedDateStr = assertion.expected_value !== null
+                ? dateFormatter.format(new Date(assertion.expected_value))
+                : '---';
             const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
             let sundayCheck = '';
             if(AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {

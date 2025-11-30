@@ -4,7 +4,7 @@ require "./vendor/autoload.php";
 
 use Dotenv\Dotenv;
 
-$dotenv = Dotenv::createImmutable(dirname(__DIR__), ['.env', '.env.local', '.env.development', '.env.production'], false);
+$dotenv = Dotenv::createImmutable(dirname(__DIR__), ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
 $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
 $dotenv->ifPresent(['API_PORT', 'WS_PORT'])->isInteger();
 $dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'production']);

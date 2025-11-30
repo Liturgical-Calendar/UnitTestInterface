@@ -588,8 +588,7 @@ $(document).on('change', '#APICalendarSelect', async (ev) => {
 });
 
 $(document).on('click', '.editDate', ev => {
-    const curVal = Number(ev.currentTarget.previousSibling.dataset.value) * 1000;
-    const curDate = new Date( curVal );
+    const curDate = new Date(ev.currentTarget.previousSibling.dataset.value);
     const curDateVal = curDate.toISOString().split('T')[0];
     const pElement = ev.currentTarget.parentElement;
     pElement.classList.remove('bg-success', 'text-white');
@@ -633,9 +632,7 @@ $(document).on('change', '.expectedValue > [type=date]', ev => {
     proxiedTest.assertions[assertionIndex].expected_value = dateTimeString;
     $grandpa[0].classList.remove('bg-warning','text-dark');
     $grandpa[0].classList.add('bg-success','text-white');
-    console.log(ev.currentTarget.parentNode.dataset);
-    ev.currentTarget.parentNode.dataset.value = timestamp / 1000;
-    console.log(ev.currentTarget.parentNode.dataset);
+    ev.currentTarget.parentNode.dataset.value = dateTimeString;
     ev.currentTarget.parentNode.textContent = dateTimeString;
 });
 
@@ -1014,7 +1011,7 @@ $(document).on('click', '#btnCreateTest', () => {
             } else {
                 baseDate.setUTCFullYear(year);
                 assert = 'eventExists AND hasExpectedDate';
-                dateX = Date.parse(`${baseDate.toISOString()}`) / 1000;
+                dateX = baseDate.toISOString().split('T')[0] + 'T00:00:00+00:00';
                 assertion = proxiedTest.description;
             }
             proxiedTest.assertions.push(new Assertion(year, dateX, assert, assertion));
