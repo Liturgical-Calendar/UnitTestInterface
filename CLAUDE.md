@@ -180,6 +180,56 @@ The server's `Health.php` uses regex patterns to transform these `validate` valu
 
 Using incorrect categories (like `widerregioncalendar`) causes the server to use the raw `sourceFile` value as the path, which fails.
 
+### Missal (Proprium de Sanctis) Validation
+
+For validating national/regional missal source files, use `category: "sourceDataCheck"` with a specially formatted `validate` field:
+
+```javascript
+// Regional missal (e.g., Italian 1983)
+{
+    "validate": "proprium-de-sanctis-IT-1983",  // NOT the missal_id "IT_1983"
+    "sourceFile": "IT_1983",
+    "category": "sourceDataCheck"
+}
+
+// Editio Typica (universal missal)
+{
+    "validate": "proprium-de-sanctis-1970",     // Year only, no region code
+    "sourceFile": "EDITIO_TYPICA_1970",
+    "category": "sourceDataCheck"
+}
+```
+
+**Format Conversion:**
+
+The `missal_id` from the API must be converted to the `validate` format:
+
+| missal_id             | validate format                  |
+|-----------------------|----------------------------------|
+| `IT_1983`             | `proprium-de-sanctis-IT-1983`    |
+| `US_2011`             | `proprium-de-sanctis-US-2011`    |
+| `EDITIO_TYPICA_1970`  | `proprium-de-sanctis-1970`       |
+| `EDITIO_TYPICA_2002`  | `proprium-de-sanctis-2002`       |
+
+**Conversion Logic:**
+
+```javascript
+const parts = missal_id.split('_');
+let validateStr;
+if (parts.length === 2 && /^[A-Z]{2}$/.test(parts[0])) {
+    // Regional: "IT_1983" -> "proprium-de-sanctis-IT-1983"
+    validateStr = `proprium-de-sanctis-${parts[0]}-${parts[1]}`;
+} else {
+    // Editio Typica: "EDITIO_TYPICA_1970" -> "proprium-de-sanctis-1970"
+    const year = parts[parts.length - 1];
+    validateStr = `proprium-de-sanctis-${year}`;
+}
+```
+
+The server's `Health.php` uses `RomanMissal::getSanctoraleFileName()` to resolve the actual file path from this pattern.
+
+**Note:** The `/missals` API endpoint returns `api_path` (URL), not `data_path` (filesystem path). For source data validation, you must use the `sourceDataCheck` category with the proper `validate` format—do not use the `api_path` directly.
+
 ### Server Response Format
 
 Server responses include:

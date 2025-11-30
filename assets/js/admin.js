@@ -433,17 +433,24 @@ const serializeUnitTest = () => {
     proxiedTest.assertions = [];
     let assertionDivs = document.querySelectorAll('#assertionsContainer > div');
     assertionDivs.forEach(div => {
-        const year = Number(div.querySelector('p.testYear').textContent);
-        const expected_value = div.querySelector('div > span.expectedValue').textContent === '---' ? null :div.querySelector('.expectedValue').getAttribute('data-value');
-        const assert = div.querySelector('.assert').textContent;
-        const assertion = div.querySelector('[contenteditable]').textContent;
-        const hasComment = div.querySelector('.comment > svg').getAttribute('data-icon') === 'comment-dots';
+        const yearEl = div.querySelector('p.testYear');
+        const year = yearEl ? Number(yearEl.textContent) : null;
+        const expectedValueEl = div.querySelector('.expectedValue');
+        const expected_value = expectedValueEl?.textContent === '---' ? null : expectedValueEl?.getAttribute('data-value');
+        const assertEl = div.querySelector('.assert');
+        const assert = assertEl?.textContent;
+        const assertionEl = div.querySelector('[contenteditable]');
+        const assertion = assertionEl?.textContent;
+        const commentSvg = div.querySelector('.comment > svg');
+        const hasComment = commentSvg?.getAttribute('data-icon') === 'comment-dots';
         const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
         proxiedTest.assertions.push(new Assertion(year, expected_value, assert, assertion, comment));
     });
-    if( document.querySelector('#APICalendarSelect').value !== 'VA' ) {
-        const currentCalendarType = document.querySelector(`#APICalendarSelect [value="${document.querySelector('#APICalendarSelect').value}"]`).dataset.calendartype;
-        proxiedTest.applies_to = {[currentCalendarType]: document.querySelector('#APICalendarSelect').value};
+    const apiCalendarSelect = document.querySelector('#APICalendarSelect');
+    if( apiCalendarSelect?.value !== 'VA' ) {
+        const selectedOption = apiCalendarSelect.options[apiCalendarSelect.selectedIndex];
+        const currentCalendarType = selectedOption?.dataset.calendartype;
+        proxiedTest.applies_to = {[currentCalendarType]: apiCalendarSelect.value};
     }
     return new UnitTest( proxiedTest );
 }
@@ -489,7 +496,7 @@ const API = {
  */
 const rebuildLitEventsOptions = async (element) => {
     console.log(`rebuildLitEventsOptions: ${element.value}`);
-    const selectedOption = element.querySelector(`option[value="${element.value}"]`);
+    const selectedOption = element.options[element.selectedIndex];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
     API.calendartype = calendarType;
