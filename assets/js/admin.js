@@ -1,4 +1,18 @@
 
+/**
+ * Escapes a value for safe use in CSS attribute selectors.
+ * Uses CSS.escape when available, with a fallback for older browsers.
+ * @param {string} value - The value to escape.
+ * @returns {string} The escaped value safe for use in selectors.
+ */
+const escapeSelector = (value) => {
+    if (typeof CSS !== 'undefined' && CSS.escape) {
+        return CSS.escape(value);
+    }
+    // Fallback: escape special characters for CSS selectors
+    return value.replace(/["'\\#.:[\]()>+~=^$*|]/g, '\\$&');
+};
+
 /** DEFINE OUR GLOBAL VARIABLES */
 
 /**
@@ -801,7 +815,7 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
         console.log('event_key: ', proxiedTest.event_key);
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
         document.querySelector('#existingLitEventName').value = proxiedTest.event_key;
-        existingOption = document.querySelector(`#existingLitEventsList option[value="${proxiedTest.event_key}"]`);
+        existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(proxiedTest.event_key)}"]`);
         console.log('existingOption', existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
         minYear = Math.min(...years);
@@ -873,7 +887,7 @@ document.querySelector('#carouselCreateNewUnitTest').addEventListener('slid.bs.c
         let firstYear = document.querySelector('#lowerRange').value;
         let monthDay = '-01-01';
         const selectedEventVal = document.querySelector('#existingLitEventName').value;
-        const selectedOption = document.querySelector(`#existingLitEventsList option[value="${selectedEventVal}"]`);
+        const selectedOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(selectedEventVal)}"]`);
         if (selectedOption && selectedOption.dataset.month && selectedOption.dataset.month !== '' && selectedOption.dataset.day && selectedOption.dataset.day !== '') {
             const month = selectedOption.dataset.month.padStart(2, '0');
             const day = selectedOption.dataset.day.padStart(2, '0');
@@ -891,7 +905,7 @@ document.querySelector('#existingLitEventName').addEventListener('change', ev =>
     const currentVal = ev.currentTarget.value;
     console.log(currentVal);
     // Determine whether an option exists with the current value of the input.
-    const existingOption = document.querySelector(`#existingLitEventsList option[value="${currentVal}"]`);
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentVal)}"]`);
     if (existingOption) {
         ev.currentTarget.classList.remove('is-invalid');
         ev.currentTarget.setCustomValidity('');
@@ -946,7 +960,7 @@ document.addEventListener('change', ev => {
     let titleAttr = '';
     let lightClass = '';
     const currentEventKey = document.querySelector('#existingLitEventName').value;
-    const existingOption = document.querySelector(`#existingLitEventsList option[value="${currentEventKey}"]`);
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentEventKey)}"]`);
     for (let year = minYear; year <= maxYear; year++) {
         if (existingOption && existingOption.dataset.month && existingOption.dataset.day) {
             let eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
