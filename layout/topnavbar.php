@@ -72,7 +72,7 @@
             href="/admin.php?apiVersion=dev"
             id = "admin_url"
             title="<?php echo _("Unit Tests Admin"); ?>">
-            <i class="fas fa-cog"></i>
+            <i class="fas fa-gear"></i>
         </a>
         <a class="btn btn-outline-light text-dark border-0 me-2"
             href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank"

@@ -779,7 +779,7 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
         isotopeYearsToTestGrid.destroy();
     }
     document.querySelector('#yearsToTestGrid').innerHTML = '';
-    let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
+    let removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" role="button" title="remove"></i>';
     let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
     let years;
@@ -933,7 +933,7 @@ document.addEventListener('change', ev => {
     const maxYear = Math.max(...rangeVals);
     isotopeYearsToTestGrid.destroy();
     document.querySelector('#yearsToTestGrid').innerHTML = '';
-    let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
+    let removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" role="button" title="remove"></i>';
     let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
     let titleAttr = '';
