@@ -920,8 +920,7 @@ const fetchMetadataAndTests = () => {
 const appendAccordionItem = ( obj ) => {
 
     let unitTestStr = '';
-    let idy = 0;
-    obj.assertions.forEach( assertion => {
+    obj.assertions.forEach( (assertion, idy) => {
         let dateStr = '';
         if ( assertion.hasOwnProperty( 'expectedValue' ) && null !== assertion.expectedValue ) {
             let date = new Date( assertion.expectedValue );
@@ -942,7 +941,6 @@ const appendAccordionItem = ( obj ) => {
                 </div>
             </div>
         `;
-        ++idy;
     } );
 
     document.querySelector('#specificUnitTestsAccordion').insertAdjacentHTML('beforeend', `
