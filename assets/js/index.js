@@ -264,19 +264,20 @@ class TestState {
  * @return {string} The HTML template as a string.
  */
 const testTemplate = ( calendarName ) => {
+    const calendarSlug = slugify(calendarName);
     return `
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
-<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarName}">
+<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarSlug}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> data exists</p>
     </div>
 </div>
-<div class="card text-white bg-info rounded-0 json-valid calendar-${calendarName}">
+<div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
     </div>
 </div>
-<div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarName}">
+<div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> schema valid</p>
     </div>
@@ -332,19 +333,20 @@ const sourceDataCheckTemplate = ( item, idx ) => {
             categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
             break;
     }
+    const validateSlug = slugify(item.validate);
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
     <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate( item.validate, 14 ) : truncate( item.validate, 22 )}</span>${item.category !== 'universalcalendar' ? ` <i class="fas fa-circle-info fa-fw" role="button" title="${categoryStr}"></i>` : ''}</p>
-    <div class="card text-white bg-info rounded-0 ${item.validate} file-exists">
+    <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> data exists</span></p>
         </div>
     </div>
-    <div class="card text-white bg-info rounded-0 ${item.validate} json-valid">
+    <div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
         </div>
     </div>
-    <div class="card text-white bg-info rounded-0 ${item.validate} schema-valid">
+    <div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> schema valid</span></p>
         </div>
@@ -1123,7 +1125,7 @@ const setupPage = () => {
             const yearEl = calendarDataTests.querySelector(`.year-${Years[ idx ]}`);
             yearEl.insertAdjacentHTML('afterend', NationalCalendarTemplates.join( '' ));
             // Add year class to newly inserted cards (those without a year class yet)
-            calendarDataTests.querySelectorAll(`.calendar-${currentSelectedCalendar}`).forEach(card => {
+            calendarDataTests.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}`).forEach(card => {
                 if (![...card.classList].some(cls => cls.startsWith('year-'))) {
                     card.classList.add(`year-${Years[idx]}`);
                 }
@@ -1222,9 +1224,9 @@ document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) =
         currentNationalCalendar = currentSelectedCalendar;
     }
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
-    document.querySelectorAll(`.calendar-${oldSelectedCalendar}`).forEach(el => {
-        el.classList.remove(`calendar-${oldSelectedCalendar}`);
-        el.classList.add(`calendar-${currentSelectedCalendar}`);
+    document.querySelectorAll(`.calendar-${slugify(oldSelectedCalendar)}`).forEach(el => {
+        el.classList.remove(`calendar-${slugify(oldSelectedCalendar)}`);
+        el.classList.add(`calendar-${slugify(currentSelectedCalendar)}`);
     });
     setupPage();
     ReadyToRunTests.tryEnableBtn();
@@ -1240,7 +1242,7 @@ document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) =
     const oldResponseType = currentResponseType;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
-    document.querySelectorAll(`.calendar-${currentSelectedCalendar}.json-valid .card-text`).forEach(el => {
+    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.json-valid .card-text`).forEach(el => {
         el.innerHTML = el.innerHTML.replace( `${oldResponseType} valid`, `${currentResponseType} valid` );
     });
     setupPage();
