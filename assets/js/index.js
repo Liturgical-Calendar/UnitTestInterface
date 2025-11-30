@@ -611,6 +611,11 @@ const runTests = () => {
  * error occurs, it sets the state to JobsFinished and shows an error toast.
  */
 const connectWebSocket = () => {
+    // Guard against creating multiple connections
+    if (conn && (conn.readyState === WebSocket.OPEN || conn.readyState === WebSocket.CONNECTING)) {
+        console.log('WebSocket connection already exists, skipping new connection');
+        return;
+    }
     console.log( `Connecting to websocket... WS_PROTOCOL: ${WS_PROTOCOL}, WS_HOST: ${WS_HOST}, WS_PORT: ${WS_PORT}` );
     const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[ 443, 80 ].includes( WS_PORT ) ? '' : `:${WS_PORT}`}`;
     conn = new WebSocket( websocketURL );
