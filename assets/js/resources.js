@@ -625,7 +625,6 @@ let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
 let index                       = 0;
-let calendarIndex               = 0;
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
@@ -935,7 +934,6 @@ document.querySelector('#apiVersionsDropdownItems').addEventListener('change', s
 document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
         index = 0;
-        calendarIndex = 0;
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
