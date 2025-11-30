@@ -181,6 +181,32 @@ class ReadyToRunTests {
 }
 
 /**
+ * Safely shows a Bootstrap Collapse component if the element exists.
+ * @param {string} selector - The CSS selector for the element.
+ */
+const safeCollapseShow = (selector) => {
+    const el = document.querySelector(selector);
+    if (el) {
+        bootstrap.Collapse.getOrCreateInstance(el).show();
+    } else {
+        console.warn(`${selector} not found, skipping collapse`);
+    }
+};
+
+/**
+ * Safely shows a Bootstrap Toast component if the element exists.
+ * @param {string} selector - The CSS selector for the element.
+ */
+const safeToastShow = (selector) => {
+    const el = document.querySelector(selector);
+    if (el) {
+        bootstrap.Toast.getOrCreateInstance(el).show();
+    } else {
+        console.warn(`${selector} not found, skipping toast`);
+    }
+};
+
+/**
  * Converts a given time in milliseconds to a human readable string.
  * The method tries to break down the given time into hours, minutes, seconds and milliseconds.
  * If a time unit is not needed (e.g. if the given time is less than 1 hour), it is left out.
@@ -487,7 +513,7 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
-            bootstrap.Collapse.getOrCreateInstance(document.querySelector('#sourceDataTests')).show();
+            safeCollapseShow('#sourceDataTests');
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
         }
@@ -512,7 +538,7 @@ const runTests = () => {
                             responsetype: currentResponseType
                         } )
                     );
-                    bootstrap.Collapse.getOrCreateInstance(document.querySelector('#calendarDataTests')).show();
+                    safeCollapseShow('#calendarDataTests');
                 }
             }
             break;
@@ -537,8 +563,8 @@ const runTests = () => {
                         calendar: currentSelectedCalendar,
                         category: currentCalendarCategory
                     } ) );
-                    bootstrap.Collapse.getOrCreateInstance(document.querySelector('#specificUnitTests')).show();
-                    bootstrap.Collapse.getOrCreateInstance(document.querySelector(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`)).show();
+                    safeCollapseShow('#specificUnitTests');
+                    safeCollapseShow(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`);
                 }
             }
             break;
@@ -564,7 +590,7 @@ const runTests = () => {
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
                 } ) );
-                bootstrap.Collapse.getOrCreateInstance(document.querySelector(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`)).show();
+                safeCollapseShow(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`);
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
@@ -581,7 +607,7 @@ const runTests = () => {
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
-            bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
+            safeToastShow('#tests-complete');
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
@@ -619,7 +645,7 @@ const connectWebSocket = () => {
 
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
-        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-connected')).show();
+        safeToastShow('#websocket-connected');
         const wsStatus = document.querySelector('#websocket-status');
         if (wsStatus) {
             wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
@@ -763,7 +789,7 @@ const connectWebSocket = () => {
                     wsSvg.classList.add('fa-plug-circle-xmark');
                 }
             }
-            bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-closed')).show();
+            safeToastShow('#websocket-closed');
             document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
             setTimeout( function () {
                 connectWebSocket();
@@ -792,7 +818,7 @@ const connectWebSocket = () => {
         }
         console.error( 'Websocket connection error:' );
         console.log( e );
-        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-error')).show();
+        safeToastShow('#websocket-error');
         document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
         if ( connectionAttempt === null ) {
             connectionAttempt = setInterval( function () {
@@ -924,13 +950,19 @@ const appendAccordionItem = ( obj ) => {
     let unitTestStr = '';
     obj.assertions.forEach( (assertion, idy) => {
         let dateStr = '';
-        if ( assertion.hasOwnProperty( 'expectedValue' ) && null !== assertion.expectedValue ) {
-            let date = new Date( assertion.expectedValue );
-            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( date );
-        }
-        else if ( assertion.hasOwnProperty( 'expected_value' ) && null !== assertion.expected_value ) {
-            let date = new Date( assertion.expected_value );
-            dateStr = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( date );
+        const rawDate =
+            (assertion.hasOwnProperty('expectedValue') && assertion.expectedValue != null)
+                ? assertion.expectedValue
+                : (assertion.hasOwnProperty('expected_value') && assertion.expected_value != null)
+                    ? assertion.expected_value
+                    : null;
+        if (rawDate !== null) {
+            const date = new Date(rawDate);
+            if (!Number.isNaN(date.getTime())) {
+                dateStr = new Intl.DateTimeFormat(locale, IntlDTOptions).format(date);
+            } else {
+                console.warn('Unexpected date value in assertion', { assertion, rawDate });
+            }
         }
         unitTestStr += `
             <div class="col-1 ${idy === 0 || idy % 11 === 0 ? 'offset-1' : ''}">
@@ -1031,11 +1063,14 @@ const setupPage = () => {
     // store the original value of the #startTestRunnerBtnLbl for later use
     // but only if it hasn't been set yet (only the first time we do a page setup)
     if ( startTestRunnerBtnLbl === '' ) {
-        startTestRunnerBtnLbl = document.querySelector( '#startTestRunnerBtnLbl' ).textContent;
+        const btnLbl = document.querySelector( '#startTestRunnerBtnLbl' );
+        if (btnLbl) {
+            startTestRunnerBtnLbl = btnLbl.textContent;
+        }
     }
 
     const apiCalendarSelect = document.querySelector('#APICalendarSelect');
-    if ( apiCalendarSelect.children.length === 1 ) {
+    if ( apiCalendarSelect && apiCalendarSelect.children.length === 1 ) {
         nations.forEach( item => {
             if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
                 apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>`);
@@ -1054,14 +1089,24 @@ const setupPage = () => {
     if ( currentSelectedCalendar === 'VA' ) {
         currentSourceDataChecks = [ ...sourceDataChecks ];
     } else {
-        const nation = currentCalendarCategory === 'nationalcalendar'
-            ? currentSelectedCalendar
-            : MetaData.diocesan_calendars.find( diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar ).nation;
+        let nation = currentSelectedCalendar;
+        if (currentCalendarCategory !== 'nationalcalendar') {
+            const diocesanData = MetaData.diocesan_calendars.find( diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar );
+            if (!diocesanData) {
+                console.error('No diocesan calendar metadata found for', currentSelectedCalendar);
+                return;
+            }
+            nation = diocesanData.nation;
+        }
         console.log( 'sourceDataChecks:' );
         console.log( sourceDataChecks );
         currentSourceDataChecks = [ ...sourceDataChecks ];
 
         const nationalCalendarData = MetaData.national_calendars.find( nationalCalendar => nationalCalendar.calendar_id === nation );
+        if (!nationalCalendarData) {
+            console.error('No national calendar metadata found for', nation);
+            return;
+        }
         currentSourceDataChecks.push( {
             "validate": `wider-region-${nationalCalendarData.wider_region}`,
             "sourceFile": nationalCalendarData.wider_region,
@@ -1108,7 +1153,7 @@ const setupPage = () => {
     } );
 
     const calendarDataTests = document.querySelector('.calendardata-tests');
-    if ( calendarDataTests.children.length === 0 ) {
+    if ( calendarDataTests && calendarDataTests.children.length === 0 ) {
         document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
         let idx;
         for ( let i = Years.length; i > 0; i-- ) {
@@ -1123,11 +1168,14 @@ const setupPage = () => {
                 }
             });
         }
-    } else {
+    } else if (calendarDataTests) {
         document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
     }
 
-    document.querySelector('#specificUnitTestsAccordion').innerHTML = '';
+    const specificUnitTestsAccordion = document.querySelector('#specificUnitTestsAccordion');
+    if (specificUnitTestsAccordion) {
+        specificUnitTestsAccordion.innerHTML = '';
+    }
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
         //console.log( unitTest );
