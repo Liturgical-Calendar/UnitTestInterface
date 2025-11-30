@@ -183,7 +183,7 @@ class AssertionsBuilder {
                     sundayCheck = 'bg-warning text-dark';
                 }
             }
-            const editDateDisabled = assertion.expected_value === null ? ' disabled' : '';
+            const editDateDisabled = (assertion.expected_value === null || eventDate === null) ? ' disabled' : '';
             assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>${AssertionsBuilder.appliesTo}</span></p>
