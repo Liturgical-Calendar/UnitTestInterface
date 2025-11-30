@@ -107,6 +107,18 @@ const slugify = (str) => {
         .replace(/[^a-z0-9-_]/g, '');
 };
 
+/**
+ * Slugifies class names in a CSS selector while preserving structure.
+ * Transforms ".TestName.year-2024" to ".testname.year-2024".
+ * @param {string} selector - The CSS selector to transform.
+ * @returns {string} The selector with slugified class names.
+ */
+const slugifySelector = (selector) => {
+    return selector.replace(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g, (match, className) => {
+        return '.' + slugify(className);
+    });
+};
+
 // Define the common callback function
 const handleLanguageChange = (event) => {
     // Retrieve the ID of the clicked item

@@ -639,7 +639,7 @@ const connectWebSocket = () => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            document.querySelectorAll(responseData.classes).forEach(el => {
+            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
                 el.classList.remove('bg-info');
                 el.classList.add('bg-success');
                 const questionIcon = el.querySelector('.fa-circle-question');
@@ -668,7 +668,7 @@ const connectWebSocket = () => {
             }
         }
         else if ( responseData.type === "error" ) {
-            document.querySelectorAll(responseData.classes).forEach(el => {
+            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
                 el.classList.remove('bg-info');
                 el.classList.add('bg-danger');
                 const questionIcon = el.querySelector('.fa-circle-question');
