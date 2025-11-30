@@ -487,10 +487,7 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
-            const sourceDataTestsEl = document.querySelector('#sourceDataTests');
-            if (!sourceDataTestsEl.classList.contains('show')) {
-                bootstrap.Collapse.getOrCreateInstance(sourceDataTestsEl).show();
-            }
+            bootstrap.Collapse.getOrCreateInstance(document.querySelector('#sourceDataTests')).show();
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
         }
@@ -587,14 +584,14 @@ const runTests = () => {
             bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
+                spinIcon.classList.remove('fa-spin', 'fa-rotate');
+                spinIcon.classList.add('fa-stop');
                 const btnPrimary = spinIcon.closest('.btn-primary');
                 if (btnPrimary) {
                     btnPrimary.disabled = true;
                     btnPrimary.classList.remove('btn-primary');
                     btnPrimary.classList.add('btn-secondary');
                 }
-                spinIcon.classList.remove('fa-spin', 'fa-rotate');
-                spinIcon.classList.add('fa-stop');
             }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
             break;
