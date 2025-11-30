@@ -796,7 +796,7 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
     }
     for( let year = minYear; year <= maxYear; year++ ) {
         if($existingOption && $existingOption[0].dataset.month && $existingOption[0].dataset.day) {
-            eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+            let eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             if( eventDate.getUTCDay() === 0 ) {
                 titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
                 lightClass = ' bg-light';
@@ -923,7 +923,7 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + currentEventKey + '"]');
     for( let year = minYear; year <= maxYear; year++ ) {
         if($existingOption[0].dataset.month && $existingOption[0].dataset.day) {
-            eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+            let eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             if( eventDate.getUTCDay() === 0 ) {
                 titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
                 lightClass = ' bg-light';
