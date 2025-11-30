@@ -326,7 +326,7 @@ const sourceDataCheckTemplate = ( item, idx ) => {
         categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
     } else if ( item.validate.startsWith('diocesan-calendar-') ) {
         categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
-    } else if ( item.category === 'propriumdesanctis' ) {
+    } else if ( item.validate.startsWith('proprium-de-sanctis-') ) {
         categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
     }
     const validateSlug = slugify(item.validate);
@@ -1068,15 +1068,27 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     });
 
     // Add missal checks
+    // Server expects validate like "proprium-de-sanctis-IT-1983" for sourceDataCheck category
     nationalCalendarData.missals.forEach((missal) => {
         console.log('retrieving Missal definition for missal: ' + missal);
         const missalDef = Object.values(RomanMissals).find(el => el.missal_id === missal);
-        if (missalDef?.data_path) {
-            console.log('found Missal definition for missal: ' + missal + ', sourceFile: ' + missalDef.data_path);
+        if (missalDef) {
+            // Convert missal_id (e.g., "IT_1983") to validate format (e.g., "proprium-de-sanctis-IT-1983")
+            const parts = missal.split('_');
+            let validateStr;
+            if (parts.length === 2 && /^[A-Z]{2}$/.test(parts[0])) {
+                // Regional missal like "IT_1983" -> "proprium-de-sanctis-IT-1983"
+                validateStr = `proprium-de-sanctis-${parts[0]}-${parts[1]}`;
+            } else {
+                // Editio typica like "EDITIO_TYPICA_1970" -> "proprium-de-sanctis-1970"
+                const year = parts[parts.length - 1];
+                validateStr = `proprium-de-sanctis-${year}`;
+            }
+            console.log('found Missal definition for missal: ' + missal + ', validate: ' + validateStr);
             checks.push({
-                "validate": missal,
-                "sourceFile": missalDef.data_path,
-                "category": "propriumdesanctis"
+                "validate": validateStr,
+                "sourceFile": missal,
+                "category": "sourceDataCheck"
             });
         } else {
             console.warn('could not find Missal definition for missal: ' + missal);
