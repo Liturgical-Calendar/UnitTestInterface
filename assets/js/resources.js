@@ -972,8 +972,10 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
 
 document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) => {
     const pageLoader = document.querySelector('.page-loader');
-    pageLoader.style.display = 'block';
-    pageLoader.style.opacity = '1';
+    if (pageLoader) {
+        pageLoader.style.display = 'block';
+        pageLoader.style.opacity = '1';
+    }
     ReadyToRunTests.PageReady = false;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
