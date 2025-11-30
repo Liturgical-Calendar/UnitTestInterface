@@ -1098,17 +1098,12 @@ const setupPage = () => {
             calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
             const yearEl = calendarDataTests.querySelector(`.year-${Years[ idx ]}`);
             yearEl.insertAdjacentHTML('afterend', NationalCalendarTemplates.join( '' ));
-            // Add year class to siblings (skip past the calendar name header, then add to all card elements)
-            let sibling = yearEl.nextElementSibling;
-            // Skip the calendar name header(s)
-            while (sibling && sibling.classList.contains('currentSelectedCalendar')) {
-                sibling = sibling.nextElementSibling;
-            }
-            // Add year class to the card elements
-            while (sibling && (sibling.classList.contains('file-exists') || sibling.classList.contains('json-valid') || sibling.classList.contains('schema-valid'))) {
-                sibling.classList.add(`year-${Years[ idx ]}`);
-                sibling = sibling.nextElementSibling;
-            }
+            // Add year class to newly inserted cards (those without a year class yet)
+            calendarDataTests.querySelectorAll(`.calendar-${currentSelectedCalendar}`).forEach(card => {
+                if (!card.className.includes('year-')) {
+                    card.classList.add(`year-${Years[idx]}`);
+                }
+            });
         }
     } else {
         document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
