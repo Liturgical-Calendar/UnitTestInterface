@@ -388,62 +388,6 @@ const HTMLEncode = (str) => {
 }
 
 /**
- * Escapes HTML special characters for safe use in HTML attributes.
- * @param {string} str - The string to escape.
- * @returns {string} The escaped string.
- */
-const escapeHtmlAttr = (str) => {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-};
-
-/**
- * Escapes HTML special characters and converts URLs to clickable links.
- * First escapes all HTML to prevent XSS, then safely linkifies URLs.
- * @param {string} str - The string to process.
- * @returns {string} The escaped and linkified string.
- */
-const escapeQuotesAndLinkifyUrls = (str) => {
-    // First, find all URLs and their positions
-    const urlRegex = /(?<prefix>["'({\[])?(https?:\/\/[^\s"'<>(){}\[\]]+)(?<suffix>[)"'\]}.,;:]?)/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = urlRegex.exec(str)) !== null) {
-        // Add text before this URL (escaped)
-        if (match.index > lastIndex) {
-            parts.push(escapeHtmlAttr(str.slice(lastIndex, match.index)));
-        }
-
-        const prefix = match[1] || '';
-        const url = match[2];
-        const suffix = match[3] || '';
-
-        // If prefix and suffix form a known pair, keep them outside the link
-        const pairs = { '"': '"', "'": "'", '(': ')', '{': '}', '[': ']' };
-        if (prefix && pairs[prefix] === suffix) {
-            parts.push(`${escapeHtmlAttr(prefix)}<a href="${escapeHtmlAttr(url)}" target="_blank">${escapeHtmlAttr(url)}</a>${escapeHtmlAttr(suffix)}`);
-        } else {
-            parts.push(`${escapeHtmlAttr(prefix)}<a href="${escapeHtmlAttr(url)}" target="_blank">${escapeHtmlAttr(url)}</a>${escapeHtmlAttr(suffix)}`);
-        }
-
-        lastIndex = match.index + match[0].length;
-    }
-
-    // Add remaining text after last URL (escaped)
-    if (lastIndex < str.length) {
-        parts.push(escapeHtmlAttr(str.slice(lastIndex)));
-    }
-
-    return parts.join('');
-};
-
-/**
  * Establishes a websocket connection to the test server.
  * If the connection is successful, it sets the state to ReadyState and tries
  * to enable the test runner button. If the connection is closed, it sets the
@@ -469,7 +413,7 @@ const connectWebSocket = () => {
      */
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
-        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-connected')).show();
+        safeToastShow('#websocket-connected');
         const wsStatus = document.querySelector('#websocket-status');
         if (wsStatus) {
             wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
@@ -592,7 +536,7 @@ const connectWebSocket = () => {
                     wsSvg.classList.add('fa-plug-circle-xmark');
                 }
             }
-            bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-closed')).show();
+            safeToastShow('#websocket-closed');
             document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
             setTimeout( function () {
                 connectWebSocket();
@@ -621,7 +565,7 @@ const connectWebSocket = () => {
         }
         console.error( 'Websocket connection error:' );
         console.log( e );
-        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-error')).show();
+        safeToastShow('#websocket-error');
         document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
         if ( connectionAttempt === null ) {
             connectionAttempt = setInterval( function () {
@@ -864,10 +808,7 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingResourceValidations;
             performance.mark( 'resourceDataTestsStart' );
-            const resourceDataTestsEl = document.querySelector('#resourceDataTests');
-            if (!resourceDataTestsEl.classList.contains('show')) {
-                bootstrap.Collapse.getOrCreateInstance(resourceDataTestsEl).show();
-            }
+            safeCollapseShow('#resourceDataTests');
             conn.send(
                 JSON.stringify({
                     action: 'executeValidation',
@@ -894,7 +835,7 @@ const runTests = () => {
                     index = 0;
                     currentState = TestState.ExecutingSourceValidations;
                     performance.mark( 'sourceDataTestsStart' );
-                    bootstrap.Collapse.getOrCreateInstance(document.querySelector('#sourceDataTests')).show();
+                    safeCollapseShow('#sourceDataTests');
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
@@ -923,7 +864,7 @@ const runTests = () => {
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
-            bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
+            safeToastShow('#tests-complete');
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 const btnPrimary = spinIcon.closest('.btn-primary');
