@@ -1226,8 +1226,10 @@ document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) =
 
 document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) => {
     const pageLoader = document.querySelector('.page-loader');
-    pageLoader.style.display = 'block';
-    pageLoader.style.opacity = '1';
+    if (pageLoader) {
+        pageLoader.style.display = 'block';
+        pageLoader.style.opacity = '1';
+    }
     ReadyToRunTests.PageReady = false;
     const oldResponseType = currentResponseType;
     currentResponseType = ev.currentTarget.value;
