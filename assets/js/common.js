@@ -35,13 +35,8 @@ const escapeQuotesAndLinkifyUrls = (str) => {
         const url = match[2];
         const suffix = match[3] || '';
 
-        // If prefix and suffix form a known pair, keep them outside the link
-        const pairs = { '"': '"', "'": "'", '(': ')', '{': '}', '[': ']' };
-        if (prefix && pairs[prefix] === suffix) {
-            parts.push(`${escapeHtmlAttr(prefix)}<a href="${escapeHtmlAttr(url)}" target="_blank">${escapeHtmlAttr(url)}</a>${escapeHtmlAttr(suffix)}`);
-        } else {
-            parts.push(`${escapeHtmlAttr(prefix)}<a href="${escapeHtmlAttr(url)}" target="_blank">${escapeHtmlAttr(url)}</a>${escapeHtmlAttr(suffix)}`);
-        }
+        // Keep prefix and suffix outside the link
+        parts.push(`${escapeHtmlAttr(prefix)}<a href="${escapeHtmlAttr(url)}" target="_blank">${escapeHtmlAttr(url)}</a>${escapeHtmlAttr(suffix)}`);
 
         lastIndex = match.index + match[0].length;
     }
