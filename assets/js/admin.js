@@ -55,6 +55,23 @@ const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
 });
 
 /**
+ * Fades in an alert element, displays it for a specified duration, then fades it out.
+ * @param {HTMLElement} alertEl - The alert element to fade in/out
+ * @param {number} [displayDelay=2000] - How long to display the alert before fading out (ms)
+ * @param {number} [fadeDelay=500] - How long the fade out transition takes (ms)
+ */
+const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500) => {
+    alertEl.classList.remove('d-none');
+    alertEl.style.opacity = '1';
+    setTimeout(() => {
+        alertEl.style.opacity = '0';
+        setTimeout(() => {
+            alertEl.classList.add('d-none');
+        }, fadeDelay);
+    }, displayDelay);
+};
+
+/**
  * A proxy for a Test object that is being edited, used for sanitizing the values set on the object.
  * @type {Object|null}
  */
@@ -387,33 +404,6 @@ const sanitizeInput = (input) => {
 }
 
 /**
- * Sanitizes the input of the given target element to prevent XSS attacks.
- *
- * It uses the sanitizeInput helper function to strip any HTML tags from the
- * target element's text content and then checks if the sanitized text is
- * different from the original text content. If so, it updates the target
- * element's text content with the sanitized text and shows a warning alert to
- * the user.
- *
- * @param {Element} target - The element to sanitize.
- */
-const checkTargetInput = (target) => {
-    let sanitizedInput = sanitizeInput( target.textContent );
-    if( sanitizedInput !== target.textContent ) {
-        target.textContent = sanitizedInput;
-        const alert = document.querySelector('#noScriptedContentAlert');
-        alert.classList.remove('d-none');
-        alert.style.opacity = '1';
-        setTimeout(() => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.classList.add('d-none');
-            }, 500);
-        }, 2000);
-    }
-}
-
-/**
  * Serializes the current state of the unit test form into a UnitTest object.
  *
  * This function extracts values from the DOM elements representing the unit test,
@@ -721,25 +711,13 @@ const contenteditableHandler = ev => {
     const target = ev.target.closest('[contenteditable]');
     if (!target) return;
 
-    console.log(ev.type);
-
-    if (['paste', 'drop'].includes(ev.type)) {
-        setTimeout(() => {
-            target.textContent = target.textContent;
-            checkTargetInput(target);
-        }, 1);
-    } else if (ev.type === 'blur') {
-        checkTargetInput(target);
-    } else {
-        console.log(target.textContent);
-    }
+    // With contenteditable="plaintext-only", paste/drop are handled by the browser
+    // We only need to update the proxied test on blur or input
     const grandpa = target.parentElement.parentElement;
     const assertionIndex = countPrevSiblingsWithSelector(grandpa, '.testYear');
     proxiedTest.assertions[assertionIndex].assertion = target.textContent;
 };
 document.addEventListener('blur', contenteditableHandler, true);
-document.addEventListener('paste', contenteditableHandler, true);
-document.addEventListener('drop', contenteditableHandler, true);
 document.addEventListener('input', contenteditableHandler, true);
 
 document.querySelector('#serializeUnitTestData').addEventListener('click', () => {
@@ -764,14 +742,7 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
             alert.classList.remove('alert-success');
             alert.classList.add('alert-warning');
         }
-        alert.classList.remove('d-none');
-        alert.style.opacity = '1';
-        setTimeout(() => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.classList.add('d-none');
-            }, 500);
-        }, 2000);
+        fadeOutAlert(alert);
         console.log(data);
     });
 });
