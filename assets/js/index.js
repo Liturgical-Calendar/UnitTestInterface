@@ -1118,7 +1118,7 @@ const setupPage = () => {
             yearEl.insertAdjacentHTML('afterend', NationalCalendarTemplates.join( '' ));
             // Add year class to newly inserted cards (those without a year class yet)
             calendarDataTests.querySelectorAll(`.calendar-${currentSelectedCalendar}`).forEach(card => {
-                if (!card.className.includes('year-')) {
+                if (![...card.classList].some(cls => cls.startsWith('year-'))) {
                     card.classList.add(`year-${Years[idx]}`);
                 }
             });
