@@ -156,6 +156,17 @@ Translation files located in `i18n/{locale}/LC_MESSAGES/`
 - GitHub Actions workflow: `.github/workflows/main.yml`
 - Automatic quality checks on push
 
+## Code Review Workflow
+
+This repository uses **CodeRabbit** for automated code review on pull requests.
+
+**Important:** CodeRabbit enforces rate limiting. When addressing code review feedback:
+
+1. Collect all CodeRabbit review comments before making changes
+2. Address all issues in a single batch of commits
+3. Push only after all review issues have been resolved locally
+4. Avoid multiple small pushes that would trigger repeated CodeRabbit reviews
+
 ## Important Notes
 
 - **No build step** - Pure PHP/HTML/JS
