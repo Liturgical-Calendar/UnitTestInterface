@@ -958,7 +958,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
-            console.warn( conn.readyState.toString );
+            console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
             performance.mark( 'litcalTestRunnerStart' );
             const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
