@@ -588,6 +588,10 @@ $(document).on('change', '#APICalendarSelect', async (ev) => {
 });
 
 $(document).on('click', '.editDate', ev => {
+    // Guard against clicking when disabled (no valid date value)
+    if (ev.currentTarget.classList.contains('btn-secondary')) {
+        return;
+    }
     const curDate = new Date(ev.currentTarget.previousSibling.dataset.value);
     const curDateVal = curDate.toISOString().split('T')[0];
     const pElement = ev.currentTarget.parentElement;
@@ -611,6 +615,9 @@ $(document).on('click', '.toggleAssert', ev => {
         const year = $pNode.siblings('.testYear')[0].textContent;
         $pNode.next()[0].children[1].innerHTML = '';
         $pNode.next()[0].children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" />`);
+        // Enable the editDate button since we now have a date value
+        $pNode.next()[0].children[2].classList.remove('btn-secondary');
+        $pNode.next()[0].children[2].classList.add('btn-danger');
     } else {
         ev.currentTarget.previousSibling.textContent = AssertType.EventNotExists;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventNotExists;
@@ -621,6 +628,9 @@ $(document).on('click', '.toggleAssert', ev => {
         $pNode.next()[0].classList.add('bg-warning', 'text-dark');
         $pNode.next()[0].children[1].textContent = '---';
         proxiedTest.assertions[assertionIndex].expected_value = null;
+        // Disable the editDate button since expected_value is now null
+        $pNode.next()[0].children[2].classList.remove('btn-danger');
+        $pNode.next()[0].children[2].classList.add('btn-secondary');
     }
 });
 
