@@ -94,6 +94,19 @@ const updateText = (id, value) => {
     }
 };
 
+/**
+ * Converts a string to a CSS/ID-safe slug.
+ * Replaces spaces with hyphens, removes special characters, and lowercases.
+ * @param {string} str - The string to slugify.
+ * @returns {string} The slugified string.
+ */
+const slugify = (str) => {
+    return str
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-_]/g, '');
+};
+
 // Define the common callback function
 const handleLanguageChange = (event) => {
     // Retrieve the ID of the clicked item

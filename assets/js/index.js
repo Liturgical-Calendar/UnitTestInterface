@@ -660,8 +660,9 @@ const connectWebSocket = () => {
                 }
                 case TestState.SpecificUnitTests: {
                     updateText('successfulUnitTestsCount', ++successfulUnitTests);
-                    const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-success`).length;
-                    updateText(`successful${responseData.test}TestsCount`, specificUnitTestSuccessCount);
+                    const testSlug = slugify(responseData.test);
+                    const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
+                    updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
                     break;
                 }
             }
@@ -692,8 +693,9 @@ const connectWebSocket = () => {
                 }
                 case TestState.SpecificUnitTests: {
                     updateText('failedUnitTestsCount', ++failedUnitTests);
-                    const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-danger`).length;
-                    updateText(`failed${responseData.test}TestsCount`, specificUnitTestFailedCount);
+                    const testSlug = slugify(responseData.test);
+                    const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
+                    updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
                     break;
                 }
             }
@@ -905,7 +907,7 @@ const fetchMetadataAndTests = () => {
  * @returns {undefined}
  */
 const appendAccordionItem = ( obj ) => {
-
+    const nameSlug = slugify(obj.name);
     let unitTestStr = '';
     obj.assertions.forEach( (assertion, idy) => {
         let dateStr = '';
@@ -927,7 +929,7 @@ const appendAccordionItem = ( obj ) => {
             <div class="col-1 ${idy === 0 || idy % 11 === 0 ? 'offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                <div class="card text-white bg-info rounded-0 ${obj.name} year-${assertion.year} test-valid">
+                <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} test-valid">
                     <div class="card-body">
                         <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> test valid</span><i class="fas fa-circle-info" title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"></i></p>
                     </div>
@@ -938,21 +940,21 @@ const appendAccordionItem = ( obj ) => {
 
     document.querySelector('#specificUnitTestsAccordion').insertAdjacentHTML('beforeend', `
         <div class="accordion-item">
-            <h2 class="row g-0 accordion-header" id="${obj.name}Header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${obj.name}" aria-expanded="false" aria-controls="specificUnitTest-${obj.name}">
+            <h2 class="row g-0 accordion-header" id="${nameSlug}Header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${nameSlug}" aria-expanded="false" aria-controls="specificUnitTest-${nameSlug}">
                     <div class="col-4">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2"></i>${obj.name}<i class="fas fa-circle-info ms-2" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${obj.name}TestsCount" class="successfulCount">0</span></div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${obj.name}TestsCount" class="failedCount">0</span></div>
-                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${obj.name}TestsCount"></span> tests: <span id="total${obj.name}TestsTime">0 seconds, 0ms</span></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw"></i> Successful tests: <span id="successful${nameSlug}TestsCount" class="successfulCount">0</span></div>
+                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw"></i> Failed tests: <span id="failed${nameSlug}TestsCount" class="failedCount">0</span></div>
+                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw"></i> Total time for <span id="total${nameSlug}TestsCount"></span> tests: <span id="total${nameSlug}TestsTime">0 seconds, 0ms</span></div>
                 </button>
             </h2>
-            <div id="specificUnitTest-${obj.name}" class="accordion-collapse collapse" aria-labelledby="${obj.name}Header" data-bs-parent="#specificUnitTestsAccordion">
+            <div id="specificUnitTest-${nameSlug}" class="accordion-collapse collapse" aria-labelledby="${nameSlug}Header" data-bs-parent="#specificUnitTestsAccordion">
                 <div class="row g-0 specificunittests m-2">${unitTestStr}</div>
             </div>
         </div>
     `);
-    let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${obj.name} .test-valid`).length;
-    document.querySelector(`#total${obj.name}TestsCount`).textContent = specificUnitTestTotalCount;
+    let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${nameSlug} .test-valid`).length;
+    updateText(`total${nameSlug}TestsCount`, specificUnitTestTotalCount);
 }
 
 /**
