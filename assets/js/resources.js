@@ -930,7 +930,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
-        currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
+        currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
             console.warn( conn.readyState.toString );
