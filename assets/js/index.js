@@ -1060,14 +1060,14 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     checks.push({
         "validate": `wider-region-${nationalCalendarData.wider_region}`,
         "sourceFile": nationalCalendarData.wider_region,
-        "category": "widerregioncalendar"
+        "category": "sourceDataCheck"
     });
 
     // Add national calendar check
     checks.push({
         "validate": `national-calendar-${nation}`,
         "sourceFile": nation,
-        "category": "nationalcalendar"
+        "category": "sourceDataCheck"
     });
 
     // Add missal checks
@@ -1091,7 +1091,7 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         checks.push({
             "validate": `diocesan-calendar-${calendarId}`,
             "sourceFile": calendarId,
-            "category": "diocesancalendar"
+            "category": "sourceDataCheck"
         });
     }
 
