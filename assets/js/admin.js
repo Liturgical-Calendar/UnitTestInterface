@@ -791,7 +791,7 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
         years = ArrayRange(minYear, maxYear, true);
     }
     for( let year = minYear; year <= maxYear; year++ ) {
-        if($existingOption) {
+        if($existingOption && $existingOption[0].dataset.month && $existingOption[0].dataset.day) {
             eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
             if( eventDate.getUTCDay() === 0 ) {
                 titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
@@ -800,6 +800,9 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
                 titleAttr = ` title="${DTFormat.format(eventDate)}"`;
                 lightClass = '';
             }
+        } else {
+            titleAttr = '';
+            lightClass = '';
         }
         //console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
         if(years.includes(year)) {
@@ -915,12 +918,17 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
     const currentEventKey = document.querySelector('#existingLitEventName').value;
     $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + currentEventKey + '"]');
     for( let year = minYear; year <= maxYear; year++ ) {
-        eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-        if( eventDate.getUTCDay() === 0 ) {
-            titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
-            lightClass = ' bg-light';
+        if($existingOption[0].dataset.month && $existingOption[0].dataset.day) {
+            eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+            if( eventDate.getUTCDay() === 0 ) {
+                titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
+                lightClass = ' bg-light';
+            } else {
+                titleAttr = ` title="${DTFormat.format(eventDate)}"`;
+                lightClass = '';
+            }
         } else {
-            titleAttr = ` title="${DTFormat.format(eventDate)}"`;
+            titleAttr = '';
             lightClass = '';
         }
         htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
