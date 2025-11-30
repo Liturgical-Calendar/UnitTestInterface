@@ -63,6 +63,7 @@
     border-radius: 2px;
     margin: 5px 3px;
     cursor: default;
+    transition: opacity 0.2s ease-in-out;
 }
 
 #yearsToTestGrid > .testYearSpan.deleted {
@@ -113,4 +114,10 @@
     background-color: #6c757d;
     border-color: #6c757d;
     box-shadow: none;
+}
+
+/* Fade transition for alerts */
+#responseToPutRequest,
+#noScriptedContentAlert {
+    transition: opacity 0.5s ease-in-out;
 }

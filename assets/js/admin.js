@@ -227,6 +227,26 @@ const sanitizeOnSetValue = {
     }
 };
 
+/**
+ * Counts previous siblings of an element that contain a descendant matching the given selector.
+ * Equivalent to jQuery's $(el).prevAll(':has(selector)').length
+ *
+ * @param {Element} element - The starting element
+ * @param {string} selector - CSS selector to match within siblings
+ * @returns {number} Count of matching previous siblings
+ */
+const countPrevSiblingsWithSelector = (element, selector) => {
+    let count = 0;
+    let sibling = element.previousElementSibling;
+    while (sibling) {
+        if (sibling.querySelector(selector)) {
+            count++;
+        }
+        sibling = sibling.previousElementSibling;
+    }
+    return count;
+};
+
 const ENDPOINTS = {
     VERSION: "dev",
     METADATA: `${baseUrl}/calendars`,
@@ -381,15 +401,15 @@ const checkTargetInput = (target) => {
     let sanitizedInput = sanitizeInput( target.textContent );
     if( sanitizedInput !== target.textContent ) {
         target.textContent = sanitizedInput;
-        const $alert = $('#noScriptedContentAlert');
-        $alert.removeClass('d-none');
-        $alert.fadeIn('fast', () => {
+        const alert = document.querySelector('#noScriptedContentAlert');
+        alert.classList.remove('d-none');
+        alert.style.opacity = '1';
+        setTimeout(() => {
+            alert.style.opacity = '0';
             setTimeout(() => {
-                $alert.fadeOut('slow', () => {
-                    $alert.addClass('d-none');
-                });
-            }, 2000);
-        });
+                alert.classList.add('d-none');
+            }, 500);
+        }, 2000);
     }
 }
 
@@ -479,7 +499,7 @@ const API = {
  */
 const rebuildLitEventsOptions = async (element) => {
     console.log(`rebuildLitEventsOptions: ${element.value}`);
-    const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
+    const selectedOption = element.querySelector(`option[value="${element.value}"]`);
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
     API.calendartype = calendarType;
@@ -517,21 +537,26 @@ const rebuildLitEventsOptions = async (element) => {
  * SET DOCUMENT INTERACTIONS
  */
 
-$(document).on('click', '.sidebarToggle', event => {
+document.addEventListener('click', event => {
+    const sidebarToggle = event.target.closest('.sidebarToggle');
+    if (!sidebarToggle) return;
     console.log('now toggling sidebar...');
     event.preventDefault();
+    const icon = sidebarToggle.querySelector('i');
     if(document.body.classList.contains('sb-sidenav-collapsed') ) {
-        $('.sidebarToggle i').removeClass('fa-angle-right').addClass('fa-angle-left');
+        icon.classList.remove('fa-angle-right');
+        icon.classList.add('fa-angle-left');
     }
     else {
-        $('.sidebarToggle i').removeClass('fa-angle-left').addClass('fa-angle-right');
+        icon.classList.remove('fa-angle-left');
+        icon.classList.add('fa-angle-right');
     }
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
 
 //$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
 
-$(document).on('change', '#litCalTestsSelect', async (ev) => {
+document.querySelector('#litCalTestsSelect').addEventListener('change', async (ev) => {
     //console.log(ev.currentTarget.value);
     if( ev.currentTarget.value !== '' ) {
         const currentTest = LitCalTests.filter(el => el.name === ev.currentTarget.value)[0];
@@ -542,9 +567,10 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
         document.querySelector('#testName').textContent = proxiedTest.name;
         //$('#testType').val( proxiedTest.testType ).change();
         document.querySelector('#cardHeaderTestType').textContent = proxiedTest.test_type;
-        document.querySelector('#description').setAttribute('rows', 1);
-        document.querySelector('#description').value = proxiedTest.description;
-        document.querySelector('#description').setAttribute('rows', Math.ceil( $('#description')[0].scrollHeight / 40 ));
+        const descEl = document.querySelector('#description');
+        descEl.setAttribute('rows', 1);
+        descEl.value = proxiedTest.description;
+        descEl.setAttribute('rows', Math.ceil(descEl.scrollHeight / 40));
         if( proxiedTest.hasOwnProperty('year_since') ) {
             document.querySelector('#yearSince').value = proxiedTest.year_since;
         }
@@ -570,10 +596,10 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
             //await rebuildLitEventsOptions(document.querySelector('#APICalendarSelect'));
         }
 
-        $( '#assertionsContainer' ).empty();
+        document.querySelector('#assertionsContainer').innerHTML = '';
         const assertionsBuilder = new AssertionsBuilder( proxiedTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
-        $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
+        document.querySelector('#assertionsContainer').append(assertionBuildHtml);
         document.querySelector('#perYearAssertions').classList.remove('invisible');
         document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.test_type;
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
@@ -583,74 +609,84 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
     }
 });
 
-$(document).on('change', '#APICalendarSelect', async (ev) => {
+document.querySelector('#APICalendarSelect').addEventListener('change', async (ev) => {
     await rebuildLitEventsOptions( ev.currentTarget );
 });
 
-$(document).on('click', '.editDate', ev => {
+document.addEventListener('click', ev => {
+    const editDate = ev.target.closest('.editDate');
+    if (!editDate) return;
     // Guard against clicking when disabled (no valid date value)
-    if (ev.currentTarget.classList.contains('btn-secondary')) {
+    if (editDate.classList.contains('btn-secondary')) {
         return;
     }
-    const curDate = new Date(ev.currentTarget.previousSibling.dataset.value);
+    const prevEl = editDate.previousElementSibling;
+    if (!prevEl || !prevEl.dataset || !prevEl.dataset.value) {
+        return;
+    }
+    const curDate = new Date(prevEl.dataset.value);
     const curDateVal = curDate.toISOString().split('T')[0];
-    const pElement = ev.currentTarget.parentElement;
+    const pElement = editDate.parentElement;
     pElement.classList.remove('bg-success', 'text-white');
     pElement.classList.add('bg-warning', 'text-dark');
     pElement.children[1].innerHTML = '';
     pElement.children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${curDateVal}" />`);
 });
 
-$(document).on('click', '.toggleAssert', ev => {
-    //const assertionIndex = $(ev.currentTarget.parentElement.parentElement).index();
-    const assertionIndex = $(ev.currentTarget.parentElement.parentElement).prevAll(':has(.testYear)').length;
-    if(ev.currentTarget.parentElement.classList.contains('bg-warning')) {
-        ev.currentTarget.previousSibling.textContent = AssertType.EventTypeExact;
+document.addEventListener('click', ev => {
+    const toggleAssert = ev.target.closest('.toggleAssert');
+    if (!toggleAssert) return;
+    const parentDiv = toggleAssert.parentElement.parentElement;
+    const assertionIndex = countPrevSiblingsWithSelector(parentDiv, '.testYear');
+    if(toggleAssert.parentElement.classList.contains('bg-warning')) {
+        toggleAssert.previousElementSibling.textContent = AssertType.EventTypeExact;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventTypeExact;
-        ev.currentTarget.parentElement.classList.remove('bg-warning', 'text-dark');
-        ev.currentTarget.parentElement.classList.add('bg-success', 'text-white');
-        const $pNode = $(ev.currentTarget.parentNode);
-        console.log($pNode);
-        console.log($pNode.siblings('.testYear'));
-        const year = $pNode.siblings('.testYear')[0].textContent;
-        $pNode.next()[0].children[1].innerHTML = '';
-        $pNode.next()[0].children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" />`);
+        toggleAssert.parentElement.classList.remove('bg-warning', 'text-dark');
+        toggleAssert.parentElement.classList.add('bg-success', 'text-white');
+        const pNode = toggleAssert.parentNode;
+        const yearEl = pNode.parentElement.querySelector('.testYear');
+        const year = yearEl ? yearEl.textContent : new Date().getFullYear();
+        const nextDiv = pNode.nextElementSibling;
+        nextDiv.children[1].innerHTML = '';
+        nextDiv.children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" />`);
         // Enable the editDate button since we now have a date value
-        $pNode.next()[0].children[2].classList.remove('btn-secondary');
-        $pNode.next()[0].children[2].classList.add('btn-danger');
+        nextDiv.children[2].classList.remove('btn-secondary');
+        nextDiv.children[2].classList.add('btn-danger');
     } else {
-        ev.currentTarget.previousSibling.textContent = AssertType.EventNotExists;
+        toggleAssert.previousElementSibling.textContent = AssertType.EventNotExists;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventNotExists;
-        ev.currentTarget.parentElement.classList.remove('bg-success', 'text-white');
-        ev.currentTarget.parentElement.classList.add('bg-warning', 'text-dark');
-        const $pNode = $(ev.currentTarget.parentNode);
-        $pNode.next()[0].classList.remove('bg-success', 'text-white');
-        $pNode.next()[0].classList.add('bg-warning', 'text-dark');
-        $pNode.next()[0].children[1].textContent = '---';
+        toggleAssert.parentElement.classList.remove('bg-success', 'text-white');
+        toggleAssert.parentElement.classList.add('bg-warning', 'text-dark');
+        const pNode = toggleAssert.parentNode;
+        const nextDiv = pNode.nextElementSibling;
+        nextDiv.classList.remove('bg-success', 'text-white');
+        nextDiv.classList.add('bg-warning', 'text-dark');
+        nextDiv.children[1].textContent = '---';
         proxiedTest.assertions[assertionIndex].expected_value = null;
         // Disable the editDate button since expected_value is now null
-        $pNode.next()[0].children[2].classList.remove('btn-danger');
-        $pNode.next()[0].children[2].classList.add('btn-secondary');
+        nextDiv.children[2].classList.remove('btn-danger');
+        nextDiv.children[2].classList.add('btn-secondary');
     }
 });
 
-$(document).on('change', '.expectedValue > [type=date]', ev => {
-    const dateTimeString = ev.currentTarget.value + 'T00:00:00+00:00';
-    const $grandpa = $(ev.currentTarget).closest('div');
-    const $greatGrandpa = $grandpa.parent().closest('div');
-    const assertionIndex = $greatGrandpa.prevAll(':has(.testYear)').length;
+document.addEventListener('change', ev => {
+    if (!ev.target.matches('.expectedValue > [type=date]')) return;
+    const dateTimeString = ev.target.value + 'T00:00:00+00:00';
+    const grandpa = ev.target.closest('div');
+    const greatGrandpa = grandpa.parentElement.closest('div');
+    const assertionIndex = countPrevSiblingsWithSelector(greatGrandpa, '.testYear');
     proxiedTest.assertions[assertionIndex].expected_value = dateTimeString;
-    $grandpa[0].classList.remove('bg-warning','text-dark');
-    $grandpa[0].classList.add('bg-success','text-white');
-    ev.currentTarget.parentNode.dataset.value = dateTimeString;
+    grandpa.classList.remove('bg-warning', 'text-dark');
+    grandpa.classList.add('bg-success', 'text-white');
+    ev.target.parentNode.dataset.value = dateTimeString;
     // Format date for display, matching AssertionsBuilder.buildHtml format
     const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
     const parsedDate = new Date(dateTimeString);
     const displayText = isNaN(parsedDate.getTime()) ? dateTimeString : dateFormatter.format(parsedDate);
-    ev.currentTarget.parentNode.textContent = displayText;
+    ev.target.parentNode.textContent = displayText;
 });
 
-$(document).on('show.bs.modal', '#modalAddEditComment', ev => {
+document.querySelector('#modalAddEditComment').addEventListener('show.bs.modal', ev => {
     console.log(ev);
     const tgt = ev.relatedTarget;
     console.log(tgt);
@@ -660,10 +696,11 @@ $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
     const myModalEl = document.querySelector('#modalAddEditComment');
     const txtArea = myModalEl.querySelector('#unitTestComment');
     txtArea.value = value;
-    $(myModalEl.querySelector('#btnSaveComment')).one('click', () => {
+    const btnSaveComment = myModalEl.querySelector('#btnSaveComment');
+    const saveCommentHandler = () => {
         const newValue = sanitizeInput(txtArea.value);
         tgt.title = newValue;
-        if(newValue === '') {
+        if (newValue === '') {
             icon.classList.remove('fa-comment-dots');
             icon.classList.add('fa-comment-medical');
             tgt.classList.remove('btn-dark');
@@ -674,34 +711,41 @@ $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
             tgt.classList.remove('btn-secondary');
             tgt.classList.add('btn-dark');
         }
-    });
+        btnSaveComment.removeEventListener('click', saveCommentHandler);
+    };
+    btnSaveComment.addEventListener('click', saveCommentHandler);
 });
 
 
-$(document).on('blur paste drop input', '[contenteditable]', ev => {
+const contenteditableHandler = ev => {
+    const target = ev.target.closest('[contenteditable]');
+    if (!target) return;
+
     console.log(ev.type);
 
-    if( ['paste','drop'].includes( ev.type ) ) {
+    if (['paste', 'drop'].includes(ev.type)) {
         setTimeout(() => {
-            ev.currentTarget.textContent = ev.currentTarget.textContent;
-            checkTargetInput(ev.currentTarget);
+            target.textContent = target.textContent;
+            checkTargetInput(target);
         }, 1);
+    } else if (ev.type === 'blur') {
+        checkTargetInput(target);
+    } else {
+        console.log(target.textContent);
     }
-    else if( ev.type === 'blur' ) {
-        checkTargetInput(ev.currentTarget);
-    }
-    else {
-        console.log(ev.currentTarget.textContent);
-    }
-    const grandpa = ev.currentTarget.parentElement.parentElement;
-    const assertionIndex = $(grandpa).prevAll(':has(.testYear)').length;
-    proxiedTest.assertions[assertionIndex].assertion = ev.currentTarget.textContent;
-});
+    const grandpa = target.parentElement.parentElement;
+    const assertionIndex = countPrevSiblingsWithSelector(grandpa, '.testYear');
+    proxiedTest.assertions[assertionIndex].assertion = target.textContent;
+};
+document.addEventListener('blur', contenteditableHandler, true);
+document.addEventListener('paste', contenteditableHandler, true);
+document.addEventListener('drop', contenteditableHandler, true);
+document.addEventListener('input', contenteditableHandler, true);
 
-$(document).on('click', '#serializeUnitTestData', ev => {
+document.querySelector('#serializeUnitTestData').addEventListener('click', () => {
     const newUnitTest = serializeUnitTest();
     let responseStatus = 400;
-    fetch( ENDPOINTS.TESTSINDEX, {
+    fetch(ENDPOINTS.TESTSINDEX, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json"
@@ -714,21 +758,20 @@ $(document).on('click', '#serializeUnitTestData', ev => {
     })
     .then(data => {
         console.log(responseStatus);
-        const $alert = $('#responseToPutRequest');
+        const alert = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
-        if(responseStatus !== 201) {
-            $alert.removeClass('alert-success');
-            $alert.addClass('alert-warning');
-            //$alert.find()
+        if (responseStatus !== 201) {
+            alert.classList.remove('alert-success');
+            alert.classList.add('alert-warning');
         }
-        $alert.removeClass('d-none');
-        $alert.fadeIn('fast', () => {
+        alert.classList.remove('d-none');
+        alert.style.opacity = '1';
+        setTimeout(() => {
+            alert.style.opacity = '0';
             setTimeout(() => {
-                $alert.fadeOut('slow', () => {
-                    $alert.addClass('d-none');
-                });
-            }, 2000);
-        });
+                alert.classList.add('d-none');
+            }, 500);
+        }, 2000);
         console.log(data);
     });
 });
@@ -737,7 +780,7 @@ $(document).on('click', '#serializeUnitTestData', ev => {
  * DEFINE INTERACTIONS FOR CREATE NEW TEST MODAL
  */
 let currentTestType = TestType.ExactCorrespondence; //this value will be set on modal open
-let $isotopeYearsToTestGrid = null;
+let isotopeYearsToTestGrid = null;
 
 const modalLabel = {
     exactCorrespondence: 'Exact Date Correspondence Test',
@@ -748,56 +791,58 @@ const modalLabel = {
 
 const ArrayRange = (start, end, endInclusive) => Array.from({length: (end - start)+endInclusive}, (v, k) => k + start);
 
-$(document).on('show.bs.modal', '#modalDefineTest', ev => {
+document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev => {
     // we want to make sure the carousel is on the first slide every time we open the modal
-    $('#carouselCreateNewUnitTest').carousel(0);
+    const carouselEl = document.querySelector('#carouselCreateNewUnitTest');
+    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
+    carousel.to(0);
     // we also want to reset our form to defaults
     document.querySelector('#carouselCreateNewUnitTest form').reset();
     document.querySelector('#carouselCreateNewUnitTest form').classList.remove('was-validated');
-    document.querySelector('#btnCreateTest').setAttribute('disabled','disabled');
+    document.querySelector('#btnCreateTest').setAttribute('disabled', 'disabled');
     // set our global currentTestType variable based on the button that was clicked to open the modal
     currentTestType = ev.relatedTarget.dataset.testtype;
     // update our carousel elements based on the currentTestType
-    $(ev.currentTarget).find(`.${currentTestType}`).removeClass('d-none');
-    if( null !== $isotopeYearsToTestGrid ) {
-        $isotopeYearsToTestGrid.isotope('destroy');
+    ev.currentTarget.querySelectorAll(`.${currentTestType}`).forEach(el => el.classList.remove('d-none'));
+    if (null !== isotopeYearsToTestGrid) {
+        isotopeYearsToTestGrid.destroy();
     }
-    $('#yearsToTestGrid').empty();
+    document.querySelector('#yearsToTestGrid').innerHTML = '';
     let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
     let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
     let years;
     let minYear = 1970;
     let maxYear = 2030;
-    let $existingOption = null;
+    let existingOption = null;
     let titleAttr = '';
     let lightClass = '';
-    if( 'edittest' in ev.relatedTarget.dataset ) {
+    if ('edittest' in ev.relatedTarget.dataset) {
         console.log('we are editing an existing test: description and event_key will be pre-filled');
         console.log('description: ', proxiedTest.description);
         console.log('event_key: ', proxiedTest.event_key);
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
         document.querySelector('#existingLitEventName').value = proxiedTest.event_key;
-        $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + proxiedTest.event_key + '"]');
-        console.log('existingOption', $existingOption);
+        existingOption = document.querySelector(`#existingLitEventsList option[value="${proxiedTest.event_key}"]`);
+        console.log('existingOption', existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
         minYear = Math.min(...years);
         maxYear = Math.max(...years);
         document.querySelector('#lowerRange').setAttribute('value', minYear);
-        document.querySelector('#lowerRange').parentNode.style.setProperty('--value-a',minYear);
+        document.querySelector('#lowerRange').parentNode.style.setProperty('--value-a', minYear);
         document.querySelector('#lowerRange').parentNode.style.setProperty('--text-value-a', `"${minYear}"`);
         document.querySelector('#upperRange').setAttribute('value', maxYear);
-        document.querySelector('#upperRange').parentNode.style.setProperty('--value-b',maxYear);
+        document.querySelector('#upperRange').parentNode.style.setProperty('--value-b', maxYear);
         document.querySelector('#upperRange').parentNode.style.setProperty('--text-value-b', `"${maxYear}"`);
     } else {
         minYear = Number(document.querySelector('#lowerRange').getAttribute('value'));
         maxYear = Number(document.querySelector('#upperRange').getAttribute('value'));
         years = ArrayRange(minYear, maxYear, true);
     }
-    for( let year = minYear; year <= maxYear; year++ ) {
-        if($existingOption && $existingOption[0].dataset.month && $existingOption[0].dataset.day) {
-            let eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-            if( eventDate.getUTCDay() === 0 ) {
+    for (let year = minYear; year <= maxYear; year++) {
+        if (existingOption && existingOption.dataset.month && existingOption.dataset.day) {
+            let eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+            if (eventDate.getUTCDay() === 0) {
                 titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
                 lightClass = ' bg-light';
             } else {
@@ -809,50 +854,51 @@ $(document).on('show.bs.modal', '#modalDefineTest', ev => {
             lightClass = '';
         }
         //console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-        if(years.includes(year)) {
+        if (years.includes(year)) {
             htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
         } else {
             htmlStr += `<span class="testYearSpan year-${year} deleted"></span>`;
         }
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
+    isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
         layoutMode: 'fitRows'
     });
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
     document.querySelector('#defineTestModalLabel').textContent = modalLabel[currentTestType];
-    if('edittest' in ev.relatedTarget.dataset) {
-        $('#carouselCreateNewUnitTest').carousel(1);
+    if ('edittest' in ev.relatedTarget.dataset) {
+        carousel.to(1);
     }
 });
 
-$(document).on('hide.bs.modal', '#modalDefineTest', ev => {
-    $(ev.currentTarget).find(`.${currentTestType}`).addClass('d-none');
+document.querySelector('#modalDefineTest').addEventListener('hide.bs.modal', ev => {
+    ev.currentTarget.querySelectorAll(`.${currentTestType}`).forEach(el => el.classList.add('d-none'));
 });
 
-$(document).on('slid.bs.carousel', ev => {
-    if( ev.to > 0 ) {
-        $( '#carouselPrevButton' ).removeAttr('disabled');
+document.querySelector('#carouselCreateNewUnitTest').addEventListener('slid.bs.carousel', ev => {
+    const carouselItems = document.querySelectorAll('.carousel-item');
+    if (ev.to > 0) {
+        document.querySelector('#carouselPrevButton').removeAttribute('disabled');
     } else {
-        $( '#carouselPrevButton' ).attr('disabled','disabled');
+        document.querySelector('#carouselPrevButton').setAttribute('disabled', 'disabled');
     }
-    if( ev.to === ($('.carousel-item').length - 1) ) {
-        $( '#carouselNextButton' ).attr('disabled','disabled');
+    if (ev.to === (carouselItems.length - 1)) {
+        document.querySelector('#carouselNextButton').setAttribute('disabled', 'disabled');
     } else {
-        $( '#carouselNextButton' ).removeAttr('disabled');
+        document.querySelector('#carouselNextButton').removeAttribute('disabled');
     }
-    if( ev.to === 1 ) {
-        $isotopeYearsToTestGrid.isotope('layout');
+    if (ev.to === 1) {
+        isotopeYearsToTestGrid.layout();
         document.querySelector('#yearsToTestGrid').classList.remove('invisible');
     }
-    if( ev.to === 2 ) {
+    if (ev.to === 2) {
         let firstYear = document.querySelector('#lowerRange').value;
         let monthDay = '-01-01';
         const selectedEventVal = document.querySelector('#existingLitEventName').value;
-        const $selectedOption = $('#existingLitEventsList').find('option[value="' + selectedEventVal + '"]');
-        if( $selectedOption.length && $selectedOption[0].dataset.month && $selectedOption[0].dataset.month !== '' && $selectedOption[0].dataset.day && $selectedOption[0].dataset.day !== '' ) {
-            const month = $selectedOption[0].dataset.month.padStart(2, '0');
-            const day = $selectedOption[0].dataset.day.padStart(2, '0');
+        const selectedOption = document.querySelector(`#existingLitEventsList option[value="${selectedEventVal}"]`);
+        if (selectedOption && selectedOption.dataset.month && selectedOption.dataset.month !== '' && selectedOption.dataset.day && selectedOption.dataset.day !== '') {
+            const month = selectedOption.dataset.month.padStart(2, '0');
+            const day = selectedOption.dataset.day.padStart(2, '0');
             monthDay = `-${month}-${day}`;
         }
         document.querySelector('#baseDate').value = `${firstYear}${monthDay}`;
@@ -863,40 +909,40 @@ $(document).on('slid.bs.carousel', ev => {
 
 /** SLIDER 1 INTERACTIONS */
 
-$(document).on('change', '#existingLitEventName', ev => {
+document.querySelector('#existingLitEventName').addEventListener('change', ev => {
     const currentVal = ev.currentTarget.value;
     console.log(currentVal);
     // Determine whether an option exists with the current value of the input.
-    const $existingOption = $(ev.currentTarget.list).find('option[value="' + currentVal + '"]');
-    if( $existingOption.length > 0 ) {
-        $(ev.currentTarget).removeClass('is-invalid');
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${currentVal}"]`);
+    if (existingOption) {
+        ev.currentTarget.classList.remove('is-invalid');
         ev.currentTarget.setCustomValidity('');
-        const [name, grade] = $existingOption.text().split(/[\(\)]+/).map(el => el.trim());
+        const [name, grade] = existingOption.textContent.split(/[\(\)]+/).map(el => el.trim());
         let gradeStr = `The ${grade} of `;
         let onDateStr = 'the expected date';
-        if( $existingOption[0].dataset.month && $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day && $existingOption[0].dataset.day !== '' ) {
-            //console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
-            let eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+        if (existingOption.dataset.month && existingOption.dataset.month !== '' && existingOption.dataset.day && existingOption.dataset.day !== '') {
+            //console.log(`month=${existingOption.dataset.month},day=${existingOption.dataset.day}`);
+            let eventDate = new Date(Date.UTC(1970, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
-            if( Number($existingOption[0].dataset.grade) <= LitGrade.FEAST ) {
+            if (Number(existingOption.dataset.grade) <= LitGrade.FEAST) {
                 const minYear = parseInt(document.querySelector('#lowerRange').value);
                 const maxYear = parseInt(document.querySelector('#upperRange').value);
-                for(year = minYear; year <= maxYear; year++) {
-                    eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-                    if( eventDate.getUTCDay() === 0 ) {
+                for (let year = minYear; year <= maxYear; year++) {
+                    eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+                    if (eventDate.getUTCDay() === 0) {
                         console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
-                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday` );
+                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`);
                         document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
                     } else {
                         console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate) );
+                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate));
                     }
                 }
             }
             //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
         } else {
             console.log('selected option does not seem to have month or day values?');
-            console.log($existingOption[0].dataset);
+            console.log(existingOption.dataset);
         }
         document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${name}' should fall on ${onDateStr}`;
     } else {
@@ -907,24 +953,26 @@ $(document).on('change', '#existingLitEventName', ev => {
 
 /** SLIDER 2 INTERACTIONS */
 
-$(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
+document.addEventListener('change', ev => {
+    if (!ev.target.matches('#yearsToTestRangeSlider [type=range]')) return;
+
     let rangeVals = [];
     document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
     const minYear = Math.min(...rangeVals);
     const maxYear = Math.max(...rangeVals);
-    $('#yearsToTestGrid').isotope('destroy');
-    $('#yearsToTestGrid').empty();
+    isotopeYearsToTestGrid.destroy();
+    document.querySelector('#yearsToTestGrid').innerHTML = '';
     let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
     let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
     let htmlStr = '';
     let titleAttr = '';
     let lightClass = '';
     const currentEventKey = document.querySelector('#existingLitEventName').value;
-    $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + currentEventKey + '"]');
-    for( let year = minYear; year <= maxYear; year++ ) {
-        if($existingOption[0].dataset.month && $existingOption[0].dataset.day) {
-            let eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-            if( eventDate.getUTCDay() === 0 ) {
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${currentEventKey}"]`);
+    for (let year = minYear; year <= maxYear; year++) {
+        if (existingOption && existingOption.dataset.month && existingOption.dataset.day) {
+            let eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+            if (eventDate.getUTCDay() === 0) {
                 titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
                 lightClass = ' bg-light';
             } else {
@@ -938,40 +986,51 @@ $(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
         htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
     }
     console.log(htmlStr);
-    //$parsedHtml = $.parseHTML( htmlStr );
-    //console.log($parsedHtml);
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
+    isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
         layoutMode: 'fitRows'
     });
     document.querySelector('#yearSinceUntilShadow').value = minYear;
 });
 
-$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark', ev => {
-    const parnt = ev.currentTarget.parentElement;
-    $(parnt).fadeOut('fast', () => {
-        //parnt.remove();
-        $(parnt).empty();
+document.addEventListener('click', ev => {
+    const xmarkIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark');
+    if (!xmarkIcon) return;
+
+    const parnt = xmarkIcon.parentElement;
+    parnt.style.opacity = '0';
+    setTimeout(() => {
+        parnt.innerHTML = '';
         parnt.classList.add('deleted');
-        $(parnt).fadeIn('fast', () => {
-            $('#yearsToTestGrid').isotope('layout');
-        });
-    });
+        parnt.style.opacity = '1';
+        isotopeYearsToTestGrid.layout();
+    }, 200);
 });
 
-$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev => {
-    const parnt = ev.currentTarget.parentElement;
+document.addEventListener('click', ev => {
+    const hammerIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > svg.fa-hammer');
+    if (!hammerIcon) return;
+
+    const parnt = hammerIcon.parentElement;
     const bgClass = currentTestType === TestType.VariableCorrespondence ? 'bg-warning' : 'bg-info';
-    if( [TestType.ExactCorrespondenceSince,TestType.ExactCorrespondenceUntil].includes(currentTestType) ) {
-        $(parnt.parentElement).find(`.testYearSpan`).removeClass([`bg-info`,'bg-warning']);
+    if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
+        parnt.parentElement.querySelectorAll('.testYearSpan').forEach(el => {
+            el.classList.remove('bg-info', 'bg-warning');
+        });
         const siblings = Array.from(parnt.parentElement.children);
         const idxAsChild = siblings.indexOf(parnt);
-        const allPrevSiblings = siblings.slice(0,idxAsChild);
-        const allNextSiblings = siblings.slice(idxAsChild+1);
-        if( TestType.ExactCorrespondenceSince === currentTestType ) {
-            $(allPrevSiblings).removeClass('bg-light').addClass('bg-warning');
+        const allPrevSiblings = siblings.slice(0, idxAsChild);
+        const allNextSiblings = siblings.slice(idxAsChild + 1);
+        if (TestType.ExactCorrespondenceSince === currentTestType) {
+            allPrevSiblings.forEach(el => {
+                el.classList.remove('bg-light');
+                el.classList.add('bg-warning');
+            });
         } else {
-            $(allNextSiblings).removeClass('bg-light').addClass('bg-warning');
+            allNextSiblings.forEach(el => {
+                el.classList.remove('bg-light');
+                el.classList.add('bg-warning');
+            });
         }
     }
     parnt.classList.remove('bg-light');
@@ -981,16 +1040,30 @@ $(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev =
 
 /** FINAL CREATE TEST BUTTON */
 
-$(document).on('click', '#btnCreateTest', () => {
+/**
+ * Helper function to get text content excluding child elements (text nodes only)
+ * @param {Element} element - The element to extract text from
+ * @returns {string} The text content of direct text nodes
+ */
+const getTextNodeContent = (element) => {
+    return Array.from(element.childNodes)
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent)
+        .join('');
+};
+
+document.querySelector('#btnCreateTest').addEventListener('click', () => {
     let form = document.querySelector('#carouselCreateNewUnitTest form');
     if (!form.checkValidity()) {
         form.classList.add('was-validated');
-        let firstInvalidInput = $(form).find(":invalid")[0];
+        let firstInvalidInput = form.querySelector(':invalid');
         console.log(firstInvalidInput);
-        let parentCarouselItem = $(firstInvalidInput).closest('.carousel-item');
+        let parentCarouselItem = firstInvalidInput.closest('.carousel-item');
         console.log(parentCarouselItem);
-        console.log(parentCarouselItem.data('item'));
-        $('#carouselCreateNewUnitTest').carousel(parentCarouselItem.data('item'));
+        console.log(parentCarouselItem.dataset.item);
+        const carouselEl = document.querySelector('#carouselCreateNewUnitTest');
+        const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
+        carousel.to(parseInt(parentCarouselItem.dataset.item));
     } else {
         //let's build our new Unit Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
@@ -1001,11 +1074,10 @@ $(document).on('click', '#btnCreateTest', () => {
         proxiedTest.description = document.querySelector('#newUnitTestDescription').value;
         const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
         let yearSinceUntil = null;
-        if( [TestType.ExactCorrespondenceSince,TestType.ExactCorrespondenceUntil].includes(currentTestType) ) {
-            yearSinceUntil = parseInt($('.testYearSpan.bg-info').contents().filter(function() {
-                return this.nodeType === Node.TEXT_NODE;
-            }).text());
-            if( currentTestType === TestType.ExactCorrespondenceSince ) {
+        if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
+            const bgInfoEl = document.querySelector('.testYearSpan.bg-info');
+            yearSinceUntil = parseInt(getTextNodeContent(bgInfoEl));
+            if (currentTestType === TestType.ExactCorrespondenceSince) {
                 proxiedTest.year_since = yearSinceUntil;
                 document.querySelector('#yearSince').value = yearSinceUntil;
             } else {
@@ -1013,20 +1085,16 @@ $(document).on('click', '#btnCreateTest', () => {
                 document.querySelector('#yearUntil').value = yearSinceUntil;
             }
         }
-        let yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt($(el).contents().filter(function() {
-            return this.nodeType === Node.TEXT_NODE;
-        }).text()));
+        let yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt(getTextNodeContent(el)));
 
-        const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt($(el).contents().filter(function() {
-            return this.nodeType === Node.TEXT_NODE;
-        }).text()));
+        const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt(getTextNodeContent(el)));
         const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00Z');
         proxiedTest.assertions = [];
-        let assert =  null;
+        let assert = null;
         let dateX = null;
         let assertion = null;
         yearsChosen.forEach(year => {
-            if( yearsNonExistence.includes(year) ) {
+            if (yearsNonExistence.includes(year)) {
                 assert = 'eventNotExists';
                 dateX = null;
                 assertion = proxiedTest.description.replace('should fall on', 'should not exist on');
@@ -1038,15 +1106,16 @@ $(document).on('click', '#btnCreateTest', () => {
             }
             proxiedTest.assertions.push(new Assertion(year, dateX, assert, assertion));
         });
-        $('#testName').text( proxiedTest.name );
-        $('#cardHeaderTestType').text( proxiedTest.test_type );
-        $('#description').attr('rows', 2);
-        $('#description').val( proxiedTest.description );
-        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
-        $('#assertionsContainer').empty();
-        const assertionsBuilder = new AssertionsBuilder( proxiedTest );
+        document.querySelector('#testName').textContent = proxiedTest.name;
+        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.test_type;
+        document.querySelector('#description').setAttribute('rows', '2');
+        const descriptionEl = document.querySelector('#description');
+        descriptionEl.value = proxiedTest.description;
+        descriptionEl.setAttribute('rows', Math.ceil(descriptionEl.scrollHeight / 30));
+        document.querySelector('#assertionsContainer').innerHTML = '';
+        const assertionsBuilder = new AssertionsBuilder(proxiedTest);
         const assertionBuildHtml = assertionsBuilder.buildHtml();
-        $(assertionBuildHtml).appendTo('#assertionsContainer');
+        document.querySelector('#assertionsContainer').append(assertionBuildHtml);
         document.querySelector('#perYearAssertions').classList.remove('invisible');
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
         const myModalEl = document.querySelector('#modalDefineTest');

@@ -21,6 +21,10 @@ body {
     padding: 0.5rem;
 }
 
+.page-loader {
+    transition: opacity 0.5s ease-in-out;
+}
+
 .page-loader .spinner-border {
     width: 4rem;
     height: 4rem;

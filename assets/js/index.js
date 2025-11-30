@@ -152,13 +152,24 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.AsyncDataReady = ' + ReadyToRunTests.AsyncDataReady );
         console.log( 'ReadyToRunTests.PageReady = ' + ReadyToRunTests.PageReady );
         let testsReady = ReadyToRunTests.check();
-        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
-        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        startBtn.disabled = !testsReady;
+        startBtn.classList.remove('btn-secondary');
+        startBtn.classList.add('btn-primary');
+        const stopIcon = startBtn.querySelector('.fa-stop');
+        if (stopIcon) {
+            stopIcon.classList.remove('fa-stop');
+            stopIcon.classList.add('fa-rotate');
+        }
         if ( testsReady ) {
             // only try to set the #startTestRunnerBtnLbl with the stored value when the page is ready
             // to prevent if from being set to an empty value (before we have actually stored the original value)
             setTestRunnerBtnLblTxt( startTestRunnerBtnLbl );
-            $( '.page-loader' ).fadeOut( 'slow' );
+            const pageLoader = document.querySelector('.page-loader');
+            pageLoader.style.opacity = '0';
+            setTimeout(() => {
+                pageLoader.style.display = 'none';
+            }, 500);
         }
     }
 }
@@ -470,8 +481,9 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
-            if ( $( '#sourceDataTests' ).hasClass( 'show' ) === false ) {
-                $( '#sourceDataTests' ).collapse( 'show' );
+            const sourceDataTestsEl = document.querySelector('#sourceDataTests');
+            if (!sourceDataTestsEl.classList.contains('show')) {
+                bootstrap.Collapse.getOrCreateInstance(sourceDataTestsEl).show();
             }
             conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
             break;
@@ -496,7 +508,7 @@ const runTests = () => {
                             responsetype: currentResponseType
                         } )
                     );
-                    $( '#calendarDataTests' ).collapse( 'show' );
+                    bootstrap.Collapse.getOrCreateInstance(document.querySelector('#calendarDataTests')).show();
                 }
             }
             break;
@@ -521,8 +533,8 @@ const runTests = () => {
                         calendar: currentSelectedCalendar,
                         category: currentCalendarCategory
                     } ) );
-                    $( '#specificUnitTests' ).collapse( 'show' );
-                    $( `#specificUnitTest-${SpecificUnitTestCategories[ index ].test}` ).collapse( 'show' );
+                    bootstrap.Collapse.getOrCreateInstance(document.querySelector('#specificUnitTests')).show();
+                    bootstrap.Collapse.getOrCreateInstance(document.querySelector(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`)).show();
                 }
             }
             break;
@@ -540,7 +552,7 @@ const runTests = () => {
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
                 );
-                $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
+                document.querySelector(`#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime`).textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
                 conn.send( JSON.stringify( {
                     ...SpecificUnitTestCategories[ index ],
@@ -548,7 +560,7 @@ const runTests = () => {
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
                 } ) );
-                $( `#specificUnitTest-${SpecificUnitTestCategories[ index ].test}` ).collapse( 'show' );
+                bootstrap.Collapse.getOrCreateInstance(document.querySelector(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`)).show();
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
@@ -558,17 +570,25 @@ const runTests = () => {
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
                 );
-                $( `#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime` ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
+                document.querySelector(`#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime`).textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
                 currentState = TestState.JobsFinished;
                 runTests();
             }
             break;
         case TestState.JobsFinished:
             console.log( 'All jobs finished!' );
-            $( '#tests-complete' ).toast( 'show' );
-            let $btnPrimary = $( '.fa-spin' ).closest( '.btn-primary' );
-            $btnPrimary.prop( 'disabled', true ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
+            bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
+            const spinIcon = document.querySelector('.fa-spin');
+            if (spinIcon) {
+                const btnPrimary = spinIcon.closest('.btn-primary');
+                if (btnPrimary) {
+                    btnPrimary.disabled = true;
+                    btnPrimary.classList.remove('btn-primary');
+                    btnPrimary.classList.add('btn-secondary');
+                }
+                spinIcon.classList.remove('fa-spin', 'fa-rotate');
+                spinIcon.classList.add('fa-stop');
+            }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
             break;
     }
@@ -589,8 +609,13 @@ const connectWebSocket = () => {
 
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
-        $( '#websocket-connected' ).toast( 'show' );
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-danger' ).addClass( 'bg-success' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-xmark fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-check' );
+        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-connected')).show();
+        const wsStatus = document.querySelector('#websocket-status');
+        wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
+        wsStatus.classList.add('bg-success');
+        const wsSvg = wsStatus.querySelector('svg');
+        wsSvg.classList.remove('fa-plug', 'fa-plug-circle-xmark', 'fa-plug-circle-exclamation');
+        wsSvg.classList.add('fa-plug-circle-check');
         if ( connectionAttempt !== null ) {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
@@ -615,39 +640,56 @@ const connectWebSocket = () => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-success' );
-            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
-            $( '#successfulCount' ).text( ++successfulTests );
+            document.querySelectorAll(responseData.classes).forEach(el => {
+                el.classList.remove('bg-info');
+                el.classList.add('bg-success');
+                const questionIcon = el.querySelector('.fa-circle-question');
+                if (questionIcon) {
+                    questionIcon.classList.remove('fa-circle-question');
+                    questionIcon.classList.add('fa-circle-check');
+                }
+            });
+            document.querySelector('#successfulCount').textContent = ++successfulTests;
             switch ( currentState ) {
                 case TestState.ExecutingValidations:
-                    $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
+                    document.querySelector('#successfulSourceDataTestsCount').textContent = ++successfulSourceDataTests;
                     break;
                 case TestState.ValidatingCalendarData:
-                    $( '#successfulCalendarDataTestsCount' ).text( ++successfulCalendarDataTests );
+                    document.querySelector('#successfulCalendarDataTestsCount').textContent = ++successfulCalendarDataTests;
                     break;
                 case TestState.SpecificUnitTests:
-                    $( '#successfulUnitTestsCount' ).text( ++successfulUnitTests );
-                    let specificUnitTestSuccessCount = $( `#specificUnitTest-${responseData.test}` ).find( '.bg-success' ).length;
-                    $( `#successful${responseData.test}TestsCount` ).text( specificUnitTestSuccessCount );
+                    document.querySelector('#successfulUnitTestsCount').textContent = ++successfulUnitTests;
+                    let specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-success`).length;
+                    document.querySelector(`#successful${responseData.test}TestsCount`).textContent = specificUnitTestSuccessCount;
                     break;
             }
         }
         else if ( responseData.type === "error" ) {
-            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
-            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find( '.card-text' ).append( `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>` );
-            $( '#failedCount' ).text( ++failedTests );
+            document.querySelectorAll(responseData.classes).forEach(el => {
+                el.classList.remove('bg-info');
+                el.classList.add('bg-danger');
+                const questionIcon = el.querySelector('.fa-circle-question');
+                if (questionIcon) {
+                    questionIcon.classList.remove('fa-circle-question');
+                    questionIcon.classList.add('fa-circle-xmark');
+                }
+                const cardText = el.querySelector('.card-text');
+                if (cardText) {
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
+                }
+            });
+            document.querySelector('#failedCount').textContent = ++failedTests;
             switch ( currentState ) {
                 case TestState.ExecutingValidations:
-                    $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
+                    document.querySelector('#failedSourceDataTestsCount').textContent = ++failedSourceDataTests;
                     break;
                 case TestState.ValidatingCalendarData:
-                    $( '#failedCalendarDataTestsCount' ).text( ++failedCalendarDataTests );
+                    document.querySelector('#failedCalendarDataTestsCount').textContent = ++failedCalendarDataTests;
                     break;
                 case TestState.SpecificUnitTests:
-                    $( '#failedUnitTestsCount' ).text( ++failedUnitTests );
-                    let specificUnitTestFailedCount = $( `#specificUnitTest-${responseData.test}` ).find( '.bg-danger' ).length;
-                    $( `#failed${responseData.test}TestsCount` ).text( specificUnitTestFailedCount );
+                    document.querySelector('#failedUnitTestsCount').textContent = ++failedUnitTests;
+                    let specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-danger`).length;
+                    document.querySelector(`#failed${responseData.test}TestsCount`).textContent = specificUnitTestFailedCount;
                     break;
             }
         }
@@ -657,22 +699,22 @@ const connectWebSocket = () => {
         performance.mark( 'litcalTestRunnerEnd' );
         let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
-        $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
+        document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
         switch ( currentState ) {
             case TestState.ExecutingValidations:
                 performance.mark( 'sourceDataTestsEnd' );
                 let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestTime.duration ) ) );
+                document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestTime.duration ) );
                 break;
             case TestState.ValidatingCalendarData:
                 performance.mark( 'calendarDataTestsEnd' );
                 let totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
-                $( '#totalCalendarDataTestsTime' ).text( MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) ) );
+                document.querySelector('#totalCalendarDataTestsTime').textContent = MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) );
                 break;
             case TestState.SpecificUnitTests:
                 performance.mark( 'specificUnitTestsEnd' );
                 let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
-                $( '#totalUnitTestsTime' ).text( MsToTimeString( Math.round( totalUnitTestTime.duration ) ) );
+                document.querySelector('#totalUnitTestsTime').textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
                 break;
         }
     };
@@ -688,10 +730,14 @@ const connectWebSocket = () => {
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
-            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' )
-                .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
-            $( '#websocket-closed' ).toast( 'show' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' );
+            const wsStatus = document.querySelector('#websocket-status');
+            wsStatus.classList.remove('bg-secondary', 'bg-danger', 'bg-success');
+            wsStatus.classList.add('bg-warning');
+            const wsSvg = wsStatus.querySelector('svg');
+            wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-exclamation');
+            wsSvg.classList.add('fa-plug-circle-xmark');
+            bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-closed')).show();
+            document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
             setTimeout( function () {
                 connectWebSocket();
             }, 3000 );
@@ -707,12 +753,16 @@ const connectWebSocket = () => {
      * @param {ErrorEvent} e - The error event.
      */
     conn.onerror = ( e ) => {
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
-            .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
+        const wsStatus = document.querySelector('#websocket-status');
+        wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-success');
+        wsStatus.classList.add('bg-danger');
+        const wsSvg = wsStatus.querySelector('svg');
+        wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-xmark');
+        wsSvg.classList.add('fa-plug-circle-exclamation');
         console.error( 'Websocket connection error:' );
         console.log( e );
-        $( '#websocket-error' ).toast( 'show' );
-        $( '.fa-spin' ).removeClass( 'fa-spin' );
+        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-error')).show();
+        document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
         if ( connectionAttempt === null ) {
             connectionAttempt = setInterval( function () {
                 connectWebSocket();
@@ -866,7 +916,7 @@ const appendAccordionItem = ( obj ) => {
         ++idy;
     } );
 
-    $( '#specificUnitTestsAccordion' ).append( `
+    document.querySelector('#specificUnitTestsAccordion').insertAdjacentHTML('beforeend', `
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${obj.name}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${obj.name}" aria-expanded="false" aria-controls="specificUnitTest-${obj.name}">
@@ -881,8 +931,8 @@ const appendAccordionItem = ( obj ) => {
             </div>
         </div>
     `);
-    let specificUnitTestTotalCount = $( `#specificUnitTest-${obj.name}` ).find( '.test-valid' ).length;
-    $( `#total${obj.name}TestsCount` ).text( specificUnitTestTotalCount );
+    let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${obj.name} .test-valid`).length;
+    document.querySelector(`#total${obj.name}TestsCount`).textContent = specificUnitTestTotalCount;
 }
 
 /**
@@ -949,185 +999,216 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
  * @return {void}
  */
 const setupPage = () => {
-    $( document ).ready( () => {
-        // store the original value of the #startTestRunnerBtnLbl for later use
-        // but only if it hasn't been set yet (only the first time we do a page setup)
-        if ( startTestRunnerBtnLbl === '' ) {
-            startTestRunnerBtnLbl = document.querySelector( '#startTestRunnerBtnLbl' ).textContent;
-        }
+    // store the original value of the #startTestRunnerBtnLbl for later use
+    // but only if it hasn't been set yet (only the first time we do a page setup)
+    if ( startTestRunnerBtnLbl === '' ) {
+        startTestRunnerBtnLbl = document.querySelector( '#startTestRunnerBtnLbl' ).textContent;
+    }
 
-        if ( $( '#APICalendarSelect' ).children().length === 1 ) {
-            nations.forEach( item => {
-                if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
-                    $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>` );
-                }
-            } );
-            CalendarNations.forEach( item => {
-                console.log( `retrieving localized data for ${item}, for display purposes...` );
-                $( '#APICalendarSelect' ).append( `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>` );
-                let $optGroup = $( `<optgroup label="${countryNames.of( item )}">` );
-                $( '#APICalendarSelect' ).append( $optGroup );
-                selectOptions[ item ].forEach( groupItem => $optGroup.append( groupItem ) );
-            } );
-        }
+    const apiCalendarSelect = document.querySelector('#APICalendarSelect');
+    if ( apiCalendarSelect.children.length === 1 ) {
+        nations.forEach( item => {
+            if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
+                apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>`);
+            }
+        } );
+        CalendarNations.forEach( item => {
+            console.log( `retrieving localized data for ${item}, for display purposes...` );
+            apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>`);
+            const optGroup = document.createElement('optgroup');
+            optGroup.label = countryNames.of( item );
+            apiCalendarSelect.appendChild(optGroup);
+            selectOptions[ item ].forEach( groupItem => optGroup.insertAdjacentHTML('beforeend', groupItem) );
+        } );
+    }
 
-        if ( currentSelectedCalendar === 'VA' ) {
-            currentSourceDataChecks = [ ...sourceDataChecks ];
-        } else {
-            const nation = currentCalendarCategory === 'nationalcalendar'
-                ? currentSelectedCalendar
-                : MetaData.diocesan_calendars.find( diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar ).nation;
-            console.log( 'sourceDataChecks:' );
-            console.log( sourceDataChecks );
-            currentSourceDataChecks = [ ...sourceDataChecks ];
+    if ( currentSelectedCalendar === 'VA' ) {
+        currentSourceDataChecks = [ ...sourceDataChecks ];
+    } else {
+        const nation = currentCalendarCategory === 'nationalcalendar'
+            ? currentSelectedCalendar
+            : MetaData.diocesan_calendars.find( diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar ).nation;
+        console.log( 'sourceDataChecks:' );
+        console.log( sourceDataChecks );
+        currentSourceDataChecks = [ ...sourceDataChecks ];
 
-            const nationalCalendarData = MetaData.national_calendars.find( nationalCalendar => nationalCalendar.calendar_id === nation );
-            currentSourceDataChecks.push( {
-                "validate": `wider-region-${nationalCalendarData.wider_region}`,
-                "sourceFile": nationalCalendarData.wider_region,
-                "category": "sourceDataCheck"
-            } );
-            currentSourceDataChecks.push( {
-                "validate": `national-calendar-${nation}`,
-                "sourceFile": nation,
-                "category": "sourceDataCheck"
-            } );
+        const nationalCalendarData = MetaData.national_calendars.find( nationalCalendar => nationalCalendar.calendar_id === nation );
+        currentSourceDataChecks.push( {
+            "validate": `wider-region-${nationalCalendarData.wider_region}`,
+            "sourceFile": nationalCalendarData.wider_region,
+            "category": "sourceDataCheck"
+        } );
+        currentSourceDataChecks.push( {
+            "validate": `national-calendar-${nation}`,
+            "sourceFile": nation,
+            "category": "sourceDataCheck"
+        } );
 
-            nationalCalendarData.missals.forEach( ( missal ) => {
-                console.log( 'retrieving Missal definition for missal: ' + missal );
-                let sourceFile = false;
-                let missalDef = Object.values( RomanMissals ).find( el => el.missal_id === missal );
-                if ( missalDef !== undefined && missalDef.hasOwnProperty( 'data_path' ) ) {
-                    sourceFile = missalDef.data_path;
-                    console.log( 'found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile );
-                } else {
-                    console.warn( 'could not find Missal definition for missal: ' + missal );
-                }
-                if ( sourceFile !== false ) {
-                    currentSourceDataChecks.push( {
-                        "validate": missal,
-                        "sourceFile": sourceFile,
-                        "category": "propriumdesanctis"
-                    } );
-                }
-            } );
-
-            if ( currentCalendarCategory === 'diocesancalendar' ) {
-                //let diocese = MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).diocese;
+        nationalCalendarData.missals.forEach( ( missal ) => {
+            console.log( 'retrieving Missal definition for missal: ' + missal );
+            let sourceFile = false;
+            let missalDef = Object.values( RomanMissals ).find( el => el.missal_id === missal );
+            if ( missalDef !== undefined && missalDef.hasOwnProperty( 'data_path' ) ) {
+                sourceFile = missalDef.data_path;
+                console.log( 'found Missal definition for missal: ' + missal + ', sourceFile: ' + sourceFile );
+            } else {
+                console.warn( 'could not find Missal definition for missal: ' + missal );
+            }
+            if ( sourceFile !== false ) {
                 currentSourceDataChecks.push( {
-                    "validate": `diocesan-calendar-${currentSelectedCalendar}`,
-                    "sourceFile": currentSelectedCalendar,
-                    "category": "sourceDataCheck"
+                    "validate": missal,
+                    "sourceFile": sourceFile,
+                    "category": "propriumdesanctis"
                 } );
             }
-        }
-
-        $( '.sourcedata-tests' ).empty();
-        currentSourceDataChecks.forEach( ( item, idx ) => {
-            $( '.sourcedata-tests' ).append( sourceDataCheckTemplate( item, idx ) );
         } );
 
-        if ( $( '.calendardata-tests' ).children().length === 0 ) {
-            $( '.yearMax' ).text( twentyFiveYearsFromNow );
-            let idx;
-            for ( let i = Years.length; i > 0; i-- ) {
-                idx = Years.length - i;
-                $( '.calendardata-tests' ).append( calDataTestTemplate( i ) );
-                $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).after( NationalCalendarTemplates.join( '' ) );
-                $( '.calendardata-tests' ).find( `.year-${Years[ idx ]}` ).siblings( '.file-exists,.json-valid,.schema-valid' ).addClass( `year-${Years[ idx ]}` );
-            }
-        } else {
-            document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
-        }
-
-        $( '#specificUnitTestsAccordion' ).empty();
-        SpecificUnitTestCategories = [];
-        UnitTests.forEach( unitTest => {
-            //console.log( unitTest );
-            if ( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
-                if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
-                    return;
-                }
-            }
-            else if ( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1 ) {
-                if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
-                    return;
-                }
-            }
-            if ( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
-                if ( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
-                    return;
-                }
-            }
-
-            SpecificUnitTestCategories.push( {
-                "action": "executeUnitTest",
-                "test": unitTest.name
+        if ( currentCalendarCategory === 'diocesancalendar' ) {
+            //let diocese = MetaData.diocesan_calendars.find(diocesanCalendar => diocesanCalendar.calendar_id === currentSelectedCalendar).diocese;
+            currentSourceDataChecks.push( {
+                "validate": `diocesan-calendar-${currentSelectedCalendar}`,
+                "sourceFile": currentSelectedCalendar,
+                "category": "sourceDataCheck"
             } );
-            SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
-            appendAccordionItem( unitTest );
-        } );
+        }
+    }
 
-        $( '.currentSelectedCalendar' ).text( truncate( currentSelectedCalendar, 20 ) ).attr( 'title', currentSelectedCalendar );
-        let totalTestsCount = $( '.file-exists,.json-valid,.schema-valid,.test-valid' ).length;
-        $( '#total-tests-count' ).text( totalTestsCount );
-        let totalSourceDataTestsCount = $( '.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid' ).length;
-        let totalCalendarDataTestsCount = $( '.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid' ).length;
-        let totalUnitTestsCount = $( '.specificunittests .test-valid' ).length;
-        $( '#totalSourceDataTestsCount' ).text( totalSourceDataTestsCount );
-        $( '#totalCalendarDataTestsCount' ).text( totalCalendarDataTestsCount );
-        $( '#totalUnitTestsCount' ).text( totalUnitTestsCount );
-        successfulSourceDataTests = 0;
-        successfulCalendarDataTests = 0;
-        successfulUnitTests = 0;
-        failedSourceDataTests = 0;
-        failedCalendarDataTests = 0;
-        failedUnitTests = 0;
-        $( '.successfulCount,.failedCount' ).text( 0 );
-        $testCells = $( '.calendardata-tests' );
-        $testCells.find( '.bg-success,.bg-danger' ).removeClass( 'bg-success bg-danger' ).addClass( 'bg-info' );
-        $testCells.find( '.fa-circle-check,.fa-circle-xmark' ).removeClass( 'fa-circle-check fa-circle-xmark' ).addClass( 'fa-circle-question' );
-        ReadyToRunTests.PageReady = true;
-        ReadyToRunTests.tryEnableBtn();
-        $( '.page-loader' ).fadeOut( 'slow' );
+    document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');
+    currentSourceDataChecks.forEach( ( item, idx ) => {
+        document.querySelectorAll('.sourcedata-tests').forEach(el => el.insertAdjacentHTML('beforeend', sourceDataCheckTemplate( item, idx )));
     } );
+
+    const calendarDataTests = document.querySelector('.calendardata-tests');
+    if ( calendarDataTests.children.length === 0 ) {
+        document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
+        let idx;
+        for ( let i = Years.length; i > 0; i-- ) {
+            idx = Years.length - i;
+            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
+            const yearEl = calendarDataTests.querySelector(`.year-${Years[ idx ]}`);
+            yearEl.insertAdjacentHTML('afterend', NationalCalendarTemplates.join( '' ));
+            // Add year class to siblings (skip past the calendar name header, then add to all card elements)
+            let sibling = yearEl.nextElementSibling;
+            // Skip the calendar name header(s)
+            while (sibling && sibling.classList.contains('currentSelectedCalendar')) {
+                sibling = sibling.nextElementSibling;
+            }
+            // Add year class to the card elements
+            while (sibling && (sibling.classList.contains('file-exists') || sibling.classList.contains('json-valid') || sibling.classList.contains('schema-valid'))) {
+                sibling.classList.add(`year-${Years[ idx ]}`);
+                sibling = sibling.nextElementSibling;
+            }
+        }
+    } else {
+        document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
+    }
+
+    document.querySelector('#specificUnitTestsAccordion').innerHTML = '';
+    SpecificUnitTestCategories = [];
+    UnitTests.forEach( unitTest => {
+        //console.log( unitTest );
+        if ( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
+            if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
+                return;
+            }
+        }
+        else if ( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1 ) {
+            if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
+                return;
+            }
+        }
+        if ( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
+            if ( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
+                return;
+            }
+        }
+
+        SpecificUnitTestCategories.push( {
+            "action": "executeUnitTest",
+            "test": unitTest.name
+        } );
+        SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
+        appendAccordionItem( unitTest );
+    } );
+
+    document.querySelectorAll('.currentSelectedCalendar').forEach(el => {
+        el.textContent = truncate( currentSelectedCalendar, 20 );
+        el.setAttribute('title', currentSelectedCalendar);
+    });
+    let totalTestsCount = document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length;
+    document.querySelector('#total-tests-count').textContent = totalTestsCount;
+    let totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
+    let totalCalendarDataTestsCount = document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length;
+    let totalUnitTestsCount = document.querySelectorAll('.specificunittests .test-valid').length;
+    document.querySelector('#totalSourceDataTestsCount').textContent = totalSourceDataTestsCount;
+    document.querySelector('#totalCalendarDataTestsCount').textContent = totalCalendarDataTestsCount;
+    document.querySelector('#totalUnitTestsCount').textContent = totalUnitTestsCount;
+    successfulSourceDataTests = 0;
+    successfulCalendarDataTests = 0;
+    successfulUnitTests = 0;
+    failedSourceDataTests = 0;
+    failedCalendarDataTests = 0;
+    failedUnitTests = 0;
+    document.querySelectorAll('.successfulCount,.failedCount').forEach(el => el.textContent = '0');
+    const testCells = document.querySelector('.calendardata-tests');
+    testCells.querySelectorAll('.bg-success,.bg-danger').forEach(el => {
+        el.classList.remove('bg-success', 'bg-danger');
+        el.classList.add('bg-info');
+    });
+    testCells.querySelectorAll('.fa-circle-check,.fa-circle-xmark').forEach(el => {
+        el.classList.remove('fa-circle-check', 'fa-circle-xmark');
+        el.classList.add('fa-circle-question');
+    });
+    ReadyToRunTests.PageReady = true;
+    ReadyToRunTests.tryEnableBtn();
+    const pageLoader = document.querySelector('.page-loader');
+    pageLoader.style.opacity = '0';
+    setTimeout(() => {
+        pageLoader.style.display = 'none';
+    }, 500);
 }
 
-$( document ).on( 'change', '#apiVersionsDropdownItems', setEndpoints );
+document.querySelector('#apiVersionsDropdownItems').addEventListener('change', setEndpoints);
 
-$( document ).on( 'change', '#APICalendarSelect', ( ev ) => {
-    $( '.page-loader' ).show();
+document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) => {
+    const pageLoader = document.querySelector('.page-loader');
+    pageLoader.style.display = 'block';
+    pageLoader.style.opacity = '1';
     ReadyToRunTests.PageReady = false;
     const oldSelectedCalendar = currentSelectedCalendar;
     currentSelectedCalendar = ev.currentTarget.value;
-    currentCalendarCategory = $( '#APICalendarSelect :selected' ).data( 'calendartype' );
+    const selectedOption = document.querySelector('#APICalendarSelect option:checked');
+    currentCalendarCategory = selectedOption.dataset.calendartype;
     if ( currentCalendarCategory === 'diocesancalendar' ) {
-        currentNationalCalendar = $( '#APICalendarSelect :selected' ).data( 'nationalcalendar' );
+        currentNationalCalendar = selectedOption.dataset.nationalcalendar;
     } else {
         currentNationalCalendar = currentSelectedCalendar;
     }
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
-    $( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
+    document.querySelectorAll(`.calendar-${oldSelectedCalendar}`).forEach(el => {
+        el.classList.remove(`calendar-${oldSelectedCalendar}`);
+        el.classList.add(`calendar-${currentSelectedCalendar}`);
+    });
     setupPage();
     ReadyToRunTests.tryEnableBtn();
-} );
+});
 
-$( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
-    $( '.page-loader' ).show();
+document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) => {
+    const pageLoader = document.querySelector('.page-loader');
+    pageLoader.style.display = 'block';
+    pageLoader.style.opacity = '1';
     ReadyToRunTests.PageReady = false;
     const oldResponseType = currentResponseType;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
-    $( `.calendar-${currentSelectedCalendar}.json-valid .card-text` ).each( ( idx, el ) => {
-        $( el ).html( $( el ).html().replace( `${oldResponseType} valid`, `${currentResponseType} valid` ) )
-    } );
-    //$( `.calendar-${oldSelectedCalendar}` ).removeClass( `calendar-${oldSelectedCalendar}` ).addClass( `calendar-${currentSelectedCalendar}` );
+    document.querySelectorAll(`.calendar-${currentSelectedCalendar}.json-valid .card-text`).forEach(el => {
+        el.innerHTML = el.innerHTML.replace( `${oldResponseType} valid`, `${currentResponseType} valid` );
+    });
     setupPage();
     ReadyToRunTests.tryEnableBtn();
+});
 
-} );
-
-$( document ).on( 'click', '#startTestRunnerBtn', () => {
+document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
         index = 0;
         calendarIndex = 0;
@@ -1141,7 +1222,10 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
             console.warn( conn.readyState.toString );
         } else {
             performance.mark( 'litcalTestRunnerStart' );
-            $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
+            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
+            if (rotateIcon) {
+                rotateIcon.classList.add('fa-spin');
+            }
             setTestRunnerBtnLblTxt( 'Tests Running...' );
             console.log( `currentState = ${currentState}` );
             runTests();
@@ -1150,7 +1234,7 @@ $( document ).on( 'click', '#startTestRunnerBtn', () => {
         //TODO: perhaps we could allow to interrupt running tests?
         console.warn( 'Please do not try to start a test run while tests are running!' );
     }
-} );
+});
 
 // Store tooltips so we can hide them later
 const tooltipMap = new Map();

@@ -141,9 +141,9 @@ class AssertionsBuilder {
      *      The assert property and the expected value are each in a div that can be clicked to toggle the assert property between AssertType.EventNotExists and AssertType.EventTypeExact, and to edit the expected value respectively.
      *      The div also contains a span with the assertion (which is editable) and a span with the comment (if any) for the assertion.
      *      The div is styled with a background color and text color based on the assert property of the assertion.
-     *      The method returns the built html as a jquery object.
+     *      The method returns the built html as a DocumentFragment.
      *
-     * @returns {jQuery} the built html as a jquery object
+     * @returns {DocumentFragment} the built html as a DocumentFragment
      */
     buildHtml() {
         console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
@@ -177,7 +177,9 @@ class AssertionsBuilder {
                 <div class="flex-grow-1 d-flex flex-column text-white p-3" style="background-color: cadetblue;"><span class="fw-bold">ASSERTION:${commentStr}</span><span contenteditable>${assertion.assertion}</span></div>
                 </div>`;
         });
-        return $.parseHTML( assertionBuildStr );
+        const template = document.createElement('template');
+        template.innerHTML = assertionBuildStr;
+        return template.content;
     }
 }
 

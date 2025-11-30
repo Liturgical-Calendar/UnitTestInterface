@@ -52,13 +52,24 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
         console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
         let testsReady = ReadyToRunTests.check();
-        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        startBtn.disabled = !testsReady;
+        startBtn.classList.remove('btn-secondary');
+        startBtn.classList.add('btn-primary');
         // always make sure we have the fa-rotate class, ready to start spinning on button press
         // we might be resetting after a previous run where last class was fa-stop
-        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
+        const stopIcon = startBtn.querySelector('.fa-stop');
+        if (stopIcon) {
+            stopIcon.classList.remove('fa-stop');
+            stopIcon.classList.add('fa-rotate');
+        }
         setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
-        if( testsReady ) {
-            $( '.page-loader' ).fadeOut('slow');
+        if (testsReady) {
+            const pageLoader = document.querySelector('.page-loader');
+            pageLoader.style.opacity = '0';
+            setTimeout(() => {
+                pageLoader.style.display = 'none';
+            }, 500);
         }
     }
 }
@@ -411,8 +422,13 @@ const connectWebSocket = () => {
      */
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
-        $( '#websocket-connected' ).toast( 'show' );
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-danger' ).addClass( 'bg-success' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-xmark fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-check' );
+        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-connected')).show();
+        const wsStatus = document.querySelector('#websocket-status');
+        wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
+        wsStatus.classList.add('bg-success');
+        const wsSvg = wsStatus.querySelector('svg');
+        wsSvg.classList.remove('fa-plug', 'fa-plug-circle-xmark', 'fa-plug-circle-exclamation');
+        wsSvg.classList.add('fa-plug-circle-check');
         if ( connectionAttempt !== null ) {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
@@ -436,29 +452,46 @@ const connectWebSocket = () => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-success' );
-            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
-            $( '#successfulCount' ).text( ++successfulTests );
+            document.querySelectorAll(responseData.classes).forEach(el => {
+                el.classList.remove('bg-info');
+                el.classList.add('bg-success');
+                const questionIcon = el.querySelector('.fa-circle-question');
+                if (questionIcon) {
+                    questionIcon.classList.remove('fa-circle-question');
+                    questionIcon.classList.add('fa-circle-check');
+                }
+            });
+            document.querySelector('#successfulCount').textContent = ++successfulTests;
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
-                    $( '#successfulResourceDataTestsCount' ).text( ++successfulResourceDataTests );
+                    document.querySelector('#successfulResourceDataTestsCount').textContent = ++successfulResourceDataTests;
                     break;
                 case TestState.ExecutingSourceValidations:
-                    $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
+                    document.querySelector('#successfulSourceDataTestsCount').textContent = ++successfulSourceDataTests;
                     break;
             }
         }
         else if ( responseData.type === "error" ) {
-            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
-            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find('.card-text').append(`<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
-            $( '#failedCount' ).text( ++failedTests );
+            document.querySelectorAll(responseData.classes).forEach(el => {
+                el.classList.remove('bg-info');
+                el.classList.add('bg-danger');
+                const questionIcon = el.querySelector('.fa-circle-question');
+                if (questionIcon) {
+                    questionIcon.classList.remove('fa-circle-question');
+                    questionIcon.classList.add('fa-circle-xmark');
+                }
+                const cardText = el.querySelector('.card-text');
+                if (cardText) {
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
+                }
+            });
+            document.querySelector('#failedCount').textContent = ++failedTests;
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
-                    $( '#failedResourceDataTestsCount' ).text( ++failedResourceDataTests );
+                    document.querySelector('#failedResourceDataTestsCount').textContent = ++failedResourceDataTests;
                     break;
                 case TestState.ExecutingSourceValidations:
-                    $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
+                    document.querySelector('#failedSourceDataTestsCount').textContent = ++failedSourceDataTests;
                     break;
             }
         }
@@ -468,17 +501,17 @@ const connectWebSocket = () => {
         performance.mark( 'litcalTestRunnerEnd' );
         let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
-        $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
+        document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
         switch( currentState ) {
             case TestState.ExecutingResourceValidations:
                 performance.mark( 'resourceDataTestsEnd' );
                 let totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
-                $( '#totalResourceDataTestsTime' ).text( MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ) );
+                document.querySelector('#totalResourceDataTestsTime').textContent = MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) );
                 break;
             case TestState.ExecutingSourceValidations:
                 performance.mark( 'sourceDataTestsEnd' );
                 let totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ) );
+                document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) );
                 break;
         }
     };
@@ -496,10 +529,14 @@ const connectWebSocket = () => {
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
-            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' )
-                .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
-            $( '#websocket-closed' ).toast( 'show' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' );
+            const wsStatus = document.querySelector('#websocket-status');
+            wsStatus.classList.remove('bg-secondary', 'bg-danger', 'bg-success');
+            wsStatus.classList.add('bg-warning');
+            const wsSvg = wsStatus.querySelector('svg');
+            wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-exclamation');
+            wsSvg.classList.add('fa-plug-circle-xmark');
+            bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-closed')).show();
+            document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
             setTimeout( function () {
                 connectWebSocket();
             }, 3000 );
@@ -515,12 +552,16 @@ const connectWebSocket = () => {
      * @param {ErrorEvent} e - The error event.
      */
     conn.onerror = ( e ) => {
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
-            .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
+        const wsStatus = document.querySelector('#websocket-status');
+        wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-success');
+        wsStatus.classList.add('bg-danger');
+        const wsSvg = wsStatus.querySelector('svg');
+        wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-xmark');
+        wsSvg.classList.add('fa-plug-circle-exclamation');
         console.error( 'Websocket connection error:' );
         console.log( e );
-        $( '#websocket-error' ).toast( 'show' );
-        $( '.fa-spin' ).removeClass( 'fa-spin' );
+        bootstrap.Toast.getOrCreateInstance(document.querySelector('#websocket-error')).show();
+        document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
         if ( connectionAttempt === null ) {
             connectionAttempt = setInterval( function () {
                 connectWebSocket();
@@ -543,17 +584,15 @@ const setTestRunnerBtnLblTxt = (txt) => {
  * populated.
  */
 const setupPage = () => {
-    $(document).ready(() =>  {
-        if (startTestRunnerBtnLbl === '') {
-            startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
-        }
-        let resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
-        document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
-        let sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
-        document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
-        ReadyToRunTests.PageReady = true;
-        connectWebSocket();
-    });
+    if (startTestRunnerBtnLbl === '') {
+        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+    }
+    let resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
+    document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
+    let sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
+    document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
+    ReadyToRunTests.PageReady = true;
+    connectWebSocket();
 }
 
 
@@ -762,8 +801,9 @@ const runTests = () => {
             messageCounter = 0;
             currentState = TestState.ExecutingResourceValidations;
             performance.mark( 'resourceDataTestsStart' );
-            if( $('#resourceDataTests').hasClass('show') === false ) {
-                $('#resourceDataTests').collapse('show');
+            const resourceDataTestsEl = document.querySelector('#resourceDataTests');
+            if (!resourceDataTestsEl.classList.contains('show')) {
+                bootstrap.Collapse.getOrCreateInstance(resourceDataTestsEl).show();
             }
             conn.send(
                 JSON.stringify({
@@ -790,7 +830,7 @@ const runTests = () => {
                     index = 0;
                     currentState = TestState.ExecutingSourceValidations;
                     performance.mark( 'sourceDataTestsStart' );
-                    $('#sourceDataTests').collapse('show');
+                    bootstrap.Collapse.getOrCreateInstance(document.querySelector('#sourceDataTests')).show();
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
@@ -819,10 +859,18 @@ const runTests = () => {
             break;
         case TestState.JobsFinished:
             console.log( 'All jobs finished!' );
-            $( '#tests-complete' ).toast( 'show' );
-            let $btnPrimary = $( '.fa-spin' ).closest( '.btn-primary' );
-            $btnPrimary.prop( 'disabled', true ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
+            bootstrap.Toast.getOrCreateInstance(document.querySelector('#tests-complete')).show();
+            const spinIcon = document.querySelector('.fa-spin');
+            if (spinIcon) {
+                const btnPrimary = spinIcon.closest('.btn-primary');
+                if (btnPrimary) {
+                    btnPrimary.disabled = true;
+                    btnPrimary.classList.remove('btn-primary');
+                    btnPrimary.classList.add('btn-secondary');
+                }
+                spinIcon.classList.remove('fa-spin', 'fa-rotate');
+                spinIcon.classList.add('fa-stop');
+            }
             setTestRunnerBtnLblTxt('Tests Complete');
             break;
     }
@@ -869,9 +917,9 @@ const MsToTimeString = ( ms ) => {
     return timeString.join( ', ' );
 }
 
-$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
+document.querySelector('#apiVersionsDropdownItems').addEventListener('change', setEndpoints);
 
-$(document).on('click', '#startTestRunnerBtn', () => {
+document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
         index = 0;
         calendarIndex = 0;
@@ -884,7 +932,10 @@ $(document).on('click', '#startTestRunnerBtn', () => {
             console.warn( conn.readyState.toString );
         } else {
             performance.mark( 'litcalTestRunnerStart' );
-            $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
+            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
+            if (rotateIcon) {
+                rotateIcon.classList.add('fa-spin');
+            }
             setTestRunnerBtnLblTxt('Tests Running...');
             console.log( `currentState = ${currentState}` );
             runTests();
@@ -895,8 +946,10 @@ $(document).on('click', '#startTestRunnerBtn', () => {
     }
 });
 
-$( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
-    $( '.page-loader' ).show();
+document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) => {
+    const pageLoader = document.querySelector('.page-loader');
+    pageLoader.style.display = 'block';
+    pageLoader.style.opacity = '1';
     ReadyToRunTests.PageReady = false;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
