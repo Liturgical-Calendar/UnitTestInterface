@@ -18,7 +18,7 @@ on a responsive dashboard.
 ## Main Technologies
 
 - **Backend:** PHP 8.1+ (procedural with classes)
-- **Frontend:** jQuery, Bootstrap 5, Font Awesome 6
+- **Frontend:** Native ES6 JavaScript, Bootstrap 5, Font Awesome 7
 - **Communication:** WebSocket (Ratchet-based server in LiturgicalCalendarAPI)
 - **i18n:** GNU gettext with 10+ language translations
 - **Code Quality:** PHP_CodeSniffer (PSR-12)
@@ -98,9 +98,10 @@ All markdown files must conform to `.markdownlint.yml`:
 
 ### JavaScript
 
-- jQuery-based DOM manipulation
-- Bootstrap 5 components
+- Native ES6 DOM manipulation (no jQuery dependency)
+- Bootstrap 5 native JavaScript API (Toast, Collapse, Modal, Tooltip)
 - WebSocket communication for real-time updates
+- Shared utilities in `common.js` (escapeHtmlAttr, slugify, slugifySelector, etc.)
 
 **Global Variables (defined in PHP, passed to JS):**
 
