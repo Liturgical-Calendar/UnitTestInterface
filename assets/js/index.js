@@ -523,7 +523,7 @@ const runTests = () => {
                         category: currentCalendarCategory
                     } ) );
                     safeCollapseShow('#specificUnitTests');
-                    safeCollapseShow(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`);
+                    safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
                 }
             }
             break;
@@ -541,7 +541,7 @@ const runTests = () => {
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
                 );
-                document.querySelector(`#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime`).textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
+                updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
                 conn.send( JSON.stringify( {
                     ...SpecificUnitTestCategories[ index ],
@@ -549,7 +549,7 @@ const runTests = () => {
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
                 } ) );
-                safeCollapseShow(`#specificUnitTest-${SpecificUnitTestCategories[ index ].test}`);
+                safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
             else {
                 console.log( 'Specific unit test validation jobs are finished!' );
@@ -559,7 +559,7 @@ const runTests = () => {
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
                     `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
                 );
-                document.querySelector(`#total${SpecificUnitTestCategories[ index - 1 ].test}TestsTime`).textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
+                updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
                 currentState = TestState.JobsFinished;
                 runTests();
             }
