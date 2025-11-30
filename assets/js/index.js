@@ -151,7 +151,7 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.SocketReady = ' + ReadyToRunTests.SocketReady );
         console.log( 'ReadyToRunTests.AsyncDataReady = ' + ReadyToRunTests.AsyncDataReady );
         console.log( 'ReadyToRunTests.PageReady = ' + ReadyToRunTests.PageReady );
-        let testsReady = ReadyToRunTests.check();
+        const testsReady = ReadyToRunTests.check();
         const startBtn = document.querySelector('#startTestRunnerBtn');
         startBtn.disabled = !testsReady;
         startBtn.classList.remove('btn-secondary');
@@ -663,7 +663,7 @@ const connectWebSocket = () => {
                 }
                 case TestState.SpecificUnitTests: {
                     document.querySelector('#successfulUnitTestsCount').textContent = ++successfulUnitTests;
-                    let specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-success`).length;
+                    const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-success`).length;
                     document.querySelector(`#successful${responseData.test}TestsCount`).textContent = specificUnitTestSuccessCount;
                     break;
                 }
@@ -695,7 +695,7 @@ const connectWebSocket = () => {
                 }
                 case TestState.SpecificUnitTests: {
                     document.querySelector('#failedUnitTestsCount').textContent = ++failedUnitTests;
-                    let specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-danger`).length;
+                    const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${responseData.test} .bg-danger`).length;
                     document.querySelector(`#failed${responseData.test}TestsCount`).textContent = specificUnitTestFailedCount;
                     break;
                 }
@@ -705,25 +705,25 @@ const connectWebSocket = () => {
             runTests();
         }
         performance.mark( 'litcalTestRunnerEnd' );
-        let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
+        const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
         switch ( currentState ) {
             case TestState.ExecutingValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
-                let totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                const totalSourceDataTestTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
                 document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestTime.duration ) );
                 break;
             }
             case TestState.ValidatingCalendarData: {
                 performance.mark( 'calendarDataTestsEnd' );
-                let totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
+                const totalCalendarDataTestTime = performance.measure( 'litcalCalendarDataTestRunner', 'calendarDataTestsStart', 'calendarDataTestsEnd' );
                 document.querySelector('#totalCalendarDataTestsTime').textContent = MsToTimeString( Math.round( totalCalendarDataTestTime.duration ) );
                 break;
             }
             case TestState.SpecificUnitTests: {
                 performance.mark( 'specificUnitTestsEnd' );
-                let totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
+                const totalUnitTestTime = performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
                 document.querySelector('#totalUnitTestsTime').textContent = MsToTimeString( Math.round( totalUnitTestTime.duration ) );
                 break;
             }

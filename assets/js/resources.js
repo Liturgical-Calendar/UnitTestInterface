@@ -51,7 +51,7 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
         console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
-        let testsReady = ReadyToRunTests.check();
+        const testsReady = ReadyToRunTests.check();
         const startBtn = document.querySelector('#startTestRunnerBtn');
         startBtn.disabled = !testsReady;
         startBtn.classList.remove('btn-secondary');
@@ -499,19 +499,19 @@ const connectWebSocket = () => {
             runTests();
         }
         performance.mark( 'litcalTestRunnerEnd' );
-        let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
+        const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
         document.querySelector('#total-time').textContent = MsToTimeString( Math.round( totalTestTime.duration ) );
         switch( currentState ) {
             case TestState.ExecutingResourceValidations: {
                 performance.mark( 'resourceDataTestsEnd' );
-                let totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
+                const totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
                 document.querySelector('#totalResourceDataTestsTime').textContent = MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) );
                 break;
             }
             case TestState.ExecutingSourceValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
-                let totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                const totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
                 document.querySelector('#totalSourceDataTestsTime').textContent = MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) );
                 break;
             }
@@ -589,9 +589,9 @@ const setupPage = () => {
     if (startTestRunnerBtnLbl === '') {
         startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
     }
-    let resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
+    const resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
     document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
-    let sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
+    const sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
     document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
     ReadyToRunTests.PageReady = true;
     connectWebSocket();
