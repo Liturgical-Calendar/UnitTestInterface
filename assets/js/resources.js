@@ -40,14 +40,14 @@ class ReadyToRunTests {
      * The conditions are:
      * - PageReady: page has finished loading
      * - SocketReady: Websocket connection is ready
-     * - AsyncDataReady: all relevant metadata regarding calendars has finished loading
+     * - MetaDataReady: all relevant metadata regarding calendars has finished loading
      * - MissalsReady: all relevant data regarding Roman Missals has finished loading
      * Additionally, the method makes sure that the #startTestRunnerBtnLbl is set to the stored value
      * and that the page loader is hidden.
      */
     static tryEnableBtn() {
         console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
-        console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.MetaDataReady );
+        console.log( 'ReadyToRunTests.MetaDataReady = '      + ReadyToRunTests.MetaDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
         console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
