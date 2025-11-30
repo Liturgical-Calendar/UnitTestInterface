@@ -274,7 +274,7 @@ const testTemplate = ( calendarName ) => {
 </div>
 <div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}">
     <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> JSON valid</p>
+        <p class="card-text"><i class="fas fa-circle-question fa-fw"></i> <span class="response-type">JSON</span> valid</p>
     </div>
 </div>
 <div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}">
@@ -343,7 +343,7 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     </div>
     <div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> JSON valid</span></p>
+            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw"></i> <span class="response-type">JSON</span> valid</span></p>
         </div>
     </div>
     <div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
@@ -1264,11 +1264,10 @@ document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) =
         pageLoader.style.opacity = '1';
     }
     ReadyToRunTests.PageReady = false;
-    const oldResponseType = currentResponseType;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
-    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.json-valid .card-text`).forEach(el => {
-        el.innerHTML = el.innerHTML.replace( `${oldResponseType} valid`, `${currentResponseType} valid` );
+    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.json-valid .response-type`).forEach(el => {
+        el.textContent = currentResponseType;
     });
     setupPage();
     ReadyToRunTests.tryEnableBtn();
