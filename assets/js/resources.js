@@ -955,9 +955,9 @@ const MsToTimeString = ( ms ) => {
     return timeString.join( ', ' );
 }
 
-document.querySelector('#apiVersionsDropdownItems').addEventListener('change', setEndpoints);
+document.querySelector('#apiVersionsDropdownItems')?.addEventListener('change', setEndpoints);
 
-document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
+document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if( currentState === TestState.Ready || currentState === TestState.JobsFinished ) {
         index = 0;
         messageCounter = 0;
@@ -983,7 +983,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     }
 });
 
-document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) => {
+document.querySelector('#APIResponseSelect')?.addEventListener('change', ( ev ) => {
     const pageLoader = document.querySelector('.page-loader');
     if (pageLoader) {
         pageLoader.style.display = 'block';

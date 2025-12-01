@@ -312,7 +312,8 @@ const sanitizeOnSetValue = {
             // expected_value must be stored as RFC 3339 datetime strings (e.g., "2024-12-25T00:00:00+00:00")
             // This ensures clean round-tripping with the API and consistent date handling
             case 'expected_value':
-                const dateRegex = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(\+|\-)(0[0-9]|1[0-2]):([0-5][0-9])$/;
+                // Timezone offsets range from -12:00 to +14:00 (e.g., Pacific/Kiritimati is UTC+14)
+                const dateRegex = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(\+|\-)(0[0-9]|1[0-4]):([0-5][0-9])$/;
                 if( value !== null && (typeof value !== 'string' || !dateRegex.test(value) || new Date(value) < new Date('1969-11-29T00:00:00+00:00') || new Date(value) > new Date('9999-12-31T00:00:00+00:00') ) ) {
                     console.warn(`property ${prop} of this object must be an RFC 3339 date-time string and have a value between '1969-11-29T00:00:00+00:00' and '9999-12-31T00:00:00+00:00'`);
                     return;
@@ -938,9 +939,13 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
         htmlStr += generateYearSpanHtml(year, existingOption, hammerIcon, removeIcon, years.includes(year));
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
-        layoutMode: 'fitRows'
-    });
+    if (typeof Isotope !== 'undefined') {
+        isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
+            layoutMode: 'fitRows'
+        });
+    } else {
+        console.warn('Isotope library not loaded; year grid layout may be affected');
+    }
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
     updateText('defineTestModalLabel', modalLabel[currentTestType]);
     if ('edittest' in ev.relatedTarget.dataset) {
@@ -1012,7 +1017,7 @@ document.querySelector('#carouselCreateNewUnitTest').addEventListener('slid.bs.c
         document.querySelector('#carouselNextButton').removeAttribute('disabled');
     }
     if (ev.to === 1) {
-        isotopeYearsToTestGrid.layout();
+        isotopeYearsToTestGrid?.layout();
         document.querySelector('#yearsToTestGrid').classList.remove('invisible');
     }
     if (ev.to === 2) {
@@ -1071,7 +1076,7 @@ document.addEventListener('change', ev => {
     document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
     const minYear = Math.min(...rangeVals);
     const maxYear = Math.max(...rangeVals);
-    isotopeYearsToTestGrid.destroy();
+    isotopeYearsToTestGrid?.destroy();
     document.querySelector('#yearsToTestGrid').innerHTML = '';
     const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
     const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
@@ -1082,9 +1087,13 @@ document.addEventListener('change', ev => {
         htmlStr += generateYearSpanHtml(year, existingOption, hammerIcon, removeIcon);
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
-        layoutMode: 'fitRows'
-    });
+    if (typeof Isotope !== 'undefined') {
+        isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
+            layoutMode: 'fitRows'
+        });
+    } else {
+        console.warn('Isotope library not loaded; year grid layout may be affected');
+    }
     document.querySelector('#yearSinceUntilShadow').value = minYear;
 });
 
@@ -1098,7 +1107,7 @@ document.addEventListener('click', ev => {
         parnt.innerHTML = '';
         parnt.classList.add('deleted');
         parnt.style.opacity = '1';
-        isotopeYearsToTestGrid.layout();
+        isotopeYearsToTestGrid?.layout();
     }, 200);
 });
 
@@ -1129,7 +1138,7 @@ document.addEventListener('click', ev => {
         deletedSpan.setAttribute('title', titleAttr);
     }
     deletedSpan.innerHTML = `${hammerIcon}${year}${removeIcon}`;
-    isotopeYearsToTestGrid.layout();
+    isotopeYearsToTestGrid?.layout();
 });
 
 document.addEventListener('click', ev => {
