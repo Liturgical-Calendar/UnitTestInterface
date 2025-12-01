@@ -88,13 +88,59 @@ const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500, easing = 'e
 };
 
 /**
+ * Computes date attributes for a year span based on the event option.
+ * @param {number} year - The year to compute attributes for
+ * @param {HTMLOptionElement|null} existingOption - The selected option element with event data
+ * @returns {{titleAttr: string, lightClass: string}} The computed title attribute and CSS class
+ */
+const computeYearDateAttrs = (year, existingOption) => {
+    let titleAttr = '';
+    let lightClass = '';
+
+    if (existingOption?.dataset?.month && existingOption?.dataset?.day) {
+        const eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+        if (eventDate.getUTCDay() === 0) {
+            console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
+            titleAttr = `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`;
+            lightClass = 'bg-light';
+        } else {
+            console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
+            titleAttr = DTFormat.format(eventDate);
+        }
+    }
+
+    return { titleAttr, lightClass };
+};
+
+/**
+ * Generates HTML for a year span element in the year grid.
+ * @param {number} year - The year to generate HTML for
+ * @param {HTMLOptionElement|null} existingOption - The selected option element with event data
+ * @param {string} hammerIcon - HTML for the hammer icon (empty for ExactCorrespondence tests)
+ * @param {string} removeIcon - HTML for the remove icon
+ * @param {boolean} [isIncluded=true] - Whether this year is included in the test range
+ * @returns {string} The HTML string for the year span
+ */
+const generateYearSpanHtml = (year, existingOption, hammerIcon, removeIcon, isIncluded = true) => {
+    if (!isIncluded) {
+        return `<span class="testYearSpan year-${year} deleted"></span>`;
+    }
+
+    const { titleAttr, lightClass } = computeYearDateAttrs(year, existingOption);
+    const titleStr = titleAttr ? ` title="${titleAttr}"` : '';
+    const classStr = lightClass ? ` ${lightClass}` : '';
+
+    return `<span class="testYearSpan year-${year}${classStr}"${titleStr}>${hammerIcon}${year}${removeIcon}</span>`;
+};
+
+/**
  * Updates the year grid to highlight years where the event falls on a Sunday.
  * @param {HTMLOptionElement} existingOption - The selected option element with event data
  * @param {number} minYear - The minimum year in the range
  * @param {number} maxYear - The maximum year in the range
  */
 const updateYearGridForEvent = (existingOption, minYear, maxYear) => {
-    if (!existingOption?.dataset.month || !existingOption?.dataset.day) {
+    if (!existingOption?.dataset?.month || !existingOption?.dataset?.day) {
         return;
     }
 
@@ -103,17 +149,15 @@ const updateYearGridForEvent = (existingOption, minYear, maxYear) => {
     }
 
     for (let year = minYear; year <= maxYear; year++) {
-        const eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
         const yearSpan = document.querySelector(`.testYearSpan.year-${year}`);
         if (!yearSpan) continue;
 
-        if (eventDate.getUTCDay() === 0) {
-            console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
-            yearSpan.setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`);
-            yearSpan.classList.add('bg-light');
-        } else {
-            console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-            yearSpan.setAttribute('title', DTFormat.format(eventDate));
+        const { titleAttr, lightClass } = computeYearDateAttrs(year, existingOption);
+        if (titleAttr) {
+            yearSpan.setAttribute('title', titleAttr);
+        }
+        if (lightClass) {
+            yearSpan.classList.add(lightClass);
         }
     }
 };
@@ -848,15 +892,13 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
         isotopeYearsToTestGrid.destroy();
     }
     document.querySelector('#yearsToTestGrid').innerHTML = '';
-    let removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
-    let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
+    const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
+    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
     let htmlStr = '';
     let years;
     let minYear = 1970;
     let maxYear = 2030;
     let existingOption = null;
-    let titleAttr = '';
-    let lightClass = '';
     if ('edittest' in ev.relatedTarget.dataset) {
         console.log('we are editing an existing test: description and event_key will be pre-filled');
         console.log('description: ', proxiedTest.description);
@@ -880,25 +922,7 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
         years = ArrayRange(minYear, maxYear, true);
     }
     for (let year = minYear; year <= maxYear; year++) {
-        if (existingOption && existingOption.dataset.month && existingOption.dataset.day) {
-            let eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
-            if (eventDate.getUTCDay() === 0) {
-                titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
-                lightClass = ' bg-light';
-            } else {
-                titleAttr = ` title="${DTFormat.format(eventDate)}"`;
-                lightClass = '';
-            }
-        } else {
-            titleAttr = '';
-            lightClass = '';
-        }
-        //console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-        if (years.includes(year)) {
-            htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
-        } else {
-            htmlStr += `<span class="testYearSpan year-${year} deleted"></span>`;
-        }
+        htmlStr += generateYearSpanHtml(year, existingOption, hammerIcon, removeIcon, years.includes(year));
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
     isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
