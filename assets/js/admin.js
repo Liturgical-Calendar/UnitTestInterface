@@ -145,12 +145,13 @@ const computeYearDateAttrs = (year, existingOption) => {
  * @returns {string} The HTML string for the year span
  */
 const generateYearSpanHtml = (year, existingOption, hammerIcon, removeIcon, isIncluded = true) => {
-    if (!isIncluded) {
-        return `<span class="testYearSpan year-${year} deleted"></span>`;
-    }
-
     const { titleAttr, lightClass } = computeYearDateAttrs(year, existingOption);
     const titleStr = titleAttr ? ` title="${titleAttr}"` : '';
+
+    if (!isIncluded) {
+        return `<span class="testYearSpan year-${year} deleted"${titleStr}></span>`;
+    }
+
     const classStr = lightClass ? ` ${lightClass}` : '';
 
     return `<span class="testYearSpan year-${year}${classStr}"${titleStr}>${hammerIcon}${year}${removeIcon}</span>`;
@@ -307,6 +308,8 @@ const sanitizeOnSetValue = {
                     return;
                 }
                 break;
+            // expected_value must be stored as RFC 3339 datetime strings (e.g., "2024-12-25T00:00:00+00:00")
+            // This ensures clean round-tripping with the API and consistent date handling
             case 'expected_value':
                 const dateRegex = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(\+|\-)(0[0-9]|1[0-2]):([0-5][0-9])$/;
                 if( value !== null && (typeof value !== 'string' || !dateRegex.test(value) || new Date(value) < new Date('1969-11-29T00:00:00+00:00') || new Date(value) > new Date('9999-12-31T00:00:00+00:00') ) ) {
@@ -520,6 +523,7 @@ const serializeUnitTest = () => {
         const yearEl = div.querySelector('p.testYear');
         const year = yearEl ? Number(yearEl.textContent) : null;
         const expectedValueEl = div.querySelector('.expectedValue');
+        // Get RFC 3339 datetime string from data-value attribute (e.g., "2024-12-25T00:00:00+00:00")
         // Normalize undefined to null for API consistency
         const expected_value = expectedValueEl?.textContent === '---' ? null : (expectedValueEl?.getAttribute('data-value') ?? null);
         const assertEl = div.querySelector('.assert');
@@ -1042,6 +1046,36 @@ document.addEventListener('click', ev => {
         parnt.style.opacity = '1';
         isotopeYearsToTestGrid.layout();
     }, 200);
+});
+
+document.addEventListener('click', ev => {
+    const deletedSpan = ev.target.closest('#yearsToTestGrid > .testYearSpan.deleted');
+    if (!deletedSpan) return;
+
+    // Extract year from class (e.g., "year-2024")
+    const yearClass = Array.from(deletedSpan.classList).find(c => c.startsWith('year-'));
+    if (!yearClass) return;
+    const year = yearClass.replace('year-', '');
+
+    // Get current event option for highlighting
+    const currentEventKey = document.querySelector('#existingLitEventName').value;
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentEventKey)}"]`);
+    const { titleAttr, lightClass } = computeYearDateAttrs(Number(year), existingOption);
+
+    // Generate icons
+    const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
+    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
+
+    // Reinstate the span
+    deletedSpan.classList.remove('deleted');
+    if (lightClass) {
+        deletedSpan.classList.add(lightClass);
+    }
+    if (titleAttr) {
+        deletedSpan.setAttribute('title', titleAttr);
+    }
+    deletedSpan.innerHTML = `${hammerIcon}${year}${removeIcon}`;
+    isotopeYearsToTestGrid.layout();
 });
 
 document.addEventListener('click', ev => {

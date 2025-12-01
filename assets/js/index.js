@@ -354,9 +354,11 @@ const sourceDataCheckTemplate = ( item, idx ) => {
         categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
     }
     const validateSlug = slugify(item.validate);
-    const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${categoryStr}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
+    const escapedSourceFile = escapeHtmlAttr(item.sourceFile);
+    const escapedValidate = escapeHtmlAttr(item.validate);
+    const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(categoryStr)}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${item.sourceFile}">${item.category !== 'universalcalendar' ? truncate( item.validate, 14 ) : truncate( item.validate, 22 )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${escapedSourceFile}">${item.category !== 'universalcalendar' ? truncate( escapedValidate, 14 ) : truncate( escapedValidate, 22 )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
@@ -378,30 +380,6 @@ const sourceDataCheckTemplate = ( item, idx ) => {
 
 
 const truncate = ( source, size ) => source.length > size ? source.slice( 0, size - 1 ) + "*" : source;
-
-/**
- * HTMLEncode function
- * kudos to https://stackoverflow.com/a/784765/394921
- * @param {*} str
- * @returns
- */
-const HTMLEncode = ( str ) => {
-    // avoid a double encoding!
-    str = str.replaceAll( '&#039;', '"' );
-    str = [ ...str ];
-    //    ^ es20XX spread to Array: keeps surrogate pairs
-    let i = str.length, aRet = [];
-
-    while ( i-- ) {
-        var iC = str[ i ].codePointAt( 0 );
-        if ( iC < 65 || iC > 127 || ( iC > 90 && iC < 97 ) ) {
-            aRet[ i ] = '&#' + iC + ';';
-        } else {
-            aRet[ i ] = str[ i ];
-        }
-    }
-    return aRet.join( '' );
-}
 
 /**
  * The options used to format the date in the assertions.

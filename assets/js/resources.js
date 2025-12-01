@@ -616,7 +616,10 @@ const setTestRunnerBtnLblTxt = (txt) => {
  */
 const setupPage = () => {
     if (startTestRunnerBtnLbl === '') {
-        startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+        const btnLblEl = document.querySelector('#startTestRunnerBtnLbl');
+        if (btnLblEl) {
+            startTestRunnerBtnLbl = btnLblEl.textContent;
+        }
     }
     const resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
     document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;

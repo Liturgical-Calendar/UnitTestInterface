@@ -111,7 +111,7 @@
  * A single test assertion.
  * @typedef {Object} TestAssertion
  * @property {number} year - The year for this assertion
- * @property {string|null} expected_value - Expected date value (ISO format) or null
+ * @property {string|null} expected_value - RFC 3339 datetime string (e.g., "2024-12-25T00:00:00+00:00") or null
  * @property {string} assert - The assertion type (e.g., "eventExists AND hasExpectedDate")
  * @property {string} assertion - Human-readable assertion description
  * @property {string} [comment] - Optional comment explaining the assertion

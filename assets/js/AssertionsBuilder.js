@@ -76,8 +76,8 @@ export class Assertion {
      *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
      *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
      * @param {number} year - The year of the assertion.
-     * @param {string|null} expected_value - The expected value of the assertion.
-     * @param {'EventTypeExact'|'EventNotExists'} assert - The assert type of the assertion.
+     * @param {string|null} expected_value - The expected value of the assertion (RFC 3339 datetime string or null).
+     * @param {string} assert - The assert type (one of AssertType values: 'eventNotExists' or 'eventExists AND hasExpectedDate').
      * @param {string} assertion - The assertion.
      * @param {string} [comment] - The comment associated with the assertion.
      */

@@ -255,8 +255,9 @@ include_once 'components/NewTestModal.php';
     <div id="responseMessage"></div>
 </div>
 <?php
-$testsIndex    = json_encode($LitCalTests);
-$litcal_events = json_encode($LitCalAllLitEvents);
+$jsonFlags     = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+$testsIndex    = json_encode($LitCalTests, $jsonFlags);
+$litcal_events = json_encode($LitCalAllLitEvents, $jsonFlags);
 $javascript    = <<<SCRIPT
     <script>
         window.LitCalTests = Object.freeze($testsIndex);
