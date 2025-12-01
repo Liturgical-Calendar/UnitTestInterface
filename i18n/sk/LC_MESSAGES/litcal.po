@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2025-11-30 05:22+0000\n"
+"PO-Revision-Date: 2025-12-01 13:39+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/sk/>\n"
@@ -182,7 +182,7 @@ msgstr ""
 
 #: admin.php:157
 msgid "Variable existence"
-msgstr "Existencia premennej"
+msgstr "Premenlivý výskyt"
 
 #: admin.php:171
 msgid "Name of Test"
@@ -234,7 +234,7 @@ msgstr "Projekt LitCal"
 
 #: layout/topnavbar.php:74 layout/sidebar.php:23
 msgid "Unit Tests Admin"
-msgstr "Jednotkové testy Admin"
+msgstr "Správa jednotkových testov"
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
@@ -289,7 +289,7 @@ msgstr ""
 
 #: components/NewTestModal.php:49
 msgid "You can then remove any years that won't be needed."
-msgstr "Potom môžeš odstrániť všetky roky, ktoré nebudú potrebné."
+msgstr "Potom môžete odstrániť všetky roky, ktoré nebudú potrebné."
 
 #: components/NewTestModal.php:53
 msgid ""
@@ -330,7 +330,7 @@ msgstr ""
 
 #: components/NewTestModal.php:100
 msgid "Set the base date for this liturgical event."
-msgstr "Nastav základný dátum pre túto liturgickú udalosť."
+msgstr "Nastavte základný dátum pre túto liturgickú udalosť."
 
 #: components/NewTestModal.php:103
 msgid ""
