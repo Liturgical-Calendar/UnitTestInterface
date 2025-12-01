@@ -503,14 +503,16 @@ const sanitizeInput = (input) => {
  * @returns {UnitTest} The serialized UnitTest object based on the current form data.
  */
 const serializeUnitTest = () => {
-    const eventkey = document.querySelector('#testName').textContent.replace('Test','');
+    const eventkey    = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
-    const test_type = document.querySelector('#cardHeaderTestType').textContent;
-    const year_since = test_type === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
-    const year_until = test_type === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
-    proxiedTest.event_key = eventkey;
+    const test_type   = document.querySelector('#cardHeaderTestType').textContent;
+    const year_since  = test_type === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
+    const year_until  = test_type === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
+
+    proxiedTest.event_key   = eventkey;
     proxiedTest.description = description;
-    proxiedTest.test_type = test_type;
+    proxiedTest.test_type   = test_type;
+
     if( test_type === 'exactCorrespondenceSince' ) {
         proxiedTest.year_since = year_since;
     }
@@ -518,28 +520,29 @@ const serializeUnitTest = () => {
         proxiedTest.year_until = year_until;
     }
     proxiedTest.assertions = [];
-    let assertionDivs = document.querySelectorAll('#assertionsContainer > div');
+
+    const assertionDivs = document.querySelectorAll('#assertionsContainer > div');
     assertionDivs.forEach(div => {
-        const yearEl = div.querySelector('p.testYear');
-        const year = yearEl ? Number(yearEl.textContent) : null;
+        const yearEl          = div.querySelector('p.testYear');
+        const year            = yearEl ? Number(yearEl.textContent) : null;
         const expectedValueEl = div.querySelector('.expectedValue');
         // Get RFC 3339 datetime string from data-value attribute (e.g., "2024-12-25T00:00:00+00:00")
         // Normalize undefined to null for API consistency
         const expected_value = expectedValueEl?.textContent === '---' ? null : (expectedValueEl?.getAttribute('data-value') ?? null);
-        const assertEl = div.querySelector('.assert');
-        const assert = assertEl?.textContent ?? null;
-        const assertionEl = div.querySelector('[contenteditable]');
-        const assertion = assertionEl?.textContent ?? null;
-        const commentSvg = div.querySelector('.comment > svg');
-        const hasComment = commentSvg?.getAttribute('data-icon') === 'comment-dots';
-        const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
+        const assertEl       = div.querySelector('.assert');
+        const assert         = assertEl?.textContent ?? null;
+        const assertionEl    = div.querySelector('[contenteditable]');
+        const assertion      = assertionEl?.textContent ?? null;
+        const commentSvg     = div.querySelector('.comment > svg');
+        const hasComment     = commentSvg?.getAttribute('data-icon') === 'comment-dots';
+        const comment        = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
         proxiedTest.assertions.push(new Assertion(year, expected_value, assert, assertion, comment));
     });
     const apiCalendarSelect = document.querySelector('#APICalendarSelect');
     if( apiCalendarSelect?.value !== 'VA' ) {
-        const selectedOption = apiCalendarSelect.options[apiCalendarSelect.selectedIndex];
+        const selectedOption      = apiCalendarSelect.options[apiCalendarSelect.selectedIndex];
         const currentCalendarType = selectedOption?.dataset.calendartype;
-        proxiedTest.applies_to = {[currentCalendarType]: apiCalendarSelect.value};
+        proxiedTest.applies_to    = {[currentCalendarType]: apiCalendarSelect.value};
     }
     return new UnitTest( proxiedTest );
 }
@@ -711,9 +714,9 @@ document.addEventListener('click', ev => {
     if (!prevEl || !prevEl.dataset || !prevEl.dataset.value) {
         return;
     }
-    const curDate = new Date(prevEl.dataset.value);
+    const curDate    = new Date(prevEl.dataset.value);
     const curDateVal = curDate.toISOString().split('T')[0];
-    const pElement = editDate.parentElement;
+    const pElement   = editDate.parentElement;
     pElement.classList.remove('bg-success', 'text-white');
     pElement.classList.add('bg-warning', 'text-dark');
     pElement.children[1].innerHTML = '';
@@ -932,6 +935,48 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
     updateText('defineTestModalLabel', modalLabel[currentTestType]);
     if ('edittest' in ev.relatedTarget.dataset) {
+        // Apply visual indication for year_since/year_until when editing existing test
+        let pivotYear = null;
+        if (currentTestType === TestType.ExactCorrespondenceSince && proxiedTest.year_since) {
+            pivotYear = proxiedTest.year_since;
+        } else if (currentTestType === TestType.ExactCorrespondenceUntil && proxiedTest.year_until) {
+            pivotYear = proxiedTest.year_until;
+        }
+        if (pivotYear !== null) {
+            const pivotSpan = document.querySelector(`#yearsToTestGrid .testYearSpan.year-${pivotYear}`);
+            if (pivotSpan) {
+                pivotSpan.classList.remove('bg-light');
+                pivotSpan.classList.add('bg-info');
+                const siblings = Array.from(pivotSpan.parentElement.children);
+                const idxAsChild = siblings.indexOf(pivotSpan);
+                if (currentTestType === TestType.ExactCorrespondenceSince) {
+                    // Years before pivotYear get bg-warning (event doesn't exist)
+                    siblings.slice(0, idxAsChild).forEach(el => {
+                        el.classList.remove('bg-light');
+                        el.classList.add('bg-warning');
+                    });
+                } else {
+                    // Years after pivotYear get bg-warning (event doesn't exist)
+                    siblings.slice(idxAsChild + 1).forEach(el => {
+                        el.classList.remove('bg-light');
+                        el.classList.add('bg-warning');
+                    });
+                }
+                document.querySelector('#yearSinceUntilShadow').value = pivotYear;
+            }
+        }
+        // Apply visual indication for Variable Existence tests
+        if (currentTestType === TestType.VariableCorrespondence && proxiedTest.assertions) {
+            proxiedTest.assertions.forEach(assertion => {
+                if (assertion.assert === AssertType.EventNotExists) {
+                    const yearSpan = document.querySelector(`#yearsToTestGrid .testYearSpan.year-${assertion.year}`);
+                    if (yearSpan) {
+                        yearSpan.classList.remove('bg-light');
+                        yearSpan.classList.add('bg-warning');
+                    }
+                }
+            });
+        }
         carousel.to(1);
     }
 });
@@ -1082,14 +1127,15 @@ document.addEventListener('click', ev => {
     const hammerIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > .fa-hammer');
     if (!hammerIcon) return;
 
-    const parnt = hammerIcon.parentElement;
-    const bgClass = currentTestType === TestType.VariableCorrespondence ? 'bg-warning' : 'bg-info';
+    const parentEl      = hammerIcon.parentElement;
+    const grandParentEl = parentEl.parentElement;
+    const bgClass       = currentTestType === TestType.VariableCorrespondence ? 'bg-warning' : 'bg-info';
     if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
-        parnt.parentElement.querySelectorAll('.testYearSpan').forEach(el => {
+        grandParentEl.querySelectorAll('.testYearSpan').forEach(el => {
             el.classList.remove('bg-info', 'bg-warning');
         });
-        const siblings = Array.from(parnt.parentElement.children);
-        const idxAsChild = siblings.indexOf(parnt);
+        const siblings = Array.from(grandParentEl.children);
+        const idxAsChild = siblings.indexOf(parentEl);
         const allPrevSiblings = siblings.slice(0, idxAsChild);
         const allNextSiblings = siblings.slice(idxAsChild + 1);
         if (TestType.ExactCorrespondenceSince === currentTestType) {
@@ -1104,9 +1150,9 @@ document.addEventListener('click', ev => {
             });
         }
     }
-    parnt.classList.remove('bg-light');
-    parnt.classList.add(bgClass);
-    document.querySelector('#yearSinceUntilShadow').value = parnt.innerText; //do not use textContent here!
+    parentEl.classList.remove('bg-light');
+    parentEl.classList.add(bgClass);
+    document.querySelector('#yearSinceUntilShadow').value = parentEl.innerText; //do not use textContent here!
 });
 
 /** FINAL CREATE TEST BUTTON */
@@ -1124,12 +1170,12 @@ const getTextNodeContent = (element) => {
 };
 
 document.querySelector('#btnCreateTest').addEventListener('click', () => {
-    let form = document.querySelector('#carouselCreateNewUnitTest form');
+    const form = document.querySelector('#carouselCreateNewUnitTest form');
     if (!form.checkValidity()) {
         form.classList.add('was-validated');
-        let firstInvalidInput = form.querySelector(':invalid');
+        const firstInvalidInput = form.querySelector(':invalid');
         console.log(firstInvalidInput);
-        let parentCarouselItem = firstInvalidInput.closest('.carousel-item');
+        const parentCarouselItem = firstInvalidInput.closest('.carousel-item');
         console.log(parentCarouselItem);
         console.log(parentCarouselItem.dataset.item);
         const carouselEl = document.querySelector('#carouselCreateNewUnitTest');
@@ -1158,7 +1204,8 @@ document.querySelector('#btnCreateTest').addEventListener('click', () => {
                 }
             }
         }
-        let yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt(getTextNodeContent(el)));
+
+        const yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt(getTextNodeContent(el)));
 
         const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt(getTextNodeContent(el)));
         const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00Z');

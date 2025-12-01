@@ -36,14 +36,14 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
 
     <!-- Global configuration (set on window for ES6 module access) -->
     <script>
-        window.locale = '<?php echo $i18n->locale ?>';
-        window.WS_PROTOCOL = '<?php echo ($_ENV['WS_PROTOCOL'] ?? 'wss'); ?>';
-        window.WS_PORT = <?php echo ($_ENV['WS_PORT'] ?? 443); ?>;
-        window.WS_HOST = '<?php echo ($_ENV['WS_HOST'] ?? 'litcal-test.johnromanodorazio.com'); ?>';
-        window.API_PROTOCOL = '<?php echo ($_ENV['API_PROTOCOL'] ?? 'https'); ?>';
-        window.API_PORT = <?php echo ($_ENV['API_PORT'] ?? 443); ?>;
-        window.API_HOST = '<?php echo ($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>';
-        window.APP_ENV = '<?php echo ($_ENV['APP_ENV'] ?? 'production'); ?>';
+        window.locale = <?php echo json_encode($i18n->locale); ?>;
+        window.WS_PROTOCOL = <?php echo json_encode($_ENV['WS_PROTOCOL'] ?? 'wss'); ?>;
+        window.WS_PORT = <?php echo (int)($_ENV['WS_PORT'] ?? 443); ?>;
+        window.WS_HOST = <?php echo json_encode($_ENV['WS_HOST'] ?? 'litcal-test.johnromanodorazio.com'); ?>;
+        window.API_PROTOCOL = <?php echo json_encode($_ENV['API_PROTOCOL'] ?? 'https'); ?>;
+        window.API_PORT = <?php echo (int)($_ENV['API_PORT'] ?? 443); ?>;
+        window.API_HOST = <?php echo json_encode($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>;
+        window.APP_ENV = <?php echo json_encode($_ENV['APP_ENV'] ?? 'production'); ?>;
     </script>
 <?php
 if ($pageName === 'admin') {

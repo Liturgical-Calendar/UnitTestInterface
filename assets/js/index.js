@@ -1285,6 +1285,10 @@ document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) =
 });
 
 document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
+    if (!conn) {
+        console.warn('cannot run tests: websocket connection not initialized');
+        return;
+    }
     if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
         index = 0;
         calendarIndex = 0;
