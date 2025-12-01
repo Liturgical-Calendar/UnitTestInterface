@@ -831,9 +831,14 @@ document.addEventListener('input', contenteditableHandler, true);
 
 document.querySelector('#serializeUnitTestData').addEventListener('click', () => {
     const newUnitTest = serializeUnitTest();
+    // Use PATCH for existing tests, PUT for new tests
+    // PATCH requires test name in URL path: /tests/{testName}
+    const isExistingTest = LitCalTests.some(test => test.name === newUnitTest.name);
+    const httpMethod = isExistingTest ? 'PATCH' : 'PUT';
+    const endpoint = isExistingTest ? `${ENDPOINTS.TESTSINDEX}/${newUnitTest.name}` : ENDPOINTS.TESTSINDEX;
     let responseStatus = 400;
-    fetch(ENDPOINTS.TESTSINDEX, {
-        method: "PUT",
+    fetch(endpoint, {
+        method: httpMethod,
         headers: {
             "Content-Type": "application/json"
         },
@@ -848,8 +853,9 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
         const alert = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
         // Normalize alert classes before adding the appropriate one
+        // PUT returns 201 Created, PATCH returns 200 OK
         alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
-        alert.classList.add(responseStatus === 201 ? 'alert-success' : 'alert-warning');
+        alert.classList.add((responseStatus === 200 || responseStatus === 201) ? 'alert-success' : 'alert-warning');
         fadeOutAlert(alert);
         console.log(data);
     })
