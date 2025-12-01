@@ -774,10 +774,11 @@ document.addEventListener('change', ev => {
     grandpa.classList.remove('bg-warning', 'text-dark');
     grandpa.classList.add('bg-success', 'text-white');
     ev.target.parentNode.dataset.value = dateTimeString;
-    // Format date for display, matching AssertionsBuilder.buildHtml format
-    const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
+    // Format date for display using shared formatter from AssertionsBuilder
     const parsedDate = new Date(dateTimeString);
-    const displayText = isNaN(parsedDate.getTime()) ? dateTimeString : dateFormatter.format(parsedDate);
+    const displayText = isNaN(parsedDate.getTime())
+        ? dateTimeString
+        : AssertionsBuilder.getDateFormatter().format(parsedDate);
     ev.target.parentNode.textContent = displayText;
 });
 
