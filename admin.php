@@ -33,13 +33,13 @@ function isLocalhost(): bool
             in_array($serverName, $localhostNames);
 }
 
-$dotenv = Dotenv::createMutable($projectFolder, ['.env', '.env.local', '.env.development', '.env.production'], false);
+$dotenv = Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
 $dotenv->safeLoad();
 
 $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
 $dotenv->ifPresent(['API_PROTOCOL'])->allowedValues(['http', 'https']);
 $dotenv->ifPresent(['API_PORT'])->isInteger();
-$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'production']);
+$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'staging', 'production']);
 
 $logsFolder = 'logs';
 if (!file_exists($logsFolder)) {
@@ -255,13 +255,14 @@ include_once 'components/NewTestModal.php';
     <div id="responseMessage"></div>
 </div>
 <?php
-$testsIndex    = json_encode($LitCalTests);
-$litcal_events = json_encode($LitCalAllLitEvents);
+$jsonFlags     = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+$testsIndex    = json_encode($LitCalTests, $jsonFlags);
+$litcal_events = json_encode($LitCalAllLitEvents, $jsonFlags);
 $javascript    = <<<SCRIPT
     <script>
-        const LitCalTests = Object.freeze($testsIndex);
-        const LitcalEvents = Object.freeze($litcal_events);
-        const baseUrl = '$baseUrl';
+        window.LitCalTests = Object.freeze($testsIndex);
+        window.LitcalEvents = Object.freeze($litcal_events);
+        window.baseUrl = '$baseUrl';
     </script>
 SCRIPT;
 echo $javascript;

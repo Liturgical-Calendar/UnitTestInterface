@@ -1,8 +1,15 @@
 /**
+ * Assertions Builder module for the LiturgicalCalendar Unit Test Interface.
+ * Contains classes and constants for building and managing test assertions.
+ * @module AssertionsBuilder
+ */
+
+/**
  * Enum-like constant that represents the different types of assertions for liturgical events tests.
  * @readonly
+ * @enum {string}
  */
-const TestType = Object.freeze({
+export const TestType = Object.freeze({
     ExactCorrespondence:        'exactCorrespondence',
     ExactCorrespondenceSince:   'exactCorrespondenceSince',
     ExactCorrespondenceUntil:   'exactCorrespondenceUntil',
@@ -14,9 +21,9 @@ const TestType = Object.freeze({
  * @readonly
  * @enum {string}
  * @property {string} EventNotExists - Represents that the liturgical event does not exist.
- * @property {string} EventTypeExact - Represents that the liturgical event exists and has the expected timestamp.
+ * @property {string} EventTypeExact - Represents that the liturgical event exists and has the expected date.
  */
-const AssertType = Object.freeze({
+export const AssertType = Object.freeze({
     EventNotExists:             'eventNotExists',
     EventTypeExact:             'eventExists AND hasExpectedDate'
 });
@@ -35,7 +42,7 @@ const AssertType = Object.freeze({
  * @property {number} HIGHER_SOLEMNITY - The liturgical grade of a Higher Solemnity.
  * @property {string[]} stringVals - An array of string values for each of the above constants, in the same order as the constants.
  */
-const LitGrade = Object.freeze({
+export const LitGrade = Object.freeze({
     WEEKDAY:            0,
     COMMEMORATION:      1,
     OPTIONAL_MEMORIAL:  2,
@@ -58,13 +65,81 @@ const LitGrade = Object.freeze({
 });
 
 /**
+ * Class representing an assertion for a liturgical event in a unit test.
+ * @class
+ */
+export class Assertion {
+    /**
+     * @description
+     *      Creates a new instance of Assertion.
+     *      The constructor can be called with 4 or 5 arguments, or with a single object argument.
+     *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
+     *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
+     * @param {number} year - The year of the assertion.
+     * @param {string|null} expected_value - The expected value of the assertion (RFC 3339 datetime string or null).
+     * @param {string} assert - The assert type (one of AssertType values: 'eventNotExists' or 'eventExists AND hasExpectedDate').
+     * @param {string} assertion - The assertion.
+     * @param {string} [comment] - The comment associated with the assertion.
+     */
+    constructor(year, expected_value, assert, assertion, comment = null) {
+        if( arguments.length === 4 || arguments.length === 5 ) {
+            this.year = year;
+            this.expected_value = expected_value;
+            this.assert = assert;
+            this.assertion = assertion;
+            if( null !== comment ) {
+                this.comment = comment;
+            }
+        } else if( arguments.length === 1 ) {
+            if(
+                typeof arguments[0] === 'object'
+                && (Object.keys( arguments[0] ).length === 4 || Object.keys( arguments[0] ).length === 5)
+                && Object.keys( arguments[0] ).every(val => ['year', 'expected_value', 'assert', 'assertion', 'comment'].includes(val) )
+            ) {
+                Object.assign(this, arguments[0]);
+            }
+        }
+    }
+}
+
+/**
+ * Creates a comment icon DOM element depending on whether there is a comment or not.
+ * If there is a comment, it creates a button with a comment icon and the comment as title.
+ * If there is no comment, it creates a button with a comment-medical icon and 'add a comment' as title.
+ * The button is meant to be used as a toggle to show the modal for adding or editing a comment.
+ *
+ * @param {boolean} hasComment - whether there is a comment or not
+ * @param {string} [value=null] - the comment value, if any
+ * @returns {HTMLSpanElement} the comment icon as a DOM element
+ */
+export const createCommentIcon = (hasComment, value = null) => {
+    const span = document.createElement('span');
+    span.className = hasComment
+        ? 'mb-1 btn btn-xs btn-dark float-end comment'
+        : 'mb-1 btn btn-xs btn-secondary float-end comment';
+    span.setAttribute('role', 'button');
+    span.setAttribute('data-bs-toggle', 'modal');
+    span.setAttribute('data-bs-target', '#modalAddEditComment');
+    span.setAttribute('title', hasComment && value ? value : 'add a comment');
+
+    const icon = document.createElement('i');
+    icon.className = hasComment
+        ? 'fas fa-comment-dots fa-fw'
+        : 'fas fa-comment-medical fa-fw';
+    icon.setAttribute('aria-hidden', 'true');
+
+    span.appendChild(icon);
+    return span;
+};
+
+/**
  * Class AssertionsBuilder
  *
  * @description
  * This class is responsible for managing the interaction with the user when a new Unit Test is created.
  * It will build the HTML for the form that will allow the user to build the assertions for the Unit Test.
  */
-class AssertionsBuilder {
+export class AssertionsBuilder {
     // set some default initial values
     static testType     = TestType.ExactCorrespondence;
     static yearSince    = null; // only useful in case of TestType.ExactCorrespondenceSince
@@ -72,6 +147,19 @@ class AssertionsBuilder {
     static bgColor      = 'bg-success';
     static txtColor     = 'text-dark';
     static currentTest  = null;
+    static #dateFormatter = null;
+
+    /**
+     * Gets a cached Intl.DateTimeFormat instance for efficiency.
+     * @returns {Intl.DateTimeFormat}
+     */
+    static getDateFormatter() {
+        if (!AssertionsBuilder.#dateFormatter) {
+            const loc = typeof window !== 'undefined' && window.LitCalConfig?.locale ? window.LitCalConfig.locale : navigator.language;
+            AssertionsBuilder.#dateFormatter = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeZone: 'UTC' });
+        }
+        return AssertionsBuilder.#dateFormatter;
+    }
 
 
     /**
@@ -97,9 +185,9 @@ class AssertionsBuilder {
         if( test.test_type === TestType.ExactCorrespondenceSince ) {
             AssertionsBuilder.yearSince = test.year_since;
         }
-        AssertionsBuilder.test = litcal_events.filter(el => el.event_key === test.event_key)[0] ?? null;
+        AssertionsBuilder.test = window.litcal_events.filter(el => el.event_key === test.event_key)[0] ?? null;
         console.log('new instance of AssertionsBuilder, test = ', AssertionsBuilder.test);
-        console.log('litcal_events = ', litcal_events);
+        console.log('litcal_events = ', window.litcal_events);
     }
 
     /**
@@ -141,59 +229,120 @@ class AssertionsBuilder {
      *      The assert property and the expected value are each in a div that can be clicked to toggle the assert property between AssertType.EventNotExists and AssertType.EventTypeExact, and to edit the expected value respectively.
      *      The div also contains a span with the assertion (which is editable) and a span with the comment (if any) for the assertion.
      *      The div is styled with a background color and text color based on the assert property of the assertion.
-     *      The method returns the built html as a jquery object.
+     *      The method returns the built html as a DocumentFragment.
      *
-     * @returns {jQuery} the built html as a jquery object
+     * @returns {DocumentFragment} the built html as a DocumentFragment
      */
     buildHtml() {
         console.log('building html for AssertionsBuilder with test = ', AssertionsBuilder.test);
-        let assertionBuildStr = '';
-        //console.log(this.assertions);
+        const fragment = document.createDocumentFragment();
+        const dateFormatter = AssertionsBuilder.getDateFormatter();
+
         this.assertions.forEach( (assertion, idy) => {
             AssertionsBuilder.#setColors( assertion );
-            //console.log(assertion);
-            const expectedDateStr = assertion.expected_value !== null ? assertion.expected_value : '---';
-            const commentStr = commentIcon( assertion.hasOwnProperty('comment'), assertion?.comment);
-            let sundayCheck = '';
-            if(AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
-                const eventDate = new Date(assertion.expected_value);
-                if( eventDate.getUTCDay() === 0 ) {
-                    //console.log('this day is a Sunday!');
-                    sundayCheck = 'bg-warning text-dark';
-                } else {
-                    sundayCheck = '';
+            let eventDate = null;
+            let expectedDateStr = '---';
+            if (assertion.expected_value) {
+                const parsed = new Date(assertion.expected_value);
+                if (!isNaN(parsed.getTime())) {
+                    eventDate = parsed;
+                    expectedDateStr = dateFormatter.format(eventDate);
                 }
             }
-            //unfortunately Firefox does not implement the "plaintext-only" value for [contenteditable], so we won't use it yet
-            assertionBuildStr += `<div class="d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}">
-                <p class="text-center mb-0 fw-bold testYear">${assertion.year}</p>
-                <p class="text-center mb-0 bg-secondary text-white"><span class="me-2 fw-bold text-center">Applies to: </span><span>${AssertionsBuilder.appliesTo}</span></p>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">ASSERT THAT: </span><span class="ms-2 text-end assert">${assertion.assert}</span><span role="button" class="btn btn-xs btn-danger ms-1 toggleAssert"><i class="fas fa-repeat"></i></span></div>
-                <div class="d-flex justify-content-between align-items-center ps-2 pe-1 ${sundayCheck !== '' ? sundayCheck : AssertionsBuilder.bgColor + ' ' + AssertionsBuilder.txtColor}" style="min-height:3em;"><span class="me-2 fw-bold w-25">EXPECT VALUE: </span><span class="ms-2 expectedValue" data-value="${assertion.expected_value}">${expectedDateStr}</span><span role="button" class="btn btn-xs btn-danger ms-1 editDate"><i class="fas fa-pen-to-square"></i></span></div>
-                <div class="flex-grow-1 d-flex flex-column text-white p-3" style="background-color: cadetblue;"><span class="fw-bold">ASSERTION:${commentStr}</span><span contenteditable>${assertion.assertion}</span></div>
-                </div>`;
-        });
-        return $.parseHTML( assertionBuildStr );
-    }
-}
+            let sundayCheck = '';
+            if(eventDate !== null && AssertionsBuilder.test && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month != null && AssertionsBuilder.test.day != null) {
+                if( eventDate.getUTCDay() === 0 ) {
+                    sundayCheck = 'bg-warning text-dark';
+                }
+            }
+            const editDateDisabled = (assertion.expected_value === null || eventDate === null);
 
-/**
- * commentIcon
- *
- * @description
- *      Creates a comment icon depending on whether there is a comment or not.
- *      If there is a comment, it creates a button with a comment icon and the comment as title.
- *      If there is no comment, it creates a button with a comment-medical icon and 'add a comment' as title.
- *      The button is meant to be used as a toggle to show the modal for adding or editing a comment.
- *
- * @param {boolean} hasComment - whether there is a comment or not
- * @param {string} [value=null] - the comment value, if any
- * @returns {string} the comment icon as a string of html
- */
-const commentIcon = (hasComment, value = null) => {
-    return hasComment
-    /*? `<i title="${value}" class="fas fa-comment-dots fa-fw mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>`
-    : ' <i title="add a comment" class="fas fa-comment-medical fa-fw mb-1 btn btn-xs btn-secondary float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"></i>'*/
-    ? ` <span title="${value}" class="mb-1 btn btn-xs btn-dark float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-dots fa-fw"></i></span>`
-    : ' <span title="add a comment" class="mb-1 btn btn-xs btn-secondary float-end comment" role="button" data-bs-toggle="modal" data-bs-target="#modalAddEditComment"><i class="fas fa-comment-medical fa-fw"></i></span>';
+            // Build container div
+            const container = document.createElement('div');
+            container.className = `d-flex flex-column col-2 border${idy===0 || idy % 5 === 0 ? ' offset-1' : ''}`;
+
+            // Year paragraph
+            const yearP = document.createElement('p');
+            yearP.className = 'text-center mb-0 fw-bold testYear';
+            yearP.textContent = assertion.year;
+            container.appendChild(yearP);
+
+            // Applies to paragraph
+            const appliesP = document.createElement('p');
+            appliesP.className = 'text-center mb-0 bg-secondary text-white';
+            const appliesLabel = document.createElement('span');
+            appliesLabel.className = 'me-2 fw-bold text-center';
+            appliesLabel.textContent = 'Applies to: ';
+            const appliesValue = document.createElement('span');
+            appliesValue.textContent = AssertionsBuilder.appliesTo;
+            appliesP.appendChild(appliesLabel);
+            appliesP.appendChild(appliesValue);
+            container.appendChild(appliesP);
+
+            // Assert that div
+            const assertDiv = document.createElement('div');
+            assertDiv.className = `d-flex justify-content-between align-items-center ps-2 pe-1 border-bottom ${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}`;
+            assertDiv.style.minHeight = '3em';
+            const assertLabel = document.createElement('span');
+            assertLabel.className = 'me-2 fw-bold w-25';
+            assertLabel.textContent = 'ASSERT THAT: ';
+            const assertValue = document.createElement('span');
+            assertValue.className = 'ms-2 text-end assert';
+            assertValue.textContent = assertion.assert;
+            const toggleBtn = document.createElement('span');
+            toggleBtn.setAttribute('role', 'button');
+            toggleBtn.className = 'btn btn-xs btn-danger ms-1 toggleAssert';
+            const toggleIcon = document.createElement('i');
+            toggleIcon.className = 'fas fa-repeat';
+            toggleIcon.setAttribute('aria-hidden', 'true');
+            toggleBtn.appendChild(toggleIcon);
+            assertDiv.appendChild(assertLabel);
+            assertDiv.appendChild(assertValue);
+            assertDiv.appendChild(toggleBtn);
+            container.appendChild(assertDiv);
+
+            // Expected value div
+            const expectDiv = document.createElement('div');
+            const expectDivClass = sundayCheck !== '' ? sundayCheck : `${AssertionsBuilder.bgColor} ${AssertionsBuilder.txtColor}`;
+            expectDiv.className = `d-flex justify-content-between align-items-center ps-2 pe-1 ${expectDivClass}`;
+            expectDiv.style.minHeight = '3em';
+            const expectLabel = document.createElement('span');
+            expectLabel.className = 'me-2 fw-bold w-25';
+            expectLabel.textContent = 'EXPECT VALUE: ';
+            const expectValue = document.createElement('span');
+            expectValue.className = 'ms-2 expectedValue';
+            expectValue.setAttribute('data-value', assertion.expected_value ?? '');
+            expectValue.textContent = expectedDateStr;
+            const editBtn = document.createElement('span');
+            editBtn.setAttribute('role', 'button');
+            editBtn.className = `btn btn-xs ms-1 editDate${editDateDisabled ? ' btn-secondary disabled' : ' btn-danger'}`;
+            const editIcon = document.createElement('i');
+            editIcon.className = 'fas fa-pen-to-square';
+            editIcon.setAttribute('aria-hidden', 'true');
+            editBtn.appendChild(editIcon);
+            expectDiv.appendChild(expectLabel);
+            expectDiv.appendChild(expectValue);
+            expectDiv.appendChild(editBtn);
+            container.appendChild(expectDiv);
+
+            // Assertion div
+            const assertionDiv = document.createElement('div');
+            assertionDiv.className = 'flex-grow-1 d-flex flex-column text-white p-3';
+            assertionDiv.style.backgroundColor = 'cadetblue';
+            const assertionLabel = document.createElement('span');
+            assertionLabel.className = 'fw-bold';
+            assertionLabel.textContent = 'ASSERTION:';
+            assertionLabel.appendChild(createCommentIcon(assertion.hasOwnProperty('comment'), assertion?.comment));
+            const assertionText = document.createElement('span');
+            assertionText.setAttribute('contenteditable', 'plaintext-only');
+            assertionText.textContent = assertion.assertion;
+            assertionDiv.appendChild(assertionLabel);
+            assertionDiv.appendChild(assertionText);
+            container.appendChild(assertionDiv);
+
+            fragment.appendChild(container);
+        });
+
+        return fragment;
+    }
 }

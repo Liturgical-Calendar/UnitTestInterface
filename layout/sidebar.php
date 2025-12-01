@@ -19,7 +19,7 @@
                         <span><?php echo _("Unit Tests Runner"); ?></span>
                     </a>
                     <a class="nav-link<?php echo $pageName === 'admin' ? ' active' : '' ?>" href="/admin.php">
-                        <i class="sb-nav-link-icon fas fa-cog"></i>
+                        <i class="sb-nav-link-icon fas fa-gear"></i>
                         <span><?php echo _("Unit Tests Admin"); ?></span>
                     </a>
                 </div>

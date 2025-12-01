@@ -18,13 +18,17 @@ $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 
     <!-- Custom fonts for this template-->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
 
     <!-- Custom styles for this template-->
-    <link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin@7.0.5/dist/css/styles.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin@7.0.7/dist/css/styles.css" rel="stylesheet">
 <?php
+if (in_array($pageName, ['index', 'resources'], true)) {
+    echo "<link href=\"assets/css/common.css\" rel=\"stylesheet\">";
+}
 if (file_exists("assets/css/{$pageName}.css")) {
     echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
 }

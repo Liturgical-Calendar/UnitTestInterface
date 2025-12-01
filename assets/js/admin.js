@@ -1,3 +1,40 @@
+/**
+ * Admin module for the LiturgicalCalendar Unit Test Interface.
+ * Handles test management, editing, and creation.
+ * @module admin
+ */
+
+import { updateText } from './common.js';
+import {
+    TestType,
+    AssertType,
+    LitGrade,
+    Assertion,
+    AssertionsBuilder
+} from './AssertionsBuilder.js';
+
+/** @typedef {import('./types.js').UnitTestDefinition} UnitTestDefinition */
+/** @typedef {import('./types.js').TestAssertion} TestAssertion */
+
+// Access global config from window (set by PHP in footer.php and admin.php)
+const { locale } = window.LitCalConfig;
+const { baseUrl, LitCalTests } = window;
+
+/**
+ * Escapes a value for safe use in CSS attribute selectors.
+ * Uses CSS.escape when available, with a fallback for older browsers.
+ * @param {string} value - The value to escape.
+ * @returns {string} The escaped value safe for use in selectors.
+ */
+const escapeSelector = (value) => {
+    // Normalize to string to handle non-string values
+    const str = String(value);
+    if (typeof CSS !== 'undefined' && CSS.escape) {
+        return CSS.escape(str);
+    }
+    // Fallback: escape special characters for CSS selectors
+    return str.replace(/["'\\#.:[\]()>+~=^$*|]/g, '\\$&');
+};
 
 /** DEFINE OUR GLOBAL VARIABLES */
 
@@ -23,9 +60,11 @@
  * @type {LitCalEvents}
  * @global
  * This variable is defined globally in the admin.php file, and can be updated in an API call.
+ * Also exposed on window for AssertionsBuilder module access.
  */
 // @ts-ignore 2570 LitcalEvents is defined in admin.php
-let litcal_events = LitcalEvents;
+let litcal_events = window.LitcalEvents;
+window.litcal_events = litcal_events;
 let litcal_events_keys = litcal_events.map( event => event.event_key );
 
 /**
@@ -53,6 +92,108 @@ const MonthDayFmt = new Intl.DateTimeFormat(locale, {
 const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
     weekday: 'long'
 });
+
+/**
+ * Fades in an alert element, displays it for a specified duration, then fades it out.
+ * @param {HTMLElement} alertEl - The alert element to fade in/out
+ * @param {number} [displayDelay=2000] - How long to display the alert before fading out (ms)
+ * @param {number} [fadeDelay=500] - How long the fade out transition takes (ms)
+ * @param {string} [easing='ease-in-out'] - The CSS easing function for the transition
+ */
+const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500, easing = 'ease-in-out') => {
+    if (!alertEl) return;
+    alertEl.classList.remove('d-none');
+    alertEl.style.transition = `opacity ${fadeDelay}ms ${easing}`;
+    alertEl.style.opacity = '1';
+    setTimeout(() => {
+        alertEl.style.opacity = '0';
+        setTimeout(() => {
+            alertEl.classList.add('d-none');
+        }, fadeDelay);
+    }, displayDelay);
+};
+
+/**
+ * Computes date attributes for a year span based on the event option.
+ * @param {number} year - The year to compute attributes for
+ * @param {HTMLOptionElement|null} existingOption - The selected option element with event data
+ * @returns {{titleAttr: string, lightClass: string}} The computed title attribute and CSS class
+ */
+const computeYearDateAttrs = (year, existingOption) => {
+    let titleAttr = '';
+    let lightClass = '';
+
+    if (existingOption?.dataset?.month && existingOption?.dataset?.day) {
+        const eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+        if (eventDate.getUTCDay() === 0) {
+            titleAttr = `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`;
+            lightClass = 'bg-light';
+        } else {
+            titleAttr = DTFormat.format(eventDate);
+        }
+    }
+
+    return { titleAttr, lightClass };
+};
+
+/**
+ * Generates HTML for a year span element in the year grid.
+ * @param {number} year - The year to generate HTML for
+ * @param {HTMLOptionElement|null} existingOption - The selected option element with event data
+ * @param {string} hammerIcon - HTML for the hammer icon (empty for ExactCorrespondence tests)
+ * @param {string} removeIcon - HTML for the remove icon
+ * @param {boolean} [isIncluded=true] - Whether this year is included in the test range
+ * @returns {string} The HTML string for the year span
+ */
+const generateYearSpanHtml = (year, existingOption, hammerIcon, removeIcon, isIncluded = true) => {
+    const { titleAttr, lightClass } = computeYearDateAttrs(year, existingOption);
+    const titleStr = titleAttr ? ` title="${titleAttr}"` : '';
+
+    if (!isIncluded) {
+        return `<span class="testYearSpan year-${year} deleted"${titleStr}></span>`;
+    }
+
+    const classStr = lightClass ? ` ${lightClass}` : '';
+
+    return `<span class="testYearSpan year-${year}${classStr}"${titleStr}>${hammerIcon}${year}${removeIcon}</span>`;
+};
+
+/**
+ * Updates the year grid to highlight years where the event falls on a Sunday.
+ * @param {HTMLOptionElement} existingOption - The selected option element with event data
+ * @param {number} minYear - The minimum year in the range
+ * @param {number} maxYear - The maximum year in the range
+ */
+const updateYearGridForEvent = (existingOption, minYear, maxYear) => {
+    // Always clear previous highlights first
+    for (let year = minYear; year <= maxYear; year++) {
+        const yearSpan = document.querySelector(`.testYearSpan.year-${year}`);
+        if (!yearSpan) continue;
+        yearSpan.removeAttribute('title');
+        yearSpan.classList.remove('bg-light');
+    }
+
+    if (!existingOption?.dataset?.month || !existingOption?.dataset?.day) {
+        return;
+    }
+
+    if (Number(existingOption.dataset.grade) > LitGrade.FEAST) {
+        return;
+    }
+
+    for (let year = minYear; year <= maxYear; year++) {
+        const yearSpan = document.querySelector(`.testYearSpan.year-${year}`);
+        if (!yearSpan) continue;
+
+        const { titleAttr, lightClass } = computeYearDateAttrs(year, existingOption);
+        if (titleAttr) {
+            yearSpan.setAttribute('title', titleAttr);
+        }
+        if (lightClass) {
+            yearSpan.classList.add(lightClass);
+        }
+    }
+};
 
 /**
  * A proxy for a Test object that is being edited, used for sanitizing the values set on the object.
@@ -168,8 +309,11 @@ const sanitizeOnSetValue = {
                     return;
                 }
                 break;
+            // expected_value must be stored as RFC 3339 datetime strings (e.g., "2024-12-25T00:00:00+00:00")
+            // This ensures clean round-tripping with the API and consistent date handling
             case 'expected_value':
-                const dateRegex = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(\+|\-)(0[0-9]|1[0-2]):([0-5][0-9])$/;
+                // Timezone offsets range from -12:00 to +14:00 (e.g., Pacific/Kiritimati is UTC+14)
+                const dateRegex = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(\+|\-)(0[0-9]|1[0-4]):([0-5][0-9])$/;
                 if( value !== null && (typeof value !== 'string' || !dateRegex.test(value) || new Date(value) < new Date('1969-11-29T00:00:00+00:00') || new Date(value) > new Date('9999-12-31T00:00:00+00:00') ) ) {
                     console.warn(`property ${prop} of this object must be an RFC 3339 date-time string and have a value between '1969-11-29T00:00:00+00:00' and '9999-12-31T00:00:00+00:00'`);
                     return;
@@ -225,6 +369,26 @@ const sanitizeOnSetValue = {
         //console.log({ type: 'set', target, prop, value });
         return Reflect.set(target, prop, value);
     }
+};
+
+/**
+ * Counts previous siblings of an element that contain a descendant matching the given selector.
+ * Equivalent to jQuery's $(el).prevAll(':has(selector)').length
+ *
+ * @param {Element} element - The starting element
+ * @param {string} selector - CSS selector to match within siblings
+ * @returns {number} Count of matching previous siblings
+ */
+const countPrevSiblingsWithSelector = (element, selector) => {
+    let count = 0;
+    let sibling = element.previousElementSibling;
+    while (sibling) {
+        if (sibling.querySelector(selector)) {
+            count++;
+        }
+        sibling = sibling.previousElementSibling;
+    }
+    return count;
 };
 
 const ENDPOINTS = {
@@ -312,44 +476,6 @@ class UnitTest {
 }
 
 /**
- * Class representing an assertion for a liturgical event in a unit test.
- * @class
- */
-class Assertion {
-    /**
-     * @description
-     *      Creates a new instance of Assertion.
-     *      The constructor can be called with 4 or 5 arguments, or with a single object argument.
-     *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
-     *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
-     * @param {number} year - The year of the assertion.
-     * @param {string|null} expected_value - The expected value of the assertion.
-     * @param {'EventTypeExact'|'EventNotExists'} assert - The assert type of the assertion.
-     * @param {string} assertion - The assertion.
-     * @param {string} [comment] - The comment associated with the assertion.
-     */
-    constructor(year, expected_value, assert, assertion, comment = null) {
-        if( arguments.length === 4 || arguments.length === 5 ) {
-            this.year = year;
-            this.expected_value = expected_value;
-            this.assert = assert;
-            this.assertion = assertion;
-            if( null !== comment ) {
-                this.comment = comment;
-            }
-        } else if( arguments.length === 1 ) {
-            if(
-                typeof arguments[0] === 'object'
-                && (Object.keys( arguments[0] ).length === 4 || Object.keys( arguments[0] ).length === 5)
-                && Object.keys( arguments[0] ).every(val => ['year', 'expected_value', 'assert', 'assertion', 'comment'].includes(val) )
-            ) {
-                Object.assign(this, arguments[0]);
-            }
-        }
-    }
-}
-
-/**
  * Sanitizes the given input string to prevent XSS attacks.
  *
  * It uses the DOMParser to parse the string as HTML and then extracts the
@@ -367,33 +493,6 @@ const sanitizeInput = (input) => {
 }
 
 /**
- * Sanitizes the input of the given target element to prevent XSS attacks.
- *
- * It uses the sanitizeInput helper function to strip any HTML tags from the
- * target element's text content and then checks if the sanitized text is
- * different from the original text content. If so, it updates the target
- * element's text content with the sanitized text and shows a warning alert to
- * the user.
- *
- * @param {Element} target - The element to sanitize.
- */
-const checkTargetInput = (target) => {
-    let sanitizedInput = sanitizeInput( target.textContent );
-    if( sanitizedInput !== target.textContent ) {
-        target.textContent = sanitizedInput;
-        const $alert = $('#noScriptedContentAlert');
-        $alert.removeClass('d-none');
-        $alert.fadeIn('fast', () => {
-            setTimeout(() => {
-                $alert.fadeOut('slow', () => {
-                    $alert.addClass('d-none');
-                });
-            }, 2000);
-        });
-    }
-}
-
-/**
  * Serializes the current state of the unit test form into a UnitTest object.
  *
  * This function extracts values from the DOM elements representing the unit test,
@@ -406,14 +505,16 @@ const checkTargetInput = (target) => {
  * @returns {UnitTest} The serialized UnitTest object based on the current form data.
  */
 const serializeUnitTest = () => {
-    const eventkey = document.querySelector('#testName').textContent.replace('Test','');
+    const eventkey    = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
-    const test_type = document.querySelector('#cardHeaderTestType').textContent;
-    const year_since = test_type === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
-    const year_until = test_type === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
-    proxiedTest.event_key = eventkey;
+    const test_type   = document.querySelector('#cardHeaderTestType').textContent;
+    const year_since  = test_type === 'exactCorrespondenceSince' ? Number(document.querySelector('#yearSince').value) : null;
+    const year_until  = test_type === 'exactCorrespondenceUntil' ? Number(document.querySelector('#yearUntil').value) : null;
+
+    proxiedTest.event_key   = eventkey;
     proxiedTest.description = description;
-    proxiedTest.test_type = test_type;
+    proxiedTest.test_type   = test_type;
+
     if( test_type === 'exactCorrespondenceSince' ) {
         proxiedTest.year_since = year_since;
     }
@@ -421,19 +522,29 @@ const serializeUnitTest = () => {
         proxiedTest.year_until = year_until;
     }
     proxiedTest.assertions = [];
-    let assertionDivs = document.querySelectorAll('#assertionsContainer > div');
+
+    const assertionDivs = document.querySelectorAll('#assertionsContainer > div');
     assertionDivs.forEach(div => {
-        const year = Number(div.querySelector('p.testYear').textContent);
-        const expected_value = div.querySelector('div > span.expectedValue').textContent === '---' ? null :div.querySelector('.expectedValue').getAttribute('data-value');
-        const assert = div.querySelector('.assert').textContent;
-        const assertion = div.querySelector('[contenteditable]').textContent;
-        const hasComment = div.querySelector('.comment > svg').getAttribute('data-icon') === 'comment-dots';
-        const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
+        const yearEl          = div.querySelector('p.testYear');
+        const year            = yearEl ? Number(yearEl.textContent) : null;
+        const expectedValueEl = div.querySelector('.expectedValue');
+        // Get RFC 3339 datetime string from data-value attribute (e.g., "2024-12-25T00:00:00+00:00")
+        // Normalize undefined to null for API consistency
+        const expected_value = expectedValueEl?.textContent === '---' ? null : (expectedValueEl?.getAttribute('data-value') ?? null);
+        const assertEl       = div.querySelector('.assert');
+        const assert         = assertEl?.textContent ?? null;
+        const assertionEl    = div.querySelector('[contenteditable]');
+        const assertion      = assertionEl?.textContent ?? null;
+        const commentSvg     = div.querySelector('.comment > svg');
+        const hasComment     = commentSvg?.getAttribute('data-icon') === 'comment-dots';
+        const comment        = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
         proxiedTest.assertions.push(new Assertion(year, expected_value, assert, assertion, comment));
     });
-    if( document.querySelector('#APICalendarSelect').value !== 'VA' ) {
-        const currentCalendarType = document.querySelector(`#APICalendarSelect [value="${document.querySelector('#APICalendarSelect').value}"]`).dataset.calendartype;
-        proxiedTest.applies_to = {[currentCalendarType]: document.querySelector('#APICalendarSelect').value};
+    const apiCalendarSelect = document.querySelector('#APICalendarSelect');
+    if( apiCalendarSelect?.value !== 'VA' ) {
+        const selectedOption      = apiCalendarSelect.options[apiCalendarSelect.selectedIndex];
+        const currentCalendarType = selectedOption?.dataset.calendartype;
+        proxiedTest.applies_to    = {[currentCalendarType]: apiCalendarSelect.value};
     }
     return new UnitTest( proxiedTest );
 }
@@ -479,7 +590,7 @@ const API = {
  */
 const rebuildLitEventsOptions = async (element) => {
     console.log(`rebuildLitEventsOptions: ${element.value}`);
-    const selectedOption = $(element).find('option[value="' + element.value + '"]')[0];
+    const selectedOption = element.options[element.selectedIndex];
     console.log(selectedOption);
     const calendarType = selectedOption.dataset.calendartype;
     API.calendartype = calendarType;
@@ -493,7 +604,8 @@ const rebuildLitEventsOptions = async (element) => {
     const data_1 = await fetch( API.path, options );
     const json = await data_1.json();
     litcal_events = Object.freeze(json.litcal_events);
-    litcal_events_keys = litcal_events.map( event => event.event_key );
+    window.litcal_events = litcal_events;
+    litcal_events_keys = litcal_events.map(event => event.event_key);
     let htmlStr = '';
     for ( const el of litcal_events ) {
         let dataMonth = '';
@@ -517,21 +629,26 @@ const rebuildLitEventsOptions = async (element) => {
  * SET DOCUMENT INTERACTIONS
  */
 
-$(document).on('click', '.sidebarToggle', event => {
+document.addEventListener('click', event => {
+    const sidebarToggle = event.target.closest('.sidebarToggle');
+    if (!sidebarToggle) return;
     console.log('now toggling sidebar...');
     event.preventDefault();
+    const icon = sidebarToggle.querySelector('i');
     if(document.body.classList.contains('sb-sidenav-collapsed') ) {
-        $('.sidebarToggle i').removeClass('fa-angle-right').addClass('fa-angle-left');
+        icon.classList.remove('fa-angle-right');
+        icon.classList.add('fa-angle-left');
     }
     else {
-        $('.sidebarToggle i').removeClass('fa-angle-left').addClass('fa-angle-right');
+        icon.classList.remove('fa-angle-left');
+        icon.classList.add('fa-angle-right');
     }
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
 
 //$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
 
-$(document).on('change', '#litCalTestsSelect', async (ev) => {
+document.querySelector('#litCalTestsSelect').addEventListener('change', async (ev) => {
     //console.log(ev.currentTarget.value);
     if( ev.currentTarget.value !== '' ) {
         const currentTest = LitCalTests.filter(el => el.name === ev.currentTarget.value)[0];
@@ -539,12 +656,14 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
         currentTest.assertions = currentTest.assertions.map(el => new Assertion(el));
         proxiedTest = new Proxy(currentTest, sanitizeOnSetValue);
 
-        document.querySelector('#testName').textContent = proxiedTest.name;
+        updateText('testName', proxiedTest.name);
         //$('#testType').val( proxiedTest.testType ).change();
-        document.querySelector('#cardHeaderTestType').textContent = proxiedTest.test_type;
-        document.querySelector('#description').setAttribute('rows', 1);
-        document.querySelector('#description').value = proxiedTest.description;
-        document.querySelector('#description').setAttribute('rows', Math.ceil( $('#description')[0].scrollHeight / 40 ));
+        updateText('cardHeaderTestType', proxiedTest.test_type);
+        const descEl = document.querySelector('#description');
+        descEl.value = proxiedTest.description;
+        // Auto-resize: reset to 1 row, then calculate rows based on actual content height
+        descEl.style.height = 'auto';
+        descEl.style.height = `${descEl.scrollHeight}px`;
         if( proxiedTest.hasOwnProperty('year_since') ) {
             document.querySelector('#yearSince').value = proxiedTest.year_since;
         }
@@ -570,10 +689,10 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
             //await rebuildLitEventsOptions(document.querySelector('#APICalendarSelect'));
         }
 
-        $( '#assertionsContainer' ).empty();
+        document.querySelector('#assertionsContainer').innerHTML = '';
         const assertionsBuilder = new AssertionsBuilder( proxiedTest );
         const assertionBuildHtml = assertionsBuilder.buildHtml();
-        $( assertionBuildHtml ).appendTo( '#assertionsContainer' );
+        document.querySelector('#assertionsContainer').append(assertionBuildHtml);
         document.querySelector('#perYearAssertions').classList.remove('invisible');
         document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.test_type;
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
@@ -583,63 +702,88 @@ $(document).on('change', '#litCalTestsSelect', async (ev) => {
     }
 });
 
-$(document).on('change', '#APICalendarSelect', async (ev) => {
+document.querySelector('#APICalendarSelect').addEventListener('change', async (ev) => {
     await rebuildLitEventsOptions( ev.currentTarget );
 });
 
-$(document).on('click', '.editDate', ev => {
-    const curVal = Number(ev.currentTarget.previousSibling.dataset.value) * 1000;
-    const curDate = new Date( curVal );
+document.addEventListener('click', ev => {
+    const editDate = ev.target.closest('.editDate');
+    if (!editDate) return;
+    // Guard against clicking when disabled (no valid date value)
+    if (editDate.classList.contains('btn-secondary')) {
+        return;
+    }
+    const prevEl = editDate.previousElementSibling;
+    if (!prevEl || !prevEl.dataset || !prevEl.dataset.value) {
+        return;
+    }
+    const curDate    = new Date(prevEl.dataset.value);
     const curDateVal = curDate.toISOString().split('T')[0];
-    const pElement = ev.currentTarget.parentElement;
+    const pElement   = editDate.parentElement;
     pElement.classList.remove('bg-success', 'text-white');
     pElement.classList.add('bg-warning', 'text-dark');
     pElement.children[1].innerHTML = '';
     pElement.children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${curDateVal}" />`);
 });
 
-$(document).on('click', '.toggleAssert', ev => {
-    //const assertionIndex = $(ev.currentTarget.parentElement.parentElement).index();
-    const assertionIndex = $(ev.currentTarget.parentElement.parentElement).prevAll(':has(.testYear)').length;
-    if(ev.currentTarget.parentElement.classList.contains('bg-warning')) {
-        ev.currentTarget.previousSibling.textContent = AssertType.EventTypeExact;
+document.addEventListener('click', ev => {
+    const toggleAssert = ev.target.closest('.toggleAssert');
+    if (!toggleAssert) return;
+    const parentDiv = toggleAssert.parentElement.parentElement;
+    const assertionIndex = countPrevSiblingsWithSelector(parentDiv, '.testYear');
+    if(toggleAssert.parentElement.classList.contains('bg-warning')) {
+        toggleAssert.previousElementSibling.textContent = AssertType.EventTypeExact;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventTypeExact;
-        ev.currentTarget.parentElement.classList.remove('bg-warning', 'text-dark');
-        ev.currentTarget.parentElement.classList.add('bg-success', 'text-white');
-        const $pNode = $(ev.currentTarget.parentNode);
-        console.log($pNode);
-        console.log($pNode.siblings('.testYear'));
-        const year = $pNode.siblings('.testYear')[0].textContent;
-        $pNode.next()[0].children[1].innerHTML = '';
-        $pNode.next()[0].children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" />`);
+        toggleAssert.parentElement.classList.remove('bg-warning', 'text-dark');
+        toggleAssert.parentElement.classList.add('bg-success', 'text-white');
+        const pNode = toggleAssert.parentNode;
+        const yearEl = pNode.parentElement.querySelector('.testYear');
+        const year = yearEl ? yearEl.textContent : new Date().getFullYear();
+        const nextDiv = pNode.nextElementSibling;
+        const defaultDate = `${year}-01-01`;
+        const defaultDateTime = `${defaultDate}T00:00:00+00:00`;
+        nextDiv.children[1].innerHTML = `<input type="date" value="${defaultDate}" />`;
+        nextDiv.children[1].dataset.value = defaultDateTime;
+        proxiedTest.assertions[assertionIndex].expected_value = defaultDateTime;
+        // Enable the editDate button since we now have a date value
+        nextDiv.children[2].classList.remove('btn-secondary');
+        nextDiv.children[2].classList.add('btn-danger');
     } else {
-        ev.currentTarget.previousSibling.textContent = AssertType.EventNotExists;
+        toggleAssert.previousElementSibling.textContent = AssertType.EventNotExists;
         proxiedTest.assertions[assertionIndex].assert = AssertType.EventNotExists;
-        ev.currentTarget.parentElement.classList.remove('bg-success', 'text-white');
-        ev.currentTarget.parentElement.classList.add('bg-warning', 'text-dark');
-        const $pNode = $(ev.currentTarget.parentNode);
-        $pNode.next()[0].classList.remove('bg-success', 'text-white');
-        $pNode.next()[0].classList.add('bg-warning', 'text-dark');
-        $pNode.next()[0].children[1].textContent = '---';
+        toggleAssert.parentElement.classList.remove('bg-success', 'text-white');
+        toggleAssert.parentElement.classList.add('bg-warning', 'text-dark');
+        const pNode = toggleAssert.parentNode;
+        const nextDiv = pNode.nextElementSibling;
+        nextDiv.classList.remove('bg-success', 'text-white');
+        nextDiv.classList.add('bg-warning', 'text-dark');
+        nextDiv.children[1].textContent = '---';
         proxiedTest.assertions[assertionIndex].expected_value = null;
+        // Disable the editDate button since expected_value is now null
+        nextDiv.children[2].classList.remove('btn-danger');
+        nextDiv.children[2].classList.add('btn-secondary');
     }
 });
 
-$(document).on('change', '.expectedValue > [type=date]', ev => {
-    const dateTimeString = ev.currentTarget.value + 'T00:00:00+00:00';
-    const $grandpa = $(ev.currentTarget).closest('div');
-    const $greatGrandpa = $grandpa.parent().closest('div');
-    const assertionIndex = $greatGrandpa.prevAll(':has(.testYear)').length;
+document.addEventListener('change', ev => {
+    if (!ev.target.matches('.expectedValue > [type=date]')) return;
+    const dateTimeString = ev.target.value + 'T00:00:00+00:00';
+    const grandpa = ev.target.closest('div');
+    const greatGrandpa = grandpa.parentElement.closest('div');
+    const assertionIndex = countPrevSiblingsWithSelector(greatGrandpa, '.testYear');
     proxiedTest.assertions[assertionIndex].expected_value = dateTimeString;
-    $grandpa[0].classList.remove('bg-warning','text-dark');
-    $grandpa[0].classList.add('bg-success','text-white');
-    console.log(ev.currentTarget.parentNode.dataset);
-    ev.currentTarget.parentNode.dataset.value = timestamp / 1000;
-    console.log(ev.currentTarget.parentNode.dataset);
-    ev.currentTarget.parentNode.textContent = dateTimeString;
+    grandpa.classList.remove('bg-warning', 'text-dark');
+    grandpa.classList.add('bg-success', 'text-white');
+    ev.target.parentNode.dataset.value = dateTimeString;
+    // Format date for display using shared formatter from AssertionsBuilder
+    const parsedDate = new Date(dateTimeString);
+    const displayText = isNaN(parsedDate.getTime())
+        ? dateTimeString
+        : AssertionsBuilder.getDateFormatter().format(parsedDate);
+    ev.target.parentNode.textContent = displayText;
 });
 
-$(document).on('show.bs.modal', '#modalAddEditComment', ev => {
+document.querySelector('#modalAddEditComment').addEventListener('show.bs.modal', ev => {
     console.log(ev);
     const tgt = ev.relatedTarget;
     console.log(tgt);
@@ -649,10 +793,12 @@ $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
     const myModalEl = document.querySelector('#modalAddEditComment');
     const txtArea = myModalEl.querySelector('#unitTestComment');
     txtArea.value = value;
-    $(myModalEl.querySelector('#btnSaveComment')).one('click', () => {
+    const btnSaveComment = myModalEl.querySelector('#btnSaveComment');
+    // Use onclick to replace previous handler, preventing stale handlers accumulating
+    btnSaveComment.onclick = () => {
         const newValue = sanitizeInput(txtArea.value);
         tgt.title = newValue;
-        if(newValue === '') {
+        if (newValue === '') {
             icon.classList.remove('fa-comment-dots');
             icon.classList.add('fa-comment-medical');
             tgt.classList.remove('btn-dark');
@@ -663,35 +809,40 @@ $(document).on('show.bs.modal', '#modalAddEditComment', ev => {
             tgt.classList.remove('btn-secondary');
             tgt.classList.add('btn-dark');
         }
-    });
+    };
 });
 
-
-$(document).on('blur paste drop input', '[contenteditable]', ev => {
-    console.log(ev.type);
-
-    if( ['paste','drop'].includes( ev.type ) ) {
-        setTimeout(() => {
-            ev.currentTarget.textContent = ev.currentTarget.textContent;
-            checkTargetInput(ev.currentTarget);
-        }, 1);
+// Blur any focused element inside the modal before it hides to prevent aria-hidden warning
+document.querySelector('#modalAddEditComment').addEventListener('hide.bs.modal', ev => {
+    const activeEl = ev.currentTarget.querySelector(':focus');
+    if (activeEl) {
+        activeEl.blur();
     }
-    else if( ev.type === 'blur' ) {
-        checkTargetInput(ev.currentTarget);
-    }
-    else {
-        console.log(ev.currentTarget.textContent);
-    }
-    const grandpa = ev.currentTarget.parentElement.parentElement;
-    const assertionIndex = $(grandpa).prevAll(':has(.testYear)').length;
-    proxiedTest.assertions[assertionIndex].assertion = ev.currentTarget.textContent;
 });
 
-$(document).on('click', '#serializeUnitTestData', ev => {
+const contenteditableHandler = ev => {
+    const target = ev.target.closest('[contenteditable]');
+    if (!target) return;
+
+    // With contenteditable="plaintext-only", paste/drop are handled by the browser
+    // We only need to update the proxied test on blur or input
+    const grandpa = target.parentElement.parentElement;
+    const assertionIndex = countPrevSiblingsWithSelector(grandpa, '.testYear');
+    proxiedTest.assertions[assertionIndex].assertion = target.textContent;
+};
+document.addEventListener('blur', contenteditableHandler, true);
+document.addEventListener('input', contenteditableHandler, true);
+
+document.querySelector('#serializeUnitTestData').addEventListener('click', () => {
     const newUnitTest = serializeUnitTest();
+    // Use PATCH for existing tests, PUT for new tests
+    // PATCH requires test name in URL path: /tests/{testName}
+    const isExistingTest = LitCalTests.some(test => test.name === newUnitTest.name);
+    const httpMethod = isExistingTest ? 'PATCH' : 'PUT';
+    const endpoint = isExistingTest ? `${ENDPOINTS.TESTSINDEX}/${newUnitTest.name}` : ENDPOINTS.TESTSINDEX;
     let responseStatus = 400;
-    fetch( ENDPOINTS.TESTSINDEX, {
-        method: "PUT",
+    fetch(endpoint, {
+        method: httpMethod,
         headers: {
             "Content-Type": "application/json"
         },
@@ -703,22 +854,23 @@ $(document).on('click', '#serializeUnitTestData', ev => {
     })
     .then(data => {
         console.log(responseStatus);
-        const $alert = $('#responseToPutRequest');
+        const alert = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
-        if(responseStatus !== 201) {
-            $alert.removeClass('alert-success');
-            $alert.addClass('alert-warning');
-            //$alert.find()
-        }
-        $alert.removeClass('d-none');
-        $alert.fadeIn('fast', () => {
-            setTimeout(() => {
-                $alert.fadeOut('slow', () => {
-                    $alert.addClass('d-none');
-                });
-            }, 2000);
-        });
+        // Normalize alert classes before adding the appropriate one
+        // PUT returns 201 Created, PATCH returns 200 OK
+        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alert.classList.add((responseStatus === 200 || responseStatus === 201) ? 'alert-success' : 'alert-warning');
+        fadeOutAlert(alert);
         console.log(data);
+    })
+    .catch(error => {
+        console.error('Failed to save unit test:', error);
+        const alert = document.querySelector('#responseToPutRequest');
+        document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Network error: Failed to save test';
+        // Normalize alert classes before adding the error class
+        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alert.classList.add('alert-danger');
+        fadeOutAlert(alert);
     });
 });
 
@@ -726,7 +878,7 @@ $(document).on('click', '#serializeUnitTestData', ev => {
  * DEFINE INTERACTIONS FOR CREATE NEW TEST MODAL
  */
 let currentTestType = TestType.ExactCorrespondence; //this value will be set on modal open
-let $isotopeYearsToTestGrid = null;
+let isotopeYearsToTestGrid = null;
 
 const modalLabel = {
     exactCorrespondence: 'Exact Date Correspondence Test',
@@ -737,108 +889,145 @@ const modalLabel = {
 
 const ArrayRange = (start, end, endInclusive) => Array.from({length: (end - start)+endInclusive}, (v, k) => k + start);
 
-$(document).on('show.bs.modal', '#modalDefineTest', ev => {
+document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev => {
     // we want to make sure the carousel is on the first slide every time we open the modal
-    $('#carouselCreateNewUnitTest').carousel(0);
+    const carouselEl = document.querySelector('#carouselCreateNewUnitTest');
+    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
+    carousel.to(0);
     // we also want to reset our form to defaults
     document.querySelector('#carouselCreateNewUnitTest form').reset();
     document.querySelector('#carouselCreateNewUnitTest form').classList.remove('was-validated');
-    document.querySelector('#btnCreateTest').setAttribute('disabled','disabled');
+    document.querySelector('#btnCreateTest').setAttribute('disabled', 'disabled');
     // set our global currentTestType variable based on the button that was clicked to open the modal
     currentTestType = ev.relatedTarget.dataset.testtype;
     // update our carousel elements based on the currentTestType
-    $(ev.currentTarget).find(`.${currentTestType}`).removeClass('d-none');
-    if( null !== $isotopeYearsToTestGrid ) {
-        $isotopeYearsToTestGrid.isotope('destroy');
+    ev.currentTarget.querySelectorAll(`.${currentTestType}`).forEach(el => el.classList.remove('d-none'));
+    if (null !== isotopeYearsToTestGrid) {
+        isotopeYearsToTestGrid.destroy();
     }
-    $('#yearsToTestGrid').empty();
-    let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
-    let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
+    document.querySelector('#yearsToTestGrid').innerHTML = '';
+    const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
+    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
     let htmlStr = '';
     let years;
     let minYear = 1970;
     let maxYear = 2030;
-    let $existingOption = null;
-    let titleAttr = '';
-    let lightClass = '';
-    if( 'edittest' in ev.relatedTarget.dataset ) {
+    let existingOption = null;
+    if ('edittest' in ev.relatedTarget.dataset) {
         console.log('we are editing an existing test: description and event_key will be pre-filled');
         console.log('description: ', proxiedTest.description);
         console.log('event_key: ', proxiedTest.event_key);
         document.querySelector('#newUnitTestDescription').value = proxiedTest.description;
         document.querySelector('#existingLitEventName').value = proxiedTest.event_key;
-        $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + proxiedTest.event_key + '"]');
-        console.log('existingOption', $existingOption);
+        existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(proxiedTest.event_key)}"]`);
+        console.log('existingOption', existingOption);
         years = Array.from(document.querySelectorAll('#assertionsContainer .testYear')).map(el => Number(el.textContent));
         minYear = Math.min(...years);
         maxYear = Math.max(...years);
         document.querySelector('#lowerRange').setAttribute('value', minYear);
-        document.querySelector('#lowerRange').parentNode.style.setProperty('--value-a',minYear);
+        document.querySelector('#lowerRange').parentNode.style.setProperty('--value-a', minYear);
         document.querySelector('#lowerRange').parentNode.style.setProperty('--text-value-a', `"${minYear}"`);
         document.querySelector('#upperRange').setAttribute('value', maxYear);
-        document.querySelector('#upperRange').parentNode.style.setProperty('--value-b',maxYear);
+        document.querySelector('#upperRange').parentNode.style.setProperty('--value-b', maxYear);
         document.querySelector('#upperRange').parentNode.style.setProperty('--text-value-b', `"${maxYear}"`);
     } else {
         minYear = Number(document.querySelector('#lowerRange').getAttribute('value'));
         maxYear = Number(document.querySelector('#upperRange').getAttribute('value'));
         years = ArrayRange(minYear, maxYear, true);
     }
-    for( let year = minYear; year <= maxYear; year++ ) {
-        if($existingOption) {
-            eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-            if( eventDate.getUTCDay() === 0 ) {
-                titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
-                lightClass = ' bg-light';
-            } else {
-                titleAttr = ` title="${DTFormat.format(eventDate)}"`;
-                lightClass = '';
-            }
-        }
-        //console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-        if(years.includes(year)) {
-            htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
-        } else {
-            htmlStr += `<span class="testYearSpan year-${year} deleted"></span>`;
-        }
+    for (let year = minYear; year <= maxYear; year++) {
+        htmlStr += generateYearSpanHtml(year, existingOption, hammerIcon, removeIcon, years.includes(year));
     }
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
-        layoutMode: 'fitRows'
-    });
+    if (typeof Isotope !== 'undefined') {
+        isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
+            layoutMode: 'fitRows'
+        });
+    } else {
+        console.warn('Isotope library not loaded; year grid layout may be affected');
+    }
     document.querySelector('#yearsToTestGrid').classList.add('invisible');
-    document.querySelector('#defineTestModalLabel').textContent = modalLabel[currentTestType];
-    if('edittest' in ev.relatedTarget.dataset) {
-        $('#carouselCreateNewUnitTest').carousel(1);
+    updateText('defineTestModalLabel', modalLabel[currentTestType]);
+    if ('edittest' in ev.relatedTarget.dataset) {
+        // Apply visual indication for year_since/year_until when editing existing test
+        let pivotYear = null;
+        if (currentTestType === TestType.ExactCorrespondenceSince && proxiedTest.year_since) {
+            pivotYear = proxiedTest.year_since;
+        } else if (currentTestType === TestType.ExactCorrespondenceUntil && proxiedTest.year_until) {
+            pivotYear = proxiedTest.year_until;
+        }
+        if (pivotYear !== null) {
+            const pivotSpan = document.querySelector(`#yearsToTestGrid .testYearSpan.year-${pivotYear}`);
+            if (pivotSpan) {
+                pivotSpan.classList.remove('bg-light');
+                pivotSpan.classList.add('bg-info');
+                const siblings = Array.from(pivotSpan.parentElement.children);
+                const idxAsChild = siblings.indexOf(pivotSpan);
+                if (currentTestType === TestType.ExactCorrespondenceSince) {
+                    // Years before pivotYear get bg-warning (event doesn't exist)
+                    siblings.slice(0, idxAsChild).forEach(el => {
+                        el.classList.remove('bg-light');
+                        el.classList.add('bg-warning');
+                    });
+                } else {
+                    // Years after pivotYear get bg-warning (event doesn't exist)
+                    siblings.slice(idxAsChild + 1).forEach(el => {
+                        el.classList.remove('bg-light');
+                        el.classList.add('bg-warning');
+                    });
+                }
+                document.querySelector('#yearSinceUntilShadow').value = pivotYear;
+            }
+        }
+        // Apply visual indication for Variable Existence tests
+        if (currentTestType === TestType.VariableCorrespondence && proxiedTest.assertions) {
+            proxiedTest.assertions.forEach(assertion => {
+                if (assertion.assert === AssertType.EventNotExists) {
+                    const yearSpan = document.querySelector(`#yearsToTestGrid .testYearSpan.year-${assertion.year}`);
+                    if (yearSpan) {
+                        yearSpan.classList.remove('bg-light');
+                        yearSpan.classList.add('bg-warning');
+                    }
+                }
+            });
+        }
+        carousel.to(1);
     }
 });
 
-$(document).on('hide.bs.modal', '#modalDefineTest', ev => {
-    $(ev.currentTarget).find(`.${currentTestType}`).addClass('d-none');
+document.querySelector('#modalDefineTest').addEventListener('hide.bs.modal', ev => {
+    // Blur any focused element inside the modal before it hides to prevent aria-hidden warning
+    const activeEl = ev.currentTarget.querySelector(':focus');
+    if (activeEl) {
+        activeEl.blur();
+    }
+    ev.currentTarget.querySelectorAll(`.${currentTestType}`).forEach(el => el.classList.add('d-none'));
 });
 
-$(document).on('slid.bs.carousel', ev => {
-    if( ev.to > 0 ) {
-        $( '#carouselPrevButton' ).removeAttr('disabled');
+document.querySelector('#carouselCreateNewUnitTest').addEventListener('slid.bs.carousel', ev => {
+    const carouselItems = document.querySelectorAll('.carousel-item');
+    if (ev.to > 0) {
+        document.querySelector('#carouselPrevButton').removeAttribute('disabled');
     } else {
-        $( '#carouselPrevButton' ).attr('disabled','disabled');
+        document.querySelector('#carouselPrevButton').setAttribute('disabled', 'disabled');
     }
-    if( ev.to === ($('.carousel-item').length - 1) ) {
-        $( '#carouselNextButton' ).attr('disabled','disabled');
+    if (ev.to === (carouselItems.length - 1)) {
+        document.querySelector('#carouselNextButton').setAttribute('disabled', 'disabled');
     } else {
-        $( '#carouselNextButton' ).removeAttr('disabled');
+        document.querySelector('#carouselNextButton').removeAttribute('disabled');
     }
-    if( ev.to === 1 ) {
-        $isotopeYearsToTestGrid.isotope('layout');
+    if (ev.to === 1) {
+        isotopeYearsToTestGrid?.layout();
         document.querySelector('#yearsToTestGrid').classList.remove('invisible');
     }
-    if( ev.to === 2 ) {
+    if (ev.to === 2) {
         let firstYear = document.querySelector('#lowerRange').value;
         let monthDay = '-01-01';
         const selectedEventVal = document.querySelector('#existingLitEventName').value;
-        const $selectedOption = $('#existingLitEventsList').find('option[value="' + selectedEventVal + '"]');
-        if( $selectedOption.length && $selectedOption[0].dataset.month && $selectedOption[0].dataset.month !== '' && $selectedOption[0].dataset.day && $selectedOption[0].dataset.day !== '' ) {
-            const month = $selectedOption[0].dataset.month.padStart(2, '0');
-            const day = $selectedOption[0].dataset.day.padStart(2, '0');
+        const selectedOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(selectedEventVal)}"]`);
+        if (selectedOption && selectedOption.dataset.month && selectedOption.dataset.month !== '' && selectedOption.dataset.day && selectedOption.dataset.day !== '') {
+            const month = selectedOption.dataset.month.padStart(2, '0');
+            const day = selectedOption.dataset.day.padStart(2, '0');
             monthDay = `-${month}-${day}`;
         }
         document.querySelector('#baseDate').value = `${firstYear}${monthDay}`;
@@ -849,40 +1038,27 @@ $(document).on('slid.bs.carousel', ev => {
 
 /** SLIDER 1 INTERACTIONS */
 
-$(document).on('change', '#existingLitEventName', ev => {
+document.querySelector('#existingLitEventName').addEventListener('change', ev => {
     const currentVal = ev.currentTarget.value;
     console.log(currentVal);
     // Determine whether an option exists with the current value of the input.
-    const $existingOption = $(ev.currentTarget.list).find('option[value="' + currentVal + '"]');
-    if( $existingOption.length > 0 ) {
-        $(ev.currentTarget).removeClass('is-invalid');
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentVal)}"]`);
+    const minYear = parseInt(document.querySelector('#lowerRange').value);
+    const maxYear = parseInt(document.querySelector('#upperRange').value);
+    // Always update year grid (clears previous highlights; applies new ones if applicable)
+    updateYearGridForEvent(existingOption, minYear, maxYear);
+    if (existingOption) {
+        ev.currentTarget.classList.remove('is-invalid');
         ev.currentTarget.setCustomValidity('');
-        const [name, grade] = $existingOption.text().split(/[\(\)]+/).map(el => el.trim());
+        const [name, grade] = existingOption.textContent.split(/[\(\)]+/).map(el => el.trim());
         let gradeStr = `The ${grade} of `;
         let onDateStr = 'the expected date';
-        if( $existingOption[0].dataset.month && $existingOption[0].dataset.month !== '' && $existingOption[0].dataset.day && $existingOption[0].dataset.day !== '' ) {
-            //console.log(`month=${$existingOption[0].dataset.month},day=${$existingOption[0].dataset.day}`);
-            let eventDate = new Date(Date.UTC(1970, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
+        if (existingOption.dataset.month && existingOption.dataset.month !== '' && existingOption.dataset.day && existingOption.dataset.day !== '') {
+            const eventDate = new Date(Date.UTC(1970, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
-            if( Number($existingOption[0].dataset.grade) <= LitGrade.FEAST ) {
-                const minYear = parseInt(document.querySelector('#lowerRange').value);
-                const maxYear = parseInt(document.querySelector('#upperRange').value);
-                for(year = minYear; year <= maxYear; year++) {
-                    eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-                    if( eventDate.getUTCDay() === 0 ) {
-                        console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
-                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday` );
-                        document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
-                    } else {
-                        console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate) );
-                    }
-                }
-            }
-            //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
         } else {
             console.log('selected option does not seem to have month or day values?');
-            console.log($existingOption[0].dataset);
+            console.log(existingOption.dataset);
         }
         document.querySelector('#newUnitTestDescription').value = `${gradeStr}'${name}' should fall on ${onDateStr}`;
     } else {
@@ -893,85 +1069,136 @@ $(document).on('change', '#existingLitEventName', ev => {
 
 /** SLIDER 2 INTERACTIONS */
 
-$(document).on('change', '#yearsToTestRangeSlider [type=range]', ev => {
+document.addEventListener('change', ev => {
+    if (!ev.target.matches('#yearsToTestRangeSlider [type=range]')) return;
+
     let rangeVals = [];
     document.querySelectorAll('#yearsToTestRangeSlider [type=range]').forEach(el => rangeVals.push(el.value));
     const minYear = Math.min(...rangeVals);
     const maxYear = Math.max(...rangeVals);
-    $('#yearsToTestGrid').isotope('destroy');
-    $('#yearsToTestGrid').empty();
-    let removeIcon = '<i class="fas fa-xmark-circle ms-1 opacity-50" role="button" title="remove"></i>';
-    let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" role="button" title="set year"></i>';
-    let htmlStr = '';
-    let titleAttr = '';
-    let lightClass = '';
+    isotopeYearsToTestGrid?.destroy();
+    document.querySelector('#yearsToTestGrid').innerHTML = '';
+    const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
+    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
     const currentEventKey = document.querySelector('#existingLitEventName').value;
-    $existingOption = $(document.querySelector('#existingLitEventName').list).find('option[value="' + currentEventKey + '"]');
-    for( let year = minYear; year <= maxYear; year++ ) {
-        eventDate = new Date(Date.UTC(year, Number($existingOption[0].dataset.month)-1, Number($existingOption[0].dataset.day), 0, 0, 0));
-        if( eventDate.getUTCDay() === 0 ) {
-            titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
-            lightClass = ' bg-light';
-        } else {
-            titleAttr = ` title="${DTFormat.format(eventDate)}"`;
-            lightClass = '';
-        }
-        htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentEventKey)}"]`);
+    let htmlStr = '';
+    for (let year = minYear; year <= maxYear; year++) {
+        htmlStr += generateYearSpanHtml(year, existingOption, hammerIcon, removeIcon);
     }
-    console.log(htmlStr);
-    //$parsedHtml = $.parseHTML( htmlStr );
-    //console.log($parsedHtml);
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
-    $isotopeYearsToTestGrid = $('#yearsToTestGrid').isotope({
-        layoutMode: 'fitRows'
-    });
+    if (typeof Isotope !== 'undefined') {
+        isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
+            layoutMode: 'fitRows'
+        });
+    } else {
+        console.warn('Isotope library not loaded; year grid layout may be affected');
+    }
     document.querySelector('#yearSinceUntilShadow').value = minYear;
 });
 
-$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark', ev => {
-    const parnt = ev.currentTarget.parentElement;
-    $(parnt).fadeOut('fast', () => {
-        //parnt.remove();
-        $(parnt).empty();
+document.addEventListener('click', ev => {
+    const xmarkIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > .fa-circle-xmark');
+    if (!xmarkIcon) return;
+
+    const parnt = xmarkIcon.parentElement;
+    parnt.style.opacity = '0';
+    setTimeout(() => {
+        parnt.innerHTML = '';
         parnt.classList.add('deleted');
-        $(parnt).fadeIn('fast', () => {
-            $('#yearsToTestGrid').isotope('layout');
-        });
-    });
+        parnt.style.opacity = '1';
+        isotopeYearsToTestGrid?.layout();
+    }, 200);
 });
 
-$(document).on('click', '#yearsToTestGrid > .testYearSpan > svg.fa-hammer', ev => {
-    const parnt = ev.currentTarget.parentElement;
-    const bgClass = currentTestType === TestType.VariableCorrespondence ? 'bg-warning' : 'bg-info';
-    if( [TestType.ExactCorrespondenceSince,TestType.ExactCorrespondenceUntil].includes(currentTestType) ) {
-        $(parnt.parentElement).find(`.testYearSpan`).removeClass([`bg-info`,'bg-warning']);
-        const siblings = Array.from(parnt.parentElement.children);
-        const idxAsChild = siblings.indexOf(parnt);
-        const allPrevSiblings = siblings.slice(0,idxAsChild);
-        const allNextSiblings = siblings.slice(idxAsChild+1);
-        if( TestType.ExactCorrespondenceSince === currentTestType ) {
-            $(allPrevSiblings).removeClass('bg-light').addClass('bg-warning');
+document.addEventListener('click', ev => {
+    const deletedSpan = ev.target.closest('#yearsToTestGrid > .testYearSpan.deleted');
+    if (!deletedSpan) return;
+
+    // Extract year from class (e.g., "year-2024")
+    const yearClass = Array.from(deletedSpan.classList).find(c => c.startsWith('year-'));
+    if (!yearClass) return;
+    const year = yearClass.replace('year-', '');
+
+    // Get current event option for highlighting
+    const currentEventKey = document.querySelector('#existingLitEventName').value;
+    const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentEventKey)}"]`);
+    const { titleAttr, lightClass } = computeYearDateAttrs(Number(year), existingOption);
+
+    // Generate icons
+    const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
+    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
+
+    // Reinstate the span
+    deletedSpan.classList.remove('deleted');
+    if (lightClass) {
+        deletedSpan.classList.add(lightClass);
+    }
+    if (titleAttr) {
+        deletedSpan.setAttribute('title', titleAttr);
+    }
+    deletedSpan.innerHTML = `${hammerIcon}${year}${removeIcon}`;
+    isotopeYearsToTestGrid?.layout();
+});
+
+document.addEventListener('click', ev => {
+    const hammerIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > .fa-hammer');
+    if (!hammerIcon) return;
+
+    const parentEl      = hammerIcon.parentElement;
+    const grandParentEl = parentEl.parentElement;
+    const bgClass       = currentTestType === TestType.VariableCorrespondence ? 'bg-warning' : 'bg-info';
+    if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
+        grandParentEl.querySelectorAll('.testYearSpan').forEach(el => {
+            el.classList.remove('bg-info', 'bg-warning');
+        });
+        const siblings = Array.from(grandParentEl.children);
+        const idxAsChild = siblings.indexOf(parentEl);
+        const allPrevSiblings = siblings.slice(0, idxAsChild);
+        const allNextSiblings = siblings.slice(idxAsChild + 1);
+        if (TestType.ExactCorrespondenceSince === currentTestType) {
+            allPrevSiblings.forEach(el => {
+                el.classList.remove('bg-light');
+                el.classList.add('bg-warning');
+            });
         } else {
-            $(allNextSiblings).removeClass('bg-light').addClass('bg-warning');
+            allNextSiblings.forEach(el => {
+                el.classList.remove('bg-light');
+                el.classList.add('bg-warning');
+            });
         }
     }
-    parnt.classList.remove('bg-light');
-    parnt.classList.add(bgClass);
-    document.querySelector('#yearSinceUntilShadow').value = parnt.innerText; //do not use textContent here!
+    parentEl.classList.remove('bg-light');
+    parentEl.classList.add(bgClass);
+    document.querySelector('#yearSinceUntilShadow').value = parentEl.innerText; //do not use textContent here!
 });
 
 /** FINAL CREATE TEST BUTTON */
 
-$(document).on('click', '#btnCreateTest', () => {
-    let form = document.querySelector('#carouselCreateNewUnitTest form');
+/**
+ * Helper function to get text content excluding child elements (text nodes only)
+ * @param {Element} element - The element to extract text from
+ * @returns {string} The text content of direct text nodes
+ */
+const getTextNodeContent = (element) => {
+    return Array.from(element.childNodes)
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent)
+        .join('');
+};
+
+document.querySelector('#btnCreateTest').addEventListener('click', () => {
+    const form = document.querySelector('#carouselCreateNewUnitTest form');
     if (!form.checkValidity()) {
         form.classList.add('was-validated');
-        let firstInvalidInput = $(form).find(":invalid")[0];
+        const firstInvalidInput = form.querySelector(':invalid');
         console.log(firstInvalidInput);
-        let parentCarouselItem = $(firstInvalidInput).closest('.carousel-item');
+        const parentCarouselItem = firstInvalidInput.closest('.carousel-item');
         console.log(parentCarouselItem);
-        console.log(parentCarouselItem.data('item'));
-        $('#carouselCreateNewUnitTest').carousel(parentCarouselItem.data('item'));
+        console.log(parentCarouselItem.dataset.item);
+        const carouselEl = document.querySelector('#carouselCreateNewUnitTest');
+        const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
+        carousel.to(parseInt(parentCarouselItem.dataset.item));
     } else {
         //let's build our new Unit Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
@@ -982,52 +1209,51 @@ $(document).on('click', '#btnCreateTest', () => {
         proxiedTest.description = document.querySelector('#newUnitTestDescription').value;
         const yearsChosenEls = document.querySelectorAll('.testYearSpan:not(.deleted)');
         let yearSinceUntil = null;
-        if( [TestType.ExactCorrespondenceSince,TestType.ExactCorrespondenceUntil].includes(currentTestType) ) {
-            yearSinceUntil = parseInt($('.testYearSpan.bg-info').contents().filter(function() {
-                return this.nodeType === Node.TEXT_NODE;
-            }).text());
-            if( currentTestType === TestType.ExactCorrespondenceSince ) {
-                proxiedTest.year_since = yearSinceUntil;
-                document.querySelector('#yearSince').value = yearSinceUntil;
-            } else {
-                proxiedTest.year_until = yearSinceUntil;
-                document.querySelector('#yearUntil').value = yearSinceUntil;
+        if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
+            const bgInfoEl = document.querySelector('.testYearSpan.bg-info');
+            if (bgInfoEl) {
+                yearSinceUntil = parseInt(getTextNodeContent(bgInfoEl));
+                if (currentTestType === TestType.ExactCorrespondenceSince) {
+                    proxiedTest.year_since = yearSinceUntil;
+                    document.querySelector('#yearSince').value = yearSinceUntil;
+                } else {
+                    proxiedTest.year_until = yearSinceUntil;
+                    document.querySelector('#yearUntil').value = yearSinceUntil;
+                }
             }
         }
-        let yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt($(el).contents().filter(function() {
-            return this.nodeType === Node.TEXT_NODE;
-        }).text()));
 
-        const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt($(el).contents().filter(function() {
-            return this.nodeType === Node.TEXT_NODE;
-        }).text()));
+        const yearsNonExistence = Array.from(document.querySelectorAll('.testYearSpan.bg-warning')).map(el => parseInt(getTextNodeContent(el)));
+
+        const yearsChosen = Array.from(yearsChosenEls).map(el => parseInt(getTextNodeContent(el)));
         const baseDate = new Date(document.querySelector('#baseDate').value + 'T00:00:00Z');
         proxiedTest.assertions = [];
-        let assert =  null;
+        let assert = null;
         let dateX = null;
         let assertion = null;
         yearsChosen.forEach(year => {
-            if( yearsNonExistence.includes(year) ) {
+            if (yearsNonExistence.includes(year)) {
                 assert = 'eventNotExists';
                 dateX = null;
                 assertion = proxiedTest.description.replace('should fall on', 'should not exist on');
             } else {
                 baseDate.setUTCFullYear(year);
                 assert = 'eventExists AND hasExpectedDate';
-                dateX = Date.parse(`${baseDate.toISOString()}`) / 1000;
+                dateX = baseDate.toISOString().split('T')[0] + 'T00:00:00+00:00';
                 assertion = proxiedTest.description;
             }
             proxiedTest.assertions.push(new Assertion(year, dateX, assert, assertion));
         });
-        $('#testName').text( proxiedTest.name );
-        $('#cardHeaderTestType').text( proxiedTest.test_type );
-        $('#description').attr('rows', 2);
-        $('#description').val( proxiedTest.description );
-        $('#description').attr('rows', Math.ceil( $('#description')[0].scrollHeight / 30 ));
-        $('#assertionsContainer').empty();
-        const assertionsBuilder = new AssertionsBuilder( proxiedTest );
+        updateText('testName', proxiedTest.name);
+        updateText('cardHeaderTestType', proxiedTest.test_type);
+        document.querySelector('#description').setAttribute('rows', '2');
+        const descriptionEl = document.querySelector('#description');
+        descriptionEl.value = proxiedTest.description;
+        descriptionEl.setAttribute('rows', Math.ceil(descriptionEl.scrollHeight / 30));
+        document.querySelector('#assertionsContainer').innerHTML = '';
+        const assertionsBuilder = new AssertionsBuilder(proxiedTest);
         const assertionBuildHtml = assertionsBuilder.buildHtml();
-        $(assertionBuildHtml).appendTo('#assertionsContainer');
+        document.querySelector('#assertionsContainer').append(assertionBuildHtml);
         document.querySelector('#perYearAssertions').classList.remove('invisible');
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
         const myModalEl = document.querySelector('#modalDefineTest');

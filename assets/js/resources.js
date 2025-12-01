@@ -1,3 +1,24 @@
+/**
+ * Resource testing module for the LiturgicalCalendar Unit Test Interface.
+ * Handles resource validation and testing.
+ * @module resources
+ */
+
+import {
+    escapeQuotesAndLinkifyUrls,
+    safeCollapseShow,
+    safeToastShow,
+    updateText,
+    slugify,
+    slugifySelector,
+    escapeHtmlAttr
+} from './common.js';
+
+/** @typedef {import('./types.js').SourceDataCheckMessage} SourceDataCheckMessage */
+/** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
+
+// Access global config from window (set by PHP in footer.php)
+const { WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window.LitCalConfig;
 
 /**
  * This class keeps track of the state of the page and the data it requires to run tests.
@@ -40,25 +61,42 @@ class ReadyToRunTests {
      * The conditions are:
      * - PageReady: page has finished loading
      * - SocketReady: Websocket connection is ready
-     * - AsyncDataReady: all relevant metadata regarding calendars has finished loading
+     * - MetaDataReady: all relevant metadata regarding calendars has finished loading
      * - MissalsReady: all relevant data regarding Roman Missals has finished loading
      * Additionally, the method makes sure that the #startTestRunnerBtnLbl is set to the stored value
      * and that the page loader is hidden.
      */
     static tryEnableBtn() {
         console.log( 'ReadyToRunTests.SocketReady = '       + ReadyToRunTests.SocketReady );
-        console.log( 'ReadyToRunTests.AsyncDataReady = '    + ReadyToRunTests.MetaDataReady );
+        console.log( 'ReadyToRunTests.MetaDataReady = '      + ReadyToRunTests.MetaDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
         console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
-        let testsReady = ReadyToRunTests.check();
-        $( '#startTestRunnerBtn' ).prop( 'disabled', !testsReady ).removeClass( 'btn-secondary' ).addClass( 'btn-primary' );
+        const testsReady = ReadyToRunTests.check();
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if (!startBtn) {
+            console.warn('Start button not found');
+            return;
+        }
+        startBtn.disabled = !testsReady;
+        startBtn.classList.remove('btn-secondary');
+        startBtn.classList.add('btn-primary');
         // always make sure we have the fa-rotate class, ready to start spinning on button press
         // we might be resetting after a previous run where last class was fa-stop
-        $( '#startTestRunnerBtn' ).find( '.fa-stop' ).removeClass( 'fa-stop' ).addClass( 'fa-rotate' );
+        const stopIcon = startBtn.querySelector('.fa-stop');
+        if (stopIcon) {
+            stopIcon.classList.remove('fa-stop');
+            stopIcon.classList.add('fa-rotate');
+        }
         setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
-        if( testsReady ) {
-            $( '.page-loader' ).fadeOut('slow');
+        if (testsReady) {
+            const pageLoader = document.querySelector('.page-loader');
+            if (pageLoader) {
+                pageLoader.style.opacity = '0';
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            }
         }
     }
 }
@@ -302,24 +340,28 @@ const resourcePaths = {
  * @param {number} idx The index of the resource.
  * @returns {string} The HTML template for the resource.
  */
-const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
-    <div class="text-center mt-1 mb-0 bg-secondary text-white h-25"><span title="${resourcePaths[resource]}" class="text-break d-inline-block w-75">${resourcePaths[resource]}</span></div>
-    <div class="card text-white bg-info rounded-0 ${resource} file-exists">
+const resourceTemplate = (resource, idx) => {
+    const resourceSlug = slugify(resource);
+    const path = resourcePaths[resource];
+    return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
+    <div class="text-center mt-1 mb-0 bg-secondary text-white h-25"><span title="${escapeHtmlAttr(path)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(path)}</span></div>
+    <div class="card text-white bg-info rounded-0 ${resourceSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> data exists</span></p>
         </div>
     </div>
-    <div class="card text-white bg-info rounded-0 ${resource} json-valid">
+    <div class="card text-white bg-info rounded-0 ${resourceSlug} json-valid">
         <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> ${currentResponseType} valid</span></p>
+            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> <span class="response-type">${currentResponseType}</span> valid</span></p>
         </div>
     </div>
-    <div class="card text-white bg-info rounded-0 ${resource} schema-valid">
+    <div class="card text-white bg-info rounded-0 ${resourceSlug} schema-valid">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> schema valid</span></p>
         </div>
     </div>
 </div>`;
+}
 
 /**
  * Template for a source item in the resource list.
@@ -327,24 +369,28 @@ const resourceTemplate = (resource, idx) => `<div class="col-1 ${idx === 0 || id
  * @param {number} idx - The index of the source item in the list.
  * @returns {string} A string containing the HTML for the source item.
  */
-const sourceTemplate = (sourceItem, idx) => `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
-<div class="text-center mt-1 mb-0 bg-secondary text-white h-25"><span title="${sourceItem.sourceFile ?? sourceItem.sourceFolder}" class="text-break d-inline-block w-75">${sourceItem.validate}</span></div>
-<div class="card text-white bg-info rounded-0 ${sourceItem.validate} file-exists">
+const sourceTemplate = (sourceItem, idx) => {
+    const validateSlug = slugify(sourceItem.validate);
+    const sourceLabel = sourceItem.sourceFile ?? sourceItem.sourceFolder ?? '';
+    return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
+<div class="text-center mt-1 mb-0 bg-secondary text-white h-25"><span title="${escapeHtmlAttr(sourceLabel)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(sourceItem.validate)}</span></div>
+<div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
     <div class="card-body">
         <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> data exists</span></p>
     </div>
 </div>
-<div class="card text-white bg-info rounded-0 ${sourceItem.validate} json-valid">
+<div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
     <div class="card-body">
-        <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> JSON valid</span></p>
+        <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> <span class="response-type">JSON</span> valid</span></p>
     </div>
 </div>
-<div class="card text-white bg-info rounded-0 ${sourceItem.validate} schema-valid">
+<div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
     <div class="card-body">
         <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> schema valid</span></p>
     </div>
 </div>
 </div>`;
+}
 
 /**
  * HTMLEncode function
@@ -371,26 +417,6 @@ const HTMLEncode = (str) => {
 }
 
 /**
- * Replaces all URLs in a string with a link to the URL and escapes double quotes.
- * @param {string} str - The string to process.
- * @returns {string} The processed string.
- */
-const escapeQuotesAndLinkifyUrls = (str) => {
-  return str.replace(
-    /(?<prefix>["'({\[])?(https?:\/\/[^\s"'<>(){}\[\]]+)(?<suffix>[)"'\]}.,;:]?)/g,
-    (match, prefix, url, suffix) => {
-      // If prefix and suffix form a known pair, keep them outside the link
-      const pairs = { '"': '"', "'": "'", '(': ')', '{': '}', '[': ']' };
-      if (prefix && pairs[prefix] === suffix) {
-        return `${prefix}<a href="${url}" target="_blank">${url}</a>${suffix}`;
-      } else {
-        return `<a href="${url}" target="_blank">${url}</a>${suffix || ''}`;
-      }
-    }
-  ).replaceAll('"', '&quot;');
-};
-
-/**
  * Establishes a websocket connection to the test server.
  * If the connection is successful, it sets the state to ReadyState and tries
  * to enable the test runner button. If the connection is closed, it sets the
@@ -399,6 +425,11 @@ const escapeQuotesAndLinkifyUrls = (str) => {
  * Also sets up event listeners for the open, message, close, and error events.
  */
 const connectWebSocket = () => {
+    // Guard against creating multiple connections
+    if (conn && (conn.readyState === WebSocket.OPEN || conn.readyState === WebSocket.CONNECTING)) {
+        console.log('WebSocket connection already exists, skipping new connection');
+        return;
+    }
     console.log( `Connecting to websocket... WS_PROTOCOL: ${WS_PROTOCOL}, WS_HOST: ${WS_HOST}, WS_PORT: ${WS_PORT}` );
     const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[443,80].includes(WS_PORT) ? '' : `:${WS_PORT}`}`;
     conn = new WebSocket( websocketURL );
@@ -411,13 +442,22 @@ const connectWebSocket = () => {
      */
     conn.onopen = ( e ) => {
         console.log( "Websocket connection established!" );
-        $( '#websocket-connected' ).toast( 'show' );
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-danger' ).addClass( 'bg-success' ).find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-xmark fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-check' );
+        safeToastShow('#websocket-connected');
+        const wsStatus = document.querySelector('#websocket-status');
+        if (wsStatus) {
+            wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
+            wsStatus.classList.add('bg-success');
+            const wsSvg = wsStatus.querySelector('svg');
+            if (wsSvg) {
+                wsSvg.classList.remove('fa-plug', 'fa-plug-circle-xmark', 'fa-plug-circle-exclamation');
+                wsSvg.classList.add('fa-plug-circle-check');
+            }
+        }
         if ( connectionAttempt !== null ) {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
         }
-        currentState = TestState.ReadyState;
+        currentState = TestState.Ready;
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
     };
@@ -436,29 +476,46 @@ const connectWebSocket = () => {
         const responseData = JSON.parse( e.data );
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-success' );
-            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-check' );
-            $( '#successfulCount' ).text( ++successfulTests );
+            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
+                el.classList.remove('bg-info');
+                el.classList.add('bg-success');
+                const questionIcon = el.querySelector('.fa-circle-question');
+                if (questionIcon) {
+                    questionIcon.classList.remove('fa-circle-question');
+                    questionIcon.classList.add('fa-circle-check');
+                }
+            });
+            updateText('successfulCount', ++successfulTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
-                    $( '#successfulResourceDataTestsCount' ).text( ++successfulResourceDataTests );
+                    updateText('successfulResourceDataTestsCount', ++successfulResourceDataTests);
                     break;
                 case TestState.ExecutingSourceValidations:
-                    $( '#successfulSourceDataTestsCount' ).text( ++successfulSourceDataTests );
+                    updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
                     break;
             }
         }
         else if ( responseData.type === "error" ) {
-            $( responseData.classes ).removeClass( 'bg-info' ).addClass( 'bg-danger' );
-            $( responseData.classes ).find( '.fa-circle-question' ).removeClass( 'fa-circle-question' ).addClass( 'fa-circle-xmark' );
-            $( responseData.classes ).find('.card-text').append(`<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade"></i></span>`);
-            $( '#failedCount' ).text( ++failedTests );
+            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
+                el.classList.remove('bg-info');
+                el.classList.add('bg-danger');
+                const questionIcon = el.querySelector('.fa-circle-question');
+                if (questionIcon) {
+                    questionIcon.classList.remove('fa-circle-question');
+                    questionIcon.classList.add('fa-circle-xmark');
+                }
+                const cardText = el.querySelector('.card-text');
+                if (cardText) {
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
+                }
+            });
+            updateText('failedCount', ++failedTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
-                    $( '#failedResourceDataTestsCount' ).text( ++failedResourceDataTests );
+                    updateText('failedResourceDataTestsCount', ++failedResourceDataTests);
                     break;
                 case TestState.ExecutingSourceValidations:
-                    $( '#failedSourceDataTestsCount' ).text( ++failedSourceDataTests );
+                    updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
                     break;
             }
         }
@@ -466,20 +523,22 @@ const connectWebSocket = () => {
             runTests();
         }
         performance.mark( 'litcalTestRunnerEnd' );
-        let totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
+        const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
         console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
-        $( '#total-time' ).text( MsToTimeString( Math.round( totalTestTime.duration ) ) );
+        updateText('total-time', MsToTimeString( Math.round( totalTestTime.duration ) ));
         switch( currentState ) {
-            case TestState.ExecutingResourceValidations:
+            case TestState.ExecutingResourceValidations: {
                 performance.mark( 'resourceDataTestsEnd' );
-                let totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
-                $( '#totalResourceDataTestsTime' ).text( MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ) );
+                const totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
+                updateText('totalResourceDataTestsTime', MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ));
                 break;
-            case TestState.ExecutingSourceValidations:
+            }
+            case TestState.ExecutingSourceValidations: {
                 performance.mark( 'sourceDataTestsEnd' );
-                let totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                $( '#totalSourceDataTestsTime' ).text( MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ) );
+                const totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+                updateText('totalSourceDataTestsTime', MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ));
                 break;
+            }
         }
     };
 
@@ -496,10 +555,18 @@ const connectWebSocket = () => {
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
-            $( '#websocket-status' ).removeClass( 'bg-secondary bg-danger bg-success' ).addClass( 'bg-warning' )
-                .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-exclamation' ).addClass( 'fa-plug-circle-xmark' );
-            $( '#websocket-closed' ).toast( 'show' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' );
+            const wsStatus = document.querySelector('#websocket-status');
+            if (wsStatus) {
+                wsStatus.classList.remove('bg-secondary', 'bg-danger', 'bg-success');
+                wsStatus.classList.add('bg-warning');
+                const wsSvg = wsStatus.querySelector('svg');
+                if (wsSvg) {
+                    wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-exclamation');
+                    wsSvg.classList.add('fa-plug-circle-xmark');
+                }
+            }
+            safeToastShow('#websocket-closed');
+            document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
             setTimeout( function () {
                 connectWebSocket();
             }, 3000 );
@@ -515,12 +582,20 @@ const connectWebSocket = () => {
      * @param {ErrorEvent} e - The error event.
      */
     conn.onerror = ( e ) => {
-        $( '#websocket-status' ).removeClass( 'bg-secondary bg-warning bg-success' ).addClass( 'bg-danger' )
-            .find( 'svg' ).removeClass( 'fa-plug fa-plug-circle-check fa-plug-circle-xmark' ).addClass( 'fa-plug-circle-exclamation' );
+        const wsStatus = document.querySelector('#websocket-status');
+        if (wsStatus) {
+            wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-success');
+            wsStatus.classList.add('bg-danger');
+            const wsSvg = wsStatus.querySelector('svg');
+            if (wsSvg) {
+                wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-xmark');
+                wsSvg.classList.add('fa-plug-circle-exclamation');
+            }
+        }
         console.error( 'Websocket connection error:' );
         console.log( e );
-        $( '#websocket-error' ).toast( 'show' );
-        $( '.fa-spin' ).removeClass( 'fa-spin' );
+        safeToastShow('#websocket-error');
+        document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
         if ( connectionAttempt === null ) {
             connectionAttempt = setInterval( function () {
                 connectWebSocket();
@@ -534,7 +609,7 @@ const connectWebSocket = () => {
  * @param {string} txt - The text to set as the label of the start test runner button.
  */
 const setTestRunnerBtnLblTxt = (txt) => {
-    document.querySelector('#startTestRunnerBtnLbl').textContent = txt;
+    updateText('startTestRunnerBtnLbl', txt);
 }
 
 /**
@@ -543,17 +618,19 @@ const setTestRunnerBtnLblTxt = (txt) => {
  * populated.
  */
 const setupPage = () => {
-    $(document).ready(() =>  {
-        if (startTestRunnerBtnLbl === '') {
-            startTestRunnerBtnLbl = document.querySelector('#startTestRunnerBtnLbl').textContent;
+    if (startTestRunnerBtnLbl === '') {
+        const btnLblEl = document.querySelector('#startTestRunnerBtnLbl');
+        if (btnLblEl) {
+            startTestRunnerBtnLbl = btnLblEl.textContent;
         }
-        let resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
-        document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
-        let sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
-        document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
-        ReadyToRunTests.PageReady = true;
-        connectWebSocket();
-    });
+    }
+    const resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
+    document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
+    const sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
+    document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
+    ReadyToRunTests.PageReady = true;
+    ReadyToRunTests.tryEnableBtn();
+    connectWebSocket();
 }
 
 
@@ -573,6 +650,7 @@ let successfulSourceDataTests   = 0;
 let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
+let index                       = 0;
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
@@ -757,14 +835,12 @@ const loadAsyncData = () => {
  */
 const runTests = () => {
     switch ( currentState ) {
-        case TestState.ReadyState:
+        case TestState.Ready: {
             index = 0;
             messageCounter = 0;
             currentState = TestState.ExecutingResourceValidations;
             performance.mark( 'resourceDataTestsStart' );
-            if( $('#resourceDataTests').hasClass('show') === false ) {
-                $('#resourceDataTests').collapse('show');
-            }
+            safeCollapseShow('#resourceDataTests');
             conn.send(
                 JSON.stringify({
                     action: 'executeValidation',
@@ -773,6 +849,7 @@ const runTests = () => {
                 })
             );
             break;
+        }
         case TestState.ExecutingResourceValidations:
             if ( ++messageCounter === 3 ) {
                 console.log( 'one cycle complete, passing to next test..' );
@@ -790,7 +867,7 @@ const runTests = () => {
                     index = 0;
                     currentState = TestState.ExecutingSourceValidations;
                     performance.mark( 'sourceDataTestsStart' );
-                    $('#sourceDataTests').collapse('show');
+                    safeCollapseShow('#sourceDataTests');
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
@@ -817,14 +894,23 @@ const runTests = () => {
                 }
             }
             break;
-        case TestState.JobsFinished:
+        case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
-            $( '#tests-complete' ).toast( 'show' );
-            let $btnPrimary = $( '.fa-spin' ).closest( '.btn-primary' );
-            $btnPrimary.prop( 'disabled', true ).removeClass( 'btn-primary' ).addClass( 'btn-secondary' );
-            $( '.fa-spin' ).removeClass( 'fa-spin' ).removeClass( 'fa-rotate' ).addClass( 'fa-stop' );
+            safeToastShow('#tests-complete');
+            const spinIcon = document.querySelector('.fa-spin');
+            if (spinIcon) {
+                const btnPrimary = spinIcon.closest('.btn-primary');
+                if (btnPrimary) {
+                    btnPrimary.disabled = true;
+                    btnPrimary.classList.remove('btn-primary');
+                    btnPrimary.classList.add('btn-secondary');
+                }
+                spinIcon.classList.remove('fa-spin', 'fa-rotate');
+                spinIcon.classList.add('fa-stop');
+            }
             setTestRunnerBtnLblTxt('Tests Complete');
             break;
+        }
     }
 }
 
@@ -869,22 +955,24 @@ const MsToTimeString = ( ms ) => {
     return timeString.join( ', ' );
 }
 
-$(document).on('change', '#apiVersionsDropdownItems', setEndpoints);
+document.querySelector('#apiVersionsDropdownItems')?.addEventListener('change', setEndpoints);
 
-$(document).on('click', '#startTestRunnerBtn', () => {
-    if( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
+document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
+    if( currentState === TestState.Ready || currentState === TestState.JobsFinished ) {
         index = 0;
-        calendarIndex = 0;
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
-        currentState = conn.readyState !== WebSocket.CLOSED && conn.ReadyState !== WebSocket.CLOSING ? TestState.ReadyState : TestState.JobsFinished;
+        currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
-            console.warn( conn.readyState.toString );
+            console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
             performance.mark( 'litcalTestRunnerStart' );
-            $( '#startTestRunnerBtn' ).find( '.fa-rotate' ).addClass( 'fa-spin' );
+            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
+            if (rotateIcon) {
+                rotateIcon.classList.add('fa-spin');
+            }
             setTestRunnerBtnLblTxt('Tests Running...');
             console.log( `currentState = ${currentState}` );
             runTests();
@@ -895,8 +983,12 @@ $(document).on('click', '#startTestRunnerBtn', () => {
     }
 });
 
-$( document ).on( 'change', '#APIResponseSelect', ( ev ) => {
-    $( '.page-loader' ).show();
+document.querySelector('#APIResponseSelect')?.addEventListener('change', ( ev ) => {
+    const pageLoader = document.querySelector('.page-loader');
+    if (pageLoader) {
+        pageLoader.style.display = 'block';
+        pageLoader.style.opacity = '1';
+    }
     ReadyToRunTests.PageReady = false;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
@@ -950,7 +1042,7 @@ document.body.addEventListener( 'click', function ( event ) {
             customClass: 'wide-tooltip',
             sanitize: false
         } );
-        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
         tooltipMap.set( target, tooltip );
     }
 
