@@ -88,6 +88,37 @@ const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500, easing = 'e
 };
 
 /**
+ * Updates the year grid to highlight years where the event falls on a Sunday.
+ * @param {HTMLOptionElement} existingOption - The selected option element with event data
+ * @param {number} minYear - The minimum year in the range
+ * @param {number} maxYear - The maximum year in the range
+ */
+const updateYearGridForEvent = (existingOption, minYear, maxYear) => {
+    if (!existingOption?.dataset.month || !existingOption?.dataset.day) {
+        return;
+    }
+
+    if (Number(existingOption.dataset.grade) > LitGrade.FEAST) {
+        return;
+    }
+
+    for (let year = minYear; year <= maxYear; year++) {
+        const eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+        const yearSpan = document.querySelector(`.testYearSpan.year-${year}`);
+        if (!yearSpan) continue;
+
+        if (eventDate.getUTCDay() === 0) {
+            console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
+            yearSpan.setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`);
+            yearSpan.classList.add('bg-light');
+        } else {
+            console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
+            yearSpan.setAttribute('title', DTFormat.format(eventDate));
+        }
+    }
+};
+
+/**
  * A proxy for a Test object that is being edited, used for sanitizing the values set on the object.
  * @type {Object|null}
  */
@@ -935,25 +966,11 @@ document.querySelector('#existingLitEventName').addEventListener('change', ev =>
         let gradeStr = `The ${grade} of `;
         let onDateStr = 'the expected date';
         if (existingOption.dataset.month && existingOption.dataset.month !== '' && existingOption.dataset.day && existingOption.dataset.day !== '') {
-            //console.log(`month=${existingOption.dataset.month},day=${existingOption.dataset.day}`);
-            let eventDate = new Date(Date.UTC(1970, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
+            const eventDate = new Date(Date.UTC(1970, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
-            if (Number(existingOption.dataset.grade) <= LitGrade.FEAST) {
-                const minYear = parseInt(document.querySelector('#lowerRange').value);
-                const maxYear = parseInt(document.querySelector('#upperRange').value);
-                for (let year = minYear; year <= maxYear; year++) {
-                    eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
-                    if (eventDate.getUTCDay() === 0) {
-                        console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
-                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`);
-                        document.querySelector(`.testYearSpan.year-${year}`).classList.add('bg-light');
-                    } else {
-                        console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
-                        document.querySelector(`.testYearSpan.year-${year}`).setAttribute('title', DTFormat.format(eventDate));
-                    }
-                }
-            }
-            //const dayWithSuffix = new OrdinalFormat(locale).withOrdinalSuffix(Number(dayName));
+            const minYear = parseInt(document.querySelector('#lowerRange').value);
+            const maxYear = parseInt(document.querySelector('#upperRange').value);
+            updateYearGridForEvent(existingOption, minYear, maxYear);
         } else {
             console.log('selected option does not seem to have month or day values?');
             console.log(existingOption.dataset);
