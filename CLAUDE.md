@@ -44,8 +44,10 @@ UnitTestInterface/
 │   └── NewTestModal.php  # Test creation modal
 ├── assets/
 │   ├── js/               # JavaScript files
-│   │   ├── index.js      # Main test runner logic
 │   │   ├── admin.js      # Admin functionality
+│   │   ├── AssertionsBuilder.js # Test assertion builder
+│   │   ├── common.js     # Shared utilities
+│   │   ├── index.js      # Main test runner logic
 │   │   └── resources.js  # Resource management
 │   └── css/              # Stylesheets
 └── i18n/                  # Translation files
