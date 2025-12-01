@@ -1,127 +1,139 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# OpenAI <noreply-mt-openai@weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-30 17:57+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"POT-Creation-Date: 2025-10-10 09:24+0000\n"
+"PO-Revision-Date: 2025-12-01 13:39+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"Language-Team: Croatian <https://translate.johnromanodorazio.com/projects/"
+"liturgical-calendar/unit-test-interface/hr/>\n"
 "Language: hr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.13.3\n"
 
-#: index.php:12
+#: index.php:15
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
 msgstr ""
+"Došlo je do pogreške prilikom otvaranja veze sa serverom preko websocket-a. "
+"Možda je server izvan mreže?"
 
-#: index.php:20
+#: index.php:24
 msgid "Websocket connected successfully!"
-msgstr ""
+msgstr "Websocket uspješno povezan!"
 
-#: index.php:28
+#: index.php:32
 msgid "Websocket connection closed."
-msgstr ""
+msgstr "Veza s websocketom zatvorena."
 
-#: index.php:36
+#: index.php:40
 msgid "All tests complete!"
-msgstr ""
+msgstr "Svi testovi završeni!"
 
-#: index.php:50
+#: index.php:54
 msgid "Liturgical Calendar"
-msgstr ""
-
-#: index.php:52
-msgid "General Roman"
-msgstr ""
+msgstr "Liturgijski kalendar"
 
 #: index.php:56
+msgid "General Roman"
+msgstr "Opći rimski"
+
+#: index.php:60
 msgid "Response Format"
-msgstr ""
+msgstr "Format odgovora"
 
-#: index.php:68
+#: index.php:72
 msgid "Run Tests"
-msgstr ""
+msgstr "Pokreni testove"
 
-#: index.php:73 index.php:94 index.php:130 index.php:164
+#: index.php:77 index.php:98 index.php:134 index.php:168
 msgid "Successful tests:"
-msgstr ""
+msgstr "Uspješni testovi:"
 
-#: index.php:76 index.php:99 index.php:135 index.php:169
+#: index.php:80 index.php:103 index.php:139 index.php:173
 msgid "Failed tests:"
-msgstr ""
+msgstr "Neuspješni testovi:"
 
 #. translators: %s: <span id="totalUnitTestsCount"></span>
-#: index.php:80 index.php:104 index.php:141 index.php:176
+#: index.php:84 index.php:108 index.php:145 index.php:180
 #, php-format
 msgid "Total time for %s tests:"
-msgstr ""
+msgstr "Ukupno vrijeme za %s testova:"
 
-#: index.php:91
+#: index.php:95
 msgid "VALIDATE SOURCE DATA"
-msgstr ""
+msgstr "VALIDIRAJ IZVORNE PODATKE"
 
 #. translators: %s: <span class="yearMax"></span>
-#: index.php:123
+#: index.php:127
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
-msgstr ""
+msgstr "PROVJERI PODATKE KALENDARA ZA GODINE OD 1970. DO %s"
 
-#: index.php:159
+#: index.php:163
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
-msgstr ""
+msgstr "POKRENI JEDINIČNE TESTOVE ZA ODREĐENE DOGAĐAJE"
 
-#: index.php:197
+#: index.php:201
 msgid "Loading..."
-msgstr ""
+msgstr "Učitavanje..."
 
-#: admin.php:43
+#: admin.php:95
 msgid "Define a Unit Test for a Liturgical event"
-msgstr ""
+msgstr "Definiraj jedinični test za liturgijski događaj"
 
-#: admin.php:44
+#: admin.php:97
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "actually producing correct data, we can create Unit Tests that allow us to "
 "verify that events were / were not created in the calendar, or that they "
 "have expected dates from year to year."
 msgstr ""
+"Kako bismo provjerili da podaci liturgijskog kalendara koje API proizvodi "
+"zapravo stvaraju ispravne podatke, možemo kreirati jedinične testove koji "
+"nam omogućuju provjeru jesu li događaji kreirani u kalendaru ili nisu, ili "
+"imaju li očekivane datume iz godine u godinu."
 
-#: admin.php:47
+#: admin.php:102
 msgid "Edit an existing test"
-msgstr ""
+msgstr "Uredi postojeći test"
 
-#: admin.php:56
+#: admin.php:114
 msgid "Create a New Test"
-msgstr ""
+msgstr "Kreiraj novi test"
 
-#: admin.php:67
+#: admin.php:123
 msgid "Calendar to test"
-msgstr ""
+msgstr "Kalendar za testiranje"
 
-#: admin.php:72
+#: admin.php:129
 msgid "Test Type"
-msgstr ""
+msgstr "Vrsta testa"
 
-#: admin.php:76
+#: admin.php:134
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
 "can optionally be defined differently for each given year)"
 msgstr ""
+"U rasponu godina za koje tvrdimo, tvrdimo da liturgijski događaj treba "
+"postojati i treba pasti na očekivani datum "
+"(datum se može opcionalno definirati drugačije za svaku određenu godinu)"
 
-#: admin.php:77
+#: admin.php:136
 msgid "Exact date"
-msgstr ""
+msgstr "Točan datum"
 
-#: admin.php:81
+#: admin.php:141
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -129,12 +141,17 @@ msgid ""
 "liturgical event should exist and should fall on an expected date (date can "
 "optionally be defined differently for each given year)."
 msgstr ""
+"Kad liturgijski događaj treba postojati tek nakon određene godine, tvrdimo "
+"da za određeni raspon godina prije te godine liturgijski događaj ne bi "
+"trebao postojati, dok za određeni raspon godina nakon te godine liturgijski "
+"događaj bi trebao postojati i trebao bi pasti na očekivani datum "
+"(datum se može opcionalno definirati drugačije za svaku određenu godinu)."
 
-#: admin.php:82
+#: admin.php:143
 msgid "Exact date since year"
-msgstr ""
+msgstr "Točan datum od godine"
 
-#: admin.php:86
+#: admin.php:148
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -142,171 +159,199 @@ msgid ""
 "differently for each given year), while for a certain span of years after "
 "such year the liturgical event should not exist."
 msgstr ""
+"Kad liturgijski događaj više ne bi trebao postojati nakon određene godine, "
+"tvrdimo da za određeni raspon godina prije te godine liturgijski događaj "
+"treba pasti na očekivani datum "
+"(datum se može opcionalno definirati drugačije za svaku određenu godinu), "
+"dok za određeni raspon godina nakon te godine liturgijski događaj ne bi "
+"trebao postojati."
 
-#: admin.php:87
+#: admin.php:150
 msgid "Exact date until year"
-msgstr ""
+msgstr "Točan datum do godine"
 
-#: admin.php:91
+#: admin.php:155
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
 "expected date (date can optionally be defined differently for each given "
 "year), and that it should not exist for other given years."
 msgstr ""
+"Kad se očekuje da će liturgijski događaj biti nadjačan u raznim godinama iz "
+"bilo kojeg razloga, tvrdimo da bi trebao postojati u određenim godinama na "
+"očekivani datum "
+"(datum se može opcionalno definirati drugačije za svaku određenu godinu) i "
+"da ne bi trebao postojati u drugim određenim godinama."
 
-#: admin.php:92
+#: admin.php:157
 msgid "Variable existence"
-msgstr ""
+msgstr "Promjenjivo postojanje"
 
-#: admin.php:102
+#: admin.php:171
 msgid "Name of Test"
-msgstr ""
+msgstr "Naziv testa"
 
-#: admin.php:108 components/NewTestModal.php:26
+#: admin.php:180 components/NewTestModal.php:30
 msgid "Description"
-msgstr ""
+msgstr "Opis"
 
-#: admin.php:112
+#: admin.php:185
 msgid "Per year assertions"
-msgstr ""
+msgstr "Po godišnjim tvrdnjama"
 
-#: admin.php:120
+#: admin.php:196
 msgid "Save Unit Test"
-msgstr ""
+msgstr "Spremi jedinicu testa"
 
-#: admin.php:154
+#: admin.php:228
 msgid "Add or Edit Comment"
-msgstr ""
+msgstr "Dodaj ili uredi komentar"
 
-#: admin.php:159
+#: admin.php:233
 msgid "Comment"
-msgstr ""
+msgstr "Komentar"
 
-#: admin.php:164
+#: admin.php:238
 msgid "Save"
-msgstr ""
+msgstr "Spremi"
 
 #: layout/topnavbar.php:12
 msgid "Calendars"
-msgstr ""
+msgstr "Kalendari"
 
 #: layout/topnavbar.php:15
 msgid "Resources"
-msgstr ""
+msgstr "Resursi"
 
 #: layout/topnavbar.php:19
 msgid "API Version"
-msgstr ""
+msgstr "API verzija"
 
-#: layout/topnavbar.php:59
+#: layout/topnavbar.php:60
 msgid "Websocket connection status"
-msgstr ""
+msgstr "Status websocket veze"
 
-#: layout/topnavbar.php:65
+#: layout/topnavbar.php:66
 msgid "LitCal Project"
-msgstr ""
+msgstr "LitCal projekt"
 
-#: layout/topnavbar.php:73 layout/sidebar.php:23
+#: layout/topnavbar.php:74 layout/sidebar.php:23
 msgid "Unit Tests Admin"
-msgstr ""
+msgstr "Testovi Jedinice Admin"
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
-msgstr ""
+msgstr "Katolički liturgijski kalendar"
 
 #: layout/sidebar.php:19
 msgid "Unit Tests Runner"
-msgstr ""
+msgstr "Pokretač Testova Jedinice"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
-msgstr ""
+msgstr "Test Točnog Odgovaranja"
 
-#: components/NewTestModal.php:21
+#: components/NewTestModal.php:22
 msgid "Choose the liturgical event for which you would like to create a test"
-msgstr ""
+msgstr "Odaberi liturgijski događaj za koji želiš kreirati test"
 
-#: components/NewTestModal.php:23
+#: components/NewTestModal.php:26
 msgid ""
-"This festivity does not seem to exist? Please choose from a value in the "
-"list."
+"This liturgical event does not seem to exist? Please choose from a value in "
+"the list."
 msgstr ""
+"Čini se da ovaj liturgijski događaj ne postoji? Molimo odaberite vrijednost "
+"s popisa."
 
-#: components/NewTestModal.php:33
+#: components/NewTestModal.php:37
 msgid "Years to test"
-msgstr ""
+msgstr "Godine za testiranje"
 
-#: components/NewTestModal.php:37 components/NewTestModal.php:45
+#: components/NewTestModal.php:41 components/NewTestModal.php:71
 msgid ""
 "First choose the maximum range of years that will belong to the Unit Test."
 msgstr ""
+"Prvo odaberi maksimalni raspon godina koji će pripadati Testovima Jedinice."
 
-#: components/NewTestModal.php:38
+#: components/NewTestModal.php:43
 msgid ""
 "This range should include a few years before the year in which the "
 "liturgical event should start to exist."
 msgstr ""
+"Ovaj raspon bi trebao uključivati nekoliko godina prije godine u kojoj "
+"liturgijski događaj treba početi postojati."
 
-#: components/NewTestModal.php:39
+#: components/NewTestModal.php:46
 msgid ""
 "This range should include a few years after the year in which the liturgical "
 "event should cease to exist."
 msgstr ""
+"Ovaj raspon bi trebao uključivati nekoliko godina nakon godine u kojoj "
+"liturgijski događaj treba prestati postojati."
 
-#: components/NewTestModal.php:40
+#: components/NewTestModal.php:49
 msgid "You can then remove any years that won't be needed."
-msgstr ""
+msgstr "Zatim možeš ukloniti sve godine koje neće biti potrebne."
 
-#: components/NewTestModal.php:41
+#: components/NewTestModal.php:53
 msgid ""
 "Finally, set the year from which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
+"Na kraju, postavi godinu od koje liturgijski događaj treba postojati klikom "
+"na ikonu čekića unutar jedne od godina u rasponu."
 
-#: components/NewTestModal.php:42
+#: components/NewTestModal.php:59
 msgid ""
 "Finally, set the year until which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
+"Na kraju, postavi godinu do koje liturgijski događaj treba postojati klikom "
+"na ikonu čekića unutar jedne od godina u rasponu."
 
-#: components/NewTestModal.php:43
+#: components/NewTestModal.php:65
 msgid ""
 "Finally, set the years in which the liturgical event shouldn't exist by "
 "clicking on the hammer icon inside the years in the range."
 msgstr ""
+"Na kraju, postavi godine u kojima liturgijski događaj ne bi trebao postojati "
+"klikom na ikonu čekića unutar godina u rasponu."
 
-#: components/NewTestModal.php:60
+#: components/NewTestModal.php:88
 msgid "Please set the year from which the liturgical event should exist."
-msgstr ""
+msgstr "Molim te postavi godinu od koje liturgijski događaj treba postojati."
 
-#: components/NewTestModal.php:61
+#: components/NewTestModal.php:91
 msgid "Please set the year until which the liturgical event should exist."
-msgstr ""
+msgstr "Molim te postavi godinu do koje liturgijski događaj treba postojati."
 
-#: components/NewTestModal.php:62
+#: components/NewTestModal.php:94
 msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
+"Molim te postavi godine u kojima liturgijski događaj ne bi trebao postojati."
 
-#: components/NewTestModal.php:67
+#: components/NewTestModal.php:100
 msgid "Set the base date for this liturgical event."
-msgstr ""
+msgstr "Postavi osnovni datum za ovaj liturgijski događaj."
 
-#: components/NewTestModal.php:68
+#: components/NewTestModal.php:103
 msgid ""
 "If the liturgical event is mobile rather than fixed, set the date for the "
 "first year you are testing against. In any case you will later be able to "
 "adjust the date for each year if needed."
 msgstr ""
+"Ako je liturgijski događaj pomičan, a ne fiksan, postavi datum za prvu "
+"godinu protiv koje testiraš. U svakom slučaju kasnije ćeš moći prilagoditi "
+"datum za svaku godinu ako bude potrebno."
 
-#: components/NewTestModal.php:70
+#: components/NewTestModal.php:108
 msgid "The date input cannot be empty."
-msgstr ""
+msgstr "Polje za unos datuma ne može biti prazno."
 
-#: components/NewTestModal.php:88
+#: components/NewTestModal.php:126
 msgid "Close"
-msgstr ""
+msgstr "Zatvori"
 
-#: components/NewTestModal.php:89
+#: components/NewTestModal.php:127
 msgid "Create test"
-msgstr ""
+msgstr "Kreiraj test"
