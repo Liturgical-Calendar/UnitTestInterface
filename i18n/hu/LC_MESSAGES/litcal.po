@@ -1,15 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# OpenAI <noreply-mt-openai@weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2025-10-11 22:18+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"PO-Revision-Date: 2025-12-01 13:40+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
 "Language: hu\n"
@@ -65,9 +64,9 @@ msgstr "Sikertelen tesztek:"
 
 #. translators: %s: <span id="totalUnitTestsCount"></span>
 #: index.php:84 index.php:108 index.php:145 index.php:180
-#, fuzzy, php-format
+#, php-format
 msgid "Total time for %s tests:"
-msgstr "Összes idő %s teszthez:"
+msgstr "Összes idő %s tesztekre:"
 
 #: index.php:95
 msgid "VALIDATE SOURCE DATA"
@@ -80,72 +79,60 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "ÉRVÉNYESÍTSE A NAPTÁRI ADATOKAT AZ 1970-TŐL %s ÉVIG"
 
 #: index.php:163
-#, fuzzy
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
-msgstr "EGYSÉGTESZTEK VÉGREHAJTÁSA KONKRÉT ESEMÉNYEKRE"
+msgstr "VÉGREHAJTÁS UNIT TESZTEK SPECIFIKUS ESEMÉNYEKHEZ"
 
 #: index.php:201
-#, fuzzy
 msgid "Loading..."
 msgstr "Betöltés..."
 
 #: admin.php:95
-#, fuzzy
 msgid "Define a Unit Test for a Liturgical event"
-msgstr "Határozz meg egy egységtesztet egy liturgikus eseményhez"
+msgstr "Egységteszt meghatározása liturgikus eseményre"
 
 #: admin.php:97
-#, fuzzy
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "actually producing correct data, we can create Unit Tests that allow us to "
 "verify that events were / were not created in the calendar, or that they "
 "have expected dates from year to year."
 msgstr ""
-"Annak érdekében, hogy ellenőrizzük, hogy az API által előállított liturgikus "
-"naptár adatok valóban helyes adatokat produkálnak-e, létrehozhatunk "
-"egységteszteket, amelyek lehetővé teszik számunkra, hogy ellenőrizzük, hogy "
-"az események létrejöttek-e vagy sem a naptárban, vagy hogy az elvárt "
-"dátumokkal rendelkeznek-e évről évre."
+"Annak érdekében, hogy ellenőrizzük az API által generált liturgikus naptár "
+"adatok helyességét, létrehozhatunk olyan egységteszteket, amelyek lehetővé "
+"teszik számunkra az események meglétének/nemlétének és várható dátumainak "
+"éves ellenőrzését."
 
 #: admin.php:102
-#, fuzzy
 msgid "Edit an existing test"
-msgstr "Szerkessz egy meglévő tesztet"
+msgstr "Létező teszt szerkesztése"
 
 #: admin.php:114
-#, fuzzy
 msgid "Create a New Test"
-msgstr "Hozz létre egy új tesztet"
+msgstr "Új teszt létrehozása"
 
 #: admin.php:123
-#, fuzzy
 msgid "Calendar to test"
-msgstr "Naptár tesztelésre"
+msgstr "Tesztelendő naptár"
 
 #: admin.php:129
-#, fuzzy
 msgid "Test Type"
-msgstr "Teszt típus"
+msgstr "Teszt Típus"
 
 #: admin.php:134
-#, fuzzy
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
 "can optionally be defined differently for each given year)"
 msgstr ""
-"Az évek során, amelyekre állítást teszünk, azt állítjuk, hogy a liturgikus "
-"eseménynek léteznie kell, és egy várt dátumra kell esnie (a dátum "
-"opcionálisan minden adott évre különbözően meghatározható)"
+"Az évek azon időszakában, amelyre állítást teszünk, állítjuk, hogy a "
+"liturgikus eseménynek léteznie kell és a várt napon kell lennie "
+"(a dátum külön megadható minden egyes évre)."
 
 #: admin.php:136
-#, fuzzy
 msgid "Exact date"
 msgstr "Pontos dátum"
 
 #: admin.php:141
-#, fuzzy
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -154,18 +141,15 @@ msgid ""
 "optionally be defined differently for each given year)."
 msgstr ""
 "Amikor egy liturgikus eseménynek csak egy bizonyos év után kell léteznie, "
-"akkor azt állítjuk, hogy az ilyen év előtti bizonyos években a liturgikus "
-"eseménynek nem szabad léteznie, míg az ilyen év utáni bizonyos években "
-"léteznie kell, és egy elvárt dátumra kell esnie (a dátum opcionálisan minden "
-"adott évre különbözően meghatározható)."
+"azt állítjuk, hogy bizonyos évek alatt az esemény nem létezhet, míg az adott "
+"év után az eseménynek léteznie kell és a várt napon kell lennie "
+"(a dátum külön megadható minden egyes évre)."
 
 #: admin.php:143
-#, fuzzy
 msgid "Exact date since year"
-msgstr "Pontos dátum évtől"
+msgstr "Pontos dátum évtől kezdve"
 
 #: admin.php:148
-#, fuzzy
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -173,143 +157,117 @@ msgid ""
 "differently for each given year), while for a certain span of years after "
 "such year the liturgical event should not exist."
 msgstr ""
-"Amikor egy liturgikus eseménynek egy bizonyos év után már nem kellene "
-"léteznie, azt állítjuk, hogy az ilyen év előtti évek során a liturgikus "
-"eseménynek egy várt dátumra kell esnie (a dátum opcionálisan minden adott "
-"évre különbözően meghatározható), míg az ilyen év utáni évek során a "
-"liturgikus eseménynek nem kellene léteznie."
+"Amikor egy liturgikus eseménynek egy bizonyos év után már nem kell léteznie, "
+"azt állítjuk, hogy bizonyos évek alatt az eseménynek a várt napon kell "
+"lennie (a dátum külön megadható minden egyes évre), míg az adott év után az "
+"esemény nem létezhet."
 
 #: admin.php:150
-#, fuzzy
 msgid "Exact date until year"
 msgstr "Pontos dátum évig"
 
 #: admin.php:155
-#, fuzzy
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
 "expected date (date can optionally be defined differently for each given "
 "year), and that it should not exist for other given years."
 msgstr ""
-"Amikor egy liturgikus eseményt várhatóan különböző években felülírnak "
-"bármilyen okból, azt állítjuk, hogy bizonyos adott években léteznie kell egy "
-"elvárt dátumon (a dátum opcionálisan minden adott évre különbözően "
-"meghatározható), és hogy más adott években nem szabad léteznie."
+"Amikor egy liturgikus eseményt több év alatt különböző okokból felülírnak, "
+"azt állítjuk, hogy bizonyos években léteznie kell a várt napon "
+"(a dátum külön megadható minden egyes évre), és más években nem létezhet."
 
 #: admin.php:157
-#, fuzzy
 msgid "Variable existence"
-msgstr "Változó létezése"
+msgstr "Változó létezés"
 
 #: admin.php:171
-#, fuzzy
 msgid "Name of Test"
 msgstr "Teszt neve"
 
 #: admin.php:180 components/NewTestModal.php:30
-#, fuzzy
 msgid "Description"
 msgstr "Leírás"
 
 #: admin.php:185
-#, fuzzy
 msgid "Per year assertions"
 msgstr "Évenkénti állítások"
 
 #: admin.php:196
-#, fuzzy
 msgid "Save Unit Test"
-msgstr "Egységteszt mentése"
+msgstr "Mentés teszt egység"
 
 #: admin.php:228
-#, fuzzy
 msgid "Add or Edit Comment"
-msgstr "Hozzáadás vagy megjegyzés szerkesztése"
+msgstr "Megjegyzés hozzáadása vagy szerkesztése"
 
 #: admin.php:233
-#, fuzzy
 msgid "Comment"
 msgstr "Megjegyzés"
 
 #: admin.php:238
-#, fuzzy
 msgid "Save"
 msgstr "Mentés"
 
 #: layout/topnavbar.php:12
-#, fuzzy
 msgid "Calendars"
 msgstr "Naptárak"
 
 #: layout/topnavbar.php:15
-#, fuzzy
 msgid "Resources"
 msgstr "Erőforrások"
 
 #: layout/topnavbar.php:19
-#, fuzzy
 msgid "API Version"
 msgstr "API verzió"
 
 #: layout/topnavbar.php:60
-#, fuzzy
 msgid "Websocket connection status"
 msgstr "Websocket kapcsolat állapota"
 
 #: layout/topnavbar.php:66
-#, fuzzy
 msgid "LitCal Project"
 msgstr "LitCal projekt"
 
 #: layout/topnavbar.php:74 layout/sidebar.php:23
-#, fuzzy
 msgid "Unit Tests Admin"
-msgstr "Egységtesztek adminisztrációja"
+msgstr "Teszt egységek adminisztrációja"
 
 #: layout/sidebar.php:13
-#, fuzzy
 msgid "Catholic Liturgical Calendar"
-msgstr "Katolikus Liturgikus Naptár"
+msgstr "Katolikus liturgikus naptár"
 
 #: layout/sidebar.php:19
-#, fuzzy
 msgid "Unit Tests Runner"
-msgstr "Egységtesztek futtatója"
+msgstr "Teszt egységek futtató"
 
 #: components/NewTestModal.php:6
-#, fuzzy
 msgid "Exact Correspondence Test"
-msgstr "Pontos megfelelési teszt"
+msgstr "Pontosan megfelelő teszt"
 
 #: components/NewTestModal.php:22
-#, fuzzy
 msgid "Choose the liturgical event for which you would like to create a test"
-msgstr ""
-"Válaszd ki azt a liturgikus eseményt, amelyhez tesztet szeretnél létrehozni"
+msgstr "Válaszd ki a liturgikus eseményt, amelyhez tesztet szeretnél létrehozni"
 
 #: components/NewTestModal.php:26
-#, fuzzy
 msgid ""
 "This liturgical event does not seem to exist? Please choose from a value in "
 "the list."
 msgstr ""
-"Úgy tűnik, ez az ünnep nem létezik? Kérjük, válasszon egy értéket a listából."
+"Úgy tűnik, hogy ez a liturgikus esemény nem létezik? Kérlek, válassz egy "
+"értéket a listából."
 
 #: components/NewTestModal.php:37
-#, fuzzy
 msgid "Years to test"
-msgstr "Évek tesztelésre"
+msgstr "Évek teszteléshez"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-#, fuzzy
 msgid ""
 "First choose the maximum range of years that will belong to the Unit Test."
 msgstr ""
-"Először válaszd ki az egységteszthez tartozó évek maximális tartományát."
+"Először válaszd ki a teszt egységhez tartozó évek maximális terjedelmét."
 
 #: components/NewTestModal.php:43
-#, fuzzy
 msgid ""
 "This range should include a few years before the year in which the "
 "liturgical event should start to exist."
@@ -318,92 +276,76 @@ msgstr ""
 "eseménynek léteznie kellene."
 
 #: components/NewTestModal.php:46
-#, fuzzy
 msgid ""
 "This range should include a few years after the year in which the liturgical "
 "event should cease to exist."
 msgstr ""
-"Ennek a tartománynak magában kell foglalnia néhány évet azután, hogy a "
-"liturgikus eseménynek meg kell szűnnie."
+"Ez a tartomány tartalmazzon néhány évet azután, hogy a liturgikus esemény "
+"létezése megszűnik."
 
 #: components/NewTestModal.php:49
-#, fuzzy
 msgid "You can then remove any years that won't be needed."
 msgstr "Ezután eltávolíthatod azokat az éveket, amelyekre nem lesz szükség."
 
 #: components/NewTestModal.php:53
-#, fuzzy
 msgid ""
 "Finally, set the year from which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
 "Végül állítsd be az évet, amelytől a liturgikus eseménynek léteznie kell, az "
-"egyik évben a tartományban lévő kalapács ikonra kattintva."
+"év melletti kalapács ikonjára kattintva."
 
 #: components/NewTestModal.php:59
-#, fuzzy
 msgid ""
 "Finally, set the year until which the liturgical event should exist by "
 "clicking on the hammer icon inside one of the years in the range."
 msgstr ""
-"Végül állítsd be az évet, ameddig a liturgikus eseménynek léteznie kell, az "
-"egyik évben a tartományban lévő kalapács ikonra kattintva."
+"Végül állítsd be az évet, amíg a liturgikus esemény léteznie kell, a "
+"kalapács ikonra kattintva az évszakban."
 
 #: components/NewTestModal.php:65
-#, fuzzy
 msgid ""
 "Finally, set the years in which the liturgical event shouldn't exist by "
 "clicking on the hammer icon inside the years in the range."
 msgstr ""
-"Végül állítsd be azokat az éveket, amelyekben a liturgikus eseménynek nem "
-"szabad léteznie, a kalapács ikonra kattintva az évek tartományában."
+"Végül állítsd be az éveket, amikor a liturgikus eseménynek nem szabad "
+"léteznie, a kalapács ikonra kattintva az évszakokban."
 
 #: components/NewTestModal.php:88
-#, fuzzy
 msgid "Please set the year from which the liturgical event should exist."
-msgstr ""
-"Kérlek, állítsd be az évet, amelytől a liturgikus eseménynek léteznie kell."
+msgstr "Állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie kell."
 
 #: components/NewTestModal.php:91
-#, fuzzy
 msgid "Please set the year until which the liturgical event should exist."
-msgstr ""
-"Kérlek, állítsd be az évet, ameddig a liturgikus eseménynek léteznie kell."
+msgstr "Állítsd be azt az évet, amelyig a liturgikus eseménynek léteznie kell."
 
 #: components/NewTestModal.php:94
-#, fuzzy
 msgid "Please set the years in which the liturgical event should not exist."
 msgstr ""
-"Kérlek, állítsd be az éveket, amikor a liturgikus eseménynek nem kellene "
-"léteznie."
+"Állítsd be az éveket, amelyekben a liturgikus eseménynek nem szabad léteznie."
 
 #: components/NewTestModal.php:100
-#, fuzzy
 msgid "Set the base date for this liturgical event."
-msgstr "Állítsd be a liturgikus esemény alapdátumát."
+msgstr "Állítsd be ennek a liturgikus eseménynek az alapdátumát."
 
 #: components/NewTestModal.php:103
-#, fuzzy
 msgid ""
 "If the liturgical event is mobile rather than fixed, set the date for the "
 "first year you are testing against. In any case you will later be able to "
 "adjust the date for each year if needed."
 msgstr ""
-"Ha a liturgikus esemény mozgó, nem pedig fix, állítsd be az első év dátumát, "
-"amely ellen tesztelsz. Mindenesetre később lehetőséged lesz az egyes évek "
-"dátumának módosítására, ha szükséges."
+"Ha a liturgikus esemény mozgó, nem pedig állandó, állítsd be az első év "
+"dátumát, amely ellen tesztelsz. Mindenesetre később módosíthatod az adott év "
+"dátumát, ha szükséges."
 
 #: components/NewTestModal.php:108
-#, fuzzy
 msgid "The date input cannot be empty."
-msgstr "A dátum mező nem lehet üres."
+msgstr "A dátum bevitel nem lehet üres."
 
 #: components/NewTestModal.php:126
-#, fuzzy
 msgid "Close"
 msgstr "Bezárás"
 
 #: components/NewTestModal.php:127
-#, fuzzy
 msgid "Create test"
 msgstr "Teszt létrehozása"
