@@ -774,6 +774,14 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
         }
         fadeOutAlert(alert);
         console.log(data);
+    })
+    .catch(error => {
+        console.error('Failed to save unit test:', error);
+        const alert = document.querySelector('#responseToPutRequest');
+        document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Network error: Failed to save test';
+        alert.classList.remove('alert-success');
+        alert.classList.add('alert-danger');
+        fadeOutAlert(alert);
     });
 });
 
