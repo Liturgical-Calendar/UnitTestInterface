@@ -34,24 +34,23 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 
-    <script src="assets/js/common.js"></script>
+    <!-- Global configuration (set on window for ES6 module access) -->
     <script>
-        const locale = '<?php echo $i18n->locale ?>';
-        const WS_PROTOCOL = '<?php echo ($_ENV['WS_PROTOCOL'] ?? 'wss'); ?>';
-        const WS_PORT = <?php echo ($_ENV['WS_PORT'] ?? 443); ?>;
-        const WS_HOST = '<?php echo ($_ENV['WS_HOST'] ?? 'litcal-test.johnromanodorazio.com'); ?>';
-        const API_PROTOCOL = '<?php echo ($_ENV['API_PROTOCOL'] ?? 'https'); ?>';
-        const API_PORT = <?php echo ($_ENV['API_PORT'] ?? 443); ?>;
-        const API_HOST = '<?php echo ($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>';
-        const APP_ENV = '<?php echo ($_ENV['APP_ENV'] ?? 'production'); ?>';
+        window.locale = '<?php echo $i18n->locale ?>';
+        window.WS_PROTOCOL = '<?php echo ($_ENV['WS_PROTOCOL'] ?? 'wss'); ?>';
+        window.WS_PORT = <?php echo ($_ENV['WS_PORT'] ?? 443); ?>;
+        window.WS_HOST = '<?php echo ($_ENV['WS_HOST'] ?? 'litcal-test.johnromanodorazio.com'); ?>';
+        window.API_PROTOCOL = '<?php echo ($_ENV['API_PROTOCOL'] ?? 'https'); ?>';
+        window.API_PORT = <?php echo ($_ENV['API_PORT'] ?? 443); ?>;
+        window.API_HOST = '<?php echo ($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>';
+        window.APP_ENV = '<?php echo ($_ENV['APP_ENV'] ?? 'production'); ?>';
     </script>
 <?php
 if ($pageName === 'admin') {
-    echo "<script src=\"assets/js/AssertionsBuilder.js\"></script>";
     echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
 }
 if (file_exists("assets/js/{$pageName}.js")) {
-    echo "<script src=\"assets/js/{$pageName}.js\"></script>";
+    echo "<script type=\"module\" src=\"assets/js/{$pageName}.js\"></script>";
 }
 ?></body>
 </html>

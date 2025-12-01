@@ -1,3 +1,23 @@
+/**
+ * Admin module for the LiturgicalCalendar Unit Test Interface.
+ * Handles test management, editing, and creation.
+ * @module admin
+ */
+
+import { updateText } from './common.js';
+import {
+    TestType,
+    AssertType,
+    LitGrade,
+    Assertion,
+    AssertionsBuilder
+} from './AssertionsBuilder.js';
+
+/** @typedef {import('./types.js').UnitTestDefinition} UnitTestDefinition */
+/** @typedef {import('./types.js').TestAssertion} TestAssertion */
+
+// Access global config from window (set by PHP in footer.php and admin.php)
+const { locale, baseUrl, LitCalTests } = window;
 
 /**
  * Escapes a value for safe use in CSS attribute selectors.
@@ -6,11 +26,13 @@
  * @returns {string} The escaped value safe for use in selectors.
  */
 const escapeSelector = (value) => {
+    // Normalize to string to handle non-string values
+    const str = String(value);
     if (typeof CSS !== 'undefined' && CSS.escape) {
-        return CSS.escape(value);
+        return CSS.escape(str);
     }
     // Fallback: escape special characters for CSS selectors
-    return value.replace(/["'\\#.:[\]()>+~=^$*|]/g, '\\$&');
+    return str.replace(/["'\\#.:[\]()>+~=^$*|]/g, '\\$&');
 };
 
 /** DEFINE OUR GLOBAL VARIABLES */
@@ -37,9 +59,11 @@ const escapeSelector = (value) => {
  * @type {LitCalEvents}
  * @global
  * This variable is defined globally in the admin.php file, and can be updated in an API call.
+ * Also exposed on window for AssertionsBuilder module access.
  */
 // @ts-ignore 2570 LitcalEvents is defined in admin.php
-let litcal_events = LitcalEvents;
+let litcal_events = window.LitcalEvents;
+window.litcal_events = litcal_events;
 let litcal_events_keys = litcal_events.map( event => event.event_key );
 
 /**
@@ -76,6 +100,7 @@ const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
  * @param {string} [easing='ease-in-out'] - The CSS easing function for the transition
  */
 const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500, easing = 'ease-in-out') => {
+    if (!alertEl) return;
     alertEl.classList.remove('d-none');
     alertEl.style.transition = `opacity ${fadeDelay}ms ${easing}`;
     alertEl.style.opacity = '1';
@@ -100,11 +125,9 @@ const computeYearDateAttrs = (year, existingOption) => {
     if (existingOption?.dataset?.month && existingOption?.dataset?.day) {
         const eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
         if (eventDate.getUTCDay() === 0) {
-            console.log(`%c in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`, 'color:lime;background:black;');
             titleAttr = `in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday`;
             lightClass = 'bg-light';
         } else {
-            console.log(`in the year ${year}, ${MonthDayFmt.format(eventDate)} is a ${DayOfTheWeekFmt.format(eventDate)}`);
             titleAttr = DTFormat.format(eventDate);
         }
     }
@@ -140,6 +163,14 @@ const generateYearSpanHtml = (year, existingOption, hammerIcon, removeIcon, isIn
  * @param {number} maxYear - The maximum year in the range
  */
 const updateYearGridForEvent = (existingOption, minYear, maxYear) => {
+    // Always clear previous highlights first
+    for (let year = minYear; year <= maxYear; year++) {
+        const yearSpan = document.querySelector(`.testYearSpan.year-${year}`);
+        if (!yearSpan) continue;
+        yearSpan.removeAttribute('title');
+        yearSpan.classList.remove('bg-light');
+    }
+
     if (!existingOption?.dataset?.month || !existingOption?.dataset?.day) {
         return;
     }
@@ -440,44 +471,6 @@ class UnitTest {
 }
 
 /**
- * Class representing an assertion for a liturgical event in a unit test.
- * @class
- */
-class Assertion {
-    /**
-     * @description
-     *      Creates a new instance of Assertion.
-     *      The constructor can be called with 4 or 5 arguments, or with a single object argument.
-     *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
-     *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
-     * @param {number} year - The year of the assertion.
-     * @param {string|null} expected_value - The expected value of the assertion.
-     * @param {'EventTypeExact'|'EventNotExists'} assert - The assert type of the assertion.
-     * @param {string} assertion - The assertion.
-     * @param {string} [comment] - The comment associated with the assertion.
-     */
-    constructor(year, expected_value, assert, assertion, comment = null) {
-        if( arguments.length === 4 || arguments.length === 5 ) {
-            this.year = year;
-            this.expected_value = expected_value;
-            this.assert = assert;
-            this.assertion = assertion;
-            if( null !== comment ) {
-                this.comment = comment;
-            }
-        } else if( arguments.length === 1 ) {
-            if(
-                typeof arguments[0] === 'object'
-                && (Object.keys( arguments[0] ).length === 4 || Object.keys( arguments[0] ).length === 5)
-                && Object.keys( arguments[0] ).every(val => ['year', 'expected_value', 'assert', 'assertion', 'comment'].includes(val) )
-            ) {
-                Object.assign(this, arguments[0]);
-            }
-        }
-    }
-}
-
-/**
  * Sanitizes the given input string to prevent XSS attacks.
  *
  * It uses the DOMParser to parse the string as HTML and then extracts the
@@ -527,11 +520,12 @@ const serializeUnitTest = () => {
         const yearEl = div.querySelector('p.testYear');
         const year = yearEl ? Number(yearEl.textContent) : null;
         const expectedValueEl = div.querySelector('.expectedValue');
-        const expected_value = expectedValueEl?.textContent === '---' ? null : expectedValueEl?.getAttribute('data-value');
+        // Normalize undefined to null for API consistency
+        const expected_value = expectedValueEl?.textContent === '---' ? null : (expectedValueEl?.getAttribute('data-value') ?? null);
         const assertEl = div.querySelector('.assert');
-        const assert = assertEl?.textContent;
+        const assert = assertEl?.textContent ?? null;
         const assertionEl = div.querySelector('[contenteditable]');
-        const assertion = assertionEl?.textContent;
+        const assertion = assertionEl?.textContent ?? null;
         const commentSvg = div.querySelector('.comment > svg');
         const hasComment = commentSvg?.getAttribute('data-icon') === 'comment-dots';
         const comment = hasComment ? div.querySelector('.comment').getAttribute('title') : null;
@@ -656,9 +650,10 @@ document.querySelector('#litCalTestsSelect').addEventListener('change', async (e
         //$('#testType').val( proxiedTest.testType ).change();
         updateText('cardHeaderTestType', proxiedTest.test_type);
         const descEl = document.querySelector('#description');
-        descEl.setAttribute('rows', 1);
         descEl.value = proxiedTest.description;
-        descEl.setAttribute('rows', Math.ceil(descEl.scrollHeight / 40));
+        // Auto-resize: reset to 1 row, then calculate rows based on actual content height
+        descEl.style.height = 'auto';
+        descEl.style.height = `${descEl.scrollHeight}px`;
         if( proxiedTest.hasOwnProperty('year_since') ) {
             document.querySelector('#yearSince').value = proxiedTest.year_since;
         }
@@ -735,8 +730,11 @@ document.addEventListener('click', ev => {
         const yearEl = pNode.parentElement.querySelector('.testYear');
         const year = yearEl ? yearEl.textContent : new Date().getFullYear();
         const nextDiv = pNode.nextElementSibling;
-        nextDiv.children[1].innerHTML = '';
-        nextDiv.children[1].insertAdjacentHTML('beforeend', `<input type="date" value="${year}-01-01" />`);
+        const defaultDate = `${year}-01-01`;
+        const defaultDateTime = `${defaultDate}T00:00:00+00:00`;
+        nextDiv.children[1].innerHTML = `<input type="date" value="${defaultDate}" />`;
+        nextDiv.children[1].dataset.value = defaultDateTime;
+        proxiedTest.assertions[assertionIndex].expected_value = defaultDateTime;
         // Enable the editDate button since we now have a date value
         nextDiv.children[2].classList.remove('btn-secondary');
         nextDiv.children[2].classList.add('btn-danger');
@@ -785,7 +783,8 @@ document.querySelector('#modalAddEditComment').addEventListener('show.bs.modal',
     const txtArea = myModalEl.querySelector('#unitTestComment');
     txtArea.value = value;
     const btnSaveComment = myModalEl.querySelector('#btnSaveComment');
-    const saveCommentHandler = () => {
+    // Use onclick to replace previous handler, preventing stale handlers accumulating
+    btnSaveComment.onclick = () => {
         const newValue = sanitizeInput(txtArea.value);
         tgt.title = newValue;
         if (newValue === '') {
@@ -799,9 +798,7 @@ document.querySelector('#modalAddEditComment').addEventListener('show.bs.modal',
             tgt.classList.remove('btn-secondary');
             tgt.classList.add('btn-dark');
         }
-        btnSaveComment.removeEventListener('click', saveCommentHandler);
     };
-    btnSaveComment.addEventListener('click', saveCommentHandler);
 });
 
 // Blur any focused element inside the modal before it hides to prevent aria-hidden warning
@@ -843,10 +840,9 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
         console.log(responseStatus);
         const alert = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
-        if (responseStatus !== 201) {
-            alert.classList.remove('alert-success');
-            alert.classList.add('alert-warning');
-        }
+        // Normalize alert classes before adding the appropriate one
+        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alert.classList.add(responseStatus === 201 ? 'alert-success' : 'alert-warning');
         fadeOutAlert(alert);
         console.log(data);
     })
@@ -854,7 +850,8 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
         console.error('Failed to save unit test:', error);
         const alert = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Network error: Failed to save test';
-        alert.classList.remove('alert-success');
+        // Normalize alert classes before adding the error class
+        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
         alert.classList.add('alert-danger');
         fadeOutAlert(alert);
     });
@@ -983,6 +980,10 @@ document.querySelector('#existingLitEventName').addEventListener('change', ev =>
     console.log(currentVal);
     // Determine whether an option exists with the current value of the input.
     const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentVal)}"]`);
+    const minYear = parseInt(document.querySelector('#lowerRange').value);
+    const maxYear = parseInt(document.querySelector('#upperRange').value);
+    // Always update year grid (clears previous highlights; applies new ones if applicable)
+    updateYearGridForEvent(existingOption, minYear, maxYear);
     if (existingOption) {
         ev.currentTarget.classList.remove('is-invalid');
         ev.currentTarget.setCustomValidity('');
@@ -992,9 +993,6 @@ document.querySelector('#existingLitEventName').addEventListener('change', ev =>
         if (existingOption.dataset.month && existingOption.dataset.month !== '' && existingOption.dataset.day && existingOption.dataset.day !== '') {
             const eventDate = new Date(Date.UTC(1970, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
             onDateStr = MonthDayFmt.format(eventDate);
-            const minYear = parseInt(document.querySelector('#lowerRange').value);
-            const maxYear = parseInt(document.querySelector('#upperRange').value);
-            updateYearGridForEvent(existingOption, minYear, maxYear);
         } else {
             console.log('selected option does not seem to have month or day values?');
             console.log(existingOption.dataset);
@@ -1017,30 +1015,14 @@ document.addEventListener('change', ev => {
     const maxYear = Math.max(...rangeVals);
     isotopeYearsToTestGrid.destroy();
     document.querySelector('#yearsToTestGrid').innerHTML = '';
-    let removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
-    let hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
-    let htmlStr = '';
-    let titleAttr = '';
-    let lightClass = '';
+    const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
+    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
     const currentEventKey = document.querySelector('#existingLitEventName').value;
     const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentEventKey)}"]`);
+    let htmlStr = '';
     for (let year = minYear; year <= maxYear; year++) {
-        if (existingOption && existingOption.dataset.month && existingOption.dataset.day) {
-            let eventDate = new Date(Date.UTC(year, Number(existingOption.dataset.month) - 1, Number(existingOption.dataset.day), 0, 0, 0));
-            if (eventDate.getUTCDay() === 0) {
-                titleAttr = ` title="in the year ${year}, ${MonthDayFmt.format(eventDate)} is a Sunday"`;
-                lightClass = ' bg-light';
-            } else {
-                titleAttr = ` title="${DTFormat.format(eventDate)}"`;
-                lightClass = '';
-            }
-        } else {
-            titleAttr = '';
-            lightClass = '';
-        }
-        htmlStr += `<span class="testYearSpan year-${year}${lightClass}"${titleAttr}>${hammerIcon}${year}${removeIcon}</span>`;
+        htmlStr += generateYearSpanHtml(year, existingOption, hammerIcon, removeIcon);
     }
-    console.log(htmlStr);
     document.querySelector('#yearsToTestGrid').insertAdjacentHTML('beforeend', htmlStr);
     isotopeYearsToTestGrid = new Isotope('#yearsToTestGrid', {
         layoutMode: 'fitRows'
@@ -1049,7 +1031,7 @@ document.addEventListener('change', ev => {
 });
 
 document.addEventListener('click', ev => {
-    const xmarkIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > svg.fa-circle-xmark');
+    const xmarkIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > .fa-circle-xmark');
     if (!xmarkIcon) return;
 
     const parnt = xmarkIcon.parentElement;
@@ -1063,7 +1045,7 @@ document.addEventListener('click', ev => {
 });
 
 document.addEventListener('click', ev => {
-    const hammerIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > svg.fa-hammer');
+    const hammerIcon = ev.target.closest('#yearsToTestGrid > .testYearSpan > .fa-hammer');
     if (!hammerIcon) return;
 
     const parnt = hammerIcon.parentElement;

@@ -1,9 +1,14 @@
 /**
+ * Common utility functions for the LiturgicalCalendar Unit Test Interface.
+ * @module common
+ */
+
+/**
  * Escapes HTML special characters for safe use in HTML attributes.
  * @param {string} str - The string to escape.
  * @returns {string} The escaped string.
  */
-const escapeHtmlAttr = (str) => {
+export const escapeHtmlAttr = (str) => {
     return str
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -18,7 +23,7 @@ const escapeHtmlAttr = (str) => {
  * @param {string} str - The string to process.
  * @returns {string} The escaped and linkified string.
  */
-const escapeQuotesAndLinkifyUrls = (str) => {
+export const escapeQuotesAndLinkifyUrls = (str) => {
     // First, find all URLs and their positions
     const urlRegex = /(?<prefix>["'({\[])?(https?:\/\/[^\s"'<>(){}\[\]]+)(?<suffix>[)"'\]}.,;:]?)/g;
     const parts = [];
@@ -53,7 +58,7 @@ const escapeQuotesAndLinkifyUrls = (str) => {
  * Safely shows a Bootstrap Collapse component if the element exists.
  * @param {string} selector - The CSS selector for the element.
  */
-const safeCollapseShow = (selector) => {
+export const safeCollapseShow = (selector) => {
     const el = document.querySelector(selector);
     if (el) {
         bootstrap.Collapse.getOrCreateInstance(el).show();
@@ -66,7 +71,7 @@ const safeCollapseShow = (selector) => {
  * Safely shows a Bootstrap Toast component if the element exists.
  * @param {string} selector - The CSS selector for the element.
  */
-const safeToastShow = (selector) => {
+export const safeToastShow = (selector) => {
     const el = document.querySelector(selector);
     if (el) {
         bootstrap.Toast.getOrCreateInstance(el).show();
@@ -80,7 +85,7 @@ const safeToastShow = (selector) => {
  * @param {string} id - The element ID (without #).
  * @param {string|number} value - The value to set as textContent.
  */
-const updateText = (id, value) => {
+export const updateText = (id, value) => {
     const el = document.getElementById(id);
     if (el) {
         el.textContent = value;
@@ -95,7 +100,7 @@ const updateText = (id, value) => {
  * @param {string} str - The string to slugify.
  * @returns {string} The slugified string.
  */
-const slugify = (str) => {
+export const slugify = (str) => {
     return str
         .toLowerCase()
         .replace(/\s+/g, '-')
@@ -108,13 +113,17 @@ const slugify = (str) => {
  * @param {string} selector - The CSS selector to transform.
  * @returns {string} The selector with slugified class names.
  */
-const slugifySelector = (selector) => {
+export const slugifySelector = (selector) => {
     return selector.replace(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g, (match, className) => {
         return '.' + slugify(className);
     });
 };
 
-// Define the common callback function
+/**
+ * Handles language selection change from the dropdown.
+ * Sets a cookie and reloads the page.
+ * @param {Event} event - The click event.
+ */
 const handleLanguageChange = (event) => {
     // Retrieve the ID of the clicked item
     const itemId = event.currentTarget.id;
@@ -127,8 +136,9 @@ const handleLanguageChange = (event) => {
 
     // Reload the page
     location.reload();
-}
+};
 
+// Initialize language dropdown handlers when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Get all elements with class 'dropdown-item' that are children of the element with ID 'langChoicesDropdownItems'
     const dropdownItems = document.querySelectorAll('#langChoicesDropdownItems .dropdown-item');

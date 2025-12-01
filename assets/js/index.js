@@ -1,3 +1,27 @@
+/**
+ * Main test runner module for the LiturgicalCalendar Unit Test Interface.
+ * Handles WebSocket communication, test execution, and result display.
+ * @module index
+ */
+
+import {
+    escapeHtmlAttr,
+    escapeQuotesAndLinkifyUrls,
+    safeCollapseShow,
+    safeToastShow,
+    updateText,
+    slugify,
+    slugifySelector
+} from './common.js';
+
+/** @typedef {import('./types.js').SourceDataCheckMessage} SourceDataCheckMessage */
+/** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
+/** @typedef {import('./types.js').RomanMissalDefinition} RomanMissalDefinition */
+/** @typedef {import('./types.js').NationalCalendarMetadata} NationalCalendarMetadata */
+
+// Access global config from window (set by PHP in footer.php)
+const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window;
+
 const Years = [];
 const thisYear = new Date().getFullYear();
 const twentyFiveYearsFromNow = thisYear + 25;

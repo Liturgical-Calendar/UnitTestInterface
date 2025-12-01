@@ -259,9 +259,9 @@ $testsIndex    = json_encode($LitCalTests);
 $litcal_events = json_encode($LitCalAllLitEvents);
 $javascript    = <<<SCRIPT
     <script>
-        const LitCalTests = Object.freeze($testsIndex);
-        const LitcalEvents = Object.freeze($litcal_events);
-        const baseUrl = '$baseUrl';
+        window.LitCalTests = Object.freeze($testsIndex);
+        window.LitcalEvents = Object.freeze($litcal_events);
+        window.baseUrl = '$baseUrl';
     </script>
 SCRIPT;
 echo $javascript;

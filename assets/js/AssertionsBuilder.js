@@ -1,8 +1,15 @@
 /**
+ * Assertions Builder module for the LiturgicalCalendar Unit Test Interface.
+ * Contains classes and constants for building and managing test assertions.
+ * @module AssertionsBuilder
+ */
+
+/**
  * Enum-like constant that represents the different types of assertions for liturgical events tests.
  * @readonly
+ * @enum {string}
  */
-const TestType = Object.freeze({
+export const TestType = Object.freeze({
     ExactCorrespondence:        'exactCorrespondence',
     ExactCorrespondenceSince:   'exactCorrespondenceSince',
     ExactCorrespondenceUntil:   'exactCorrespondenceUntil',
@@ -16,7 +23,7 @@ const TestType = Object.freeze({
  * @property {string} EventNotExists - Represents that the liturgical event does not exist.
  * @property {string} EventTypeExact - Represents that the liturgical event exists and has the expected date.
  */
-const AssertType = Object.freeze({
+export const AssertType = Object.freeze({
     EventNotExists:             'eventNotExists',
     EventTypeExact:             'eventExists AND hasExpectedDate'
 });
@@ -35,7 +42,7 @@ const AssertType = Object.freeze({
  * @property {number} HIGHER_SOLEMNITY - The liturgical grade of a Higher Solemnity.
  * @property {string[]} stringVals - An array of string values for each of the above constants, in the same order as the constants.
  */
-const LitGrade = Object.freeze({
+export const LitGrade = Object.freeze({
     WEEKDAY:            0,
     COMMEMORATION:      1,
     OPTIONAL_MEMORIAL:  2,
@@ -58,13 +65,81 @@ const LitGrade = Object.freeze({
 });
 
 /**
+ * Class representing an assertion for a liturgical event in a unit test.
+ * @class
+ */
+export class Assertion {
+    /**
+     * @description
+     *      Creates a new instance of Assertion.
+     *      The constructor can be called with 4 or 5 arguments, or with a single object argument.
+     *      If called with 4 or 5 arguments, it assigns the arguments to the properties year, expected_value, assert, assertion and optionally comment.
+     *      If called with a single object argument, it checks if the object has the required properties (year, expected_value, assert, assertion and optionally comment) and assigns them to the respective properties if they are present.
+     * @param {number} year - The year of the assertion.
+     * @param {string|null} expected_value - The expected value of the assertion.
+     * @param {'EventTypeExact'|'EventNotExists'} assert - The assert type of the assertion.
+     * @param {string} assertion - The assertion.
+     * @param {string} [comment] - The comment associated with the assertion.
+     */
+    constructor(year, expected_value, assert, assertion, comment = null) {
+        if( arguments.length === 4 || arguments.length === 5 ) {
+            this.year = year;
+            this.expected_value = expected_value;
+            this.assert = assert;
+            this.assertion = assertion;
+            if( null !== comment ) {
+                this.comment = comment;
+            }
+        } else if( arguments.length === 1 ) {
+            if(
+                typeof arguments[0] === 'object'
+                && (Object.keys( arguments[0] ).length === 4 || Object.keys( arguments[0] ).length === 5)
+                && Object.keys( arguments[0] ).every(val => ['year', 'expected_value', 'assert', 'assertion', 'comment'].includes(val) )
+            ) {
+                Object.assign(this, arguments[0]);
+            }
+        }
+    }
+}
+
+/**
+ * Creates a comment icon DOM element depending on whether there is a comment or not.
+ * If there is a comment, it creates a button with a comment icon and the comment as title.
+ * If there is no comment, it creates a button with a comment-medical icon and 'add a comment' as title.
+ * The button is meant to be used as a toggle to show the modal for adding or editing a comment.
+ *
+ * @param {boolean} hasComment - whether there is a comment or not
+ * @param {string} [value=null] - the comment value, if any
+ * @returns {HTMLSpanElement} the comment icon as a DOM element
+ */
+export const createCommentIcon = (hasComment, value = null) => {
+    const span = document.createElement('span');
+    span.className = hasComment
+        ? 'mb-1 btn btn-xs btn-dark float-end comment'
+        : 'mb-1 btn btn-xs btn-secondary float-end comment';
+    span.setAttribute('role', 'button');
+    span.setAttribute('data-bs-toggle', 'modal');
+    span.setAttribute('data-bs-target', '#modalAddEditComment');
+    span.setAttribute('title', hasComment && value ? value : 'add a comment');
+
+    const icon = document.createElement('i');
+    icon.className = hasComment
+        ? 'fas fa-comment-dots fa-fw'
+        : 'fas fa-comment-medical fa-fw';
+    icon.setAttribute('aria-hidden', 'true');
+
+    span.appendChild(icon);
+    return span;
+};
+
+/**
  * Class AssertionsBuilder
  *
  * @description
  * This class is responsible for managing the interaction with the user when a new Unit Test is created.
  * It will build the HTML for the form that will allow the user to build the assertions for the Unit Test.
  */
-class AssertionsBuilder {
+export class AssertionsBuilder {
     // set some default initial values
     static testType     = TestType.ExactCorrespondence;
     static yearSince    = null; // only useful in case of TestType.ExactCorrespondenceSince
@@ -80,7 +155,7 @@ class AssertionsBuilder {
      */
     static getDateFormatter() {
         if (!AssertionsBuilder.#dateFormatter) {
-            const loc = typeof locale !== 'undefined' ? locale : navigator.language;
+            const loc = typeof window !== 'undefined' && window.locale ? window.locale : navigator.language;
             AssertionsBuilder.#dateFormatter = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeZone: 'UTC' });
         }
         return AssertionsBuilder.#dateFormatter;
@@ -110,9 +185,9 @@ class AssertionsBuilder {
         if( test.test_type === TestType.ExactCorrespondenceSince ) {
             AssertionsBuilder.yearSince = test.year_since;
         }
-        AssertionsBuilder.test = litcal_events.filter(el => el.event_key === test.event_key)[0] ?? null;
+        AssertionsBuilder.test = window.litcal_events.filter(el => el.event_key === test.event_key)[0] ?? null;
         console.log('new instance of AssertionsBuilder, test = ', AssertionsBuilder.test);
-        console.log('litcal_events = ', litcal_events);
+        console.log('litcal_events = ', window.litcal_events);
     }
 
     /**
@@ -175,7 +250,7 @@ class AssertionsBuilder {
                 }
             }
             let sundayCheck = '';
-            if(eventDate !== null && AssertionsBuilder.test && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
+            if(eventDate !== null && AssertionsBuilder.test && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month != null && AssertionsBuilder.test.day != null) {
                 if( eventDate.getUTCDay() === 0 ) {
                     sundayCheck = 'bg-warning text-dark';
                 }
@@ -270,37 +345,4 @@ class AssertionsBuilder {
 
         return fragment;
     }
-}
-
-/**
- * createCommentIcon
- *
- * @description
- *      Creates a comment icon DOM element depending on whether there is a comment or not.
- *      If there is a comment, it creates a button with a comment icon and the comment as title.
- *      If there is no comment, it creates a button with a comment-medical icon and 'add a comment' as title.
- *      The button is meant to be used as a toggle to show the modal for adding or editing a comment.
- *
- * @param {boolean} hasComment - whether there is a comment or not
- * @param {string} [value=null] - the comment value, if any
- * @returns {HTMLSpanElement} the comment icon as a DOM element
- */
-const createCommentIcon = (hasComment, value = null) => {
-    const span = document.createElement('span');
-    span.className = hasComment
-        ? 'mb-1 btn btn-xs btn-dark float-end comment'
-        : 'mb-1 btn btn-xs btn-secondary float-end comment';
-    span.setAttribute('role', 'button');
-    span.setAttribute('data-bs-toggle', 'modal');
-    span.setAttribute('data-bs-target', '#modalAddEditComment');
-    span.setAttribute('title', hasComment && value ? value : 'add a comment');
-
-    const icon = document.createElement('i');
-    icon.className = hasComment
-        ? 'fas fa-comment-dots fa-fw'
-        : 'fas fa-comment-medical fa-fw';
-    icon.setAttribute('aria-hidden', 'true');
-
-    span.appendChild(icon);
-    return span;
 }
