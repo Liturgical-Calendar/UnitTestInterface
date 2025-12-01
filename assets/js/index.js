@@ -1072,17 +1072,8 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         console.log('retrieving Missal definition for missal: ' + missal);
         const missalDef = Object.values(RomanMissals).find(el => el.missal_id === missal);
         if (missalDef) {
-            // Convert missal_id (e.g., "IT_1983") to validate format (e.g., "proprium-de-sanctis-IT-1983")
-            const parts = missal.split('_');
-            let validateStr;
-            if (parts.length === 2 && /^[A-Z]{2}$/.test(parts[0])) {
-                // Regional missal like "IT_1983" -> "proprium-de-sanctis-IT-1983"
-                validateStr = `proprium-de-sanctis-${parts[0]}-${parts[1]}`;
-            } else {
-                // Editio typica like "EDITIO_TYPICA_1970" -> "proprium-de-sanctis-1970"
-                const year = parts[parts.length - 1];
-                validateStr = `proprium-de-sanctis-${year}`;
-            }
+            // Use structured properties: region='VA' means editio typica (no region in path)
+            const validateStr = `proprium-de-sanctis${missalDef.region === 'VA' ? '' : `-${missalDef.region}`}-${missalDef.year_published}`;
             console.log('found Missal definition for missal: ' + missal + ', validate: ' + validateStr);
             checks.push({
                 "validate": validateStr,
