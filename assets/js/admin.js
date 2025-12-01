@@ -73,9 +73,11 @@ const DayOfTheWeekFmt = new Intl.DateTimeFormat(locale, {
  * @param {HTMLElement} alertEl - The alert element to fade in/out
  * @param {number} [displayDelay=2000] - How long to display the alert before fading out (ms)
  * @param {number} [fadeDelay=500] - How long the fade out transition takes (ms)
+ * @param {string} [easing='ease-in-out'] - The CSS easing function for the transition
  */
-const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500) => {
+const fadeOutAlert = (alertEl, displayDelay = 2000, fadeDelay = 500, easing = 'ease-in-out') => {
     alertEl.classList.remove('d-none');
+    alertEl.style.transition = `opacity ${fadeDelay}ms ${easing}`;
     alertEl.style.opacity = '1';
     setTimeout(() => {
         alertEl.style.opacity = '0';
