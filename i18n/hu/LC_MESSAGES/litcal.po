@@ -2,13 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
 "PO-Revision-Date: 2025-12-01 13:40+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
 "Language: hu\n"
@@ -124,9 +125,9 @@ msgid ""
 "the liturgical event should exist, and should fall on an expected date (date "
 "can optionally be defined differently for each given year)"
 msgstr ""
-"Az évek azon időszakában, amelyre állítást teszünk, állítjuk, hogy a "
-"liturgikus eseménynek léteznie kell és a várt napon kell lennie "
-"(a dátum külön megadható minden egyes évre)."
+"Az általunk vizsgált évek során azt állítjuk, hogy a liturgikus eseménynek "
+"léteznie kell, és a várt időpontban kell megtörténnie "
+"(adott évre egyénileg is meghatározható a dátum)"
 
 #: admin.php:136
 msgid "Exact date"
