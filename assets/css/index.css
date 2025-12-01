@@ -1,48 +1,9 @@
-body {
-    color: #1e1e1e;
-    background: #f5f5f5;
-}
-
-.litcaltests-header {
-    font-size: .8rem;
-}
-
-.sourcedata-tests,
 .calendardata-tests,
 .specificunittests {
     font-size: 0.6rem;
 }
 
-.test-results {
-    font-size: 0.8rem;
-}
-
-.sourcedata-tests .card-body,
 .calendardata-tests .card-body,
 .specificunittests .card-body {
     padding: 0.5rem;
-}
-
-.page-loader .spinner-border {
-    width: 4rem;
-    height: 4rem;
-}
-
-.wide-tooltip .tooltip-inner {
-    max-width: 1200px;
-    max-height: 500px;
-    white-space: pre;
-    text-align: left;
-    font-size: 0.8rem;
-    overflow: auto;
-}
-
-.wide-tooltip .tooltip-inner a {
-    color: #9ab8de;
-    transition: color 300ms 100ms;
-}
-
-.wide-tooltip .tooltip-inner a:hover {
-    color: #e8d2d2;
-    transition: color 300ms 100ms;
 }

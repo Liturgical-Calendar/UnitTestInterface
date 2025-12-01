@@ -5,5 +5,9 @@
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "*"
+    },
+    "scripts": {
+        "lint:md": "npx --yes markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#vendor\"",
+        "lint:md:fix": "npx --yes markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#vendor\""
     }
 }
