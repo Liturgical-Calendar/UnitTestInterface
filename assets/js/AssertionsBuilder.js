@@ -155,7 +155,7 @@ export class AssertionsBuilder {
      */
     static getDateFormatter() {
         if (!AssertionsBuilder.#dateFormatter) {
-            const loc = typeof window !== 'undefined' && window.locale ? window.locale : navigator.language;
+            const loc = typeof window !== 'undefined' && window.LitCalConfig?.locale ? window.LitCalConfig.locale : navigator.language;
             AssertionsBuilder.#dateFormatter = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeZone: 'UTC' });
         }
         return AssertionsBuilder.#dateFormatter;

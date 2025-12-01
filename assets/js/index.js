@@ -20,7 +20,7 @@ import {
 /** @typedef {import('./types.js').NationalCalendarMetadata} NationalCalendarMetadata */
 
 // Access global config from window (set by PHP in footer.php)
-const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window;
+const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window.LitCalConfig;
 
 const Years = [];
 const thisYear = new Date().getFullYear();

@@ -17,7 +17,8 @@ import {
 /** @typedef {import('./types.js').TestAssertion} TestAssertion */
 
 // Access global config from window (set by PHP in footer.php and admin.php)
-const { locale, baseUrl, LitCalTests } = window;
+const { locale } = window.LitCalConfig;
+const { baseUrl, LitCalTests } = window;
 
 /**
  * Escapes a value for safe use in CSS attribute selectors.

@@ -17,7 +17,7 @@ import {
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
 
 // Access global config from window (set by PHP in footer.php)
-const { WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window;
+const { WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window.LitCalConfig;
 
 /**
  * This class keeps track of the state of the page and the data it requires to run tests.
