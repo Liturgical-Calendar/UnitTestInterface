@@ -175,7 +175,7 @@ class AssertionsBuilder {
                 }
             }
             let sundayCheck = '';
-            if(eventDate !== null && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
+            if(eventDate !== null && AssertionsBuilder.test && AssertionsBuilder.test.grade <= LitGrade.FEAST && AssertionsBuilder.test.month && AssertionsBuilder.test.day) {
                 if( eventDate.getUTCDay() === 0 ) {
                     sundayCheck = 'bg-warning text-dark';
                 }
