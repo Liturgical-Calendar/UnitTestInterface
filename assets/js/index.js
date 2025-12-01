@@ -285,23 +285,25 @@ class TestState {
  *   - `schema-valid`: indicates whether the calendar data is valid according to the schema.
  * The template is used by the `calendarTemplate` function in `index.js`.
  * @param {string} calendarName The name of the calendar that is being tested.
+ * @param {number|null} [year=null] Optional year to include as a class on card elements.
  * @return {string} The HTML template as a string.
  */
-const testTemplate = ( calendarName ) => {
+const testTemplate = ( calendarName, year = null ) => {
     const calendarSlug = slugify(calendarName);
+    const yearClass = year !== null ? ` year-${year}` : '';
     return `
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
-<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarSlug}">
+<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarSlug}${yearClass}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</p>
     </div>
 </div>
-<div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}">
+<div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}${yearClass}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</p>
     </div>
 </div>
-<div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}">
+<div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}${yearClass}">
     <div class="card-body">
         <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</p>
     </div>
@@ -438,8 +440,6 @@ let currentSourceDataChecks = [];
 let countryNames = new Intl.DisplayNames( locale, { type: 'region' } );
 let CalendarNations = [];
 let selectOptions = {};
-let NationalCalendarTemplates = [ testTemplate( currentSelectedCalendar ) ];
-let DiocesanCalendarTemplates = [];
 let SpecificUnitTestCategories = [];
 let SpecificUnitTestYears = {};
 
@@ -850,10 +850,7 @@ const fetchMetadataAndTests = () => {
                 console.log( data );
                 if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                     MetaData = data.litcal_metadata;
-                    const { national_calendars_keys, diocesan_calendars, diocesan_calendars_keys } = MetaData;
-                    for ( const calendar of diocesan_calendars_keys ) {
-                        DiocesanCalendarTemplates.push( testTemplate( calendar ) );
-                    }
+                    const { national_calendars_keys, diocesan_calendars } = MetaData;
                     diocesan_calendars.forEach( diocesanCalendar => {
                         if ( CalendarNations.indexOf( diocesanCalendar.nation ) === -1 ) {
                             CalendarNations.push( diocesanCalendar.nation );
@@ -1159,13 +1156,8 @@ const setupPage = () => {
             idx = Years.length - i;
             calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
             const yearEl = calendarDataTests.querySelector(`.year-${Years[ idx ]}`);
-            yearEl.insertAdjacentHTML('afterend', NationalCalendarTemplates.join( '' ));
-            // Add year class to newly inserted cards (those without a year class yet)
-            calendarDataTests.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}`).forEach(card => {
-                if (![...card.classList].some(cls => cls.startsWith('year-'))) {
-                    card.classList.add(`year-${Years[idx]}`);
-                }
-            });
+            // Build template with year class baked in, avoiding repeated DOM queries
+            yearEl.insertAdjacentHTML('afterend', testTemplate(currentSelectedCalendar, Years[idx]));
         }
     } else if (calendarDataTests) {
         document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
