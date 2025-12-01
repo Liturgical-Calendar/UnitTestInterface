@@ -230,7 +230,9 @@ if (parts.length === 2 && /^[A-Z]{2}$/.test(parts[0])) {
 
 The server's `Health.php` uses `RomanMissal::getSanctoraleFileName()` to resolve the actual file path from this pattern.
 
-**Note:** The `/missals` API endpoint returns `api_path` (URL), not `data_path` (filesystem path). For source data validation, you must use the `sourceDataCheck` category with the proper `validate` format—do not use the `api_path` directly.
+**Note:** The `/missals` API endpoint returns `api_path` (URL), not `data_path` (filesystem path).
+For source data validation, you must use the `sourceDataCheck` category with the proper `validate` format—do not
+use the `api_path` directly.
 
 ### Server Response Format
 
@@ -264,13 +266,13 @@ document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
 
 ## Key Files
 
-| File                           | Purpose                             |
-|--------------------------------|-------------------------------------|
-| `index.php`                    | Main test runner with results       |
-| `admin.php`                    | Admin interface                     |
-| `assets/js/index.js`           | WebSocket communication, test logic |
-| `assets/js/AssertionsBuilder.js` | Test assertion builder            |
-| `includes/I18n.php`            | Locale detection, gettext setup     |
+| File                             | Purpose                             |
+|----------------------------------|-------------------------------------|
+| `index.php`                      | Main test runner with results       |
+| `admin.php`                      | Admin interface                     |
+| `assets/js/index.js`             | WebSocket communication, test logic |
+| `assets/js/AssertionsBuilder.js` | Test assertion builder              |
+| `includes/I18n.php`              | Locale detection, gettext setup     |
 
 ## Internationalization
 
