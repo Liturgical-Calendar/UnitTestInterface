@@ -603,7 +603,8 @@ const rebuildLitEventsOptions = async (element) => {
     const data_1 = await fetch( API.path, options );
     const json = await data_1.json();
     litcal_events = Object.freeze(json.litcal_events);
-    litcal_events_keys = litcal_events.map( event => event.event_key );
+    window.litcal_events = litcal_events;
+    litcal_events_keys = litcal_events.map(event => event.event_key);
     let htmlStr = '';
     for ( const el of litcal_events ) {
         let dataMonth = '';
