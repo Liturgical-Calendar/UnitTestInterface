@@ -1,14 +1,13 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2025-10-11 22:18+0000\n"
+"PO-Revision-Date: 2025-12-01 13:39+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Polish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/pl/>\n"
@@ -16,8 +15,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
-"|| n%100>=20) ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Weblate 5.13.3\n"
 
 #: index.php:15
@@ -78,7 +77,7 @@ msgstr "WERYFIKACJA DANYCH ŹRÓDŁOWYCH"
 #: index.php:127
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
-msgstr "ZATWIERDŹ DANE KALENDARZA NA LATA OD 1970 DO %s"
+msgstr "ZWERYFIKUJ DANE KALENDARZA NA LATA OD 1970 DO %s"
 
 #: index.php:163
 msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
@@ -257,14 +256,11 @@ msgid "Choose the liturgical event for which you would like to create a test"
 msgstr "Wybierz wydarzenie liturgiczne, dla którego chcesz utworzyć test"
 
 #: components/NewTestModal.php:26
-#, fuzzy
-#| msgid ""
-#| "This festivity does not seem to exist? Please choose from a value in the "
-#| "list."
 msgid ""
 "This liturgical event does not seem to exist? Please choose from a value in "
 "the list."
-msgstr "To święto wydaje się nie istnieć? Wybierz wartość z listy."
+msgstr ""
+"To wydarzenie liturgiczne wydaje się nie istnieć? Wybierz wartość z listy."
 
 #: components/NewTestModal.php:37
 msgid "Years to test"
