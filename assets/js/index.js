@@ -426,6 +426,10 @@ let failedCalendarDataTests = 0;
 let successfulUnitTests = 0;
 let failedUnitTests = 0;
 
+/** Track expected and received responses for parallel Calendar Data tests */
+let calendarDataExpectedResponses = 0;
+let calendarDataReceivedResponses = 0;
+
 let connectionAttempt = null;
 let conn;
 
@@ -489,43 +493,46 @@ const runTests = () => {
                     index = 0;
                     calendarIndex = 0;
                     performance.mark( 'calendarDataTestsStart' );
-                    conn.send(
-                        JSON.stringify( {
-                            action: 'validateCalendar',
-                            year: Years[ index++ ],
-                            calendar: currentSelectedCalendar,
-                            category: currentCalendarCategory,
-                            responsetype: currentResponseType
-                        } )
-                    );
                     safeCollapseShow('#calendarDataTests');
+
+                    // Send ALL calendar data requests at once - server handles concurrency
+                    calendarDataExpectedResponses = Years.length * 3; // 3 responses per year
+                    calendarDataReceivedResponses = 0;
+                    console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
+                    Years.forEach( year => {
+                        conn.send(
+                            JSON.stringify( {
+                                action: 'validateCalendar',
+                                year: year,
+                                calendar: currentSelectedCalendar,
+                                category: currentCalendarCategory,
+                                responsetype: currentResponseType
+                            } )
+                        );
+                    } );
                 }
             }
             break;
         case TestState.ValidatingCalendarData:
-            if ( ++messageCounter === 3 ) {
-                console.log( 'one cycle complete, passing to next test..' );
-                messageCounter = 0;
-                if ( index < Years.length ) {
-                    conn.send( JSON.stringify( { action: 'validateCalendar', year: Years[ index++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, responsetype: currentResponseType } ) );
-                }
-                else {
-                    console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
-                    currentState = TestState.SpecificUnitTests;
-                    index = 0;
-                    yearIndex = 0;
-                    console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
-                    performance.mark( 'specificUnitTestsStart' );
-                    performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                    conn.send( JSON.stringify( {
-                        ...SpecificUnitTestCategories[ index ],
-                        year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
-                        calendar: currentSelectedCalendar,
-                        category: currentCalendarCategory
-                    } ) );
-                    safeCollapseShow('#specificUnitTests');
-                    safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
-                }
+            // Count responses from parallel requests (all requests already sent)
+            calendarDataReceivedResponses++;
+            if ( calendarDataReceivedResponses === calendarDataExpectedResponses ) {
+                console.log( `All ${calendarDataExpectedResponses} calendar data responses received!` );
+                console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
+                currentState = TestState.SpecificUnitTests;
+                index = 0;
+                yearIndex = 0;
+                console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
+                performance.mark( 'specificUnitTestsStart' );
+                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
+                conn.send( JSON.stringify( {
+                    ...SpecificUnitTestCategories[ index ],
+                    year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
+                    calendar: currentSelectedCalendar,
+                    category: currentCalendarCategory
+                } ) );
+                safeCollapseShow('#specificUnitTests');
+                safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
             break;
         case TestState.SpecificUnitTests:
@@ -1279,6 +1286,8 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
+        calendarDataReceivedResponses = 0;
+        calendarDataExpectedResponses = 0;
         currentState = ( conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ) ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
