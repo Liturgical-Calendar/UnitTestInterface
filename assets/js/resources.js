@@ -643,14 +643,20 @@ let connectionAttempt           = null;
 let conn;
 let currentResponseType         = "JSON";
 
-let messageCounter;
 let successfulTests             = 0;
 let failedTests                 = 0;
 let successfulSourceDataTests   = 0;
 let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
-let index                       = 0;
+
+/** Track expected and received responses for parallel Resource Data tests */
+let resourceDataExpectedResponses = 0;
+let resourceDataReceivedResponses = 0;
+
+/** Track expected and received responses for parallel Source Data tests */
+let sourceDataExpectedResponses = 0;
+let sourceDataReceivedResponses = 0;
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
@@ -827,8 +833,11 @@ const loadAsyncData = () => {
  * Manages the execution of resource validation tests and transitions through different test states.
  *
  * This function handles the following states:
- * - ReadyState: Initializes test indices, marks the start of resource data tests, and sends the first test for execution.
- * - ExecutingResourceValidations: Manages the execution loop for resource validation tests, sending new tests when a cycle is complete, and transitioning to JobsFinished when all tests are done.
+ * - ReadyState: Sends ALL resource data validation requests in parallel, then transitions to ExecutingResourceValidations.
+ * - ExecutingResourceValidations: Counts responses from parallel resource data requests. When all responses received,
+ *   sends ALL source data validation requests in parallel and transitions to ExecutingSourceValidations.
+ * - ExecutingSourceValidations: Counts responses from parallel source data requests. When all responses received,
+ *   transitions to JobsFinished.
  * - JobsFinished: Indicates all tests have been completed, updates UI to reflect the completion state.
  *
  * Utilizes performance marks to track test execution time and updates the UI to show test progress.
@@ -836,62 +845,56 @@ const loadAsyncData = () => {
 const runTests = () => {
     switch ( currentState ) {
         case TestState.Ready: {
-            index = 0;
-            messageCounter = 0;
             currentState = TestState.ExecutingResourceValidations;
             performance.mark( 'resourceDataTestsStart' );
             safeCollapseShow('#resourceDataTests');
-            conn.send(
-                JSON.stringify({
-                    action: 'executeValidation',
-                    responsetype: currentResponseType,
-                    ...resourceDataChecks[ index++ ]
-                })
-            );
+
+            // Send ALL resource data requests at once - server handles concurrency
+            resourceDataExpectedResponses = resourceDataChecks.length * 3; // 3 responses per check
+            resourceDataReceivedResponses = 0;
+            console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel (expecting ${resourceDataExpectedResponses} responses)...` );
+            resourceDataChecks.forEach( check => {
+                conn.send(
+                    JSON.stringify({
+                        action: 'executeValidation',
+                        responsetype: currentResponseType,
+                        ...check
+                    })
+                );
+            });
             break;
         }
         case TestState.ExecutingResourceValidations:
-            if ( ++messageCounter === 3 ) {
-                console.log( 'one cycle complete, passing to next test..' );
-                messageCounter = 0;
-                if ( index < resourceDataChecks.length ) {
+            // Count responses from parallel requests (all requests already sent)
+            resourceDataReceivedResponses++;
+            if ( resourceDataReceivedResponses === resourceDataExpectedResponses ) {
+                console.log( `All ${resourceDataExpectedResponses} resource data responses received!` );
+                console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
+                currentState = TestState.ExecutingSourceValidations;
+                performance.mark( 'sourceDataTestsStart' );
+                safeCollapseShow('#sourceDataTests');
+
+                // Send ALL source data requests at once - server handles concurrency
+                sourceDataExpectedResponses = sourceDataChecks.length * 3; // 3 responses per check
+                sourceDataReceivedResponses = 0;
+                console.log( `Sending ${sourceDataChecks.length} source data requests in parallel (expecting ${sourceDataExpectedResponses} responses)...` );
+                sourceDataChecks.forEach( check => {
                     conn.send(
                         JSON.stringify({
                             action: 'executeValidation',
-                            responsetype: currentResponseType,
-                            ...resourceDataChecks[ index++ ]
+                            ...check
                         })
                     );
-                } else {
-                    console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
-                    index = 0;
-                    currentState = TestState.ExecutingSourceValidations;
-                    performance.mark( 'sourceDataTestsStart' );
-                    safeCollapseShow('#sourceDataTests');
-                    conn.send(
-                        JSON.stringify({
-                            action: 'executeValidation',
-                            ...sourceDataChecks[ index++ ]
-                        })
-                    );
-                }
+                });
             }
             break;
         case TestState.ExecutingSourceValidations:
-            if ( ++messageCounter === 3 ) {
-                console.log( 'one cycle complete, passing to next test..' );
-                messageCounter = 0;
-                if ( index < sourceDataChecks.length ) {
-                    conn.send(
-                        JSON.stringify({
-                            action: 'executeValidation',
-                            ...sourceDataChecks[ index++ ]
-                        })
-                    );
-                } else {
-                    currentState = TestState.JobsFinished;
-                    runTests();
-                }
+            // Count responses from parallel requests (all requests already sent)
+            sourceDataReceivedResponses++;
+            if ( sourceDataReceivedResponses === sourceDataExpectedResponses ) {
+                console.log( `All ${sourceDataExpectedResponses} source data responses received!` );
+                currentState = TestState.JobsFinished;
+                runTests();
             }
             break;
         case TestState.JobsFinished: {
@@ -959,10 +962,16 @@ document.querySelector('#apiVersionsDropdownItems')?.addEventListener('change', 
 
 document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if( currentState === TestState.Ready || currentState === TestState.JobsFinished ) {
-        index = 0;
-        messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
+        successfulResourceDataTests = 0;
+        failedResourceDataTests = 0;
+        successfulSourceDataTests = 0;
+        failedSourceDataTests = 0;
+        resourceDataExpectedResponses = 0;
+        resourceDataReceivedResponses = 0;
+        sourceDataExpectedResponses = 0;
+        sourceDataReceivedResponses = 0;
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
