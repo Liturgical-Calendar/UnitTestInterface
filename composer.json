@@ -1,14 +1,35 @@
 {
+    "name": "liturgical-calendar/unit-test-interface",
+    "description": "Web-based graphical test interface for validating the LiturgicalCalendarAPI",
+    "type": "project",
     "require": {
+        "php": ">=8.1",
         "firebase/php-jwt": "^6.10",
+        "guzzlehttp/guzzle": "^7.0",
         "liturgical-calendar/components": "^3.1",
+        "monolog/monolog": "^3.0",
         "vlucas/phpdotenv": "^5.6"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "*"
     },
+    "autoload": {
+        "psr-4": {
+            "LiturgicalCalendar\\UnitTestInterface\\": "src/"
+        }
+    },
     "scripts": {
+        "lint": "phpcs || echo 'Linting failed. Please run composer lint:fix to fix the linting issues.'",
+        "lint:fix": "phpcbf || echo 'Lint fixing failed. Please check the linting failures and fix them manually.'",
         "lint:md": "npx --yes markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#vendor\"",
         "lint:md:fix": "npx --yes markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#vendor\""
-    }
+    },
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "John R. D'Orazio",
+            "email": "priest@johnromanodorazio.com"
+        }
+    ],
+    "minimum-stability": "stable"
 }

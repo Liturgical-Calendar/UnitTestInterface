@@ -6,7 +6,12 @@ require_once 'vendor/autoload.php';
 
 use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
+use LiturgicalCalendar\UnitTestInterface\ApiClient;
+use LiturgicalCalendar\UnitTestInterface\JwtAuth;
 use Dotenv\Dotenv;
+use Monolog\Logger;
+use Monolog\Level;
+use Monolog\Handler\StreamHandler;
 
 /**
  * Returns true if the server is running on localhost.
@@ -29,8 +34,6 @@ $dotenv = Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.developm
 $dotenv->safeLoad();
 
 // Initialize JWT authentication (must be after dotenv loads)
-require_once 'includes/JwtAuth.php';
-use LiturgicalCalendar\UnitTestInterface\JwtAuth;
 JwtAuth::init();
 $isAuthenticated = JwtAuth::isAuthenticated();
 
@@ -39,7 +42,8 @@ $dotenv->ifPresent(['API_PROTOCOL'])->allowedValues(['http', 'https']);
 $dotenv->ifPresent(['API_PORT'])->isInteger();
 $dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'test', 'staging', 'production']);
 
-$logsFolder = 'logs';
+// Setup logging directory
+$logsFolder = __DIR__ . DIRECTORY_SEPARATOR . 'logs';
 if (!file_exists($logsFolder)) {
     if (!mkdir($logsFolder, 0755, true)) {
         throw new RuntimeException('Failed to create logs directory: ' . $logsFolder);
@@ -47,9 +51,9 @@ if (!file_exists($logsFolder)) {
 }
 $logFile = $logsFolder . DIRECTORY_SEPARATOR . 'litcaltests-error.log';
 
-if (
-    isLocalhost() || ( isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development' )
-) {
+$debugMode = isLocalhost() || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development');
+
+if ($debugMode) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     ini_set('log_errors', 1);
@@ -63,24 +67,33 @@ if (
     error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
 }
 
-$schema = isset($_ENV['API_PROTOCOL']) ? $_ENV['API_PROTOCOL'] : (isLocalhost() ? 'http' : 'https');
-$host   = isset($_ENV['API_HOST']) ? $_ENV['API_HOST'] : (isLocalhost() ? 'localhost' : 'litcal.johnromanodorazio.com');
-$port   = isset($_ENV['API_PORT']) ? (int) $_ENV['API_PORT'] : (isLocalhost() ? 8000 : 443);
+// Setup PSR-3 Logger (Monolog)
+$logger = new Logger('litcal-tests');
+$logger->pushHandler(new StreamHandler(
+    $logsFolder . DIRECTORY_SEPARATOR . 'litcal.log',
+    $debugMode ? Level::Debug : Level::Warning
+));
+
+// Build API base URL
+$schema     = isset($_ENV['API_PROTOCOL']) ? $_ENV['API_PROTOCOL'] : (isLocalhost() ? 'http' : 'https');
+$host       = isset($_ENV['API_HOST']) ? $_ENV['API_HOST'] : (isLocalhost() ? 'localhost' : 'litcal.johnromanodorazio.com');
+$port       = isset($_ENV['API_PORT']) ? (int) $_ENV['API_PORT'] : (isLocalhost() ? 8000 : 443);
 $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
-$ch         = curl_init();
 $baseUrl    = isLocalhost() ? "$schema://$host:$port" : "$schema://$host/api/$apiVersion";
 
-curl_setopt($ch, CURLOPT_URL, "$baseUrl/tests");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$response = curl_exec($ch);
-if (curl_errno($ch)) {
-    $error_msg = curl_error($ch);
-    curl_close($ch);
-    die($error_msg);
-}
-curl_close($ch);
+// Create PSR-compliant HTTP client
+$apiClient = new ApiClient(null, 10, 5, $logger);
 
-$LitCalTests = json_decode($response)->litcal_tests;
+// Fetch tests data from API
+try {
+    $testsData   = $apiClient->fetchJsonWithKey("$baseUrl/tests", 'litcal_tests');
+    $LitCalTests = $testsData['litcal_tests'];
+    // Convert to objects to maintain compatibility with existing template code
+    $LitCalTests = json_decode(json_encode($LitCalTests));
+} catch (RuntimeException $e) {
+    $logger->error('Failed to fetch tests data', ['error' => $e->getMessage()]);
+    die('Failed to fetch tests data: ' . $e->getMessage());
+}
 
 include_once 'layout/head.php';
 include_once 'layout/sidebar.php';
@@ -208,21 +221,15 @@ include_once 'layout/sidebar.php';
 </main>
 <!-- End of Main Content -->
 <?php
+// Fetch events data from API with locale
 $eventsEndpoint = "$baseUrl/events";
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $eventsEndpoint);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Accept-Language: " . $i18n->locale]);
-$eventsRaw = curl_exec($ch);
-if (curl_errno($ch)) {
-    die('Could not fetch data from ' . $eventsEndpoint);
-}
-[ "litcal_events" => $LitCalAllLitEvents ] = json_decode(
-    $eventsRaw,
-    true
-);
-if (JSON_ERROR_NONE !== json_last_error()) {
-    die('Could not parse JSON from ' . $eventsEndpoint . ' : ' . json_last_error_msg());
+$apiClient->setLocale($i18n->locale);
+try {
+    $eventsData = $apiClient->fetchJsonWithKey($eventsEndpoint, 'litcal_events');
+    $LitCalAllLitEvents = $eventsData['litcal_events'];
+} catch (RuntimeException $e) {
+    $logger->error('Failed to fetch events data', ['error' => $e->getMessage()]);
+    die('Could not fetch data from ' . $eventsEndpoint . ': ' . $e->getMessage());
 }
 // Include the test creation modal (hidden by JS when not authenticated)
 include_once 'components/NewTestModal.php';
