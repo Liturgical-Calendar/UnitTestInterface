@@ -113,7 +113,7 @@ include_once 'layout/sidebar.php';
                 <label for="litCalTestsSelect" class="fw-bold border border-top-0 border-start-0 border-end-0 border-secondary mb-4 w-100 text-center"><?php
                     echo _("Edit an existing test");
                 ?></label>
-                <select id="litCalTestsSelect" class="form-select">
+                <select id="litCalTestsSelect" class="form-select" data-requires-auth <?php echo $isAuthenticated ? '' : 'disabled'; ?>>
                     <option value="" selected>--</option>
                     <?php
                     foreach ($LitCalTests as $LitCalTest) {
@@ -133,8 +133,12 @@ include_once 'layout/sidebar.php';
                                                     ->id('APICalendarSelect')
                                                     ->label(true)
                                                     ->labelText(_('Calendar to test'))
-                                                    ->setOptions(OptionsType::ALL);
-                            echo $CalendarSelect->getSelect();
+                                                    ->setOptions(OptionsType::ALL)
+                                                    ->disabled(!$isAuthenticated);
+                            $selectHtml = $CalendarSelect->getSelect();
+                            // Add data-requires-auth attribute for JS to enable on login
+                            $selectHtml = str_replace('<select ', '<select data-requires-auth ', $selectHtml);
+                            echo $selectHtml;
                         ?>
                     </div>
                     <div class="form-group col col-md-9">
