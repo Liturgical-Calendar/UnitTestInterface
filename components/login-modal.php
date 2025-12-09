@@ -84,26 +84,38 @@ let sessionExpiryTimeout = null;
 document.addEventListener('DOMContentLoaded', async () => {
     // Wait for auth cache to be populated (auth.js may have already done this)
     if (Auth.isAuthenticatedCached() === null) {
-        const maxRetries = 2;
-        let authState = null;
+        // First attempt - quick check
+        let authState = await Auth.updateAuthCache();
 
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            authState = await Auth.updateAuthCache();
-
-            if (!authState.error) {
-                break; // Success - no network error
-            }
-
-            if (attempt < maxRetries) {
-                // Wait before retry (exponential backoff: 1s, 2s)
-                await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            }
-        }
-
-        // Show warning if auth check failed after all retries
+        // If first attempt failed, retry in background without blocking UI
         if (authState && authState.error) {
-            const message = <?php echo json_encode(_('Unable to verify authentication status. The server may be unavailable.')); ?>;
-            console.warn(message);
+            // Initialize UI immediately with unauthenticated state
+            updateNavbarAuthUI();
+            initPermissionUI();
+
+            // Retry in background
+            const retryInBackground = async () => {
+                const maxRetries = 2;
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    authState = await Auth.updateAuthCache();
+                    if (!authState.error) {
+                        // Success - update UI with actual auth state
+                        updateNavbarAuthUI();
+                        initPermissionUI();
+                        if (authState.authenticated) {
+                            Auth.startAutoRefresh();
+                            startSessionExpiryWarning();
+                        }
+                        return;
+                    }
+                }
+                // All retries failed
+                const message = <?php echo json_encode(_('Unable to verify authentication status. The server may be unavailable.')); ?>;
+                console.warn(message);
+            };
+            retryInBackground();
+            return; // Exit early - UI already initialized
         }
     }
 
@@ -494,6 +506,14 @@ async function handleExtendSession() {
         console.log('Session extended successfully');
     } catch (error) {
         console.error('Failed to extend session:', error);
+
+        // Show error to user before logout
+        const messageElement = document.getElementById('sessionExpiryMessage');
+        if (messageElement) {
+            messageElement.textContent = <?php echo json_encode(_('Failed to extend session. Please login again.')); ?>;
+        }
+        // Brief delay to show the message
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Hide the warning and stop all auth timers
         hideSessionExpiryToast();

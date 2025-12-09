@@ -905,7 +905,7 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
     .then(data => {
         console.log(responseStatus);
         const alertEl = document.querySelector('#responseToPutRequest');
-        document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
+        document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response || 'Operation completed';
         // Normalize alert classes before adding the appropriate one
         // PUT returns 201 Created, PATCH returns 200 OK
         alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
