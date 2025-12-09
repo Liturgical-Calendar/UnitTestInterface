@@ -1,7 +1,7 @@
     <!-- Topbar -->
     <nav class="sb-topnav navbar navbar-expand navbar-light bg-white shadow">
         <!-- Navbar Brand -->
-        <a class="navbar-brand text-danger ps-3"><i class="me-3 fas fa-cross"></i>LitCal Unit Tests</a>
+        <a class="navbar-brand text-danger ps-3"><i class="me-3 fas fa-cross"></i>LitCal Accuracy Tests</a>
         <?php if (!defined('SIDEBAR') || true === SIDEBAR) { ?>
         <!-- Sidebar Toggle (Topbar) -->
         <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle"><i class="fas fa-bars"></i></button>
@@ -71,7 +71,7 @@
         <a class="btn btn-outline-light text-dark border-0 fw-bold"
             href="/admin.php?apiVersion=dev"
             id = "admin_url"
-            title="<?php echo _("Unit Tests Admin"); ?>">
+            title="<?php echo _("Accuracy Tests Admin"); ?>">
             <i class="fas fa-gear"></i>
         </a>
         <a class="btn btn-outline-light text-dark border-0 me-2"

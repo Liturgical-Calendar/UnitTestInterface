@@ -1,5 +1,5 @@
 /**
- * Resource testing module for the LiturgicalCalendar Unit Test Interface.
+ * Resource testing module for the LiturgicalCalendar Accuracy Test Interface.
  * Handles resource validation and testing.
  * @module resources
  */

@@ -1,5 +1,6 @@
 <?php
 
+// phpcs:disable PSR1.Files.SideEffects
 ini_set('date.timezone', 'Europe/Vatican');
 
 require_once 'vendor/autoload.php';
@@ -103,9 +104,9 @@ include_once 'layout/sidebar.php';
     <div class="container-fluid px-4">
 
         <!-- Page Heading -->
-        <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _("Define a Unit Test for a Liturgical event"); ?></h1>
+        <h1 class="h3 mb-2 text-black" style="--bs-text-opacity: .6;"><?php echo _("Define a Liturgical Accuracy Test"); ?></h1>
         <p class="mb-1 lh-sm"><small><i><?php
-            echo _("In order to verify that the liturgical calendar data produced by the API is actually producing correct data, we can create Unit Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.");
+            echo _("In order to verify that the liturgical calendar data produced by the API is accurate, we can create Liturgical Accuracy Tests that allow us to verify that events were / were not created in the calendar, or that they have expected dates from year to year.");
         ?></i></small></p>
         <div class="row justify-content-center align-items-start bg-light border p-2 mt-4">
             <div class="form-group col col-md-2" id="editExistingTestOption">
@@ -211,7 +212,7 @@ include_once 'layout/sidebar.php';
                 </div>
             </div>
             <div class="card-footer text-center <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth>
-                <button class="btn btn-lg btn-primary m-2" id="serializeUnitTestData" disabled><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
+                <button class="btn btn-lg btn-primary m-2" id="serializeUnitTestData" disabled><i class="fas fa-save me-2"></i><?php echo _("Save Accuracy Test") ?></button>
             </div>
         </div>
 

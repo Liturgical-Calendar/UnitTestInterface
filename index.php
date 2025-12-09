@@ -160,7 +160,7 @@ include_once('layout/head.php');
                             aria-expanded="false" aria-controls="specificUnitTests"
                         >
                             <div class="col-4"><i class="fas fa-file-shield fa-fw"></i>&nbsp;<?php
-                                echo _("EXECUTE UNIT TESTS FOR SPECIFIC EVENTS");
+                                echo _("EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS");
                             ?>
                             </div>
                             <div class="col-2 text-white p-2 text-center test-results bg-success">

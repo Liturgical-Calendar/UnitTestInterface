@@ -1,5 +1,5 @@
 /**
- * Admin module for the LiturgicalCalendar Unit Test Interface.
+ * Admin module for the LiturgicalCalendar Accuracy Test Interface.
  * Handles test management, editing, and creation.
  * @module admin
  */
@@ -13,7 +13,7 @@ import {
     AssertionsBuilder
 } from './AssertionsBuilder.js';
 
-/** @typedef {import('./types.js').UnitTestDefinition} UnitTestDefinition */
+/** @typedef {import('./types.js').AccuracyTestDefinition} AccuracyTestDefinition */
 /** @typedef {import('./types.js').TestAssertion} TestAssertion */
 
 // Access global config from window (set by PHP in footer.php and admin.php)
@@ -432,17 +432,17 @@ fetch(ENDPOINTS.METADATA)
     })
     .catch(error => console.error('Could not fetch', ENDPOINTS.METADATA, error));
 
-/** Prepare PUT new Unit Test */
+/** Prepare PUT new Accuracy Test */
 
 /**
- * Class representing a unit test for a liturgical event.
+ * Class representing an accuracy test for a liturgical event.
  * @class
  */
-class UnitTest {
+class AccuracyTest {
     /**
-     * Constructs a new UnitTest instance.
-     * @param {string} event_key - the event key of the event that this unit test is for.
-     * @param {string} description - the description of this unit test.
+     * Constructs a new AccuracyTest instance.
+     * @param {string} event_key - the event key of the event that this accuracy test is for.
+     * @param {string} description - the description of this accuracy test.
      * @param {TestType} test_type - the type of the test.
      * @param {Assertion[]} assertions - the assertions of this test.
      * @param {number} [year_since=null] - the year since which the test applies (only for TestType.ExactCorrespondenceSince).
@@ -493,18 +493,18 @@ const sanitizeInput = (input) => {
 }
 
 /**
- * Serializes the current state of the unit test form into a UnitTest object.
+ * Serializes the current state of the accuracy test form into an AccuracyTest object.
  *
- * This function extracts values from the DOM elements representing the unit test,
+ * This function extracts values from the DOM elements representing the accuracy test,
  * including the event key, description, test type, and any assertions. It assigns
  * these values to the `proxiedTest` object and creates an array of `Assertion`
  * instances for each assertion found in the DOM. If applicable, it also sets the
- * calendar type that the test applies to. Finally, it returns a new `UnitTest`
+ * calendar type that the test applies to. Finally, it returns a new `AccuracyTest`
  * object initialized with the serialized test data.
  *
- * @returns {UnitTest} The serialized UnitTest object based on the current form data.
+ * @returns {AccuracyTest} The serialized AccuracyTest object based on the current form data.
  */
-const serializeUnitTest = () => {
+const serializeAccuracyTest = () => {
     const eventkey    = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
     const test_type   = document.querySelector('#cardHeaderTestType').textContent;
@@ -546,7 +546,7 @@ const serializeUnitTest = () => {
         const currentCalendarType = selectedOption?.dataset.calendartype;
         proxiedTest.applies_to    = {[currentCalendarType]: apiCalendarSelect.value};
     }
-    return new UnitTest( proxiedTest );
+    return new AccuracyTest( proxiedTest );
 }
 
 const API = {
@@ -867,12 +867,12 @@ document.addEventListener('blur', contenteditableHandler, true);
 document.addEventListener('input', contenteditableHandler, true);
 
 document.querySelector('#serializeUnitTestData').addEventListener('click', () => {
-    const newUnitTest = serializeUnitTest();
+    const newAccuracyTest = serializeAccuracyTest();
     // Use PATCH for existing tests, PUT for new tests
     // PATCH requires test name in URL path: /tests/{testName}
-    const isExistingTest = LitCalTests.some(test => test.name === newUnitTest.name);
+    const isExistingTest = LitCalTests.some(test => test.name === newAccuracyTest.name);
     const httpMethod = isExistingTest ? 'PATCH' : 'PUT';
-    const endpoint = isExistingTest ? `${ENDPOINTS.TESTSINDEX}/${newUnitTest.name}` : ENDPOINTS.TESTSINDEX;
+    const endpoint = isExistingTest ? `${ENDPOINTS.TESTSINDEX}/${newAccuracyTest.name}` : ENDPOINTS.TESTSINDEX;
     let responseStatus = 400;
     fetch(endpoint, {
         method: httpMethod,
@@ -881,7 +881,7 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
             "Content-Type": "application/json",
             "Accept": "application/json"
         },
-        body: JSON.stringify(newUnitTest)
+        body: JSON.stringify(newAccuracyTest)
     })
     .then(response => {
         responseStatus = response.status;
@@ -918,7 +918,7 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
         if (error.isAuthError) {
             return;
         }
-        console.error('Failed to save unit test:', error);
+        console.error('Failed to save accuracy test:', error);
         const alertEl = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Network error: Failed to save test';
         // Normalize alert classes before adding the error class
@@ -1254,7 +1254,7 @@ document.querySelector('#btnCreateTest').addEventListener('click', () => {
         const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
         carousel.to(parseInt(parentCarouselItem.dataset.item));
     } else {
-        //let's build our new Unit Test
+        //let's build our new Accuracy Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
         proxiedTest.event_key = document.querySelector('#existingLitEventName').value;
         console.log(document.querySelector('#existingLitEventName').value);

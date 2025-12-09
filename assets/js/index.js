@@ -1,5 +1,5 @@
 /**
- * Main test runner module for the LiturgicalCalendar Unit Test Interface.
+ * Main test runner module for the LiturgicalCalendar Accuracy Test Interface.
  * Handles WebSocket communication, test execution, and result display.
  * @module index
  */

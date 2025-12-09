@@ -1,5 +1,5 @@
 /**
- * Assertions Builder module for the LiturgicalCalendar Unit Test Interface.
+ * Assertions Builder module for the LiturgicalCalendar Accuracy Test Interface.
  * Contains classes and constants for building and managing test assertions.
  * @module AssertionsBuilder
  */

@@ -38,7 +38,7 @@
                                     <div>
                                         <small>
                                             <p class="text-muted lh-sm">
-                                                <small><?php echo _('First choose the maximum range of years that will belong to the Unit Test.'); ?></small>
+                                                <small><?php echo _('First choose the range of years that we will be testing.'); ?></small>
                                                 <small class="exactCorrespondenceSince d-none"> &#x28;<i><?php
                                                     echo _('This range should include a few years before the year in which the liturgical event should start to exist.');
                                                 ?></i>&#x29; </small>
@@ -68,7 +68,7 @@
                                                     ?></small>
                                             </p>
                                             <p class="text-muted lh-sm"><?php
-                                                echo _("First choose the maximum range of years that will belong to the Unit Test.");
+                                                echo _("First choose the range of years that we will be testing.");
                                             ?></p>
                                         </small>
                                     </div>
