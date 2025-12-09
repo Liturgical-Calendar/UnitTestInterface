@@ -97,6 +97,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const retryInBackground = async () => {
                 const maxRetries = 2;
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    // Skip retry if user has since authenticated (e.g., via login modal)
+                    if (Auth.isAuthenticatedCached() !== null) {
+                        return;
+                    }
                     await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
                     authState = await Auth.updateAuthCache();
                     if (!authState.error) {
