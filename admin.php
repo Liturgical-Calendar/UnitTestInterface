@@ -28,6 +28,12 @@ function isLocalhost(): bool
 $dotenv = Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
 $dotenv->safeLoad();
 
+// Initialize JWT authentication (must be after dotenv loads)
+require_once 'includes/JwtAuth.php';
+use LiturgicalCalendar\UnitTestInterface\JwtAuth;
+JwtAuth::init();
+$isAuthenticated = JwtAuth::isAuthenticated();
+
 $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
 $dotenv->ifPresent(['API_PROTOCOL'])->allowedValues(['http', 'https']);
 $dotenv->ifPresent(['API_PORT'])->isInteger();
@@ -120,34 +126,37 @@ include_once 'layout/sidebar.php';
                     <div class="form-group col col-md-9">
                         <label><?php echo _("Test Type"); ?></label>
                         <div class="btn-group form-control p-0 border-0" id="createNewTestBtnGrp" role="group">
-                            <button type="button" class="btn btn-primary col col-md-3 d-none" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-3 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth
                                 data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)");
                                 ?>">
                                 <small><b><i class="fas fa-vial me-2"></i> <?php echo _("Exact date"); ?></b></small>
                             </button>
-                            <button type="button" class="btn btn-primary col col-md-4 d-none" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-4 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth
                                 data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year).");
                                 ?>">
                                 <small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _("Exact date since year"); ?></b></small>
                             </button>
-                            <button type="button" class="btn btn-primary col col-md-4 d-none" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-4 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth
                                 data-testtype="exactCorrespondenceUntil" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist.");
                                 ?>">
                                 <small><b><?php echo _("Exact date until year"); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small>
                             </button>
-                            <button type="button" class="btn btn-primary col col-md-4 d-none" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-4 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth
                                 data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years.");
                                 ?>">
                                 <small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence"); ?></b></small>
                             </button>
+                        </div>
+                        <div class="alert alert-info mb-0 <?php echo $isAuthenticated ? 'd-none' : ''; ?>" role="alert" data-requires-no-auth>
+                            <i class="fas fa-sign-in-alt me-2"></i><?php echo _("Please login to create or edit tests."); ?>
                         </div>
                     </div>
                 </div>
@@ -166,7 +175,7 @@ include_once 'layout/sidebar.php';
                 </h4>
             </div>
             <div class="card-body">
-                <form class="needs-validation" id="testDataForm" novalidate data-requires-auth>
+                <form class="needs-validation <?php echo $isAuthenticated ? '' : 'd-none'; ?>" id="testDataForm" novalidate data-requires-auth>
                     <div class="row justify-content-center align-items-start">
                         <div class="mb-3 form-group col col-md-12">
                             <label for="description" class="form-label text-secondary"><?php echo _("Description"); ?></label>
@@ -183,9 +192,13 @@ include_once 'layout/sidebar.php';
                     <input type="hidden" id="yearSince" />
                     <input type="hidden" id="yearUntil" />
                 </form>
+                <div class="text-center text-muted py-4 <?php echo $isAuthenticated ? 'd-none' : ''; ?>" data-requires-no-auth>
+                    <i class="fas fa-lock fa-3x mb-3"></i>
+                    <p><?php echo _("Login to view and edit test details."); ?></p>
+                </div>
             </div>
-            <div class="card-footer text-center">
-                <button class="btn btn-lg btn-primary m-2 d-none" id="serializeUnitTestData" disabled data-requires-auth><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
+            <div class="card-footer text-center <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth>
+                <button class="btn btn-lg btn-primary m-2" id="serializeUnitTestData" disabled><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
             </div>
         </div>
 
@@ -211,6 +224,7 @@ if (curl_errno($ch)) {
 if (JSON_ERROR_NONE !== json_last_error()) {
     die('Could not parse JSON from ' . $eventsEndpoint . ' : ' . json_last_error_msg());
 }
+// Include the test creation modal (hidden by JS when not authenticated)
 include_once 'components/NewTestModal.php';
 ?>
 <div class="modal fade" id="modalAddEditComment" tabindex="-1" aria-labelledby="addEditCommentModalLabel" aria-hidden="true">

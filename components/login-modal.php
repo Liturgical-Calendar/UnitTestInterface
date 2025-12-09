@@ -379,32 +379,37 @@ function updateNavbarAuthUI() {
 window.updateNavbarAuthUI = updateNavbarAuthUI;
 
 /**
- * Initialize permission-based UI elements marked with data-requires-auth attribute.
+ * Initialize permission-based UI elements.
  *
- * Handles three types of elements differently:
+ * Handles two types of data attributes:
+ * - data-requires-auth: Show when authenticated, hide when not
+ * - data-requires-no-auth: Hide when authenticated, show when not
+ *
+ * For data-requires-auth elements:
  * - FORM elements: Toggles opacity-50 class and disables/enables all child form controls
  * - Form controls (INPUT, SELECT, TEXTAREA): Only disables when logged out
  * - Other elements (buttons, divs): Toggles d-none class for visibility
  */
 function initPermissionUI() {
-    const protectedElements = document.querySelectorAll('[data-requires-auth]');
     const isAuth = Auth.isAuthenticated();
     const formControlTags = ['INPUT', 'SELECT', 'TEXTAREA'];
 
+    // Handle elements that require authentication
+    const protectedElements = document.querySelectorAll('[data-requires-auth]');
     protectedElements.forEach(el => {
         if (el.tagName === 'FORM') {
-            // For forms, disable/enable all form controls inside
+            // For forms, disable/enable all form controls inside and toggle visibility
             const formControls = el.querySelectorAll('input, select, textarea, button');
             formControls.forEach(control => {
                 if (!control.hasAttribute('data-requires-auth')) {
                     control.disabled = !isAuth;
                 }
             });
-            // Add visual indicator for disabled forms
+            // Toggle visibility and opacity
             if (isAuth) {
-                el.classList.remove('opacity-50');
+                el.classList.remove('d-none', 'opacity-50');
             } else {
-                el.classList.add('opacity-50');
+                el.classList.add('d-none', 'opacity-50');
             }
         } else if (formControlTags.includes(el.tagName)) {
             // For standalone form controls, set disabled based on auth state
@@ -416,6 +421,16 @@ function initPermissionUI() {
             } else {
                 el.classList.add('d-none');
             }
+        }
+    });
+
+    // Handle elements that should only show when NOT authenticated
+    const noAuthElements = document.querySelectorAll('[data-requires-no-auth]');
+    noAuthElements.forEach(el => {
+        if (isAuth) {
+            el.classList.add('d-none');
+        } else {
+            el.classList.remove('d-none');
         }
     });
 }
