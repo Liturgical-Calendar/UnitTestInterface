@@ -121,3 +121,14 @@
 #noScriptedContentAlert {
     transition: opacity 0.5s ease-in-out;
 }
+
+/* Fix dropdown cutoff issue - allow select dropdowns to overflow their container */
+#editExistingTestOption,
+.form-group:has(#APICalendarSelect) {
+    overflow: visible;
+}
+
+/* Ensure parent container doesn't clip dropdowns */
+.row.bg-light.border {
+    overflow: visible;
+}

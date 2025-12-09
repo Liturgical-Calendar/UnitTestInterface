@@ -698,7 +698,40 @@ document.querySelector('#litCalTestsSelect').addEventListener('change', async (e
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
         document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.setAttribute('disabled', 'disabled'));
     } else {
+        // Reset form to default state when empty option is selected
         proxiedTest = null;
+
+        // Reset test name and type display
+        const testNameEl = document.querySelector('#testName');
+        updateText('testName', testNameEl.dataset.default || 'Name of Test');
+        updateText('cardHeaderTestType', '');
+
+        // Reset description
+        const descEl = document.querySelector('#description');
+        descEl.value = '';
+        descEl.style.height = 'auto';
+
+        // Clear hidden year fields
+        document.querySelector('#yearSince').value = '';
+        document.querySelector('#yearUntil').value = '';
+
+        // Reset calendar select to default (VA / General Roman Calendar)
+        const apiCalendarSelect = document.querySelector('#APICalendarSelect');
+        if (apiCalendarSelect.value !== 'VA') {
+            apiCalendarSelect.value = 'VA';
+            await rebuildLitEventsOptions(apiCalendarSelect);
+        }
+
+        // Clear assertions container and hide the label
+        document.querySelector('#assertionsContainer').innerHTML = '';
+        document.querySelector('#perYearAssertions').classList.add('invisible');
+        document.querySelector('#perYearAssertions .btn').dataset.testtype = '';
+
+        // Disable save button (requires test to be defined)
+        document.querySelector('#serializeUnitTestData').setAttribute('disabled', 'disabled');
+
+        // Re-enable create new test buttons
+        document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.removeAttribute('disabled'));
     }
 });
 
@@ -843,34 +876,53 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
     let responseStatus = 400;
     fetch(endpoint, {
         method: httpMethod,
+        credentials: 'include', // Include HttpOnly cookies for JWT authentication
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         },
         body: JSON.stringify(newUnitTest)
     })
     .then(response => {
         responseStatus = response.status;
+        // Handle 401 Unauthorized - user needs to login
+        if (response.status === 401) {
+            const alertEl = document.querySelector('#responseToPutRequest');
+            document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Authentication required. Please login to save tests.';
+            alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+            alertEl.classList.add('alert-warning');
+            fadeOutAlert(alertEl, 3000);
+            // Show login modal if available
+            if (typeof window.showLoginModal === 'function') {
+                window.showLoginModal();
+            }
+            return Promise.reject(new Error('Authentication required'));
+        }
         return response.json();
     })
     .then(data => {
         console.log(responseStatus);
-        const alert = document.querySelector('#responseToPutRequest');
+        const alertEl = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
         // Normalize alert classes before adding the appropriate one
         // PUT returns 201 Created, PATCH returns 200 OK
-        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
-        alert.classList.add((responseStatus === 200 || responseStatus === 201) ? 'alert-success' : 'alert-warning');
-        fadeOutAlert(alert);
+        alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alertEl.classList.add((responseStatus === 200 || responseStatus === 201) ? 'alert-success' : 'alert-warning');
+        fadeOutAlert(alertEl);
         console.log(data);
     })
     .catch(error => {
+        // Don't show network error for auth rejection (already handled)
+        if (error.message === 'Authentication required') {
+            return;
+        }
         console.error('Failed to save unit test:', error);
-        const alert = document.querySelector('#responseToPutRequest');
+        const alertEl = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Network error: Failed to save test';
         // Normalize alert classes before adding the error class
-        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
-        alert.classList.add('alert-danger');
-        fadeOutAlert(alert);
+        alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alertEl.classList.add('alert-danger');
+        fadeOutAlert(alertEl);
     });
 });
 

@@ -79,4 +79,17 @@
             title="See the Github repository">
             <i class="fab fa-github"></i>
         </a>
+        <!-- Login button (shown when not authenticated) -->
+        <button class="btn btn-outline-primary btn-sm me-2 d-none" id="loginBtn" title="<?php echo _('Login'); ?>">
+            <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
+        </button>
+        <!-- User menu (shown when authenticated) -->
+        <div class="btn-group d-none me-2" id="userMenu">
+            <span class="btn btn-outline-success btn-sm" id="userInfo">
+                <i class="fas fa-user me-1"></i><span id="username"></span>
+            </span>
+            <button class="btn btn-outline-danger btn-sm" id="logoutBtn" title="<?php echo _('Logout'); ?>">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
     </nav>
