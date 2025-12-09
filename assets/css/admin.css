@@ -122,13 +122,16 @@
     transition: opacity 0.5s ease-in-out;
 }
 
-/* Fix dropdown cutoff issue - allow select dropdowns to overflow their container */
-#editExistingTestOption,
-.form-group:has(#APICalendarSelect) {
-    overflow: visible;
+/*
+ * Fix for native select dropdown clipping issue in Chrome/Windows.
+ * Adding a border forces the browser to recalculate the stacking context,
+ * allowing native select dropdowns to render correctly without being clipped.
+ * The white border is invisible against the page background.
+ */
+body {
+    border: 1px solid white;
 }
 
-/* Ensure parent container doesn't clip dropdowns */
-.row.bg-light.border {
-    overflow: visible;
+.container-fluid {
+    border: 1px solid white;
 }
