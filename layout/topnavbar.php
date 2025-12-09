@@ -79,14 +79,22 @@
             title="See the Github repository">
             <i class="fab fa-github"></i>
         </a>
+        <?php
+        // Check if JwtAuth is available (set by admin.php or other pages that include it)
+        $navbarIsAuth = isset($isAuthenticated) ? $isAuthenticated : false;
+        $navbarUsername = '';
+        if ($navbarIsAuth && class_exists('LiturgicalCalendar\UnitTestInterface\JwtAuth')) {
+            $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
+        }
+        ?>
         <!-- Login button (shown when not authenticated) -->
-        <button class="btn btn-outline-primary btn-sm me-2 d-none" id="loginBtn" title="<?php echo _('Login'); ?>">
+        <button class="btn btn-outline-primary btn-sm me-2 <?php echo $navbarIsAuth ? 'd-none' : ''; ?>" id="loginBtn" title="<?php echo _('Login'); ?>" data-requires-no-auth>
             <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
         </button>
         <!-- User menu (shown when authenticated) -->
-        <div class="btn-group d-none me-2" id="userMenu">
+        <div class="btn-group me-2 <?php echo $navbarIsAuth ? '' : 'd-none'; ?>" id="userMenu" data-requires-auth>
             <span class="btn btn-outline-success btn-sm" id="userInfo">
-                <i class="fas fa-user me-1"></i><span id="username"></span>
+                <i class="fas fa-user me-1"></i><span id="username"><?php echo htmlspecialchars($navbarUsername); ?></span>
             </span>
             <button class="btn btn-outline-danger btn-sm" id="logoutBtn" title="<?php echo _('Logout'); ?>">
                 <i class="fas fa-sign-out-alt"></i>
