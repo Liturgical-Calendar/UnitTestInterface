@@ -67,7 +67,7 @@ window.Auth = Auth;
 
 // Localized strings injected from PHP
 const i18n = {
-    admin: '<?php echo _('Admin'); ?>'
+    admin: <?php echo json_encode(_('Admin')); ?>
 };
 
 // Module-scoped variables to avoid global pollution
@@ -89,11 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // If first attempt failed, retry in background without blocking UI
         if (authState && authState.error) {
-            // Initialize UI immediately with unauthenticated state
-            updateNavbarAuthUI();
-            initPermissionUI();
-
-            // Retry in background
+            // Retry in background (UI will be initialized below after this block)
             const retryInBackground = async () => {
                 const maxRetries = 2;
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -119,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn(message);
             };
             retryInBackground();
-            return; // Exit early - UI already initialized
+            // Continue to register event handlers - don't return early
         }
     }
 
@@ -145,7 +141,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sessionExpiryTimeout = null;
                 }
                 hideSessionExpiryToast();
-                await Auth.logout();
+                try {
+                    await Auth.logout();
+                } catch (error) {
+                    console.error('Logout failed:', error);
+                }
                 // Update navbar (login button vs user menu) and protected elements (data-requires-auth)
                 updateNavbarAuthUI();
                 initPermissionUI();
@@ -554,7 +554,11 @@ async function handleSessionExpiryLogout() {
             sessionExpiryTimeout = null;
         }
         hideSessionExpiryToast();
-        await Auth.logout();
+        try {
+            await Auth.logout();
+        } catch (error) {
+            console.error('Logout failed during session expiry:', error);
+        }
         updateNavbarAuthUI();
         initPermissionUI();
         document.dispatchEvent(new CustomEvent('auth:logout'));
