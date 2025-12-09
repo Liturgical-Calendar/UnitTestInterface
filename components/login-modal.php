@@ -65,6 +65,11 @@ import { Auth } from './assets/js/auth.js';
 // Make Auth available globally for non-module scripts
 window.Auth = Auth;
 
+// Localized strings injected from PHP
+const i18n = {
+    admin: '<?php echo _('Admin'); ?>'
+};
+
 // Module-scoped variables to avoid global pollution
 let loginModal = null;
 let loginSuccessCallback = null;
@@ -289,18 +294,6 @@ async function handleLogin() {
             const modalInstance = bootstrap.Modal.getInstance(loginModalElement);
 
             if (modalInstance) {
-                // Add one-time listener for modal hide completion
-                loginModalElement.addEventListener('hidden.bs.modal', () => {
-                    // Clean up modal backdrop and body styles after transition completes
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) {
-                        backdrop.remove();
-                    }
-                    document.body.classList.remove('modal-open');
-                    document.body.style.removeProperty('overflow');
-                    document.body.style.removeProperty('padding-right');
-                }, { once: true });
-
                 modalInstance.hide();
             }
         }
@@ -354,7 +347,7 @@ function updateNavbarAuthUI() {
         const usernameElement = document.getElementById('username');
         if (usernameElement) {
             const authUsername = Auth.getUsername();
-            usernameElement.textContent = authUsername || 'Admin';
+            usernameElement.textContent = authUsername || i18n.admin;
         }
     } else {
         if (loginBtn) {
@@ -398,10 +391,8 @@ function initPermissionUI() {
                 el.classList.add('opacity-50');
             }
         } else if (formControlTags.includes(el.tagName)) {
-            // For standalone form controls, only disable when not authenticated
-            if (!isAuth) {
-                el.disabled = true;
-            }
+            // For standalone form controls, set disabled based on auth state
+            el.disabled = !isAuth;
         } else {
             // For other elements (buttons, etc.), only control visibility
             if (isAuth) {
@@ -575,11 +566,11 @@ function expiryWarningCallback(timeUntilExpiry) {
         if (messageElement) {
             messageElement.textContent = formatExpiryMessage(timeUntilExpiry);
         }
-        // Update the auto-logout timer to stay in sync with actual expiry time
+        // Always (re)create the auto-logout timer to stay in sync with actual expiry time
         if (sessionExpiryTimeout) {
             clearTimeout(sessionExpiryTimeout);
-            sessionExpiryTimeout = setTimeout(handleAutoLogout, timeUntilExpiry * 1000);
         }
+        sessionExpiryTimeout = setTimeout(handleAutoLogout, timeUntilExpiry * 1000);
         return;
     }
 

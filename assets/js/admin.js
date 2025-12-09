@@ -896,7 +896,9 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
             if (typeof window.showLoginModal === 'function') {
                 window.showLoginModal();
             }
-            return Promise.reject(new Error('Authentication required'));
+            const authError = new Error('Authentication required');
+            authError.isAuthError = true;
+            return Promise.reject(authError);
         }
         return response.json();
     })
@@ -912,8 +914,8 @@ document.querySelector('#serializeUnitTestData').addEventListener('click', () =>
         console.log(data);
     })
     .catch(error => {
-        // Don't show network error for auth rejection (already handled)
-        if (error.message === 'Authentication required') {
+        // Don't show network error for auth rejection (already handled above)
+        if (error.isAuthError) {
             return;
         }
         console.error('Failed to save unit test:', error);

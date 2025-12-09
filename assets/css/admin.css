@@ -127,6 +127,7 @@
  * Adding a border forces the browser to recalculate the stacking context,
  * allowing native select dropdowns to render correctly without being clipped.
  * The white border is invisible against the page background.
+ * Note: This is a Chrome/Windows-specific workaround; other browsers unaffected.
  */
 body {
     border: 1px solid white;

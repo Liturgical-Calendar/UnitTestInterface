@@ -31,7 +31,7 @@ $dotenv->safeLoad();
 $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
 $dotenv->ifPresent(['API_PROTOCOL'])->allowedValues(['http', 'https']);
 $dotenv->ifPresent(['API_PORT'])->isInteger();
-$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'staging', 'production']);
+$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'test', 'staging', 'production']);
 
 $logsFolder = 'logs';
 if (!file_exists($logsFolder)) {
@@ -120,28 +120,28 @@ include_once 'layout/sidebar.php';
                     <div class="form-group col col-md-9">
                         <label><?php echo _("Test Type"); ?></label>
                         <div class="btn-group form-control p-0 border-0" id="createNewTestBtnGrp" role="group">
-                            <button type="button" class="btn btn-primary col col-md-3" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-3 d-none" data-requires-auth
                                 data-testtype="exactCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("In the span of years for which we are making an assertion, we assert that the liturgical event should exist, and should fall on an expected date (date can optionally be defined differently for each given year)");
                                 ?>">
                                 <small><b><i class="fas fa-vial me-2"></i> <?php echo _("Exact date"); ?></b></small>
                             </button>
-                            <button type="button" class="btn btn-primary col col-md-4" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-4 d-none" data-requires-auth
                                 data-testtype="exactCorrespondenceSince" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("When a liturgical event should only exist after a certain year, we assert that for a certain span of years before such year the liturgical event should not exist, while for a certain span of years after such year the liturgical event should exist and should fall on an expected date (date can optionally be defined differently for each given year).");
                                 ?>">
                                 <small><b><i class="fas fa-right-from-bracket me-2"></i> <?php echo _("Exact date since year"); ?></b></small>
                             </button>
-                            <button type="button" class="btn btn-primary col col-md-4" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-4 d-none" data-requires-auth
                                 data-testtype="exactCorrespondenceUntil" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("When a liturgical event should no longer exist after a certain year, we assert that for a certain span of years before such year the liturgical event should fall on an expected date (date can optionally be defined differently for each given year), while for a certain span of years after such year the liturgical event should not exist.");
                                 ?>">
                                 <small><b><?php echo _("Exact date until year"); ?> <i class="fas fa-right-to-bracket ms-2"></i></b></small>
                             </button>
-                            <button type="button" class="btn btn-primary col col-md-4" data-requires-auth
+                            <button type="button" class="btn btn-primary col col-md-4 d-none" data-requires-auth
                                 data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
                                     echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years.");
@@ -185,7 +185,7 @@ include_once 'layout/sidebar.php';
                 </form>
             </div>
             <div class="card-footer text-center">
-                <button class="btn btn-lg btn-primary m-2" id="serializeUnitTestData" disabled data-requires-auth><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
+                <button class="btn btn-lg btn-primary m-2 d-none" id="serializeUnitTestData" disabled data-requires-auth><i class="fas fa-save me-2"></i><?php echo _("Save Unit Test") ?></button>
             </div>
         </div>
 
