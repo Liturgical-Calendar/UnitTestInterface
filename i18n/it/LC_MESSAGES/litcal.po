@@ -2,13 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 12:54+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2025-12-10 14:04+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/it/>\n"
 "Language: it\n"
@@ -56,11 +57,11 @@ msgstr "Esegui i test"
 
 #: index.php:78 index.php:102 index.php:138 index.php:168
 msgid "Successful:"
-msgstr "Riuscito:"
+msgstr "Riusciti:"
 
 #: index.php:81 index.php:105 index.php:141 index.php:171
 msgid "Failed:"
-msgstr "Fallito:"
+msgstr "Falliti:"
 
 #: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
@@ -87,7 +88,7 @@ msgstr "Caricamento..."
 
 #: admin.php:119
 msgid "Define a Liturgical Accuracy Test"
-msgstr "Definire un Test di Precisione Liturgica"
+msgstr "Definire un Test di Accuratezza Liturgica"
 
 #: admin.php:121
 msgid ""
@@ -97,7 +98,7 @@ msgid ""
 "expected dates from year to year."
 msgstr ""
 "Per verificare che i dati del calendario liturgico prodotti dall'API siano "
-"accurati, possiamo creare Test di Precisione Liturgica che ci permettono di "
+"accurati, possiamo creare Test di Accuratezza Liturgica che ci permettono di "
 "verificare che gli eventi siano stati o non siano stati creati nel "
 "calendario, o che abbiano date previste di anno in anno."
 
@@ -186,7 +187,7 @@ msgstr "Esistenza variabile"
 
 #: admin.php:187
 msgid "Please login to create or edit tests."
-msgstr "Per favore accedi per creare o modificare i test."
+msgstr "Accedi per creare o modificare i test."
 
 #: admin.php:199 admin.php:200
 msgid "Name of Test"
@@ -270,7 +271,7 @@ msgstr "Calendario Liturgico Cattolico"
 
 #: layout/sidebar.php:19
 msgid "Accuracy Tests Runner"
-msgstr "Esecutore Test di Precisione"
+msgstr "Esecuzione Test di Accuratezza"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
