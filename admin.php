@@ -43,6 +43,9 @@ $dotenv->ifPresent(['API_PROTOCOL'])->allowedValues(['http', 'https']);
 $dotenv->ifPresent(['API_PORT'])->isInteger();
 $dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'test', 'staging', 'production']);
 
+// Cache localhost check to avoid repeated $_SERVER lookups
+$isLocalhost = isLocalhost();
+
 // Setup logging directory
 $logsFolder = __DIR__ . DIRECTORY_SEPARATOR . 'logs';
 if (!file_exists($logsFolder)) {
@@ -52,7 +55,7 @@ if (!file_exists($logsFolder)) {
 }
 $logFile = $logsFolder . DIRECTORY_SEPARATOR . 'litcaltests-error.log';
 
-$debugMode = isLocalhost() || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development');
+$debugMode = $isLocalhost || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development');
 
 if ($debugMode) {
     ini_set('display_errors', 1);
@@ -76,11 +79,11 @@ $logger->pushHandler(new StreamHandler(
 ));
 
 // Build API base URL
-$schema     = isset($_ENV['API_PROTOCOL']) ? $_ENV['API_PROTOCOL'] : (isLocalhost() ? 'http' : 'https');
-$host       = isset($_ENV['API_HOST']) ? $_ENV['API_HOST'] : (isLocalhost() ? 'localhost' : 'litcal.johnromanodorazio.com');
-$port       = isset($_ENV['API_PORT']) ? (int) $_ENV['API_PORT'] : (isLocalhost() ? 8000 : 443);
+$schema     = isset($_ENV['API_PROTOCOL']) ? $_ENV['API_PROTOCOL'] : ($isLocalhost ? 'http' : 'https');
+$host       = isset($_ENV['API_HOST']) ? $_ENV['API_HOST'] : ($isLocalhost ? 'localhost' : 'litcal.johnromanodorazio.com');
+$port       = isset($_ENV['API_PORT']) ? (int) $_ENV['API_PORT'] : ($isLocalhost ? 8000 : 443);
 $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
-$baseUrl    = isLocalhost() ? "$schema://$host:$port" : "$schema://$host/api/$apiVersion";
+$baseUrl    = $isLocalhost ? "$schema://$host:$port" : "$schema://$host/api/$apiVersion";
 
 // Create PSR-compliant HTTP client
 $apiClient = new ApiClient(null, 10, 5, $logger);

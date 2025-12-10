@@ -76,8 +76,18 @@ export default defineConfig({
     webServer: [
         {
             // Start API server first (foreground mode for Playwright)
+            // API_REPO_PATH must be set in CI; defaults to sibling directory for local development
             command: `PHP_CLI_SERVER_WORKERS=6 php -S ${process.env.API_HOST || 'localhost'}:${process.env.API_PORT || '8000'} -t public`,
-            cwd: process.env.API_REPO_PATH || path.resolve(__dirname, '../LiturgicalCalendarAPI'),
+            cwd: (() => {
+                if (process.env.API_REPO_PATH) {
+                    return process.env.API_REPO_PATH;
+                }
+                const defaultPath = path.resolve(__dirname, '../LiturgicalCalendarAPI');
+                if (!process.env.CI) {
+                    console.warn(`API_REPO_PATH not set, using default: ${defaultPath}`);
+                }
+                return defaultPath;
+            })(),
             url: `${process.env.API_PROTOCOL || 'http'}://${process.env.API_HOST || 'localhost'}:${process.env.API_PORT || '8000'}/calendars`,
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,

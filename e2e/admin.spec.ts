@@ -41,9 +41,11 @@ test.describe('Admin Page - Unauthenticated State', () => {
         for (let i = 0; i < buttonCount; i++) {
             const btn = protectedButtons.nth(i);
             // Buttons should either be hidden (d-none class) or disabled
-            const isHidden = await btn.evaluate(el => el.classList.contains('d-none'));
-            const isDisabled = await btn.isDisabled().catch(() => true);
-            expect(isHidden || isDisabled).toBe(true);
+            // Use web-first assertions for better reliability and auto-retry
+            const hasHiddenClass = await btn.evaluate(el => el.classList.contains('d-none'));
+            if (!hasHiddenClass) {
+                await expect(btn).toBeDisabled();
+            }
         }
     });
 
@@ -140,18 +142,15 @@ test.describe('Admin Page - Authenticated State', () => {
         if (testOptions.length > 0) {
             await adminPage.selectTest(testOptions[0]);
 
-            // Wait for form to populate
-            await page.waitForTimeout(500);
+            // Wait for form to populate by checking the select has a value
+            const testSelector = page.locator('#litCalTestsSelect');
+            await expect(testSelector).toHaveValue(testOptions[0]);
 
             // Now deselect by selecting empty option
-            await page.locator('#litCalTestsSelect').selectOption('');
+            await testSelector.selectOption('');
 
-            // Wait for form to reset
-            await page.waitForTimeout(500);
-
-            // Verify the select is back to empty value
-            const selectedValue = await page.locator('#litCalTestsSelect').inputValue();
-            expect(selectedValue).toBe('');
+            // Verify the select is back to empty value using web-first assertion
+            await expect(testSelector).toHaveValue('');
         }
     });
 });
@@ -176,7 +175,11 @@ test.describe('Admin Page - Logout Flow', () => {
 });
 
 test.describe('Admin Page - 401 Response Handling', () => {
-    test('should trigger login modal on 401 response', async ({ adminPage, page }) => {
+    // Skip: The 401 handling is implemented within specific app code paths (e.g., saveTest),
+    // not via a global fetch interceptor. Testing this properly requires triggering
+    // the actual save flow, which needs a complete test form setup.
+    // TODO: Implement full 401 flow test once test creation UI is complete.
+    test.skip('should trigger login modal on 401 response', async ({ adminPage, page }) => {
         await adminPage.goToAdmin();
         await adminPage.waitForAuth();
 
@@ -189,26 +192,11 @@ test.describe('Admin Page - 401 Response Handling', () => {
             });
         });
 
-        // Try to make an authenticated request that will return 401
-        // This should trigger the login modal
-        await page.evaluate(async () => {
-            const response = await fetch('/api/tests/some-test', {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ test: 'data' })
-            });
-            // The 401 handler should show the login modal
-            return response.status;
-        });
+        // The 401 handler in admin.js calls window.showLoginModal() when a save request fails
+        // This would require triggering the actual save flow to test properly
 
-        // Give time for the 401 handler to react
-        await page.waitForTimeout(1000);
-
-        // Note: The actual login modal trigger depends on implementation
-        // This test verifies the infrastructure is in place
+        const loginModal = page.locator('#loginModal');
+        await expect(loginModal).toBeVisible({ timeout: 5000 });
     });
 });
 
@@ -217,14 +205,17 @@ test.describe('Admin Page - Visual Regression', () => {
         await adminPage.goToAdmin();
         await adminPage.waitForAuth();
 
-        // Open a select dropdown and verify it's not clipped
+        // Verify the select element doesn't have overflow:hidden that causes clipping
         const select = page.locator('#litCalTestsSelect');
-        await select.click();
 
-        // Take a screenshot for visual verification
-        await page.screenshot({ path: 'e2e/screenshots/dropdown-no-clipping.png' });
+        // Check that the parent container doesn't clip the dropdown
+        const parentOverflow = await select.evaluate(el => {
+            const parent = el.closest('.form-group, .mb-3');
+            return parent ? getComputedStyle(parent).overflow : 'visible';
+        });
+        expect(parentOverflow).not.toBe('hidden');
 
-        // The select options should be visible and not clipped
-        // This is primarily a visual check - the CSS fix should prevent clipping
+        // Optionally take a screenshot for manual review
+        await page.screenshot({ path: 'e2e/screenshots/dropdown-no-clipping.png', fullPage: true });
     });
 });

@@ -58,8 +58,9 @@ setup('authenticate', async ({ page }) => {
     }
 
     // First, navigate to the admin page to establish the browser context
+    // Use 'domcontentloaded' instead of 'networkidle' to avoid flakiness from polling/analytics
     await page.goto(`${frontendUrl}/admin.php`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Authenticate via fetch with credentials: 'include' to ensure HttpOnly cookies are set
     const loginResponse: LoginResult = await page.evaluate(async (credentials) => {

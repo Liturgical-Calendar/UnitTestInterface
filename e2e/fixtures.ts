@@ -20,7 +20,11 @@ export class AdminPageHelper {
     constructor(page: Page) {
         this.page = page;
         this.baseUrl = process.env.FRONTEND_URL || 'http://localhost:3003';
-        this.apiUrl = `${process.env.API_PROTOCOL || 'http'}://${process.env.API_HOST || 'localhost'}:${process.env.API_PORT || '8000'}`;
+        // Use URL constructor for validation and proper encoding
+        const protocol = process.env.API_PROTOCOL || 'http';
+        const host = process.env.API_HOST || 'localhost';
+        const port = process.env.API_PORT || '8000';
+        this.apiUrl = new URL(`${protocol}://${host}:${port}`).origin;
     }
 
     /**
@@ -28,7 +32,8 @@ export class AdminPageHelper {
      */
     async goToAdmin() {
         await this.page.goto(`${this.baseUrl}/admin.php`);
-        await this.page.waitForLoadState('networkidle');
+        // Use 'domcontentloaded' instead of 'networkidle' to avoid flakiness from polling/analytics
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
     /**
@@ -94,7 +99,8 @@ export class AdminPageHelper {
      */
     async isUserMenuVisible(): Promise<boolean> {
         const userMenu = this.page.locator('#userMenu');
-        return userMenu.isVisible().catch(() => false);
+        // isVisible() already returns false when the element doesn't exist
+        return userMenu.isVisible();
     }
 
     /**
@@ -131,8 +137,8 @@ export class AdminPageHelper {
     async logout() {
         const logoutBtn = this.page.locator('#logoutBtn');
         await logoutBtn.click();
-        // Wait for page reload
-        await this.page.waitForLoadState('networkidle');
+        // Wait for page reload - use 'domcontentloaded' to avoid flakiness
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
     /**
@@ -141,7 +147,8 @@ export class AdminPageHelper {
     async selectTest(testName: string) {
         const select = this.page.locator('#litCalTestsSelect');
         await select.selectOption(testName);
-        await this.page.waitForLoadState('networkidle');
+        // Use 'domcontentloaded' to avoid flakiness from polling/analytics
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
     /**
@@ -165,6 +172,7 @@ export class AdminPageHelper {
      */
     async getTestOptions(): Promise<string[]> {
         const options = await this.page.locator('#litCalTestsSelect option').allTextContents();
+        // Filter out the placeholder option (displayed as '--')
         return options.filter(opt => opt !== '--');
     }
 
