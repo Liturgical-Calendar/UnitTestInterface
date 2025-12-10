@@ -93,6 +93,11 @@ $baseUrl    = $isLocalhost ? "$schema://$host:$port" : "$schema://$host/api/$api
 // Create PSR-compliant HTTP client
 $apiClient = new ApiClient(null, 10, 5, $logger);
 
+// Initialize I18n early so we can use locale for API requests before HTML output
+include_once 'includes/I18n.php';
+use LiturgicalCalendar\UnitTestInterface\I18n;
+$i18n = new I18n();
+
 // Fetch tests data from API
 try {
     $testsData   = $apiClient->fetchJsonWithKey("$baseUrl/tests", 'litcal_tests');
@@ -103,6 +108,20 @@ try {
         die('Failed to fetch tests data: ' . $e->getMessage());
     }
     die('Failed to fetch tests data. Please try again later.');
+}
+
+// Fetch events data from API with locale (before HTML output for consistent error pages)
+$eventsEndpoint = "$baseUrl/events";
+$apiClient->setLocale($i18n->locale);
+try {
+    $eventsData = $apiClient->fetchJsonWithKey($eventsEndpoint, 'litcal_events');
+    $LitCalAllLitEvents = $eventsData['litcal_events'];
+} catch (RuntimeException $e) {
+    $logger->error('Failed to fetch events data', ['error' => $e->getMessage()]);
+    if ($debugMode) {
+        die('Could not fetch data from ' . $eventsEndpoint . ': ' . $e->getMessage());
+    }
+    die('Failed to fetch events data. Please try again later.');
 }
 
 // Signal that this page has the login modal (for topnavbar.php)
@@ -129,7 +148,8 @@ include_once 'layout/sidebar.php';
                     <option value="" selected>--</option>
                     <?php
                     foreach ($LitCalTests as $LitCalTest) {
-                        echo "<option value=\"{$LitCalTest['name']}\">{$LitCalTest['name']}</option>";
+                        $escapedName = htmlspecialchars($LitCalTest['name'], ENT_QUOTES, 'UTF-8');
+                        echo "<option value=\"{$escapedName}\">{$escapedName}</option>";
                     }
                     ?>
                 </select>
@@ -236,19 +256,6 @@ include_once 'layout/sidebar.php';
 </main>
 <!-- End of Main Content -->
 <?php
-// Fetch events data from API with locale
-$eventsEndpoint = "$baseUrl/events";
-$apiClient->setLocale($i18n->locale);
-try {
-    $eventsData = $apiClient->fetchJsonWithKey($eventsEndpoint, 'litcal_events');
-    $LitCalAllLitEvents = $eventsData['litcal_events'];
-} catch (RuntimeException $e) {
-    $logger->error('Failed to fetch events data', ['error' => $e->getMessage()]);
-    if ($debugMode) {
-        die('Could not fetch data from ' . $eventsEndpoint . ': ' . $e->getMessage());
-    }
-    die('Failed to fetch events data. Please try again later.');
-}
 // Include the test creation modal (hidden by JS when not authenticated)
 include_once 'components/NewTestModal.php';
 ?>

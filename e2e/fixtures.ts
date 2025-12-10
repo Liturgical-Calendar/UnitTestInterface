@@ -185,9 +185,12 @@ export class AdminPageHelper {
      * Check if the form is in a clean/reset state
      */
     async isFormReset(): Promise<boolean> {
-        const testName = await this.page.locator('#testName').textContent();
+        const testNameEl = this.page.locator('#testName');
+        const testName = await testNameEl.textContent();
+        const testNameDefault = await testNameEl.getAttribute('data-default');
         const description = await this.page.locator('#description').inputValue();
-        return testName === '' && description === '';
+        // Form is reset when testName shows the default label and description is empty
+        return testName === testNameDefault && description === '';
     }
 
     /**

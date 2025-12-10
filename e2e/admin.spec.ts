@@ -1,4 +1,6 @@
 import { test, expect } from './fixtures';
+import { mkdir } from 'fs/promises';
+import path from 'path';
 
 /**
  * E2E tests for admin.php JWT authentication and test management
@@ -105,8 +107,8 @@ test.describe('Admin Page - Authenticated State', () => {
 
         for (let i = 0; i < buttonCount; i++) {
             const btn = protectedButtons.nth(i);
-            const isHidden = await btn.evaluate(el => el.classList.contains('d-none'));
-            expect(isHidden).toBe(false);
+            // Use web-first assertion for consistency
+            await expect(btn).not.toHaveClass(/\bd-none\b/);
         }
     });
 
@@ -212,6 +214,8 @@ test.describe('Admin Page - 401 Response Handling', () => {
 });
 
 test.describe('Admin Page - Visual Regression', () => {
+    const screenshotsDir = path.join(__dirname, 'screenshots');
+
     test('should not have dropdown clipping issues', async ({ adminPage, page }) => {
         await adminPage.goToAdmin();
         await adminPage.waitForAuth();
@@ -226,7 +230,10 @@ test.describe('Admin Page - Visual Regression', () => {
         });
         expect(parentOverflow).not.toBe('hidden');
 
+        // Ensure screenshots directory exists before taking screenshot
+        await mkdir(screenshotsDir, { recursive: true });
+
         // Optionally take a screenshot for manual review
-        await page.screenshot({ path: 'e2e/screenshots/dropdown-no-clipping.png', fullPage: true });
+        await page.screenshot({ path: path.join(screenshotsDir, 'dropdown-no-clipping.png'), fullPage: true });
     });
 });

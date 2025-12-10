@@ -3,7 +3,10 @@ include_once("includes/I18n.php");
 
 use LiturgicalCalendar\UnitTestInterface\I18n;
 
-$i18n = new I18n();
+// Only create I18n if not already initialized (e.g., by admin.php for early API calls)
+if (!isset($i18n)) {
+    $i18n = new I18n();
+}
 $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
 ?><!DOCTYPE html>
 <html lang="<?php echo $i18n->locale; ?>">
