@@ -17,13 +17,18 @@
         <!-- Collapsible navbar content -->
         <div class="collapse navbar-collapse" id="navbarContent">
             <!-- Main navigation -->
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-center">
                 <li class="nav-item<?php echo $pageName === 'index' ? ' bg-info' : '' ?>">
-                    <a class="nav-link<?php echo $pageName === 'index' ? ' active' : '' ?>" href="index.php"><?php echo _('Calendars'); ?></a>
+                    <a class="nav-link<?php echo $pageName === 'index' ? ' active' : '' ?>" href="index.php">
+                        <i class="fas fa-calendar-check me-1"></i><?php echo _('Calendars'); ?>
+                    </a>
                 </li>
                 <li class="nav-item<?php echo $pageName === 'resources' ? ' bg-info' : '' ?>">
-                    <a class="nav-link<?php echo $pageName === 'resources' ? ' active' : '' ?>" href="resources.php"><?php echo _('Resources'); ?></a>
+                    <a class="nav-link<?php echo $pageName === 'resources' ? ' active' : '' ?>" href="resources.php">
+                        <i class="fas fa-folder-open me-1"></i><?php echo _('Resources'); ?>
+                    </a>
                 </li>
+                <li class="vr mx-2 d-none d-lg-block"></li>
                 <li class="nav-item d-flex align-items-center">
                     <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link mb-0 pe-1">
                         <i class="fas fa-code-branch me-1"></i><span class="d-none d-xl-inline"><?php echo _("API Version"); ?></span>
