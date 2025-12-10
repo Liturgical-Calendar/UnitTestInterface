@@ -1,15 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# OpenAI <noreply-mt-openai@weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-11-21 03:22+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"PO-Revision-Date: 2025-12-10 12:54+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: German <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/de/>\n"
 "Language: de\n"
@@ -56,21 +55,17 @@ msgid "Run Tests"
 msgstr "Tests ausführen"
 
 #: index.php:78 index.php:102 index.php:138 index.php:168
-#, fuzzy
-#| msgid "Successful tests:"
 msgid "Successful:"
-msgstr "Erfolgreiche Tests:"
+msgstr "Erfolgreich:"
 
 #: index.php:81 index.php:105 index.php:141 index.php:171
-#, fuzzy
-#| msgid "Failed tests:"
 msgid "Failed:"
-msgstr "Fehlgeschlagene Tests:"
+msgstr "Fehlgeschlagen:"
 
 #: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
 msgid "Time (%s):"
-msgstr ""
+msgstr "Zeit (%s):"
 
 #: index.php:98
 msgid "VALIDATE SOURCE DATA"
@@ -83,10 +78,8 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "KALENDERDATEN FÜR DIE JAHRE VON 1970 BIS %s VALIDIEREN"
 
 #: index.php:163
-#, fuzzy
-#| msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
-msgstr "FÜHREN SIE UNIT-TESTS FÜR BESTIMMTE EREIGNISSE AUS"
+msgstr "GENAUIGKEITSTESTS FÜR SPEZIFISCHE EREIGNISSE DURCHFÜHREN"
 
 #: index.php:196
 msgid "Loading..."
@@ -94,25 +87,19 @@ msgstr "Laden..."
 
 #: admin.php:119
 msgid "Define a Liturgical Accuracy Test"
-msgstr ""
+msgstr "Einen liturgischen Genauigkeitstest definieren"
 
 #: admin.php:121
-#, fuzzy
-#| msgid ""
-#| "In order to verify that the liturgical calendar data produced by the API "
-#| "is actually producing correct data, we can create Unit Tests that allow "
-#| "us to verify that events were / were not created in the calendar, or that "
-#| "they have expected dates from year to year."
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "accurate, we can create Liturgical Accuracy Tests that allow us to verify "
 "that events were / were not created in the calendar, or that they have "
 "expected dates from year to year."
 msgstr ""
-"Um zu überprüfen, ob die vom API erzeugten Daten des liturgischen Kalenders "
-"tatsächlich korrekte Daten liefern, können wir Unit Tests erstellen, die es "
-"uns ermöglichen zu überprüfen, ob Ereignisse im Kalender erstellt wurden "
-"oder nicht, oder ob sie von Jahr zu Jahr erwartete Daten haben."
+"Um zu überprüfen, ob die vom API erzeugten liturgischen Kalenderdaten genau "
+"sind, können wir liturgische Genauigkeitstests erstellen, mit denen wir "
+"überprüfen können, ob Ereignisse im Kalender erstellt wurden oder nicht oder "
+"ob sie von Jahr zu Jahr die erwarteten Daten haben."
 
 #: admin.php:126
 msgid "Edit an existing test"
@@ -200,7 +187,7 @@ msgstr "Variablenexistenz"
 
 #: admin.php:187
 msgid "Please login to create or edit tests."
-msgstr ""
+msgstr "Bitte anmelden, um Tests zu erstellen oder zu bearbeiten."
 
 #: admin.php:199 admin.php:200
 msgid "Name of Test"
@@ -216,13 +203,11 @@ msgstr "Jährliche Überprüfungen"
 
 #: admin.php:225
 msgid "Login to view and edit test details."
-msgstr ""
+msgstr "Anmelden, um Testdetails anzuzeigen und zu bearbeiten."
 
 #: admin.php:229
-#, fuzzy
-#| msgid "Save Unit Test"
 msgid "Save Accuracy Test"
-msgstr "Unit-Test speichern"
+msgstr "Genauigkeitstest speichern"
 
 #: admin.php:259
 msgid "Add or Edit Comment"
@@ -238,7 +223,7 @@ msgstr "Speichern"
 
 #: layout/topnavbar.php:9
 msgid "Toggle sidebar"
-msgstr ""
+msgstr "Seitenleiste umschalten"
 
 #: layout/topnavbar.php:23
 msgid "Calendars"
@@ -262,35 +247,31 @@ msgstr "Websocket-Verbindungsstatus"
 
 #: layout/topnavbar.php:62
 msgid "Websocket"
-msgstr ""
+msgstr "Websocket"
 
 #: layout/topnavbar.php:94
 msgid "Admin"
-msgstr ""
+msgstr "Admin"
 
 #: layout/topnavbar.php:101 layout/sidebar.php:23
-#, fuzzy
-#| msgid "Unit Tests Admin"
 msgid "Accuracy Tests Admin"
-msgstr "Unit-Tests Admin"
+msgstr "Genauigkeitstests-Admin"
 
 #: layout/topnavbar.php:106 layout/topnavbar.php:107
 msgid "Login"
-msgstr ""
+msgstr "Anmelden"
 
 #: layout/topnavbar.php:115
 msgid "Logout"
-msgstr ""
+msgstr "Abmelden"
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
 msgstr "Katholischer Liturgischer Kalender"
 
 #: layout/sidebar.php:19
-#, fuzzy
-#| msgid "Unit Tests Runner"
 msgid "Accuracy Tests Runner"
-msgstr "Unit-Test-Läufer"
+msgstr "Genauigkeitstests-Läufer"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
@@ -315,13 +296,8 @@ msgid "Years to test"
 msgstr "Jahre zum Testen"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-#, fuzzy
-#| msgid ""
-#| "First choose the maximum range of years that will belong to the Unit Test."
 msgid "First choose the range of years that we will be testing."
-msgstr ""
-"Wählen Sie zuerst den maximalen Zeitraum der Jahre, die zum Unit-Test "
-"gehören werden."
+msgstr "Zuerst den Jahresbereich wählen, den wir testen werden."
 
 #: components/NewTestModal.php:43
 msgid ""
