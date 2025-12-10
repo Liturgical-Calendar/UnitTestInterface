@@ -324,7 +324,7 @@ const calDataTestTemplate = ( idx ) => {
     let year = Years[ i ];
     return `
 <div class="col-1${i === 0 || i % 10 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 year-${year} fw-bold fs-5">${year}</p>
+    <p class="text-center mb-0 year-${year} fw-bold">${year}</p>
 </div>
 `;
 }
