@@ -49,23 +49,22 @@ include_once('layout/head.php');
     <div class="container-fluid">
 
         <div id="testsContainer">
-            <div class="row mb-3 text-center g-3 litcaltests-header align-items-end justify-content-center">
-                <div class="col-1"></div>
-                <div class="col-2">
+            <div class="row mb-3 text-center g-2 litcaltests-header align-items-end">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
                         <option data-responsetype="json" value="JSON">JSON</option>
                         <option data-responsetype="yaml" value="YML">YAML</option>
                     </select>
                 </div>
-                <div class="col-2">
+                <div class="col-6 col-md-4 col-lg-2">
                     <button id="startTestRunnerBtn" type="button"
-                            class="btn btn-primary" disabled
+                            class="btn btn-primary w-100" disabled
                     ><i class="fa fa-rotate fa-fw d-inline-block"></i> <span id="startTestRunnerBtnLbl"><?php
                         echo _("Run Tests");
                     ?></span></button>
                 </div>
-                <div class="col-12 col-lg-7">
+                <div class="col-12 col-lg-8">
                     <div class="test-status-row">
                         <div class="test-status-item text-white bg-success rounded-start">
                             <i class="fas fa-circle-check fa-fw"></i><span class="status-label"><?php echo _("Successful:"); ?></span> <span id="successfulCount" class="successfulCount">0</span>
