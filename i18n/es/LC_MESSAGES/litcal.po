@@ -2,13 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 12:54+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2025-12-10 14:04+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/es/>\n"
 "Language: es\n"
@@ -65,7 +66,7 @@ msgstr "Fallido:"
 #: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
 msgid "Time (%s):"
-msgstr "Hora (%s):"
+msgstr "Tiempo (%s):"
 
 #: index.php:98
 msgid "VALIDATE SOURCE DATA"
