@@ -697,6 +697,8 @@ document.querySelector('#litCalTestsSelect').addEventListener('change', async (e
         document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.test_type;
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
         document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.setAttribute('disabled', 'disabled'));
+        // Disable calendar select when editing an existing test (test is tied to its calendar)
+        document.querySelector('#APICalendarSelect').setAttribute('disabled', 'disabled');
     } else {
         // Reset form to default state when empty option is selected
         proxiedTest = null;
@@ -730,8 +732,9 @@ document.querySelector('#litCalTestsSelect').addEventListener('change', async (e
         // Disable save button (requires test to be defined)
         document.querySelector('#serializeUnitTestData').setAttribute('disabled', 'disabled');
 
-        // Re-enable create new test buttons
+        // Re-enable create new test buttons and calendar select
         document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.removeAttribute('disabled'));
+        document.querySelector('#APICalendarSelect').removeAttribute('disabled');
     }
 });
 
