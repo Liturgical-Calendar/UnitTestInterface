@@ -101,6 +101,21 @@ body {
     }
 }
 
+/* Accordion header - make it work with row/col grid inside */
+.accordion-header.row {
+    margin: 0;
+}
+
+.accordion-header.row > .accordion-button {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.accordion-header .accordion-button > [class*="col-"] {
+    padding: 0 0.5rem;
+}
+
 /* Accordion header test results alignment */
 .accordion-button .test-results {
     display: flex;
@@ -109,7 +124,17 @@ body {
     min-height: 2.5rem;
 }
 
+/* On mobile, stack the accordion header content vertically */
 @media (max-width: 767.98px) {
+    .accordion-header .accordion-button > .col-12 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .accordion-button .test-status-row {
+        width: 100%;
+    }
+
     .accordion-button .test-results {
         font-size: 0.65rem;
         padding: 0.25rem !important;
