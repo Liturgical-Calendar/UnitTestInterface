@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 14:10+0000\n"
+"PO-Revision-Date: 2025-12-10 14:18+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
@@ -80,7 +80,7 @@ msgstr "Érvényesítse a naptári adatokat az 1970 és %s közötti évekre"
 
 #: index.php:163
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
-msgstr "HAJTS VÉGRE PONTOSSÁGI TESZTEKET ADOTT ESEMÉNYEKRE"
+msgstr "VÉGREHAJTSA A PONTOSSÁGI TESZTEKET ADOTT ESEMÉNYEKRE"
 
 #: index.php:196
 msgid "Loading..."
@@ -236,7 +236,7 @@ msgstr "API verzió"
 
 #: layout/topnavbar.php:48 layout/topnavbar.php:49
 msgid "LitCal Project"
-msgstr "LitCal projekt"
+msgstr "LitCal Projekt"
 
 #: layout/topnavbar.php:62
 msgid "Websocket connection status"
