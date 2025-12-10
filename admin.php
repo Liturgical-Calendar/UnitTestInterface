@@ -279,11 +279,12 @@ include_once 'components/NewTestModal.php';
 $jsonFlags     = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 $testsIndex    = json_encode($LitCalTests, $jsonFlags);
 $litcal_events = json_encode($LitCalAllLitEvents, $jsonFlags);
+$baseUrlJson   = json_encode($baseUrl);
 $javascript    = <<<SCRIPT
     <script>
         window.LitCalTests = Object.freeze($testsIndex);
         window.LitcalEvents = Object.freeze($litcal_events);
-        window.baseUrl = '$baseUrl';
+        window.baseUrl = $baseUrlJson;
     </script>
 SCRIPT;
 echo $javascript;
