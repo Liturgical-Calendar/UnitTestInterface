@@ -2,13 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
+# OpenAI <noreply-mt-openai@weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-01 13:39+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"PO-Revision-Date: 2025-12-10 12:54+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/sk/>\n"
 "Language: sk\n"
@@ -55,21 +56,17 @@ msgid "Run Tests"
 msgstr "Spustiť testy"
 
 #: index.php:78 index.php:102 index.php:138 index.php:168
-#, fuzzy
-#| msgid "Successful tests:"
 msgid "Successful:"
-msgstr "Úspešné testy:"
+msgstr "Úspešné:"
 
 #: index.php:81 index.php:105 index.php:141 index.php:171
-#, fuzzy
-#| msgid "Failed tests:"
 msgid "Failed:"
-msgstr "Zlyhané testy:"
+msgstr "Neúspešné:"
 
 #: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
 msgid "Time (%s):"
-msgstr ""
+msgstr "Čas (%s):"
 
 #: index.php:98
 msgid "VALIDATE SOURCE DATA"
@@ -82,10 +79,8 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "OVERIŤ ÚDAJE O KALENDÁRI NA ROKY OD 1970 DO %s"
 
 #: index.php:163
-#, fuzzy
-#| msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
-msgstr "SPUSTI JEDNOTKOVÉ TESTY PRE ŠPECIFICKÉ UDALOSTI"
+msgstr "SPUSTIŤ TESTY PRESNOSTI PRE KONKRÉTNE UDALOSTI"
 
 #: index.php:196
 msgid "Loading..."
@@ -93,25 +88,19 @@ msgstr "Načítava sa..."
 
 #: admin.php:119
 msgid "Define a Liturgical Accuracy Test"
-msgstr ""
+msgstr "Definovať Liturgický Test Presnosti"
 
 #: admin.php:121
-#, fuzzy
-#| msgid ""
-#| "In order to verify that the liturgical calendar data produced by the API "
-#| "is actually producing correct data, we can create Unit Tests that allow "
-#| "us to verify that events were / were not created in the calendar, or that "
-#| "they have expected dates from year to year."
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "accurate, we can create Liturgical Accuracy Tests that allow us to verify "
 "that events were / were not created in the calendar, or that they have "
 "expected dates from year to year."
 msgstr ""
-"Aby sme overili, že údaje liturgického kalendára vytvorené API skutočne "
-"produkujú správne údaje, môžeme vytvoriť jednotkové testy, ktoré nám umožnia "
-"overiť, či boli udalosti vytvorené v kalendári alebo nie, alebo či majú "
-"očakávané dátumy z roka na rok."
+"Aby sme overili, že liturgické kalendárové údaje produkované API sú presné, "
+"môžeme vytvoriť Liturgické Testy Presnosti, ktoré nám umožnia overiť, že "
+"udalosti boli / neboli vytvorené v kalendári, alebo že majú očakávané dátumy "
+"z roka na rok."
 
 #: admin.php:126
 msgid "Edit an existing test"
@@ -197,7 +186,7 @@ msgstr "Premenlivý výskyt"
 
 #: admin.php:187
 msgid "Please login to create or edit tests."
-msgstr ""
+msgstr "Prihláste sa pre vytvorenie alebo úpravu testov."
 
 #: admin.php:199 admin.php:200
 msgid "Name of Test"
@@ -213,13 +202,11 @@ msgstr "Ročné tvrdenia"
 
 #: admin.php:225
 msgid "Login to view and edit test details."
-msgstr ""
+msgstr "Prihláste sa pre zobrazenie a úpravu detailov testu."
 
 #: admin.php:229
-#, fuzzy
-#| msgid "Save Unit Test"
 msgid "Save Accuracy Test"
-msgstr "Uložiť jednotkový test"
+msgstr "Uložiť Test Presnosti"
 
 #: admin.php:259
 msgid "Add or Edit Comment"
@@ -235,7 +222,7 @@ msgstr "Uložiť"
 
 #: layout/topnavbar.php:9
 msgid "Toggle sidebar"
-msgstr ""
+msgstr "Prepnúť bočný panel"
 
 #: layout/topnavbar.php:23
 msgid "Calendars"
@@ -259,35 +246,31 @@ msgstr "Stav pripojenia Websocketu"
 
 #: layout/topnavbar.php:62
 msgid "Websocket"
-msgstr ""
+msgstr "Websocket"
 
 #: layout/topnavbar.php:94
 msgid "Admin"
-msgstr ""
+msgstr "Správa"
 
 #: layout/topnavbar.php:101 layout/sidebar.php:23
-#, fuzzy
-#| msgid "Unit Tests Admin"
 msgid "Accuracy Tests Admin"
-msgstr "Správa jednotkových testov"
+msgstr "Správa Testov Presnosti"
 
 #: layout/topnavbar.php:106 layout/topnavbar.php:107
 msgid "Login"
-msgstr ""
+msgstr "Prihlásenie"
 
 #: layout/topnavbar.php:115
 msgid "Logout"
-msgstr ""
+msgstr "Odhlásenie"
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
 msgstr "Katolícky liturgický kalendár"
 
 #: layout/sidebar.php:19
-#, fuzzy
-#| msgid "Unit Tests Runner"
 msgid "Accuracy Tests Runner"
-msgstr "Spúšťač jednotkových testov"
+msgstr "Spúšťač Testov Presnosti"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
@@ -310,13 +293,8 @@ msgid "Years to test"
 msgstr "Roky na testovanie"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-#, fuzzy
-#| msgid ""
-#| "First choose the maximum range of years that will belong to the Unit Test."
 msgid "First choose the range of years that we will be testing."
-msgstr ""
-"Najprv vyberte maximálny rozsah rokov, ktoré budú patriť do jednotkového "
-"testu."
+msgstr "Najprv vyberte rozsah rokov, ktoré budeme testovať."
 
 #: components/NewTestModal.php:43
 msgid ""
