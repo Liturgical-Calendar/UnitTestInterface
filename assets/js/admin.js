@@ -634,15 +634,14 @@ document.addEventListener('click', event => {
     if (!sidebarToggle) return;
     event.preventDefault();
     // Toggle icon direction only for sidebar button (has angle icons, not bars icon)
-    const icon = sidebarToggle.querySelector('i.fa-angle-left, i.fa-angle-right');
-    if (icon) {
-        if (document.body.classList.contains('sb-sidenav-collapsed')) {
-            icon.classList.remove('fa-angle-right');
-            icon.classList.add('fa-angle-left');
-        } else {
-            icon.classList.remove('fa-angle-left');
-            icon.classList.add('fa-angle-right');
-        }
+    // Font Awesome 7 renders icons as SVG, so we need to replace the icon element
+    const svg = sidebarToggle.querySelector('svg.fa-angle-left, svg.fa-angle-right');
+    if (svg) {
+        const isCollapsed = document.body.classList.contains('sb-sidenav-collapsed');
+        const newIconClass = isCollapsed ? 'fa-angle-left' : 'fa-angle-right';
+        const newIcon = document.createElement('i');
+        newIcon.className = `fas ${newIconClass}`;
+        svg.replaceWith(newIcon);
     }
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
