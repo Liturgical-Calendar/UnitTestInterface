@@ -135,16 +135,9 @@ include_once 'layout/sidebar.php';
                                                     ->label(true)
                                                     ->labelText(_('Calendar to test'))
                                                     ->setOptions(OptionsType::ALL)
-                                                    ->disabled(!$isAuthenticated);
-                            $selectHtml = $CalendarSelect->getSelect();
-                            // Add data-requires-auth attribute using DOMDocument for robustness
-                            $dom = new DOMDocument();
-                            $dom->loadHTML('<?xml encoding="UTF-8">' . $selectHtml, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-                            $select = $dom->getElementsByTagName('select')->item(0);
-                            if ($select !== null) {
-                                $select->setAttribute('data-requires-auth', '');
-                            }
-                            echo $dom->saveHTML();
+                                                    ->disabled(!$isAuthenticated)
+                                                    ->data('requires-auth', '');
+                            echo $CalendarSelect->getSelect();
                         ?>
                     </div>
                     <div class="form-group col col-md-9">
