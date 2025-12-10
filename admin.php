@@ -137,9 +137,14 @@ include_once 'layout/sidebar.php';
                                                     ->setOptions(OptionsType::ALL)
                                                     ->disabled(!$isAuthenticated);
                             $selectHtml = $CalendarSelect->getSelect();
-                            // Add data-requires-auth attribute for JS to enable on login
-                            $selectHtml = str_replace('<select ', '<select data-requires-auth ', $selectHtml);
-                            echo $selectHtml;
+                            // Add data-requires-auth attribute using DOMDocument for robustness
+                            $dom = new DOMDocument();
+                            $dom->loadHTML('<?xml encoding="UTF-8">' . $selectHtml, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+                            $select = $dom->getElementsByTagName('select')->item(0);
+                            if ($select !== null) {
+                                $select->setAttribute('data-requires-auth', '');
+                            }
+                            echo $dom->saveHTML();
                         ?>
                     </div>
                     <div class="form-group col col-md-9">
