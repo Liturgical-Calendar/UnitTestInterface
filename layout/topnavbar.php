@@ -5,8 +5,10 @@
             <i class="fas fa-cross me-2"></i><span class="d-none d-sm-inline">LitCal Accuracy Tests</span><span class="d-inline d-sm-none">LitCal</span>
         </a>
         <?php if (!defined('SIDEBAR') || true === SIDEBAR) { ?>
-        <!-- Sidebar Toggle (Topbar) -->
-        <button class="btn btn-link btn-sm order-1 order-lg-0 sidebarToggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+        <!-- Sidebar Toggle (Topbar) - only visible on lg+ screens where sidebar is shown -->
+        <button class="btn btn-link btn-sm d-none d-lg-inline-block sidebarToggle" id="sidebarToggle" title="<?php echo _('Toggle sidebar'); ?>">
+            <i class="fas fa-table-columns"></i>
+        </button>
         <?php } ?>
         <!-- Mobile toggle button -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
