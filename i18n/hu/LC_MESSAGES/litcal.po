@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-10 09:24+0000\n"
+"POT-Creation-Date: 2025-12-10 12:47+0000\n"
 "PO-Revision-Date: 2025-12-08 11:22+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
@@ -55,26 +55,29 @@ msgstr "Válasz formátum"
 msgid "Run Tests"
 msgstr "Teszteket futtat"
 
-#: index.php:77 index.php:98 index.php:134 index.php:168
-msgid "Successful tests:"
+#: index.php:78 index.php:102 index.php:138 index.php:168
+#, fuzzy
+#| msgid "Successful tests:"
+msgid "Successful:"
 msgstr "Sikeres tesztek:"
 
-#: index.php:80 index.php:103 index.php:139 index.php:173
-msgid "Failed tests:"
+#: index.php:81 index.php:105 index.php:141 index.php:171
+#, fuzzy
+#| msgid "Failed tests:"
+msgid "Failed:"
 msgstr "Sikertelen tesztek:"
 
-#. translators: %s: <span id="totalUnitTestsCount"></span>
-#: index.php:84 index.php:108 index.php:145 index.php:180
+#: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
-msgid "Total time for %s tests:"
-msgstr "Összes idő %s tesztekre:"
+msgid "Time (%s):"
+msgstr ""
 
-#: index.php:95
+#: index.php:98
 msgid "VALIDATE SOURCE DATA"
 msgstr "ÉRVÉNYESÍTSE A FORRÁSADATOKAT"
 
 #. translators: %s: <span class="yearMax"></span>
-#: index.php:127
+#: index.php:130
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "ÉRVÉNYESÍTSE A NAPTÁRI ADATOKAT AZ 1970-TŐL %s ÉVIG"
@@ -85,15 +88,15 @@ msgstr "ÉRVÉNYESÍTSE A NAPTÁRI ADATOKAT AZ 1970-TŐL %s ÉVIG"
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "FUTTASSA A TESZTEGYSÉGEKET MEGHATÁROZOTT ESEMÉNYEKHEZ"
 
-#: index.php:201
+#: index.php:196
 msgid "Loading..."
 msgstr "Betöltés..."
 
-#: admin.php:95
+#: admin.php:119
 msgid "Define a Liturgical Accuracy Test"
 msgstr ""
 
-#: admin.php:97
+#: admin.php:121
 #, fuzzy
 #| msgid ""
 #| "In order to verify that the liturgical calendar data produced by the API "
@@ -111,23 +114,23 @@ msgstr ""
 "teszik számunkra az események meglétének/nemlétének és várható dátumainak "
 "éves ellenőrzését."
 
-#: admin.php:102
+#: admin.php:126
 msgid "Edit an existing test"
 msgstr "Létező teszt szerkesztése"
 
-#: admin.php:114
+#: admin.php:138
 msgid "Create a New Test"
 msgstr "Új teszt létrehozása"
 
-#: admin.php:123
+#: admin.php:147
 msgid "Calendar to test"
 msgstr "Tesztelendő naptár"
 
-#: admin.php:129
+#: admin.php:155
 msgid "Test Type"
 msgstr "Teszt Típus"
 
-#: admin.php:134
+#: admin.php:160
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
@@ -137,11 +140,11 @@ msgstr ""
 "léteznie kell, és a várt időpontban kell megtörténnie (adott évre egyénileg "
 "is meghatározható a dátum)"
 
-#: admin.php:136
+#: admin.php:162
 msgid "Exact date"
 msgstr "Pontos dátum"
 
-#: admin.php:141
+#: admin.php:167
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -154,11 +157,11 @@ msgstr ""
 "év után az eseménynek léteznie kell és a várt napon kell lennie (a dátum "
 "külön megadható minden egyes évre)."
 
-#: admin.php:143
+#: admin.php:169
 msgid "Exact date since year"
 msgstr "Pontos dátum évtől kezdve"
 
-#: admin.php:148
+#: admin.php:174
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -171,11 +174,11 @@ msgstr ""
 "lennie (a dátum külön megadható minden egyes évre), míg az adott év után az "
 "esemény nem létezhet."
 
-#: admin.php:150
+#: admin.php:176
 msgid "Exact date until year"
 msgstr "Pontos dátum évig"
 
-#: admin.php:155
+#: admin.php:181
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -186,65 +189,93 @@ msgstr ""
 "azt állítjuk, hogy bizonyos években léteznie kell a várt napon (a dátum "
 "külön megadható minden egyes évre), és más években nem létezhet."
 
-#: admin.php:157
+#: admin.php:183
 msgid "Variable existence"
 msgstr "Változó létezés"
 
-#: admin.php:171
+#: admin.php:187
+msgid "Please login to create or edit tests."
+msgstr ""
+
+#: admin.php:199 admin.php:200
 msgid "Name of Test"
 msgstr "Teszt neve"
 
-#: admin.php:180 components/NewTestModal.php:30
+#: admin.php:209 components/NewTestModal.php:30
 msgid "Description"
 msgstr "Leírás"
 
-#: admin.php:185
+#: admin.php:214
 msgid "Per year assertions"
 msgstr "Évenkénti állítások"
 
-#: admin.php:196
+#: admin.php:225
+msgid "Login to view and edit test details."
+msgstr ""
+
+#: admin.php:229
 #, fuzzy
 #| msgid "Save Unit Test"
 msgid "Save Accuracy Test"
 msgstr "Mentés teszt egység"
 
-#: admin.php:228
+#: admin.php:259
 msgid "Add or Edit Comment"
 msgstr "Megjegyzés hozzáadása vagy szerkesztése"
 
-#: admin.php:233
+#: admin.php:264
 msgid "Comment"
 msgstr "Megjegyzés"
 
-#: admin.php:238
+#: admin.php:269
 msgid "Save"
 msgstr "Mentés"
 
-#: layout/topnavbar.php:12
+#: layout/topnavbar.php:9
+msgid "Toggle sidebar"
+msgstr ""
+
+#: layout/topnavbar.php:23
 msgid "Calendars"
 msgstr "Naptárak"
 
-#: layout/topnavbar.php:15
+#: layout/topnavbar.php:28
 msgid "Resources"
 msgstr "Erőforrások"
 
-#: layout/topnavbar.php:19
+#: layout/topnavbar.php:34
 msgid "API Version"
 msgstr "API verzió"
 
-#: layout/topnavbar.php:60
-msgid "Websocket connection status"
-msgstr "Websocket kapcsolat állapota"
-
-#: layout/topnavbar.php:66
+#: layout/topnavbar.php:48 layout/topnavbar.php:49
 msgid "LitCal Project"
 msgstr "LitCal projekt"
 
-#: layout/topnavbar.php:74 layout/sidebar.php:23
+#: layout/topnavbar.php:62
+msgid "Websocket connection status"
+msgstr "Websocket kapcsolat állapota"
+
+#: layout/topnavbar.php:62
+msgid "Websocket"
+msgstr ""
+
+#: layout/topnavbar.php:94
+msgid "Admin"
+msgstr ""
+
+#: layout/topnavbar.php:101 layout/sidebar.php:23
 #, fuzzy
 #| msgid "Unit Tests Admin"
 msgid "Accuracy Tests Admin"
 msgstr "Teszt egységek adminisztrációja"
+
+#: layout/topnavbar.php:106 layout/topnavbar.php:107
+msgid "Login"
+msgstr ""
+
+#: layout/topnavbar.php:115
+msgid "Logout"
+msgstr ""
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
@@ -368,6 +399,9 @@ msgstr "Bezárás"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Teszt létrehozása"
+
+#~ msgid "Total time for %s tests:"
+#~ msgstr "Összes idő %s tesztekre:"
 
 #~ msgid "Define a Unit Test for a Liturgical event"
 #~ msgstr "Egységteszt meghatározása liturgikus eseményre"
