@@ -632,16 +632,17 @@ const rebuildLitEventsOptions = async (element) => {
 document.addEventListener('click', event => {
     const sidebarToggle = event.target.closest('.sidebarToggle');
     if (!sidebarToggle) return;
-    console.log('now toggling sidebar...');
     event.preventDefault();
-    const icon = sidebarToggle.querySelector('i');
-    if(document.body.classList.contains('sb-sidenav-collapsed') ) {
-        icon.classList.remove('fa-angle-right');
-        icon.classList.add('fa-angle-left');
-    }
-    else {
-        icon.classList.remove('fa-angle-left');
-        icon.classList.add('fa-angle-right');
+    // Toggle icon direction only for sidebar button (has angle icons, not bars icon)
+    const icon = sidebarToggle.querySelector('i.fa-angle-left, i.fa-angle-right');
+    if (icon) {
+        if (document.body.classList.contains('sb-sidenav-collapsed')) {
+            icon.classList.remove('fa-angle-right');
+            icon.classList.add('fa-angle-left');
+        } else {
+            icon.classList.remove('fa-angle-left');
+            icon.classList.add('fa-angle-right');
+        }
     }
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
