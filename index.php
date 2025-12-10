@@ -150,7 +150,7 @@ include_once('layout/head.php');
                         </button>
                     </h2>
                     <div id="calendarDataTests" class="accordion-collapse collapse" aria-labelledby="calendarDataHeader" data-bs-parent="#testSuiteAccordion">
-                        <div class="row g-0 calendardata-tests"></div>
+                        <div class="row g-0 calendardata-tests m-2"></div>
                     </div>
                 </div>
                 <div class="accordion-item">
