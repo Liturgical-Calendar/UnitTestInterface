@@ -1,5 +1,5 @@
 /**
- * Common utility functions for the LiturgicalCalendar Unit Test Interface.
+ * Common utility functions for the LiturgicalCalendar Accuracy Test Interface.
  * @module common
  */
 

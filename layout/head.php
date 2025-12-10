@@ -9,7 +9,7 @@ $pageName = basename($_SERVER["SCRIPT_FILENAME"], '.php');
 <html lang="<?php echo $i18n->locale; ?>">
 <head>
 
-    <title>LitCal Unit Tests</title>
+    <title>LitCal Accuracy Tests</title>
     <meta name="copyright" content="Copyright 2022. John Romano D'Orazio. All Rights Reserved.">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">

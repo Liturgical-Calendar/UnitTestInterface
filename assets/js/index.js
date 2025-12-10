@@ -1,5 +1,5 @@
 /**
- * Main test runner module for the LiturgicalCalendar Unit Test Interface.
+ * Main test runner module for the LiturgicalCalendar Accuracy Test Interface.
  * Handles WebSocket communication, test execution, and result display.
  * @module index
  */
@@ -324,7 +324,7 @@ const calDataTestTemplate = ( idx ) => {
     let year = Years[ i ];
     return `
 <div class="col-1${i === 0 || i % 10 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 year-${year} fw-bold fs-5">${year}</p>
+    <p class="text-center mb-0 year-${year} fw-bold">${year}</p>
 </div>
 `;
 }
@@ -947,10 +947,14 @@ const appendAccordionItem = ( obj ) => {
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${nameSlug}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${nameSlug}" aria-expanded="false" aria-controls="specificUnitTest-${nameSlug}">
-                    <div class="col-4">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<i class="fas fa-circle-info ms-2" aria-hidden="true" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-success"><i class="fas fa-circle-check fa-fw" aria-hidden="true"></i> Successful tests: <span id="successful${nameSlug}TestsCount" class="successfulCount">0</span></div>
-                    <div class="col-2 text-white p-2 text-center test-results bg-danger"><i class="fas fa-circle-xmark fa-fw" aria-hidden="true"></i> Failed tests: <span id="failed${nameSlug}TestsCount" class="failedCount">0</span></div>
-                    <div class="col-3 text-white p-2 text-center test-results bg-dark"><i class="fas fa-stopwatch fa-fw" aria-hidden="true"></i> Total time for <span id="total${nameSlug}TestsCount"></span> tests: <span id="total${nameSlug}TestsTime">0 seconds, 0ms</span></div>
+                    <div class="col-12 col-md-4 mb-2 mb-md-0">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<i class="fas fa-circle-info ms-2" aria-hidden="true" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
+                    <div class="col-12 col-md-8">
+                        <div class="test-status-row">
+                            <div class="test-status-item text-white test-results bg-success rounded-start"><i class="fas fa-circle-check fa-fw" aria-hidden="true"></i><span class="status-label">Successful:</span> <span id="successful${nameSlug}TestsCount" class="successfulCount">0</span></div>
+                            <div class="test-status-item text-white test-results bg-danger"><i class="fas fa-circle-xmark fa-fw" aria-hidden="true"></i><span class="status-label">Failed:</span> <span id="failed${nameSlug}TestsCount" class="failedCount">0</span></div>
+                            <div class="test-status-item text-white test-results bg-dark rounded-end"><i class="fas fa-stopwatch fa-fw" aria-hidden="true"></i><span class="status-label">Time (<span id="total${nameSlug}TestsCount"></span>):</span> <span id="total${nameSlug}TestsTime">0</span></div>
+                        </div>
+                    </div>
                 </button>
             </h2>
             <div id="specificUnitTest-${nameSlug}" class="accordion-collapse collapse" aria-labelledby="${nameSlug}Header" data-bs-parent="#specificUnitTestsAccordion">

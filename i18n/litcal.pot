@@ -76,7 +76,7 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr ""
 
 #: index.php:163
-msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
 #: index.php:201
@@ -84,13 +84,13 @@ msgid "Loading..."
 msgstr ""
 
 #: admin.php:95
-msgid "Define a Unit Test for a Liturgical event"
+msgid "Define a Liturgical Accuracy Test"
 msgstr ""
 
 #: admin.php:97
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
-"actually producing correct data, we can create Unit Tests that allow us to "
+"accurate, we can create Liturgical Accuracy Tests that allow us to "
 "verify that events were / were not created in the calendar, or that they "
 "have expected dates from year to year."
 msgstr ""
@@ -173,7 +173,7 @@ msgid "Per year assertions"
 msgstr ""
 
 #: admin.php:196
-msgid "Save Unit Test"
+msgid "Save Accuracy Test"
 msgstr ""
 
 #: admin.php:228
@@ -209,7 +209,7 @@ msgid "LitCal Project"
 msgstr ""
 
 #: layout/topnavbar.php:74 layout/sidebar.php:23
-msgid "Unit Tests Admin"
+msgid "Accuracy Tests Admin"
 msgstr ""
 
 #: layout/sidebar.php:13
@@ -217,7 +217,7 @@ msgid "Catholic Liturgical Calendar"
 msgstr ""
 
 #: layout/sidebar.php:19
-msgid "Unit Tests Runner"
+msgid "Accuracy Tests Runner"
 msgstr ""
 
 #: components/NewTestModal.php:6
@@ -239,8 +239,7 @@ msgid "Years to test"
 msgstr ""
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid ""
-"First choose the maximum range of years that will belong to the Unit Test."
+msgid "First choose the range of years that we will be testing."
 msgstr ""
 
 #: components/NewTestModal.php:43

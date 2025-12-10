@@ -16,11 +16,11 @@
                     <!-- <hr> -->
                     <a class="nav-link<?php echo $pageName === 'index' ? ' active' : '' ?>" href="/">
                         <i class="sb-nav-link-icon fas fa-house"></i>
-                        <span><?php echo _("Unit Tests Runner"); ?></span>
+                        <span><?php echo _("Accuracy Tests Runner"); ?></span>
                     </a>
                     <a class="nav-link<?php echo $pageName === 'admin' ? ' active' : '' ?>" href="/admin.php">
                         <i class="sb-nav-link-icon fas fa-gear"></i>
-                        <span><?php echo _("Unit Tests Admin"); ?></span>
+                        <span><?php echo _("Accuracy Tests Admin"); ?></span>
                     </a>
                 </div>
             </div>

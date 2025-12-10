@@ -3,6 +3,48 @@ body {
     background: #f5f5f5;
 }
 
+/* Responsive navbar styling */
+.sb-topnav .navbar-brand {
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.sb-topnav .navbar-toggler {
+    border: none;
+    padding: 0.25rem 0.5rem;
+}
+
+.sb-topnav .nav-link {
+    padding: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+    .sb-topnav .navbar-collapse {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        padding: 0.5rem;
+    }
+
+    .sb-topnav .navbar-nav {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+
+    .sb-topnav .navbar-nav .nav-item {
+        width: 100%;
+        padding: 0.25rem 0;
+    }
+
+    .sb-topnav .navbar-nav .nav-item.d-flex {
+        flex-wrap: wrap;
+    }
+}
+
 .litcaltests-header {
     font-size: .8rem;
 }
@@ -13,6 +55,115 @@ body {
 
 .test-results {
     font-size: 0.8rem;
+}
+
+/* Test status indicators - responsive equal height */
+.test-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.test-status-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    text-align: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.5rem;
+}
+
+.test-status-item i {
+    flex-shrink: 0;
+}
+
+.test-status-item .status-label {
+    display: none;
+}
+
+@media (min-width: 576px) {
+    .test-status-item {
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .test-status-item .status-label {
+        display: inline;
+    }
+}
+
+@media (min-width: 992px) {
+    .test-status-item {
+        font-size: 0.8rem;
+    }
+}
+
+/* Accordion header - make it work with row/col grid inside */
+.accordion-header.row {
+    margin: 0;
+}
+
+.accordion-header.row > .accordion-button {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    position: relative;
+    padding-right: 2.5rem;
+}
+
+/* Position caret absolutely on the right side at all screen sizes */
+.accordion-header .accordion-button::after {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    margin-top: -0.6rem; /* Half of the caret height to center vertically */
+}
+
+/* Collapsed state - chevron points down (Bootstrap default rotation) */
+.accordion-header .accordion-button.collapsed::after {
+    transform: rotate(-90deg);
+}
+
+/* Expanded state - chevron points up (Bootstrap rotates to 180deg, we keep it at 0) */
+.accordion-header .accordion-button:not(.collapsed)::after {
+    transform: rotate(0deg);
+}
+
+.accordion-header .accordion-button > [class*="col-"] {
+    padding: 0 0.5rem;
+}
+
+/* Accordion header test results alignment */
+.accordion-button .test-results {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+}
+
+/* On mobile, stack the accordion header content vertically */
+@media (max-width: 767.98px) {
+    .accordion-header .accordion-button > .col-12 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .accordion-button .test-status-row {
+        width: 100%;
+    }
+
+    .accordion-button .test-results {
+        font-size: 0.65rem;
+        padding: 0.25rem !important;
+        justify-content: space-between;
+    }
+
+    .accordion-button .test-results .status-label {
+        display: none;
+    }
 }
 
 .sourcedata-tests .card-body {

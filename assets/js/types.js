@@ -1,5 +1,5 @@
 /**
- * WebSocket Message Types for LiturgicalCalendar Unit Test Interface
+ * WebSocket Message Types for LiturgicalCalendar Accuracy Test Interface
  *
  * This module contains JSDoc typedefs for the WebSocket messages exchanged
  * between the client and the LiturgicalCalendarAPI test server.
@@ -26,8 +26,8 @@
  */
 
 /**
- * Message for unit test execution requests.
- * @typedef {Object} UnitTestMessage
+ * Message for accuracy test execution requests.
+ * @typedef {Object} AccuracyTestMessage
  * @property {string} testId - The unique test identifier
  * @property {Object} testData - The test data/assertions
  */
@@ -118,8 +118,8 @@
  */
 
 /**
- * A complete unit test definition.
- * @typedef {Object} UnitTestDefinition
+ * A complete accuracy test definition.
+ * @typedef {Object} AccuracyTestDefinition
  * @property {string} event_key - The liturgical event key being tested
  * @property {string} description - Human-readable test description
  * @property {string} test_type - Test type (e.g., "exactCorrespondence", "exactCorrespondenceSince")

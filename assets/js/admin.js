@@ -1,5 +1,5 @@
 /**
- * Admin module for the LiturgicalCalendar Unit Test Interface.
+ * Admin module for the LiturgicalCalendar Accuracy Test Interface.
  * Handles test management, editing, and creation.
  * @module admin
  */
@@ -13,7 +13,7 @@ import {
     AssertionsBuilder
 } from './AssertionsBuilder.js';
 
-/** @typedef {import('./types.js').UnitTestDefinition} UnitTestDefinition */
+/** @typedef {import('./types.js').AccuracyTestDefinition} AccuracyTestDefinition */
 /** @typedef {import('./types.js').TestAssertion} TestAssertion */
 
 // Access global config from window (set by PHP in footer.php and admin.php)
@@ -432,17 +432,17 @@ fetch(ENDPOINTS.METADATA)
     })
     .catch(error => console.error('Could not fetch', ENDPOINTS.METADATA, error));
 
-/** Prepare PUT new Unit Test */
+/** Prepare PUT new Accuracy Test */
 
 /**
- * Class representing a unit test for a liturgical event.
+ * Class representing an accuracy test for a liturgical event.
  * @class
  */
-class UnitTest {
+class AccuracyTest {
     /**
-     * Constructs a new UnitTest instance.
-     * @param {string} event_key - the event key of the event that this unit test is for.
-     * @param {string} description - the description of this unit test.
+     * Constructs a new AccuracyTest instance.
+     * @param {string} event_key - the event key of the event that this accuracy test is for.
+     * @param {string} description - the description of this accuracy test.
      * @param {TestType} test_type - the type of the test.
      * @param {Assertion[]} assertions - the assertions of this test.
      * @param {number} [year_since=null] - the year since which the test applies (only for TestType.ExactCorrespondenceSince).
@@ -493,18 +493,18 @@ const sanitizeInput = (input) => {
 }
 
 /**
- * Serializes the current state of the unit test form into a UnitTest object.
+ * Serializes the current state of the accuracy test form into an AccuracyTest object.
  *
- * This function extracts values from the DOM elements representing the unit test,
+ * This function extracts values from the DOM elements representing the accuracy test,
  * including the event key, description, test type, and any assertions. It assigns
  * these values to the `proxiedTest` object and creates an array of `Assertion`
  * instances for each assertion found in the DOM. If applicable, it also sets the
- * calendar type that the test applies to. Finally, it returns a new `UnitTest`
+ * calendar type that the test applies to. Finally, it returns a new `AccuracyTest`
  * object initialized with the serialized test data.
  *
- * @returns {UnitTest} The serialized UnitTest object based on the current form data.
+ * @returns {AccuracyTest} The serialized AccuracyTest object based on the current form data.
  */
-const serializeUnitTest = () => {
+const serializeAccuracyTest = () => {
     const eventkey    = document.querySelector('#testName').textContent.replace('Test','');
     const description = document.querySelector('#description').value;
     const test_type   = document.querySelector('#cardHeaderTestType').textContent;
@@ -546,7 +546,7 @@ const serializeUnitTest = () => {
         const currentCalendarType = selectedOption?.dataset.calendartype;
         proxiedTest.applies_to    = {[currentCalendarType]: apiCalendarSelect.value};
     }
-    return new UnitTest( proxiedTest );
+    return new AccuracyTest( proxiedTest );
 }
 
 const API = {
@@ -632,16 +632,16 @@ const rebuildLitEventsOptions = async (element) => {
 document.addEventListener('click', event => {
     const sidebarToggle = event.target.closest('.sidebarToggle');
     if (!sidebarToggle) return;
-    console.log('now toggling sidebar...');
     event.preventDefault();
-    const icon = sidebarToggle.querySelector('i');
-    if(document.body.classList.contains('sb-sidenav-collapsed') ) {
-        icon.classList.remove('fa-angle-right');
-        icon.classList.add('fa-angle-left');
-    }
-    else {
-        icon.classList.remove('fa-angle-left');
-        icon.classList.add('fa-angle-right');
+    // Toggle icon direction only for sidebar button (has angle icons, not bars icon)
+    // Font Awesome 7 renders icons as SVG, so we need to replace the icon element
+    const svg = sidebarToggle.querySelector('svg.fa-angle-left, svg.fa-angle-right');
+    if (svg) {
+        const isCollapsed = document.body.classList.contains('sb-sidenav-collapsed');
+        const newIconClass = isCollapsed ? 'fa-angle-left' : 'fa-angle-right';
+        const newIcon = document.createElement('i');
+        newIcon.className = `fas ${newIconClass}`;
+        svg.replaceWith(newIcon);
     }
     document.body.classList.toggle('sb-sidenav-collapsed');
 });
@@ -697,8 +697,44 @@ document.querySelector('#litCalTestsSelect').addEventListener('change', async (e
         document.querySelector('#perYearAssertions .btn').dataset.testtype = proxiedTest.test_type;
         document.querySelector('#serializeUnitTestData').removeAttribute('disabled');
         document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.setAttribute('disabled', 'disabled'));
+        // Disable calendar select when editing an existing test (test is tied to its calendar)
+        document.querySelector('#APICalendarSelect').setAttribute('disabled', 'disabled');
     } else {
+        // Reset form to default state when empty option is selected
         proxiedTest = null;
+
+        // Reset test name and type display
+        const testNameEl = document.querySelector('#testName');
+        updateText('testName', testNameEl.dataset.default || 'Name of Test');
+        updateText('cardHeaderTestType', '');
+
+        // Reset description
+        const descEl = document.querySelector('#description');
+        descEl.value = '';
+        descEl.style.height = 'auto';
+
+        // Clear hidden year fields
+        document.querySelector('#yearSince').value = '';
+        document.querySelector('#yearUntil').value = '';
+
+        // Reset calendar select to default (VA / General Roman Calendar)
+        const apiCalendarSelect = document.querySelector('#APICalendarSelect');
+        if (apiCalendarSelect.value !== 'VA') {
+            apiCalendarSelect.value = 'VA';
+            await rebuildLitEventsOptions(apiCalendarSelect);
+        }
+
+        // Clear assertions container and hide the label
+        document.querySelector('#assertionsContainer').innerHTML = '';
+        document.querySelector('#perYearAssertions').classList.add('invisible');
+        document.querySelector('#perYearAssertions .btn').dataset.testtype = '';
+
+        // Disable save button (requires test to be defined)
+        document.querySelector('#serializeUnitTestData').setAttribute('disabled', 'disabled');
+
+        // Re-enable create new test buttons and calendar select
+        document.querySelectorAll('#createNewTestBtnGrp button').forEach(el => el.removeAttribute('disabled'));
+        document.querySelector('#APICalendarSelect').removeAttribute('disabled');
     }
 });
 
@@ -834,43 +870,64 @@ document.addEventListener('blur', contenteditableHandler, true);
 document.addEventListener('input', contenteditableHandler, true);
 
 document.querySelector('#serializeUnitTestData').addEventListener('click', () => {
-    const newUnitTest = serializeUnitTest();
+    const newAccuracyTest = serializeAccuracyTest();
     // Use PATCH for existing tests, PUT for new tests
     // PATCH requires test name in URL path: /tests/{testName}
-    const isExistingTest = LitCalTests.some(test => test.name === newUnitTest.name);
+    const isExistingTest = LitCalTests.some(test => test.name === newAccuracyTest.name);
     const httpMethod = isExistingTest ? 'PATCH' : 'PUT';
-    const endpoint = isExistingTest ? `${ENDPOINTS.TESTSINDEX}/${newUnitTest.name}` : ENDPOINTS.TESTSINDEX;
+    const endpoint = isExistingTest ? `${ENDPOINTS.TESTSINDEX}/${newAccuracyTest.name}` : ENDPOINTS.TESTSINDEX;
     let responseStatus = 400;
     fetch(endpoint, {
         method: httpMethod,
+        credentials: 'include', // Include HttpOnly cookies for JWT authentication
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         },
-        body: JSON.stringify(newUnitTest)
+        body: JSON.stringify(newAccuracyTest)
     })
     .then(response => {
         responseStatus = response.status;
+        // Handle 401 Unauthorized - user needs to login
+        if (response.status === 401) {
+            const alertEl = document.querySelector('#responseToPutRequest');
+            document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Authentication required. Please login to save tests.';
+            alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+            alertEl.classList.add('alert-warning');
+            fadeOutAlert(alertEl, 3000);
+            // Show login modal if available
+            if (typeof window.showLoginModal === 'function') {
+                window.showLoginModal();
+            }
+            const authError = new Error('Authentication required');
+            authError.isAuthError = true;
+            return Promise.reject(authError);
+        }
         return response.json();
     })
     .then(data => {
         console.log(responseStatus);
-        const alert = document.querySelector('#responseToPutRequest');
-        document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response;
+        const alertEl = document.querySelector('#responseToPutRequest');
+        document.querySelector('#responseToPutRequest > #responseMessage').textContent = data.response || 'Operation completed';
         // Normalize alert classes before adding the appropriate one
         // PUT returns 201 Created, PATCH returns 200 OK
-        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
-        alert.classList.add((responseStatus === 200 || responseStatus === 201) ? 'alert-success' : 'alert-warning');
-        fadeOutAlert(alert);
+        alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alertEl.classList.add((responseStatus === 200 || responseStatus === 201) ? 'alert-success' : 'alert-warning');
+        fadeOutAlert(alertEl);
         console.log(data);
     })
     .catch(error => {
-        console.error('Failed to save unit test:', error);
-        const alert = document.querySelector('#responseToPutRequest');
+        // Don't show network error for auth rejection (already handled above)
+        if (error.isAuthError) {
+            return;
+        }
+        console.error('Failed to save accuracy test:', error);
+        const alertEl = document.querySelector('#responseToPutRequest');
         document.querySelector('#responseToPutRequest > #responseMessage').textContent = 'Network error: Failed to save test';
         // Normalize alert classes before adding the error class
-        alert.classList.remove('alert-success', 'alert-warning', 'alert-danger');
-        alert.classList.add('alert-danger');
-        fadeOutAlert(alert);
+        alertEl.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        alertEl.classList.add('alert-danger');
+        fadeOutAlert(alertEl);
     });
 });
 
@@ -1200,7 +1257,7 @@ document.querySelector('#btnCreateTest').addEventListener('click', () => {
         const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
         carousel.to(parseInt(parentCarouselItem.dataset.item));
     } else {
-        //let's build our new Unit Test
+        //let's build our new Accuracy Test
         proxiedTest = new Proxy({}, sanitizeOnSetValue);
         proxiedTest.event_key = document.querySelector('#existingLitEventName').value;
         console.log(document.querySelector('#existingLitEventName').value);
