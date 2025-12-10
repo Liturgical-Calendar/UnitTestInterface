@@ -80,7 +80,9 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "ÉRVÉNYESÍTSE A NAPTÁRI ADATOKAT AZ 1970-TŐL %s ÉVIG"
 
 #: index.php:163
-msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+#, fuzzy
+#| msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "FUTTASSA A TESZTEGYSÉGEKET MEGHATÁROZOTT ESEMÉNYEKHEZ"
 
 #: index.php:201
@@ -88,15 +90,21 @@ msgid "Loading..."
 msgstr "Betöltés..."
 
 #: admin.php:95
-msgid "Define a Unit Test for a Liturgical event"
-msgstr "Egységteszt meghatározása liturgikus eseményre"
+msgid "Define a Liturgical Accuracy Test"
+msgstr ""
 
 #: admin.php:97
+#, fuzzy
+#| msgid ""
+#| "In order to verify that the liturgical calendar data produced by the API "
+#| "is actually producing correct data, we can create Unit Tests that allow "
+#| "us to verify that events were / were not created in the calendar, or that "
+#| "they have expected dates from year to year."
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
-"actually producing correct data, we can create Unit Tests that allow us to "
-"verify that events were / were not created in the calendar, or that they "
-"have expected dates from year to year."
+"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
+"that events were / were not created in the calendar, or that they have "
+"expected dates from year to year."
 msgstr ""
 "Annak érdekében, hogy ellenőrizzük az API által generált liturgikus naptár "
 "adatok helyességét, létrehozhatunk olyan egységteszteket, amelyek lehetővé "
@@ -126,8 +134,8 @@ msgid ""
 "can optionally be defined differently for each given year)"
 msgstr ""
 "Az általunk vizsgált évek során azt állítjuk, hogy a liturgikus eseménynek "
-"léteznie kell, és a várt időpontban kell megtörténnie "
-"(adott évre egyénileg is meghatározható a dátum)"
+"léteznie kell, és a várt időpontban kell megtörténnie (adott évre egyénileg "
+"is meghatározható a dátum)"
 
 #: admin.php:136
 msgid "Exact date"
@@ -143,8 +151,8 @@ msgid ""
 msgstr ""
 "Amikor egy liturgikus eseménynek csak egy bizonyos év után kell léteznie, "
 "azt állítjuk, hogy bizonyos évek alatt az esemény nem létezhet, míg az adott "
-"év után az eseménynek léteznie kell és a várt napon kell lennie "
-"(a dátum külön megadható minden egyes évre)."
+"év után az eseménynek léteznie kell és a várt napon kell lennie (a dátum "
+"külön megadható minden egyes évre)."
 
 #: admin.php:143
 msgid "Exact date since year"
@@ -175,8 +183,8 @@ msgid ""
 "year), and that it should not exist for other given years."
 msgstr ""
 "Amikor egy liturgikus eseményt több év alatt különböző okokból felülírnak, "
-"azt állítjuk, hogy bizonyos években léteznie kell a várt napon "
-"(a dátum külön megadható minden egyes évre), és más években nem létezhet."
+"azt állítjuk, hogy bizonyos években léteznie kell a várt napon (a dátum "
+"külön megadható minden egyes évre), és más években nem létezhet."
 
 #: admin.php:157
 msgid "Variable existence"
@@ -195,7 +203,9 @@ msgid "Per year assertions"
 msgstr "Évenkénti állítások"
 
 #: admin.php:196
-msgid "Save Unit Test"
+#, fuzzy
+#| msgid "Save Unit Test"
+msgid "Save Accuracy Test"
 msgstr "Mentés teszt egység"
 
 #: admin.php:228
@@ -231,7 +241,9 @@ msgid "LitCal Project"
 msgstr "LitCal projekt"
 
 #: layout/topnavbar.php:74 layout/sidebar.php:23
-msgid "Unit Tests Admin"
+#, fuzzy
+#| msgid "Unit Tests Admin"
+msgid "Accuracy Tests Admin"
 msgstr "Teszt egységek adminisztrációja"
 
 #: layout/sidebar.php:13
@@ -239,7 +251,9 @@ msgid "Catholic Liturgical Calendar"
 msgstr "Katolikus liturgikus naptár"
 
 #: layout/sidebar.php:19
-msgid "Unit Tests Runner"
+#, fuzzy
+#| msgid "Unit Tests Runner"
+msgid "Accuracy Tests Runner"
 msgstr "Teszt egységek futtató"
 
 #: components/NewTestModal.php:6
@@ -248,7 +262,8 @@ msgstr "Pontosan megfelelő teszt"
 
 #: components/NewTestModal.php:22
 msgid "Choose the liturgical event for which you would like to create a test"
-msgstr "Válaszd ki a liturgikus eseményt, amelyhez tesztet szeretnél létrehozni"
+msgstr ""
+"Válaszd ki a liturgikus eseményt, amelyhez tesztet szeretnél létrehozni"
 
 #: components/NewTestModal.php:26
 msgid ""
@@ -263,8 +278,10 @@ msgid "Years to test"
 msgstr "Évek teszteléshez"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid ""
-"First choose the maximum range of years that will belong to the Unit Test."
+#, fuzzy
+#| msgid ""
+#| "First choose the maximum range of years that will belong to the Unit Test."
+msgid "First choose the range of years that we will be testing."
 msgstr ""
 "Először válaszd ki a teszt egységhez tartozó évek maximális terjedelmét."
 
@@ -314,7 +331,8 @@ msgstr ""
 
 #: components/NewTestModal.php:88
 msgid "Please set the year from which the liturgical event should exist."
-msgstr "Állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie kell."
+msgstr ""
+"Állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie kell."
 
 #: components/NewTestModal.php:91
 msgid "Please set the year until which the liturgical event should exist."
@@ -350,3 +368,6 @@ msgstr "Bezárás"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Teszt létrehozása"
+
+#~ msgid "Define a Unit Test for a Liturgical event"
+#~ msgstr "Egységteszt meghatározása liturgikus eseményre"

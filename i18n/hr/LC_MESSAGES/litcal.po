@@ -80,7 +80,9 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "PROVJERI PODATKE KALENDARA ZA GODINE OD 1970. DO %s"
 
 #: index.php:163
-msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+#, fuzzy
+#| msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "POKRENI JEDINIČNE TESTOVE ZA ODREĐENE DOGAĐAJE"
 
 #: index.php:201
@@ -88,15 +90,21 @@ msgid "Loading..."
 msgstr "Učitavanje..."
 
 #: admin.php:95
-msgid "Define a Unit Test for a Liturgical event"
-msgstr "Definiraj jedinični test za liturgijski događaj"
+msgid "Define a Liturgical Accuracy Test"
+msgstr ""
 
 #: admin.php:97
+#, fuzzy
+#| msgid ""
+#| "In order to verify that the liturgical calendar data produced by the API "
+#| "is actually producing correct data, we can create Unit Tests that allow "
+#| "us to verify that events were / were not created in the calendar, or that "
+#| "they have expected dates from year to year."
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
-"actually producing correct data, we can create Unit Tests that allow us to "
-"verify that events were / were not created in the calendar, or that they "
-"have expected dates from year to year."
+"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
+"that events were / were not created in the calendar, or that they have "
+"expected dates from year to year."
 msgstr ""
 "Kako bismo provjerili da podaci liturgijskog kalendara koje API proizvodi "
 "zapravo stvaraju ispravne podatke, možemo kreirati jedinične testove koji "
@@ -126,8 +134,8 @@ msgid ""
 "can optionally be defined differently for each given year)"
 msgstr ""
 "U rasponu godina za koje tvrdimo, tvrdimo da liturgijski događaj treba "
-"postojati i treba pasti na očekivani datum "
-"(datum se može opcionalno definirati drugačije za svaku određenu godinu)"
+"postojati i treba pasti na očekivani datum (datum se može opcionalno "
+"definirati drugačije za svaku određenu godinu)"
 
 #: admin.php:136
 msgid "Exact date"
@@ -144,8 +152,8 @@ msgstr ""
 "Kad liturgijski događaj treba postojati tek nakon određene godine, tvrdimo "
 "da za određeni raspon godina prije te godine liturgijski događaj ne bi "
 "trebao postojati, dok za određeni raspon godina nakon te godine liturgijski "
-"događaj bi trebao postojati i trebao bi pasti na očekivani datum "
-"(datum se može opcionalno definirati drugačije za svaku određenu godinu)."
+"događaj bi trebao postojati i trebao bi pasti na očekivani datum (datum se "
+"može opcionalno definirati drugačije za svaku određenu godinu)."
 
 #: admin.php:143
 msgid "Exact date since year"
@@ -161,10 +169,9 @@ msgid ""
 msgstr ""
 "Kad liturgijski događaj više ne bi trebao postojati nakon određene godine, "
 "tvrdimo da za određeni raspon godina prije te godine liturgijski događaj "
-"treba pasti na očekivani datum "
-"(datum se može opcionalno definirati drugačije za svaku određenu godinu), "
-"dok za određeni raspon godina nakon te godine liturgijski događaj ne bi "
-"trebao postojati."
+"treba pasti na očekivani datum (datum se može opcionalno definirati "
+"drugačije za svaku određenu godinu), dok za određeni raspon godina nakon te "
+"godine liturgijski događaj ne bi trebao postojati."
 
 #: admin.php:150
 msgid "Exact date until year"
@@ -179,9 +186,8 @@ msgid ""
 msgstr ""
 "Kad se očekuje da će liturgijski događaj biti nadjačan u raznim godinama iz "
 "bilo kojeg razloga, tvrdimo da bi trebao postojati u određenim godinama na "
-"očekivani datum "
-"(datum se može opcionalno definirati drugačije za svaku određenu godinu) i "
-"da ne bi trebao postojati u drugim određenim godinama."
+"očekivani datum (datum se može opcionalno definirati drugačije za svaku "
+"određenu godinu) i da ne bi trebao postojati u drugim određenim godinama."
 
 #: admin.php:157
 msgid "Variable existence"
@@ -200,7 +206,9 @@ msgid "Per year assertions"
 msgstr "Po godišnjim tvrdnjama"
 
 #: admin.php:196
-msgid "Save Unit Test"
+#, fuzzy
+#| msgid "Save Unit Test"
+msgid "Save Accuracy Test"
 msgstr "Spremi jedinicu testa"
 
 #: admin.php:228
@@ -236,7 +244,9 @@ msgid "LitCal Project"
 msgstr "LitCal projekt"
 
 #: layout/topnavbar.php:74 layout/sidebar.php:23
-msgid "Unit Tests Admin"
+#, fuzzy
+#| msgid "Unit Tests Admin"
+msgid "Accuracy Tests Admin"
 msgstr "Testovi Jedinice Admin"
 
 #: layout/sidebar.php:13
@@ -244,7 +254,9 @@ msgid "Catholic Liturgical Calendar"
 msgstr "Katolički liturgijski kalendar"
 
 #: layout/sidebar.php:19
-msgid "Unit Tests Runner"
+#, fuzzy
+#| msgid "Unit Tests Runner"
+msgid "Accuracy Tests Runner"
 msgstr "Pokretač Testova Jedinice"
 
 #: components/NewTestModal.php:6
@@ -268,8 +280,10 @@ msgid "Years to test"
 msgstr "Godine za testiranje"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid ""
-"First choose the maximum range of years that will belong to the Unit Test."
+#, fuzzy
+#| msgid ""
+#| "First choose the maximum range of years that will belong to the Unit Test."
+msgid "First choose the range of years that we will be testing."
 msgstr ""
 "Prvo odaberi maksimalni raspon godina koji će pripadati Testovima Jedinice."
 
@@ -355,3 +369,6 @@ msgstr "Zatvori"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Kreiraj test"
+
+#~ msgid "Define a Unit Test for a Liturgical event"
+#~ msgstr "Definiraj jedinični test za liturgijski događaj"

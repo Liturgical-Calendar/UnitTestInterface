@@ -79,7 +79,9 @@ msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "VALIDAR DADOS DO CALENDÁRIO PARA ANOS DE 1970 ATÉ %s"
 
 #: index.php:163
-msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+#, fuzzy
+#| msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
+msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "EXECUTAR TESTES UNITÁRIOS PARA EVENTOS ESPECÍFICOS"
 
 #: index.php:201
@@ -87,15 +89,21 @@ msgid "Loading..."
 msgstr "Carregando..."
 
 #: admin.php:95
-msgid "Define a Unit Test for a Liturgical event"
-msgstr "Definir um Teste Unitário para um evento litúrgico"
+msgid "Define a Liturgical Accuracy Test"
+msgstr ""
 
 #: admin.php:97
+#, fuzzy
+#| msgid ""
+#| "In order to verify that the liturgical calendar data produced by the API "
+#| "is actually producing correct data, we can create Unit Tests that allow "
+#| "us to verify that events were / were not created in the calendar, or that "
+#| "they have expected dates from year to year."
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
-"actually producing correct data, we can create Unit Tests that allow us to "
-"verify that events were / were not created in the calendar, or that they "
-"have expected dates from year to year."
+"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
+"that events were / were not created in the calendar, or that they have "
+"expected dates from year to year."
 msgstr ""
 "Para verificar se os dados do calendário litúrgico produzidos pela API estão "
 "realmente corretos, podemos criar Testes Unitários que nos permitam "
@@ -198,7 +206,9 @@ msgid "Per year assertions"
 msgstr "Afirmações por ano"
 
 #: admin.php:196
-msgid "Save Unit Test"
+#, fuzzy
+#| msgid "Save Unit Test"
+msgid "Save Accuracy Test"
 msgstr "Salvar Teste Unitário"
 
 #: admin.php:228
@@ -234,7 +244,9 @@ msgid "LitCal Project"
 msgstr "Projeto LitCal"
 
 #: layout/topnavbar.php:74 layout/sidebar.php:23
-msgid "Unit Tests Admin"
+#, fuzzy
+#| msgid "Unit Tests Admin"
+msgid "Accuracy Tests Admin"
 msgstr "Administração de Testes Unitários"
 
 #: layout/sidebar.php:13
@@ -242,7 +254,9 @@ msgid "Catholic Liturgical Calendar"
 msgstr "Calendário Litúrgico Católico"
 
 #: layout/sidebar.php:19
-msgid "Unit Tests Runner"
+#, fuzzy
+#| msgid "Unit Tests Runner"
+msgid "Accuracy Tests Runner"
 msgstr "Executor de Testes Unitários"
 
 #: components/NewTestModal.php:6
@@ -266,8 +280,10 @@ msgid "Years to test"
 msgstr "Anos para testar"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid ""
-"First choose the maximum range of years that will belong to the Unit Test."
+#, fuzzy
+#| msgid ""
+#| "First choose the maximum range of years that will belong to the Unit Test."
+msgid "First choose the range of years that we will be testing."
 msgstr ""
 "Primeiro escolha o intervalo máximo de anos que pertencerá ao Teste Unitário."
 
@@ -353,3 +369,6 @@ msgstr "Fechar"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Criar teste"
+
+#~ msgid "Define a Unit Test for a Liturgical event"
+#~ msgstr "Definir um Teste Unitário para um evento litúrgico"
