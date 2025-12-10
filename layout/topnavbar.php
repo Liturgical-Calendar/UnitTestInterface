@@ -85,6 +85,7 @@
                         ?>
                     </div>
                 </li>
+                <li class="vr mx-2 d-none d-lg-block"></li>
                 <?php
                 // Check if JwtAuth is available (set by admin.php or other pages that include it)
                 $navbarIsAuth = isset($isAuthenticated) ? $isAuthenticated : false;
@@ -92,20 +93,15 @@
                 if ($navbarIsAuth && class_exists('LiturgicalCalendar\UnitTestInterface\JwtAuth')) {
                     $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
                 }
+                // Only show login/user UI on pages that include the login modal (admin.php)
+                $hasLoginModal = defined('HAS_LOGIN_MODAL') && HAS_LOGIN_MODAL === true;
                 ?>
+                <!-- Section 4: Admin gear + Login/User menu -->
                 <li class="nav-item">
                     <a class="nav-link" href="/admin.php?apiVersion=dev" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
                         <i class="fas fa-gear"></i>
                     </a>
                 </li>
-                <?php
-                // Only show login/user UI on pages that include the login modal (admin.php)
-                $hasLoginModal = defined('HAS_LOGIN_MODAL') && HAS_LOGIN_MODAL === true;
-                if ($hasLoginModal) {
-                    echo '<li class="vr mx-2 d-none d-lg-block"></li>';
-                }
-                ?>
-                <!-- Section 4: Login/User menu -->
                 <li class="nav-item me-2 <?php echo ($hasLoginModal && !$navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-no-auth>
                     <button class="btn btn-outline-primary btn-sm" id="loginBtn" title="<?php echo _('Login'); ?>">
                         <i class="fas fa-sign-in-alt me-1"></i><span class="d-none d-sm-inline"><?php echo _('Login'); ?></span>
