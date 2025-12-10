@@ -60,7 +60,7 @@
 </div>
 
 <script type="module">
-import { Auth } from './assets/js/auth.js';
+import { Auth } from '/assets/js/auth.js';
 
 // Make Auth available globally for non-module scripts
 window.Auth = Auth;
@@ -448,8 +448,8 @@ function formatExpiryMessage(seconds) {
     // Clamp to minimum of 1 second to avoid "0 minutes" or negative values
     const clampedSeconds = Math.max(1, Math.floor(seconds));
     const minutes = Math.ceil(clampedSeconds / 60);
-    const message = <?php echo json_encode(_('Your session will expire in less than %d minute(s).')); ?>;
-    return message.replace('%d', minutes);
+    const template = <?php echo json_encode(_('Your session will expire in less than {minutes} minute(s).')); ?>;
+    return template.replace('{minutes}', minutes);
 }
 
 /**
