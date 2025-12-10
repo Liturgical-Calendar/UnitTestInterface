@@ -46,8 +46,7 @@
                 <!-- Section 1: External links -->
                 <li class="nav-item">
                     <a class="nav-link" href="https://litcal.johnromanodorazio.com" title="<?php echo _("LitCal Project"); ?>">
-                        <span class="d-none d-xl-inline"><?php echo _("LitCal Project"); ?></span>
-                        <i class="fas fa-arrow-up-right-from-square ms-1"></i>
+                        <i class="fas fa-arrow-up-right-from-square me-1"></i><?php echo _("LitCal Project"); ?>
                     </a>
                 </li>
                 <li class="nav-item">
