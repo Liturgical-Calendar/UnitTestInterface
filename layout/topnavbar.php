@@ -38,28 +38,27 @@
             </ul>
             <!-- Right side items -->
             <ul class="navbar-nav align-items-center">
-                <!-- LitCal Project link -->
+                <!-- Section 1: External links -->
                 <li class="nav-item">
                     <a class="nav-link" href="https://litcal.johnromanodorazio.com" title="<?php echo _("LitCal Project"); ?>">
                         <span class="d-none d-xl-inline"><?php echo _("LitCal Project"); ?></span>
                         <i class="fas fa-arrow-up-right-from-square ms-1"></i>
                     </a>
                 </li>
-                <!-- GitHub link -->
-                <li class="nav-item">
+                <li class="nav-item me-3">
                     <a class="nav-link" href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank" title="GitHub repository">
                         <i class="fab fa-github"></i>
                     </a>
                 </li>
                 <?php if ($pageName === 'index' || $pageName === 'resources') { ?>
-                <!-- Websocket status -->
-                <li class="nav-item">
+                <!-- Section 2: Websocket status -->
+                <li class="nav-item me-3">
                     <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
                         <i class="fas fa-plug fa-fw"></i><span class="d-none d-md-inline"> <?php echo _("Websocket connection status"); ?></span>
                     </div>
                 </li>
                 <?php } ?>
-                <!-- Language dropdown -->
+                <!-- Section 3: Settings -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="langChoicesDropdown" role="button"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -80,7 +79,6 @@
                         ?>
                     </div>
                 </li>
-                <!-- Admin link -->
                 <?php
                 // Check if JwtAuth is available (set by admin.php or other pages that include it)
                 $navbarIsAuth = isset($isAuthenticated) ? $isAuthenticated : false;
@@ -89,7 +87,7 @@
                     $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
                 }
                 ?>
-                <li class="nav-item">
+                <li class="nav-item me-3">
                     <a class="nav-link" href="/admin.php?apiVersion=dev" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
                         <i class="fas fa-gear"></i>
                     </a>
@@ -98,14 +96,13 @@
                 // Only show login/user UI on pages that include the login modal (admin.php)
                 $hasLoginModal = defined('HAS_LOGIN_MODAL') && HAS_LOGIN_MODAL === true;
                 ?>
-                <!-- Login button (shown when not authenticated, only on pages with login modal) -->
-                <li class="nav-item <?php echo ($hasLoginModal && !$navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-no-auth>
+                <!-- Section 4: Login/User menu -->
+                <li class="nav-item me-2 <?php echo ($hasLoginModal && !$navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-no-auth>
                     <button class="btn btn-outline-primary btn-sm" id="loginBtn" title="<?php echo _('Login'); ?>">
                         <i class="fas fa-sign-in-alt me-1"></i><span class="d-none d-sm-inline"><?php echo _('Login'); ?></span>
                     </button>
                 </li>
-                <!-- User menu (shown when authenticated, only on pages with login modal) -->
-                <li class="nav-item <?php echo ($hasLoginModal && $navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-auth>
+                <li class="nav-item me-2 <?php echo ($hasLoginModal && $navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-auth>
                     <div class="btn-group" id="userMenu">
                         <span class="btn btn-outline-success btn-sm" id="userInfo">
                             <i class="fas fa-user me-1"></i><span id="username" class="d-none d-sm-inline"><?php echo htmlspecialchars($navbarUsername); ?></span>
