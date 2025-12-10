@@ -3,6 +3,21 @@ body {
     background: #f5f5f5;
 }
 
+/* Prevent navbar brand from overlapping sidebar toggle button */
+.sb-topnav .navbar-brand {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+@media (min-width: 992px) {
+    .sb-topnav .navbar-brand {
+        max-width: none;
+    }
+}
+
 .litcaltests-header {
     font-size: .8rem;
 }
