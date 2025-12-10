@@ -136,7 +136,7 @@ include_once 'layout/sidebar.php';
                                                     ->labelText(_('Calendar to test'))
                                                     ->setOptions(OptionsType::ALL)
                                                     ->disabled(!$isAuthenticated)
-                                                    ->data('requires-auth', '');
+                                                    ->data(['requires-auth' => '']);
                             echo $CalendarSelect->getSelect();
                         ?>
                     </div>

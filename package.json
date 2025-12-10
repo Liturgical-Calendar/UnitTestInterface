@@ -1,0 +1,30 @@
+{
+  "name": "unittestinterface",
+  "private": true,
+  "scripts": {
+    "playwright:install": "playwright install chromium",
+    "screenshot": "playwright screenshot",
+    "screenshot:mobile": "playwright screenshot --viewport-size=375,667",
+    "screenshot:tablet": "playwright screenshot --viewport-size=768,1024",
+    "screenshot:desktop": "playwright screenshot --viewport-size=1920,1080",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:report": "playwright show-report",
+    "test:ci": "CI=true playwright test",
+    "test:ci:chromium": "CI=true playwright test --project=chromium",
+    "test:install": "playwright install --with-deps",
+    "typecheck": "tsc -p e2e/tsconfig.json --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^22.10.2",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.57.0",
+    "typescript": "^5.7.2"
+  }
+}

@@ -6,3 +6,9 @@ node_modules/
 logs/
 *.log
 credentials.php
+
+# Playwright
+e2e/.auth/
+playwright-report/
+test-results/
+e2e/screenshots/
