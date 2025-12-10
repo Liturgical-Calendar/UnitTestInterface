@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 14:04+0000\n"
+"PO-Revision-Date: 2025-12-10 14:10+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
@@ -76,11 +76,11 @@ msgstr "ÉRVÉNYESÍTSE A FORRÁSADATOKAT"
 #: index.php:130
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
-msgstr "ÉRVÉNYESÍTSE A NAPTÁRI ADATOKAT AZ 1970-TŐL %s ÉVIG"
+msgstr "Érvényesítse a naptári adatokat az 1970 és %s közötti évekre"
 
 #: index.php:163
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
-msgstr "HAJTS VÉGRE PONTOSSÁG TESZTEKET ADOTT ESEMÉNYEKRE"
+msgstr "HAJTS VÉGRE PONTOSSÁGI TESZTEKET ADOTT ESEMÉNYEKRE"
 
 #: index.php:196
 msgid "Loading..."
