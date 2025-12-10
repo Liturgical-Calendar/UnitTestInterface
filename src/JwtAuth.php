@@ -147,7 +147,7 @@ class JwtAuth
     public static function getUsername(): ?string
     {
         $payload = self::verifyToken();
-        if ($payload === null) {
+        if ($payload === null || !is_object($payload)) {
             return null;
         }
         return $payload->sub ?? null;
@@ -161,7 +161,7 @@ class JwtAuth
     public static function getRoles(): array
     {
         $payload = self::verifyToken();
-        if ($payload === null) {
+        if ($payload === null || !is_object($payload)) {
             return [];
         }
         return is_array($payload->roles ?? null) ? $payload->roles : [];
@@ -186,7 +186,7 @@ class JwtAuth
     public static function getExpiry(): ?int
     {
         $payload = self::verifyToken();
-        if ($payload === null) {
+        if ($payload === null || !is_object($payload)) {
             return null;
         }
         return $payload->exp ?? null;
