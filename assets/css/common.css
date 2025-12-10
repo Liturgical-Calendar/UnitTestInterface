@@ -57,6 +57,64 @@ body {
     font-size: 0.8rem;
 }
 
+/* Test status indicators - responsive equal height */
+.test-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.test-status-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    text-align: center;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.test-status-item i {
+    flex-shrink: 0;
+}
+
+.test-status-item .status-label {
+    display: none;
+}
+
+@media (min-width: 576px) {
+    .test-status-item .status-label {
+        display: inline;
+        margin: 0 0.25rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .test-status-item {
+        font-size: 0.8rem;
+    }
+}
+
+/* Accordion header test results alignment */
+.accordion-button .test-results {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+}
+
+@media (max-width: 767.98px) {
+    .accordion-button .test-results {
+        font-size: 0.65rem;
+        padding: 0.25rem !important;
+    }
+
+    .accordion-button .test-results .status-label {
+        display: none;
+    }
+}
+
 .sourcedata-tests .card-body {
     padding: 0.5rem;
 }

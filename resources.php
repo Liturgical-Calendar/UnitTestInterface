@@ -65,16 +65,20 @@ include_once('layout/head.php');
                         echo _("Run Tests");
                     ?></span></button>
                 </div>
-                <div class="col-2 text-white bg-success px-1 py-2">
-                    <i class="fas fa-circle-check fa-fw"></i> <?php echo _("Successful tests:"); ?> <span id="successfulCount" class="successfulCount">0</span>
-                </div>
-                <div class="col-2 text-white bg-danger px-1 py-2">
-                    <i class="fas fa-circle-xmark fa-fw"></i> <?php echo _("Failed tests:"); ?> <span id="failedCount" class="failedCount">0</span>
-                </div>
-                <div class="col-3 text-white bg-dark px-1 py-2">
-                    <i class="fas fa-stopwatch fa-fw"></i> <?php
-                        echo sprintf(_("Total time for %s tests:"), "<span id=\"total-tests-count\"></span>");
-                    ?> <span id="total-time">0 seconds, 0ms</span>
+                <div class="col-12 col-lg-7">
+                    <div class="test-status-row">
+                        <div class="test-status-item text-white bg-success rounded-start">
+                            <i class="fas fa-circle-check fa-fw"></i><span class="status-label"><?php echo _("Successful:"); ?></span> <span id="successfulCount" class="successfulCount">0</span>
+                        </div>
+                        <div class="test-status-item text-white bg-danger">
+                            <i class="fas fa-circle-xmark fa-fw"></i><span class="status-label"><?php echo _("Failed:"); ?></span> <span id="failedCount" class="failedCount">0</span>
+                        </div>
+                        <div class="test-status-item text-white bg-dark rounded-end">
+                            <i class="fas fa-stopwatch fa-fw"></i><span class="status-label"><?php
+                                echo sprintf(_("Time (%s):"), "<span id=\"total-tests-count\"></span>");
+                            ?></span> <span id="total-time">0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="accordion" id="testSuiteAccordion">
@@ -84,25 +88,23 @@ include_once('layout/head.php');
                             data-bs-toggle="collapse" data-bs-target="#resourceDataTests"
                             aria-expanded="false" aria-controls="resourceDataTests"
                         >
-                            <div class="col-4">
-                                <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
-                                    echo _("API Paths");
-                                ?></span>
+                            <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php echo _("API Paths"); ?>
                             </div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success">
-                                <i class="fas fa-circle-check fa-fw"></i> <?php
-                                    echo _("Successful tests:");
-                                ?> <span id="successfulResourceDataTestsCount" class="successfulCount">0</span>
-                            </div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
-                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
-                                    echo _("Failed tests:");
-                                ?> <span id="failedResourceDataTestsCount" class="failedCount">0</span>
-                            </div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
-                                <i class="fas fa-stopwatch fa-fw"></i> <?php
-                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalResourceDataTestsCount\"></span>");
-                                ?> <span id="totalResourceDataTestsTime">0 seconds, 0ms</span>
+                            <div class="col-12 col-md-8">
+                                <div class="test-status-row">
+                                    <div class="test-status-item text-white test-results bg-success rounded-start">
+                                        <i class="fas fa-circle-check fa-fw"></i><span class="status-label"><?php echo _("Successful:"); ?></span> <span id="successfulResourceDataTestsCount" class="successfulCount">0</span>
+                                    </div>
+                                    <div class="test-status-item text-white test-results bg-danger">
+                                        <i class="fas fa-circle-xmark fa-fw"></i><span class="status-label"><?php echo _("Failed:"); ?></span> <span id="failedResourceDataTestsCount" class="failedCount">0</span>
+                                    </div>
+                                    <div class="test-status-item text-white test-results bg-dark rounded-end">
+                                        <i class="fas fa-stopwatch fa-fw"></i><span class="status-label"><?php
+                                            echo sprintf(_("Time (%s):"), "<span id=\"totalResourceDataTestsCount\"></span>");
+                                        ?></span> <span id="totalResourceDataTestsTime">0</span>
+                                    </div>
+                                </div>
                             </div>
                         </button>
                     </h2>
@@ -116,21 +118,21 @@ include_once('layout/head.php');
                             data-bs-toggle="collapse" data-bs-target="#sourceDataTests"
                             aria-expanded="true" aria-controls="sourceDataTests"
                         >
-                            <div class="col-4"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("Source data"); ?></span></div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-success">
-                                <i class="fas fa-circle-check fa-fw"></i> <?php
-                                    echo _("Successful tests:");
-                                ?> <span id="successfulSourceDataTestsCount" class="successfulCount">0</span>
-                            </div>
-                            <div class="col-2 text-white p-2 text-center test-results bg-danger">
-                                <i class="fas fa-circle-xmark fa-fw"></i> <?php
-                                    echo _("Failed tests:");
-                                ?> <span id="failedSourceDataTestsCount" class="failedCount">0</span>
-                            </div>
-                            <div class="col-3 text-white p-2 text-center test-results bg-dark">
-                                <i class="fas fa-stopwatch fa-fw"></i> <?php
-                                    echo sprintf(_("Total time for %s tests:"), "<span id=\"totalSourceDataTestsCount\"></span>");
-                                ?> <span id="totalSourceDataTestsTime">0 seconds, 0ms</span>
+                            <div class="col-12 col-md-4 mb-2 mb-md-0"><i class="fas fa-file-import fa-fw"></i>&nbsp;<span><?php echo _("Source data"); ?></span></div>
+                            <div class="col-12 col-md-8">
+                                <div class="test-status-row">
+                                    <div class="test-status-item text-white test-results bg-success rounded-start">
+                                        <i class="fas fa-circle-check fa-fw"></i><span class="status-label"><?php echo _("Successful:"); ?></span> <span id="successfulSourceDataTestsCount" class="successfulCount">0</span>
+                                    </div>
+                                    <div class="test-status-item text-white test-results bg-danger">
+                                        <i class="fas fa-circle-xmark fa-fw"></i><span class="status-label"><?php echo _("Failed:"); ?></span> <span id="failedSourceDataTestsCount" class="failedCount">0</span>
+                                    </div>
+                                    <div class="test-status-item text-white test-results bg-dark rounded-end">
+                                        <i class="fas fa-stopwatch fa-fw"></i><span class="status-label"><?php
+                                            echo sprintf(_("Time (%s):"), "<span id=\"totalSourceDataTestsCount\"></span>");
+                                        ?></span> <span id="totalSourceDataTestsTime">0</span>
+                                    </div>
+                                </div>
                             </div>
                         </button>
                     </h2>
