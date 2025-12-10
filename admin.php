@@ -82,7 +82,12 @@ $logger->pushHandler(new StreamHandler(
 $schema     = isset($_ENV['API_PROTOCOL']) ? $_ENV['API_PROTOCOL'] : ($isLocalhost ? 'http' : 'https');
 $host       = isset($_ENV['API_HOST']) ? $_ENV['API_HOST'] : ($isLocalhost ? 'localhost' : 'litcal.johnromanodorazio.com');
 $port       = isset($_ENV['API_PORT']) ? (int) $_ENV['API_PORT'] : ($isLocalhost ? 8000 : 443);
+// Validate apiVersion: allow only alphanumeric, dots, underscores, and hyphens
 $apiVersion = isset($_GET['apiVersion']) ? $_GET['apiVersion'] : 'dev';
+$apiVersion = preg_replace('/[^A-Za-z0-9._-]/', '', $apiVersion);
+if ($apiVersion === '') {
+    $apiVersion = 'dev';
+}
 $baseUrl    = $isLocalhost ? "$schema://$host:$port" : "$schema://$host/api/$apiVersion";
 
 // Create PSR-compliant HTTP client
@@ -94,7 +99,10 @@ try {
     $LitCalTests = $testsData['litcal_tests'];
 } catch (RuntimeException $e) {
     $logger->error('Failed to fetch tests data', ['error' => $e->getMessage()]);
-    die('Failed to fetch tests data: ' . $e->getMessage());
+    if ($debugMode) {
+        die('Failed to fetch tests data: ' . $e->getMessage());
+    }
+    die('Failed to fetch tests data. Please try again later.');
 }
 
 // Signal that this page has the login modal (for topnavbar.php)
@@ -236,7 +244,10 @@ try {
     $LitCalAllLitEvents = $eventsData['litcal_events'];
 } catch (RuntimeException $e) {
     $logger->error('Failed to fetch events data', ['error' => $e->getMessage()]);
-    die('Could not fetch data from ' . $eventsEndpoint . ': ' . $e->getMessage());
+    if ($debugMode) {
+        die('Could not fetch data from ' . $eventsEndpoint . ': ' . $e->getMessage());
+    }
+    die('Failed to fetch events data. Please try again later.');
 }
 // Include the test creation modal (hidden by JS when not authenticated)
 include_once 'components/NewTestModal.php';

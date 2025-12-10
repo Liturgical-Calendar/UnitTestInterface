@@ -66,10 +66,15 @@ export class AdminPageHelper {
 
     /**
      * Check if protected elements are enabled (for form controls) or visible (for other elements)
+     * @throws Error if no protected elements are found on the page
      */
     async areProtectedElementsEnabled(): Promise<boolean> {
         const elements = await this.getProtectedElements();
         const count = await elements.count();
+
+        if (count === 0) {
+            throw new Error('No protected elements found on the page');
+        }
 
         for (let i = 0; i < count; i++) {
             const el = elements.nth(i);
@@ -147,8 +152,8 @@ export class AdminPageHelper {
     async selectTest(testName: string) {
         const select = this.page.locator('#litCalTestsSelect');
         await select.selectOption(testName);
-        // Use 'domcontentloaded' to avoid flakiness from polling/analytics
-        await this.page.waitForLoadState('domcontentloaded');
+        // selectOption already waits for the option to be selected;
+        // no additional waitForLoadState needed unless selection triggers navigation
     }
 
     /**

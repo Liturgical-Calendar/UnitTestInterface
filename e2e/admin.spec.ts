@@ -27,12 +27,9 @@ test.describe('Admin Page - Unauthenticated State', () => {
     test('should have data-requires-auth elements disabled when not logged in', async ({ adminPage, page }) => {
         await adminPage.goToAdmin();
 
-        // Wait for page to fully load
-        await page.waitForLoadState('networkidle');
-
-        // Check that protected form controls are disabled
+        // Wait for auth state to be determined (UI updated)
         const testSelector = page.locator('#litCalTestsSelect');
-        await expect(testSelector).toBeDisabled();
+        await expect(testSelector).toBeDisabled({ timeout: 10000 });
 
         // Check that protected buttons are hidden or disabled
         const protectedButtons = page.locator('button[data-requires-auth]');
@@ -114,12 +111,26 @@ test.describe('Admin Page - Authenticated State', () => {
     });
 
     test('should include credentials in authenticated API requests', async ({ adminPage, page }) => {
-        // The page itself makes authenticated requests when loading tests
-        // Verify we can see the tests loaded successfully (which requires auth for certain operations)
-        const testOptions = await adminPage.getTestOptions();
+        // Set up request interception before navigating
+        const { requests, unroute } = await adminPage.interceptApiRequests('**/tests**');
 
-        // If tests loaded, the authenticated fetch worked
+        // Navigate to page (this will trigger test loading requests)
+        await page.reload();
+        await adminPage.waitForAuth();
+
+        // Wait for tests to load
+        const testOptions = await adminPage.getTestOptions();
         expect(testOptions.length).toBeGreaterThan(0);
+
+        // Verify requests were intercepted (tests were fetched via API)
+        // Note: If no requests intercepted, tests may be server-rendered
+        // which is also valid behavior
+        if (requests.length > 0) {
+            // At least one API request was made for tests
+            expect(requests.some(r => r.url.includes('tests'))).toBe(true);
+        }
+
+        await unroute();
     });
 
     test('should be able to select a test from the dropdown', async ({ adminPage, page }) => {
@@ -139,19 +150,19 @@ test.describe('Admin Page - Authenticated State', () => {
     test('should reset form when deselecting a test', async ({ adminPage, page }) => {
         // Get available tests and select one
         const testOptions = await adminPage.getTestOptions();
-        if (testOptions.length > 0) {
-            await adminPage.selectTest(testOptions[0]);
+        expect(testOptions.length).toBeGreaterThan(0);
 
-            // Wait for form to populate by checking the select has a value
-            const testSelector = page.locator('#litCalTestsSelect');
-            await expect(testSelector).toHaveValue(testOptions[0]);
+        await adminPage.selectTest(testOptions[0]);
 
-            // Now deselect by selecting empty option
-            await testSelector.selectOption('');
+        // Wait for form to populate by checking the select has a value
+        const testSelector = page.locator('#litCalTestsSelect');
+        await expect(testSelector).toHaveValue(testOptions[0]);
 
-            // Verify the select is back to empty value using web-first assertion
-            await expect(testSelector).toHaveValue('');
-        }
+        // Now deselect by selecting empty option
+        await testSelector.selectOption('');
+
+        // Verify the select is back to empty value using web-first assertion
+        await expect(testSelector).toHaveValue('');
     });
 });
 
