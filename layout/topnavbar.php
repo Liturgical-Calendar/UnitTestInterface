@@ -38,6 +38,27 @@
             </ul>
             <!-- Right side items -->
             <ul class="navbar-nav align-items-center">
+                <!-- LitCal Project link -->
+                <li class="nav-item">
+                    <a class="nav-link" href="https://litcal.johnromanodorazio.com" title="<?php echo _("LitCal Project"); ?>">
+                        <span class="d-none d-xl-inline"><?php echo _("LitCal Project"); ?></span>
+                        <i class="fas fa-arrow-up-right-from-square ms-1"></i>
+                    </a>
+                </li>
+                <!-- GitHub link -->
+                <li class="nav-item">
+                    <a class="nav-link" href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank" title="GitHub repository">
+                        <i class="fab fa-github"></i>
+                    </a>
+                </li>
+                <?php if ($pageName === 'index' || $pageName === 'resources') { ?>
+                <!-- Websocket status -->
+                <li class="nav-item">
+                    <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
+                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-md-inline"> <?php echo _("Websocket connection status"); ?></span>
+                    </div>
+                </li>
+                <?php } ?>
                 <!-- Language dropdown -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="langChoicesDropdown" role="button"
@@ -59,21 +80,6 @@
                         ?>
                     </div>
                 </li>
-                <?php if ($pageName === 'index' || $pageName === 'resources') { ?>
-                <!-- Websocket status -->
-                <li class="nav-item">
-                    <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
-                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-md-inline"> <?php echo _("Websocket connection status"); ?></span>
-                    </div>
-                </li>
-                <?php } ?>
-                <!-- LitCal Project link -->
-                <li class="nav-item">
-                    <a class="nav-link" href="https://litcal.johnromanodorazio.com" title="<?php echo _("LitCal Project"); ?>">
-                        <span class="d-none d-xl-inline"><?php echo _("LitCal Project"); ?></span>
-                        <i class="fas fa-arrow-up-right-from-square ms-1"></i>
-                    </a>
-                </li>
                 <!-- Admin link -->
                 <?php
                 // Check if JwtAuth is available (set by admin.php or other pages that include it)
@@ -86,12 +92,6 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/admin.php?apiVersion=dev" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
                         <i class="fas fa-gear"></i>
-                    </a>
-                </li>
-                <!-- GitHub link -->
-                <li class="nav-item">
-                    <a class="nav-link" href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank" title="GitHub repository">
-                        <i class="fab fa-github"></i>
                     </a>
                 </li>
                 <?php
