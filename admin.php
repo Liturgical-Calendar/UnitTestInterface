@@ -89,8 +89,6 @@ $apiClient = new ApiClient(null, 10, 5, $logger);
 try {
     $testsData   = $apiClient->fetchJsonWithKey("$baseUrl/tests", 'litcal_tests');
     $LitCalTests = $testsData['litcal_tests'];
-    // Convert to objects to maintain compatibility with existing template code
-    $LitCalTests = json_decode(json_encode($LitCalTests));
 } catch (RuntimeException $e) {
     $logger->error('Failed to fetch tests data', ['error' => $e->getMessage()]);
     die('Failed to fetch tests data: ' . $e->getMessage());
@@ -120,7 +118,7 @@ include_once 'layout/sidebar.php';
                     <option value="" selected>--</option>
                     <?php
                     foreach ($LitCalTests as $LitCalTest) {
-                        echo "<option value=\"$LitCalTest->name\">$LitCalTest->name</option>";
+                        echo "<option value=\"{$LitCalTest['name']}\">{$LitCalTest['name']}</option>";
                     }
                     ?>
                 </select>
