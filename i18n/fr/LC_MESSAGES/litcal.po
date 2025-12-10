@@ -2,13 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 12:54+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2025-12-10 14:04+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: French <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/fr/>\n"
 "Language: fr\n"
@@ -48,7 +49,7 @@ msgstr "Calendrier romain général"
 
 #: index.php:60
 msgid "Response Format"
-msgstr "Réponse Format"
+msgstr "Format de réponse"
 
 #: index.php:72
 msgid "Run Tests"
@@ -56,11 +57,11 @@ msgstr "Exécuter les tests"
 
 #: index.php:78 index.php:102 index.php:138 index.php:168
 msgid "Successful:"
-msgstr "Réussi :"
+msgstr "Réussis :"
 
 #: index.php:81 index.php:105 index.php:141 index.php:171
 msgid "Failed:"
-msgstr "Échoué :"
+msgstr "Échecs :"
 
 #: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
@@ -185,7 +186,7 @@ msgstr ""
 
 #: admin.php:183
 msgid "Variable existence"
-msgstr "Existence de la variable"
+msgstr "Existence variable de l’événement"
 
 #: admin.php:187
 msgid "Please login to create or edit tests."
@@ -225,7 +226,7 @@ msgstr "Enregistrer"
 
 #: layout/topnavbar.php:9
 msgid "Toggle sidebar"
-msgstr "Basculer la barre latérale"
+msgstr "Afficher / masquer la barre latérale"
 
 #: layout/topnavbar.php:23
 msgid "Calendars"
@@ -257,7 +258,7 @@ msgstr "Admin"
 
 #: layout/topnavbar.php:101 layout/sidebar.php:23
 msgid "Accuracy Tests Admin"
-msgstr "Admin des tests d'exactitude"
+msgstr "Administration des tests d'exactitude"
 
 #: layout/topnavbar.php:106 layout/topnavbar.php:107
 msgid "Login"
@@ -273,7 +274,7 @@ msgstr "Calendrier Liturgique Catholique"
 
 #: layout/sidebar.php:19
 msgid "Accuracy Tests Runner"
-msgstr "Exécuteur de tests d'exactitude"
+msgstr "Exécution des tests d'exactitude"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
