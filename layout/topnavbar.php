@@ -46,7 +46,7 @@
                 <!-- Section 1: External links -->
                 <li class="nav-item">
                     <a class="nav-link" href="https://litcal.johnromanodorazio.com" title="<?php echo _("LitCal Project"); ?>">
-                        <i class="fas fa-arrow-up-right-from-square me-1"></i><?php echo _("LitCal Project"); ?>
+                        <i class="fas fa-arrow-up-right-from-square me-1"></i><span class="d-none d-xxl-inline"><?php echo _("LitCal Project"); ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -59,7 +59,7 @@
                 <!-- Section 2: Websocket status -->
                 <li class="nav-item">
                     <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
-                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-md-inline"> <?php echo _("Websocket connection status"); ?></span>
+                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-xxl-inline"> <?php echo _("Websocket connection status"); ?></span><span class="d-none d-lg-inline d-xxl-none"> <?php echo _("Websocket"); ?></span>
                     </div>
                 </li>
                 <li class="vr mx-2 d-none d-lg-block"></li>
@@ -68,7 +68,7 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="langChoicesDropdown" role="button"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-globe me-1"></i><span class="d-none d-md-inline"><?php
+                        <i class="fas fa-globe me-1"></i><span class="d-none d-xxl-inline"><?php
                             echo Locale::getDisplayLanguage($i18n->locale, $i18n->locale);
                         ?></span>
                     </a>
