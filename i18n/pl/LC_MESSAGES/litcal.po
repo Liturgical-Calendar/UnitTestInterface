@@ -2,13 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
+# OpenAI <noreply-mt-openai@weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-10 09:24+0000\n"
-"PO-Revision-Date: 2025-12-01 13:39+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"POT-Creation-Date: 2025-12-10 12:47+0000\n"
+"PO-Revision-Date: 2025-12-10 12:55+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Polish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/pl/>\n"
 "Language: pl\n"
@@ -55,71 +56,70 @@ msgstr "Format odpowiedzi"
 msgid "Run Tests"
 msgstr "Uruchom testy"
 
-#: index.php:77 index.php:98 index.php:134 index.php:168
-msgid "Successful tests:"
-msgstr "Testy zakończone sukcesem:"
+#: index.php:78 index.php:102 index.php:138 index.php:168
+msgid "Successful:"
+msgstr "Powodzenie:"
 
-#: index.php:80 index.php:103 index.php:139 index.php:173
-msgid "Failed tests:"
-msgstr "Testy zakończone niepowodzeniem:"
+#: index.php:81 index.php:105 index.php:141 index.php:171
+msgid "Failed:"
+msgstr "Niepowodzenie:"
 
-#. translators: %s: <span id="totalUnitTestsCount"></span>
-#: index.php:84 index.php:108 index.php:145 index.php:180
+#: index.php:85 index.php:109 index.php:145 index.php:175
 #, php-format
-msgid "Total time for %s tests:"
-msgstr "Całkowity czas %s testów:"
+msgid "Time (%s):"
+msgstr "Czas (%s):"
 
-#: index.php:95
+#: index.php:98
 msgid "VALIDATE SOURCE DATA"
 msgstr "WERYFIKACJA DANYCH ŹRÓDŁOWYCH"
 
 #. translators: %s: <span class="yearMax"></span>
-#: index.php:127
+#: index.php:130
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr "ZWERYFIKUJ DANE KALENDARZA NA LATA OD 1970 DO %s"
 
 #: index.php:163
-msgid "EXECUTE UNIT TESTS FOR SPECIFIC EVENTS"
-msgstr "WYKONYWANIE TESTÓW JEDNOSTKOWYCH DLA OKREŚLONYCH ZDARZEŃ"
+msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
+msgstr "WYKONUJ TESTY DOKŁADNOŚCI DLA SPECYFICZNYCH WYDARZEŃ"
 
-#: index.php:201
+#: index.php:196
 msgid "Loading..."
 msgstr "Ładowanie..."
 
-#: admin.php:95
-msgid "Define a Unit Test for a Liturgical event"
-msgstr "Definiowanie testu jednostkowego dla wydarzenia liturgicznego"
+#: admin.php:119
+msgid "Define a Liturgical Accuracy Test"
+msgstr "Zdefiniuj test dokładności liturgicznej"
 
-#: admin.php:97
+#: admin.php:121
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
-"actually producing correct data, we can create Unit Tests that allow us to "
-"verify that events were / were not created in the calendar, or that they "
-"have expected dates from year to year."
+"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
+"that events were / were not created in the calendar, or that they have "
+"expected dates from year to year."
 msgstr ""
-"Aby zweryfikować, czy dane kalendarza liturgicznego generowane przez API "
-"faktycznie generują poprawne dane, możemy utworzyć testy jednostkowe, które "
-"pozwolą nam zweryfikować, czy wydarzenia zostały / nie zostały utworzone w "
-"kalendarzu lub czy mają oczekiwane daty z roku na rok."
+"Aby zweryfikować, czy dane kalendarza liturgicznego wygenerowane przez API "
+"są dokładne, możemy stworzyć testy dokładności liturgicznej, które pozwolą "
+"nam zweryfikować, czy wydarzenia zostały/nie zostały utworzone w kalendarzu, "
+"lub czy mają oczekiwane daty z roku na rok."
 
-#: admin.php:102
+#: admin.php:126
 msgid "Edit an existing test"
 msgstr "Edycja istniejącego testu"
 
-#: admin.php:114
+#: admin.php:138
 msgid "Create a New Test"
 msgstr "Utwórz nowy test"
 
-#: admin.php:123
+#: admin.php:147
 msgid "Calendar to test"
 msgstr "Kalendarz do przetestowania"
 
-#: admin.php:129
+#: admin.php:155
 msgid "Test Type"
 msgstr "Typ testu"
 
-#: admin.php:134
+#: admin.php:160
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
@@ -129,11 +129,11 @@ msgstr ""
 "wydarzenie liturgiczne powinno istnieć i powinno przypadać na oczekiwaną "
 "datę (data może być opcjonalnie zdefiniowana inaczej dla każdego roku)"
 
-#: admin.php:136
+#: admin.php:162
 msgid "Exact date"
 msgstr "Dokładna data"
 
-#: admin.php:141
+#: admin.php:167
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -148,11 +148,11 @@ msgstr ""
 "oczekiwaną datę (data może być opcjonalnie zdefiniowana inaczej dla każdego "
 "roku)."
 
-#: admin.php:143
+#: admin.php:169
 msgid "Exact date since year"
 msgstr "Dokładna data od roku"
 
-#: admin.php:148
+#: admin.php:174
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -166,11 +166,11 @@ msgstr ""
 "zdefiniowana inaczej dla każdego roku), podczas gdy przez pewien okres lat "
 "po tym roku wydarzenie liturgiczne nie powinno istnieć."
 
-#: admin.php:150
+#: admin.php:176
 msgid "Exact date until year"
 msgstr "Dokładna data do roku"
 
-#: admin.php:155
+#: admin.php:181
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -183,69 +183,97 @@ msgstr ""
 "zdefiniowana inaczej dla każdego danego roku) i że nie powinno istnieć w "
 "innych określonych latach."
 
-#: admin.php:157
+#: admin.php:183
 msgid "Variable existence"
 msgstr "Istnienie zmiennej"
 
-#: admin.php:171
+#: admin.php:187
+msgid "Please login to create or edit tests."
+msgstr "Proszę zalogować się, aby stworzyć lub edytować testy."
+
+#: admin.php:199 admin.php:200
 msgid "Name of Test"
 msgstr "Nazwa testu"
 
-#: admin.php:180 components/NewTestModal.php:30
+#: admin.php:209 components/NewTestModal.php:30
 msgid "Description"
 msgstr "Opis"
 
-#: admin.php:185
+#: admin.php:214
 msgid "Per year assertions"
 msgstr "Twierdzenia roczne"
 
-#: admin.php:196
-msgid "Save Unit Test"
-msgstr "Zapisz test jednostkowy"
+#: admin.php:225
+msgid "Login to view and edit test details."
+msgstr "Zaloguj się, aby zobaczyć i edytować szczegóły testu."
 
-#: admin.php:228
+#: admin.php:229
+msgid "Save Accuracy Test"
+msgstr "Zapisz test dokładności"
+
+#: admin.php:259
 msgid "Add or Edit Comment"
 msgstr "Dodaj lub edytuj komentarz"
 
-#: admin.php:233
+#: admin.php:264
 msgid "Comment"
 msgstr "Komentarz"
 
-#: admin.php:238
+#: admin.php:269
 msgid "Save"
 msgstr "Zapisz"
 
-#: layout/topnavbar.php:12
+#: layout/topnavbar.php:9
+msgid "Toggle sidebar"
+msgstr "Przełącz pasek boczny"
+
+#: layout/topnavbar.php:23
 msgid "Calendars"
 msgstr "Kalendarze"
 
-#: layout/topnavbar.php:15
+#: layout/topnavbar.php:28
 msgid "Resources"
 msgstr "Zasoby"
 
-#: layout/topnavbar.php:19
+#: layout/topnavbar.php:34
 msgid "API Version"
 msgstr "Wersja API"
 
-#: layout/topnavbar.php:60
-msgid "Websocket connection status"
-msgstr "Status połączenia websocket"
-
-#: layout/topnavbar.php:66
+#: layout/topnavbar.php:48 layout/topnavbar.php:49
 msgid "LitCal Project"
 msgstr "Projekt LitCal"
 
-#: layout/topnavbar.php:74 layout/sidebar.php:23
-msgid "Unit Tests Admin"
-msgstr "Administrator testów jednostkowych"
+#: layout/topnavbar.php:62
+msgid "Websocket connection status"
+msgstr "Status połączenia websocket"
+
+#: layout/topnavbar.php:62
+msgid "Websocket"
+msgstr "Websocket"
+
+#: layout/topnavbar.php:94
+msgid "Admin"
+msgstr "Administrator"
+
+#: layout/topnavbar.php:101 layout/sidebar.php:23
+msgid "Accuracy Tests Admin"
+msgstr "Admin testów dokładności"
+
+#: layout/topnavbar.php:106 layout/topnavbar.php:107
+msgid "Login"
+msgstr "Zaloguj się"
+
+#: layout/topnavbar.php:115
+msgid "Logout"
+msgstr "Wyloguj się"
 
 #: layout/sidebar.php:13
 msgid "Catholic Liturgical Calendar"
 msgstr "Katolicki kalendarz liturgiczny"
 
 #: layout/sidebar.php:19
-msgid "Unit Tests Runner"
-msgstr "Program uruchamiający testy jednostkowe"
+msgid "Accuracy Tests Runner"
+msgstr "Uruchamianie testów dokładności"
 
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
@@ -267,11 +295,8 @@ msgid "Years to test"
 msgstr "Lata do przetestowania"
 
 #: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid ""
-"First choose the maximum range of years that will belong to the Unit Test."
-msgstr ""
-"Najpierw wybierz maksymalny zakres lat, które będą należeć do testu "
-"jednostkowego."
+msgid "First choose the range of years that we will be testing."
+msgstr "Najpierw wybierz zakres lat, który będziemy testować."
 
 #: components/NewTestModal.php:43
 msgid ""
@@ -357,3 +382,9 @@ msgstr "Zamknij"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Utwórz test"
+
+#~ msgid "Total time for %s tests:"
+#~ msgstr "Całkowity czas %s testów:"
+
+#~ msgid "Define a Unit Test for a Liturgical event"
+#~ msgstr "Definiowanie testu jednostkowego dla wydarzenia liturgicznego"
