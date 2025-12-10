@@ -138,6 +138,7 @@ body {
     .accordion-button .test-results {
         font-size: 0.65rem;
         padding: 0.25rem !important;
+        justify-content: space-between;
     }
 
     .accordion-button .test-results .status-label {
