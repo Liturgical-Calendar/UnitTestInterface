@@ -67,12 +67,13 @@ body {
 .test-status-item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
     text-align: center;
     flex: 1 1 auto;
     min-width: 0;
+    gap: 0.5rem;
 }
 
 .test-status-item i {
@@ -84,9 +85,13 @@ body {
 }
 
 @media (min-width: 576px) {
+    .test-status-item {
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
     .test-status-item .status-label {
         display: inline;
-        margin: 0 0.25rem;
     }
 }
 
