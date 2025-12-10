@@ -21,6 +21,7 @@ use Firebase\JWT\BeforeValidException;
 class JwtAuth
 {
     private const COOKIE_NAME = 'litcal_access_token';
+    private const DEFAULT_SECRET_PLACEHOLDER = 'change-this-to-match-api-jwt-secret';
 
     /**
      * @var string|null JWT secret key from environment
@@ -65,7 +66,7 @@ class JwtAuth
     public static function isConfigured(): bool
     {
         self::init();
-        return self::$secret !== null && self::$secret !== '' && self::$secret !== 'change-this-to-match-api-jwt-secret';
+        return self::$secret !== null && self::$secret !== '' && self::$secret !== self::DEFAULT_SECRET_PLACEHOLDER;
     }
 
     /**
