@@ -50,18 +50,20 @@
                         <i class="fas fa-arrow-up-right-from-square ms-1"></i>
                     </a>
                 </li>
-                <li class="nav-item me-3">
+                <li class="nav-item">
                     <a class="nav-link" href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank" title="GitHub repository">
                         <i class="fab fa-github"></i>
                     </a>
                 </li>
+                <li class="vr mx-2 d-none d-lg-block"></li>
                 <?php if ($pageName === 'index' || $pageName === 'resources') { ?>
                 <!-- Section 2: Websocket status -->
-                <li class="nav-item me-3">
+                <li class="nav-item">
                     <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
                         <i class="fas fa-plug fa-fw"></i><span class="d-none d-md-inline"> <?php echo _("Websocket connection status"); ?></span>
                     </div>
                 </li>
+                <li class="vr mx-2 d-none d-lg-block"></li>
                 <?php } ?>
                 <!-- Section 3: Settings -->
                 <li class="nav-item dropdown">
@@ -92,7 +94,7 @@
                     $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
                 }
                 ?>
-                <li class="nav-item me-3">
+                <li class="nav-item">
                     <a class="nav-link" href="/admin.php?apiVersion=dev" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
                         <i class="fas fa-gear"></i>
                     </a>
@@ -100,6 +102,9 @@
                 <?php
                 // Only show login/user UI on pages that include the login modal (admin.php)
                 $hasLoginModal = defined('HAS_LOGIN_MODAL') && HAS_LOGIN_MODAL === true;
+                if ($hasLoginModal) {
+                    echo '<li class="vr mx-2 d-none d-lg-block"></li>';
+                }
                 ?>
                 <!-- Section 4: Login/User menu -->
                 <li class="nav-item me-2 <?php echo ($hasLoginModal && !$navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-no-auth>
