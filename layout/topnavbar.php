@@ -68,9 +68,17 @@
                 </a>
             </li>
         </ul>
+        <?php
+        // Check if JwtAuth is available (set by admin.php or other pages that include it)
+        $navbarIsAuth = isset($isAuthenticated) ? $isAuthenticated : false;
+        $navbarUsername = '';
+        if ($navbarIsAuth && class_exists('LiturgicalCalendar\UnitTestInterface\JwtAuth')) {
+            $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
+        }
+        ?>
         <a class="btn btn-outline-light text-dark border-0 fw-bold"
             href="/admin.php?apiVersion=dev"
-            id = "admin_url"
+            id="admin_url"
             title="<?php echo _("Accuracy Tests Admin"); ?>">
             <i class="fas fa-gear"></i>
         </a>
@@ -80,19 +88,16 @@
             <i class="fab fa-github"></i>
         </a>
         <?php
-        // Check if JwtAuth is available (set by admin.php or other pages that include it)
-        $navbarIsAuth = isset($isAuthenticated) ? $isAuthenticated : false;
-        $navbarUsername = '';
-        if ($navbarIsAuth && class_exists('LiturgicalCalendar\UnitTestInterface\JwtAuth')) {
-            $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
-        }
+        // Only show login/user UI on pages that include the login modal (admin.php)
+        // Other pages should use the gear icon to navigate to admin.php for login
+        $hasLoginModal = defined('HAS_LOGIN_MODAL') && HAS_LOGIN_MODAL === true;
         ?>
-        <!-- Login button (shown when not authenticated) -->
-        <button class="btn btn-outline-primary btn-sm me-2 <?php echo $navbarIsAuth ? 'd-none' : ''; ?>" id="loginBtn" title="<?php echo _('Login'); ?>" data-requires-no-auth>
+        <!-- Login button (shown when not authenticated, only on pages with login modal) -->
+        <button class="btn btn-outline-primary btn-sm me-2 <?php echo ($hasLoginModal && !$navbarIsAuth) ? '' : 'd-none'; ?>" id="loginBtn" title="<?php echo _('Login'); ?>" data-requires-no-auth>
             <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
         </button>
-        <!-- User menu (shown when authenticated) -->
-        <div class="btn-group me-2 <?php echo $navbarIsAuth ? '' : 'd-none'; ?>" id="userMenu" data-requires-auth>
+        <!-- User menu (shown when authenticated, only on pages with login modal) -->
+        <div class="btn-group me-2 <?php echo ($hasLoginModal && $navbarIsAuth) ? '' : 'd-none'; ?>" id="userMenu" data-requires-auth>
             <span class="btn btn-outline-success btn-sm" id="userInfo">
                 <i class="fas fa-user me-1"></i><span id="username"><?php echo htmlspecialchars($navbarUsername); ?></span>
             </span>

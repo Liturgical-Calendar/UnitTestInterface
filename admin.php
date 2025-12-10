@@ -96,6 +96,9 @@ try {
     die('Failed to fetch tests data: ' . $e->getMessage());
 }
 
+// Signal that this page has the login modal (for topnavbar.php)
+define('HAS_LOGIN_MODAL', true);
+
 include_once 'layout/head.php';
 include_once 'layout/sidebar.php';
 ?>
