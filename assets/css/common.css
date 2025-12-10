@@ -110,6 +110,26 @@ body {
     display: flex;
     flex-wrap: wrap;
     width: 100%;
+    position: relative;
+    padding-right: 2.5rem;
+}
+
+/* Position caret absolutely on the right side at all screen sizes */
+.accordion-header .accordion-button::after {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    margin-top: -0.6rem; /* Half of the caret height to center vertically */
+}
+
+/* Collapsed state - chevron points down (Bootstrap default rotation) */
+.accordion-header .accordion-button.collapsed::after {
+    transform: rotate(-90deg);
+}
+
+/* Expanded state - chevron points up (Bootstrap rotates to 180deg, we keep it at 0) */
+.accordion-header .accordion-button:not(.collapsed)::after {
+    transform: rotate(0deg);
 }
 
 .accordion-header .accordion-button > [class*="col-"] {
