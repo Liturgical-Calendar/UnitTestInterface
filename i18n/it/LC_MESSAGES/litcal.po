@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-13 17:22+0000\n"
-"PO-Revision-Date: 2025-12-13 17:22+0000\n"
+"PO-Revision-Date: 2025-12-13 17:24+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/it/>\n"
@@ -28,16 +28,12 @@ msgstr ""
 "websocket. Forse il server è offline?"
 
 #: index.php:24
-#, fuzzy
-#| msgid "Websocket connected successfully!"
 msgid "WebSocket connected successfully!"
-msgstr "Websocket connesso con successo!"
+msgstr "Connessione WebSocket avvenuta con successo!"
 
 #: index.php:32
-#, fuzzy
-#| msgid "Websocket connection closed."
 msgid "WebSocket connection closed."
-msgstr "Connessione Websocket chiusa."
+msgstr "Connessione WebSocket chiusa."
 
 #: index.php:40
 msgid "All tests complete!"
@@ -250,10 +246,8 @@ msgid "LitCal Project"
 msgstr "Progetto LitCal"
 
 #: layout/topnavbar.php:62
-#, fuzzy
-#| msgid "Websocket connection status"
 msgid "WebSocket connection status"
-msgstr "Stato della connessione Websocket"
+msgstr "Stato della connessione WebSocket"
 
 #: layout/topnavbar.php:94
 msgid "Admin"
