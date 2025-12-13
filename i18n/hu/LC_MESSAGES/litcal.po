@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 14:22+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"POT-Creation-Date: 2025-12-13 17:22+0000\n"
+"PO-Revision-Date: 2025-12-13 17:24+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
 "Language: hu\n"
@@ -28,12 +28,12 @@ msgstr ""
 "keresztül. Talán a szerver offline?"
 
 #: index.php:24
-msgid "Websocket connected successfully!"
-msgstr "Websocket sikeresen csatlakozott!"
+msgid "WebSocket connected successfully!"
+msgstr "A WebSocket sikeresen csatlakozott!"
 
 #: index.php:32
-msgid "Websocket connection closed."
-msgstr "Websocket kapcsolat lezárva."
+msgid "WebSocket connection closed."
+msgstr "A WebSocket kapcsolat megszakadt."
 
 #: index.php:40
 msgid "All tests complete!"
@@ -83,14 +83,14 @@ msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "VÉGREHAJTSA A PONTOSSÁGI TESZTEKET ADOTT ESEMÉNYEKRE"
 
 #: index.php:196
-msgid "Loading..."
-msgstr "Betöltés..."
+msgid "Loading…"
+msgstr "Betöltés…"
 
-#: admin.php:119
+#: admin.php:138
 msgid "Define a Liturgical Accuracy Test"
 msgstr "Határozz meg egy Liturgikus Pontossági Tesztet"
 
-#: admin.php:121
+#: admin.php:140
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "accurate, we can create Liturgical Accuracy Tests that allow us to verify "
@@ -102,23 +102,23 @@ msgstr ""
 "teszik számunkra, hogy ellenőrizzük, létrejöttek-e események a naptárban, "
 "vagy hogy várható dátumokkal rendelkeznek-e évről évre."
 
-#: admin.php:126
+#: admin.php:145
 msgid "Edit an existing test"
 msgstr "Létező teszt szerkesztése"
 
-#: admin.php:138
+#: admin.php:158
 msgid "Create a New Test"
 msgstr "Új teszt létrehozása"
 
-#: admin.php:147
+#: admin.php:167
 msgid "Calendar to test"
 msgstr "Tesztelendő naptár"
 
-#: admin.php:155
+#: admin.php:175
 msgid "Test Type"
-msgstr "Teszt Típus"
+msgstr "Teszttípus"
 
-#: admin.php:160
+#: admin.php:180
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
@@ -128,11 +128,11 @@ msgstr ""
 "léteznie kell, és a várt időpontban kell megtörténnie (adott évre egyénileg "
 "is meghatározható a dátum)"
 
-#: admin.php:162
+#: admin.php:182
 msgid "Exact date"
 msgstr "Pontos dátum"
 
-#: admin.php:167
+#: admin.php:187
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -145,11 +145,11 @@ msgstr ""
 "év után az eseménynek léteznie kell és a várt napon kell lennie (a dátum "
 "külön megadható minden egyes évre)."
 
-#: admin.php:169
+#: admin.php:189
 msgid "Exact date since year"
 msgstr "Pontos dátum évtől kezdve"
 
-#: admin.php:174
+#: admin.php:194
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -162,11 +162,11 @@ msgstr ""
 "lennie (a dátum külön megadható minden egyes évre), míg az adott év után az "
 "esemény nem létezhet."
 
-#: admin.php:176
+#: admin.php:196
 msgid "Exact date until year"
 msgstr "Pontos dátum évig"
 
-#: admin.php:181
+#: admin.php:201
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -177,44 +177,48 @@ msgstr ""
 "azt állítjuk, hogy bizonyos években léteznie kell a várt napon (a dátum "
 "külön megadható minden egyes évre), és más években nem létezhet."
 
-#: admin.php:183
-msgid "Variable existence"
-msgstr "Változó létezés"
+#: admin.php:203
+msgid "Variable existence by year"
+msgstr "Változó létezése évenként"
 
-#: admin.php:187
+#: admin.php:207
 msgid "Please login to create or edit tests."
 msgstr "Kérem, jelentkezzen be tesztek létrehozásához vagy szerkesztéséhez."
 
-#: admin.php:199 admin.php:200
+#: admin.php:219 admin.php:220
 msgid "Name of Test"
 msgstr "Teszt neve"
 
-#: admin.php:209 components/NewTestModal.php:30
+#: admin.php:229 components/NewTestModal.php:30
 msgid "Description"
 msgstr "Leírás"
 
-#: admin.php:214
+#: admin.php:234
 msgid "Per year assertions"
 msgstr "Évenkénti állítások"
 
-#: admin.php:225
+#: admin.php:245
 msgid "Login to view and edit test details."
 msgstr ""
 "Jelentkezzen be a tesztek részleteinek megtekintéséhez és szerkesztéséhez."
 
-#: admin.php:229
+#: admin.php:249
 msgid "Save Accuracy Test"
 msgstr "Pontossági Teszt Mentése"
 
-#: admin.php:259
+#: admin.php:266
 msgid "Add or Edit Comment"
 msgstr "Megjegyzés hozzáadása vagy szerkesztése"
 
-#: admin.php:264
+#: admin.php:271
 msgid "Comment"
 msgstr "Megjegyzés"
 
-#: admin.php:269
+#: admin.php:272
+msgid "This test is significant because…"
+msgstr "Ez a teszt jelentős, mert…"
+
+#: admin.php:276
 msgid "Save"
 msgstr "Mentés"
 
@@ -239,12 +243,8 @@ msgid "LitCal Project"
 msgstr "LitCal Projekt"
 
 #: layout/topnavbar.php:62
-msgid "Websocket connection status"
-msgstr "Websocket kapcsolat állapota"
-
-#: layout/topnavbar.php:62
-msgid "Websocket"
-msgstr "Websocket"
+msgid "WebSocket connection status"
+msgstr "WebSocket kapcsolat állapota"
 
 #: layout/topnavbar.php:94
 msgid "Admin"
@@ -378,6 +378,9 @@ msgstr "Bezárás"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Teszt létrehozása"
+
+#~ msgid "Websocket"
+#~ msgstr "Websocket"
 
 #~ msgid "Total time for %s tests:"
 #~ msgstr "Összes idő %s tesztekre:"

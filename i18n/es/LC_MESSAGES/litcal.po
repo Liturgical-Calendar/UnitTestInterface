@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-10 12:47+0000\n"
-"PO-Revision-Date: 2025-12-10 14:04+0000\n"
+"POT-Creation-Date: 2025-12-13 17:22+0000\n"
+"PO-Revision-Date: 2025-12-13 17:37+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/es/>\n"
@@ -28,12 +28,12 @@ msgstr ""
 "¿Quizás el servidor está desconectado?"
 
 #: index.php:24
-msgid "Websocket connected successfully!"
-msgstr "¡Websocket conectado con éxito!"
+msgid "WebSocket connected successfully!"
+msgstr "¡Conexión WebSocket establecida con éxito!"
 
 #: index.php:32
-msgid "Websocket connection closed."
-msgstr "Conexión de websocket cerrada."
+msgid "WebSocket connection closed."
+msgstr "Conexión WebSocket cerrada."
 
 #: index.php:40
 msgid "All tests complete!"
@@ -83,14 +83,14 @@ msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "EJECUTAR PRUEBAS DE PRECISIÓN PARA EVENTOS ESPECÍFICOS"
 
 #: index.php:196
-msgid "Loading..."
-msgstr "Cargando..."
+msgid "Loading…"
+msgstr "Cargando…"
 
-#: admin.php:119
+#: admin.php:138
 msgid "Define a Liturgical Accuracy Test"
 msgstr "Definir una Prueba de Precisión Litúrgica"
 
-#: admin.php:121
+#: admin.php:140
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "accurate, we can create Liturgical Accuracy Tests that allow us to verify "
@@ -102,23 +102,23 @@ msgstr ""
 "verificar que los eventos fueron/no fueron creados en el calendario, o que "
 "tengan fechas esperadas de un año a otro."
 
-#: admin.php:126
+#: admin.php:145
 msgid "Edit an existing test"
 msgstr "Editar una prueba existente"
 
-#: admin.php:138
+#: admin.php:158
 msgid "Create a New Test"
 msgstr "Crear una nueva prueba"
 
-#: admin.php:147
+#: admin.php:167
 msgid "Calendar to test"
 msgstr "Calendario a probar"
 
-#: admin.php:155
+#: admin.php:175
 msgid "Test Type"
 msgstr "Tipo de prueba"
 
-#: admin.php:160
+#: admin.php:180
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
@@ -129,11 +129,11 @@ msgstr ""
 "esperada (la fecha puede definirse opcionalmente de manera diferente para "
 "cada año dado)"
 
-#: admin.php:162
+#: admin.php:182
 msgid "Exact date"
 msgstr "Fecha exacta"
 
-#: admin.php:167
+#: admin.php:187
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -148,11 +148,11 @@ msgstr ""
 "una fecha esperada (la fecha puede definirse opcionalmente de manera "
 "diferente para cada año dado)."
 
-#: admin.php:169
+#: admin.php:189
 msgid "Exact date since year"
 msgstr "Fecha exacta desde el año"
 
-#: admin.php:174
+#: admin.php:194
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -167,11 +167,11 @@ msgstr ""
 "un cierto lapso de años después de dicho año el evento litúrgico no debe "
 "existir."
 
-#: admin.php:176
+#: admin.php:196
 msgid "Exact date until year"
 msgstr "Fecha exacta hasta el año"
 
-#: admin.php:181
+#: admin.php:201
 msgid ""
 "When a liturgical event is expected to be overriden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -183,43 +183,47 @@ msgstr ""
 "fecha esperada (la fecha puede definirse opcionalmente de manera diferente "
 "para cada año dado), y que no debería existir en otros años dados."
 
-#: admin.php:183
-msgid "Variable existence"
-msgstr "Existencia de variable"
+#: admin.php:203
+msgid "Variable existence by year"
+msgstr "Existencia de variables por año"
 
-#: admin.php:187
+#: admin.php:207
 msgid "Please login to create or edit tests."
 msgstr "Por favor inicia sesión para crear o editar pruebas."
 
-#: admin.php:199 admin.php:200
+#: admin.php:219 admin.php:220
 msgid "Name of Test"
 msgstr "Nombre de la prueba"
 
-#: admin.php:209 components/NewTestModal.php:30
+#: admin.php:229 components/NewTestModal.php:30
 msgid "Description"
 msgstr "Descripción"
 
-#: admin.php:214
+#: admin.php:234
 msgid "Per year assertions"
 msgstr "Afirmaciones por año"
 
-#: admin.php:225
+#: admin.php:245
 msgid "Login to view and edit test details."
 msgstr "Inicia sesión para ver y editar detalles de las pruebas."
 
-#: admin.php:229
+#: admin.php:249
 msgid "Save Accuracy Test"
 msgstr "Guardar Prueba de Precisión"
 
-#: admin.php:259
+#: admin.php:266
 msgid "Add or Edit Comment"
 msgstr "Agregar o editar comentario"
 
-#: admin.php:264
+#: admin.php:271
 msgid "Comment"
 msgstr "Comentario"
 
-#: admin.php:269
+#: admin.php:272
+msgid "This test is significant because…"
+msgstr "Esta prueba es significativa porque…"
+
+#: admin.php:276
 msgid "Save"
 msgstr "Guardar"
 
@@ -244,12 +248,8 @@ msgid "LitCal Project"
 msgstr "Proyecto LitCal"
 
 #: layout/topnavbar.php:62
-msgid "Websocket connection status"
-msgstr "Estado de la conexión de websocket"
-
-#: layout/topnavbar.php:62
-msgid "Websocket"
-msgstr "Websocket"
+msgid "WebSocket connection status"
+msgstr "Estado de la conexión WebSocket"
 
 #: layout/topnavbar.php:94
 msgid "Admin"
@@ -384,6 +384,9 @@ msgstr "Cerrar"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Crear prueba"
+
+#~ msgid "Websocket"
+#~ msgstr "Websocket"
 
 #~ msgid "Total time for %s tests:"
 #~ msgstr "Tiempo total para %s pruebas:"
