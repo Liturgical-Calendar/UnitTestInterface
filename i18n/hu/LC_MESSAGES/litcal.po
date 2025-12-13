@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-13 17:17+0000\n"
-"PO-Revision-Date: 2025-12-13 17:17+0000\n"
+"PO-Revision-Date: 2025-12-13 17:22+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hu/>\n"
@@ -83,10 +83,8 @@ msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "VÉGREHAJTSA A PONTOSSÁGI TESZTEKET ADOTT ESEMÉNYEKRE"
 
 #: index.php:196
-#, fuzzy
-#| msgid "Loading..."
 msgid "Loading…"
-msgstr "Betöltés..."
+msgstr "Betöltés…"
 
 #: admin.php:138
 msgid "Define a Liturgical Accuracy Test"
@@ -218,7 +216,7 @@ msgstr "Megjegyzés"
 
 #: admin.php:272
 msgid "This test is significant because…"
-msgstr ""
+msgstr "Ez a teszt jelentős, mert…"
 
 #: admin.php:276
 msgid "Save"
