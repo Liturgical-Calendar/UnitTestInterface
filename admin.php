@@ -269,7 +269,7 @@ include_once 'components/NewTestModal.php';
             <div class="modal-body">
                 <div class="form-group">
                     <label for="unitTestComment" class="fw-bold"><?php echo _('Comment') ?></label>
-                    <textarea class="form-control" id="unitTestComment" rows=2 placeholder="This test is significant because..."></textarea>
+                    <textarea class="form-control" id="unitTestComment" rows=2 placeholder="<?php echo _('This test is significant because…'); ?>"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
