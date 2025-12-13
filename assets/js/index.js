@@ -1319,7 +1319,7 @@ const tooltipMap = new Map();
 document.body.addEventListener( 'click', function ( event ) {
     if ( event.target.closest( '.btn-copy' ) !== null ) {
         const tooltipElement = event.target.closest( '.tooltip' );
-        const content = tooltipElement.querySelector( '.tooltip-content' ).outerHTML;
+        const content = tooltipElement.querySelector( '.tooltip-content' ).innerHTML;
         const clipboardItem = new ClipboardItem({
             'text/html': new Blob([content], { type: 'text/html' }),
             'text/plain': new Blob([content], { type: 'text/plain' })
