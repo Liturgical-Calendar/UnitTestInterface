@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-10 16:38+0000\n"
+"POT-Creation-Date: 2025-12-13 17:14+0000\n"
 "PO-Revision-Date: 2025-12-13 17:14+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -182,7 +182,9 @@ msgstr ""
 "diverso per ciascun anno), e che non dovrebbe esistere per altri anni dati."
 
 #: admin.php:203
-msgid "Variable existence"
+#, fuzzy
+#| msgid "Variable existence"
+msgid "Variable existence by year"
 msgstr "Esistenza variabile per anno"
 
 #: admin.php:207
