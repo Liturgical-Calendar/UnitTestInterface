@@ -148,7 +148,7 @@ include_once('layout/head.php');
 
     <div class="bg-light position-absolute top-0 left-0 text-center page-loader" style="width:100vw;height:100vh;opacity:.5;">
         <div class="spinner-border text-dark m-auto position-relative" role="status" style="top:50%;">
-            <span class="visually-hidden"><?php echo _("Loading..."); ?></span>
+            <span class="visually-hidden"><?php echo _('Loading…'); ?></span>
         </div>
     </div>
 

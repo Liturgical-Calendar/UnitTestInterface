@@ -300,7 +300,7 @@ async function handleLogin() {
     try {
         // Show loading state
         loginSubmitBtn.disabled = true;
-        loginSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + <?php echo json_encode(_('Logging in...')); ?>;
+        loginSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + <?php echo json_encode(_('Logging in…')); ?>;
 
         await Auth.login(username, password, rememberMe);
 
