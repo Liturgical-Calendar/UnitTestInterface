@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 17:14+0000\n"
+"POT-Creation-Date: 2025-12-13 17:17+0000\n"
 "PO-Revision-Date: 2025-12-13 17:17+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -83,7 +83,9 @@ msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "ESEGUI TEST DI PRECISIONE PER EVENTI SPECIFICI"
 
 #: index.php:196
-msgid "Loading..."
+#, fuzzy
+#| msgid "Loading..."
+msgid "Loading…"
 msgstr "Caricamento..."
 
 #: admin.php:138
@@ -216,6 +218,10 @@ msgstr "Aggiungi o modifica commento"
 #: admin.php:271
 msgid "Comment"
 msgstr "Commento"
+
+#: admin.php:272
+msgid "This test is significant because…"
+msgstr ""
 
 #: admin.php:276
 msgid "Save"
