@@ -200,7 +200,7 @@ include_once 'layout/sidebar.php';
                                 title="<?php
                                     echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years.");
                                 ?>">
-                                <small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence"); ?></b></small>
+                                <small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence by year"); ?></b></small>
                             </button>
                         </div>
                         <div class="alert alert-info mb-0 <?php echo $isAuthenticated ? 'd-none' : ''; ?>" role="alert" data-requires-no-auth>
