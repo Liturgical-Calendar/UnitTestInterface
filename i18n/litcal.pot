@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 17:17+0000\n"
+"POT-Creation-Date: 2025-12-13 17:22+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,11 +24,11 @@ msgid ""
 msgstr ""
 
 #: index.php:24
-msgid "Websocket connected successfully!"
+msgid "WebSocket connected successfully!"
 msgstr ""
 
 #: index.php:32
-msgid "Websocket connection closed."
+msgid "WebSocket connection closed."
 msgstr ""
 
 #: index.php:40
@@ -220,11 +220,7 @@ msgid "LitCal Project"
 msgstr ""
 
 #: layout/topnavbar.php:62
-msgid "Websocket connection status"
-msgstr ""
-
-#: layout/topnavbar.php:62
-msgid "Websocket"
+msgid "WebSocket connection status"
 msgstr ""
 
 #: layout/topnavbar.php:94
