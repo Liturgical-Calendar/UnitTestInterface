@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 17:17+0000\n"
+"POT-Creation-Date: 2025-12-13 17:22+0000\n"
 "PO-Revision-Date: 2025-12-13 17:22+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: French <https://translate.johnromanodorazio.com/projects/"
@@ -28,11 +28,15 @@ msgstr ""
 "websocket. Peut-être que le serveur est hors ligne ?"
 
 #: index.php:24
-msgid "Websocket connected successfully!"
+#, fuzzy
+#| msgid "Websocket connected successfully!"
+msgid "WebSocket connected successfully!"
 msgstr "Websocket connecté avec succès !"
 
 #: index.php:32
-msgid "Websocket connection closed."
+#, fuzzy
+#| msgid "Websocket connection closed."
+msgid "WebSocket connection closed."
 msgstr "Connexion Websocket fermée."
 
 #: index.php:40
@@ -249,12 +253,10 @@ msgid "LitCal Project"
 msgstr "Projet LitCal"
 
 #: layout/topnavbar.php:62
-msgid "Websocket connection status"
+#, fuzzy
+#| msgid "Websocket connection status"
+msgid "WebSocket connection status"
 msgstr "Statut de la connexion Websocket"
-
-#: layout/topnavbar.php:62
-msgid "Websocket"
-msgstr "Websocket"
 
 #: layout/topnavbar.php:94
 msgid "Admin"
@@ -396,6 +398,9 @@ msgstr "Fermer"
 #: components/NewTestModal.php:127
 msgid "Create test"
 msgstr "Créer un test"
+
+#~ msgid "Websocket"
+#~ msgstr "Websocket"
 
 #~ msgid "Total time for %s tests:"
 #~ msgstr "Temps total pour %s tests :"
