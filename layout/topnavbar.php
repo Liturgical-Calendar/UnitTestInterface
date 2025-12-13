@@ -59,7 +59,7 @@
                 <!-- Section 2: Websocket status -->
                 <li class="nav-item">
                     <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
-                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-xxl-inline"> <?php echo _("Websocket connection status"); ?></span><span class="d-none d-lg-inline d-xxl-none"> <?php echo _("Websocket"); ?></span>
+                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-xxl-inline"> <?php echo _("WebSocket connection status"); ?></span><span class="d-none d-lg-inline d-xxl-none"> WebSocket</span>
                     </div>
                 </li>
                 <li class="vr mx-2 d-none d-lg-block"></li>

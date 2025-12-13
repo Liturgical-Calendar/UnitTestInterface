@@ -21,7 +21,7 @@ include_once('layout/head.php');
             <div class="toast align-items-center text-white bg-success border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-connected">
                 <div class="d-flex">
                     <div class="toast-body">
-                        <i class="fas fa-circle-check fa-fw"></i> <?php echo _("Websocket connected successfully!"); ?>
+                        <i class="fas fa-circle-check fa-fw"></i> <?php echo _("WebSocket connected successfully!"); ?>
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
@@ -29,7 +29,7 @@ include_once('layout/head.php');
             <div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-closed">
                 <div class="d-flex">
                     <div class="toast-body">
-                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Websocket connection closed."); ?>
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("WebSocket connection closed."); ?>
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
