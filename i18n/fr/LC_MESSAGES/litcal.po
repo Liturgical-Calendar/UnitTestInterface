@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 17:22+0000\n"
+"POT-Creation-Date: 2025-12-15 16:19+0000\n"
 "PO-Revision-Date: 2025-12-13 17:24+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: French <https://translate.johnromanodorazio.com/projects/"
@@ -172,8 +172,14 @@ msgid "Exact date until year"
 msgstr "Date exacte jusqu'à l'année"
 
 #: admin.php:201
+#, fuzzy
+#| msgid ""
+#| "When a liturgical event is expected to be overriden in various years for "
+#| "whatever reason, we assert that it should exist in certain given years on "
+#| "an expected date (date can optionally be defined differently for each "
+#| "given year), and that it should not exist for other given years."
 msgid ""
-"When a liturgical event is expected to be overriden in various years for "
+"When a liturgical event is expected to be overridden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
 "expected date (date can optionally be defined differently for each given "
 "year), and that it should not exist for other given years."
@@ -244,27 +250,27 @@ msgstr "Ressources"
 msgid "API Version"
 msgstr "Version de l'API"
 
-#: layout/topnavbar.php:48 layout/topnavbar.php:49
+#: layout/topnavbar.php:49 layout/topnavbar.php:50
 msgid "LitCal Project"
 msgstr "Projet LitCal"
 
-#: layout/topnavbar.php:62
+#: layout/topnavbar.php:64
 msgid "WebSocket connection status"
 msgstr "Statut de la connexion WebSocket"
 
-#: layout/topnavbar.php:94
+#: layout/topnavbar.php:97 layout/topnavbar.php:105
 msgid "Admin"
 msgstr "Admin"
 
-#: layout/topnavbar.php:101 layout/sidebar.php:23
+#: layout/topnavbar.php:104 layout/sidebar.php:23
 msgid "Accuracy Tests Admin"
 msgstr "Administration des tests d'exactitude"
 
-#: layout/topnavbar.php:106 layout/topnavbar.php:107
+#: layout/topnavbar.php:109 layout/topnavbar.php:110
 msgid "Login"
 msgstr "Connexion"
 
-#: layout/topnavbar.php:115
+#: layout/topnavbar.php:118 layout/topnavbar.php:119
 msgid "Logout"
 msgstr "Déconnexion"
 
