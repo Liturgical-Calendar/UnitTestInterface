@@ -33,6 +33,7 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
             API_PROTOCOL: <?php echo json_encode($_ENV['API_PROTOCOL'] ?? 'https'); ?>,
             API_PORT: <?php echo (int)($_ENV['API_PORT'] ?? 443); ?>,
             API_HOST: <?php echo json_encode($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>,
+            API_BASE_PATH: <?php echo json_encode($_ENV['API_BASE_PATH'] ?? '/api/dev'); ?>,
             APP_ENV: <?php echo json_encode($_ENV['APP_ENV'] ?? 'production'); ?>,
             isAuthenticated: <?php echo isset($isAuthenticated) ? ($isAuthenticated ? 'true' : 'false') : 'false'; ?>
         });
