@@ -31,7 +31,7 @@ function isLocalhost(): bool
             in_array($serverName, $localhostNames);
 }
 
-$dotenv = Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
+$dotenv = Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.test', '.env.staging', '.env.production'], false);
 $dotenv->safeLoad();
 
 // Initialize JWT authentication (must be after dotenv loads)

@@ -16,12 +16,14 @@ const getBaseUrl = () => {
         console.error('LitCalConfig not found');
         return null;
     }
-    const { API_PROTOCOL, API_HOST, API_PORT } = config;
+    const { API_PROTOCOL, API_HOST, API_PORT, API_BASE_PATH } = config;
     const isDefaultPort = (API_PROTOCOL === 'https' && API_PORT === 443) ||
                           (API_PROTOCOL === 'http' && API_PORT === 80);
-    return isDefaultPort
+    const basePath = API_BASE_PATH ? API_BASE_PATH.replace(/\/$/, '') : '';
+    const hostWithPort = isDefaultPort
         ? `${API_PROTOCOL}://${API_HOST}`
         : `${API_PROTOCOL}://${API_HOST}:${API_PORT}`;
+    return `${hostWithPort}${basePath}`;
 };
 
 const Auth = {
