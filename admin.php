@@ -198,7 +198,7 @@ include_once 'layout/sidebar.php';
                             <button type="button" class="btn btn-primary col col-md-4 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth
                                 data-testtype="variableCorrespondence" data-bs-toggle="modal" data-bs-target="#modalDefineTest"
                                 title="<?php
-                                    echo _("When a liturgical event is expected to be overriden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years.");
+                                    echo _("When a liturgical event is expected to be overridden in various years for whatever reason, we assert that it should exist in certain given years on an expected date (date can optionally be defined differently for each given year), and that it should not exist for other given years.");
                                 ?>">
                                 <small><b><i class="fas fa-square-root-variable me-2"></i> <?php echo _("Variable existence by year"); ?></b></small>
                             </button>

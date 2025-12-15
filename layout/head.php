@@ -1,7 +1,23 @@
 <?php
+require_once dirname(__DIR__) . "/vendor/autoload.php";
 include_once("includes/I18n.php");
 
+use Dotenv\Dotenv;
 use LiturgicalCalendar\UnitTestInterface\I18n;
+
+// Load environment variables early so they're available in topnavbar.php
+$dotenv = Dotenv::createImmutable(
+    dirname(__DIR__),
+    ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'],
+    false
+);
+$dotenv->safeLoad();
+$dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
+$dotenv->ifPresent(['API_PORT', 'WS_PORT'])->isInteger();
+$dotenv->ifPresent(['APP_ENV'])->notEmpty()->allowedValues(['development', 'staging', 'production']);
+$dotenv->ifPresent('WS_PROTOCOL')->notEmpty()->allowedValues(['ws', 'wss']);
+$dotenv->ifPresent('WS_HOST')->notEmpty();
+$dotenv->ifPresent('LITCAL_FRONTEND_URL')->notEmpty();
 
 // Only create I18n if not already initialized (e.g., by admin.php for early API calls)
 if (!isset($i18n)) {

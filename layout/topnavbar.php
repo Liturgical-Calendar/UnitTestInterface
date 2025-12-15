@@ -31,7 +31,7 @@
                 <li class="vr mx-2 d-none d-lg-block"></li>
                 <li class="nav-item d-flex align-items-center">
                     <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link mb-0 pe-1">
-                        <i class="fas fa-code-branch me-1"></i><span class="d-none d-xl-inline"><?php echo _("API Version"); ?></span>
+                        <i class="fas fa-code-branch me-1"></i><span class="d-lg-none d-xl-inline"><?php echo _("API Version"); ?></span>
                     </label>
                     <select class="form-select form-select-sm" style="width: auto;"
                         aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
@@ -45,13 +45,14 @@
             <ul class="navbar-nav align-items-center">
                 <!-- Section 1: External links -->
                 <li class="nav-item">
-                    <a class="nav-link" href="https://litcal.johnromanodorazio.com" title="<?php echo _("LitCal Project"); ?>">
-                        <i class="fas fa-arrow-up-right-from-square me-1"></i><span class="d-none d-xxl-inline"><?php echo _("LitCal Project"); ?></span>
+                    <?php $litcalFrontendUrl = $_ENV['LITCAL_FRONTEND_URL'] ?? 'https://litcal.johnromanodorazio.com'; ?>
+                    <a class="nav-link" href="<?php echo htmlspecialchars($litcalFrontendUrl); ?>" title="<?php echo _("LitCal Project"); ?>">
+                        <i class="fas fa-arrow-up-right-from-square me-1"></i><span class="d-lg-none d-xxl-inline"><?php echo _("LitCal Project"); ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="https://github.com/Liturgical-Calendar/UnitTestInterface" target="_blank" title="GitHub repository">
-                        <i class="fab fa-github"></i>
+                        <i class="fab fa-github me-1"></i><span class="d-lg-none">GitHub</span>
                     </a>
                 </li>
                 <li class="vr mx-2 d-none d-lg-block"></li>
@@ -59,7 +60,9 @@
                 <!-- Section 2: Websocket status -->
                 <li class="nav-item">
                     <div class="text-white bg-secondary px-2 py-1 rounded small" id="websocket-status">
-                        <i class="fas fa-plug fa-fw"></i><span class="d-none d-xxl-inline"> <?php echo _("WebSocket connection status"); ?></span><span class="d-none d-lg-inline d-xxl-none"> WebSocket</span>
+                        <i class="fas fa-plug fa-fw me-1"></i>
+                        <span class="d-lg-none d-xxl-inline"><?php echo _("WebSocket connection status"); ?></span>
+                        <span class="d-none d-lg-inline d-xxl-none">WebSocket</span>
                     </div>
                 </li>
                 <li class="vr mx-2 d-none d-lg-block"></li>
@@ -68,7 +71,7 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="langChoicesDropdown" role="button"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-globe me-1"></i><span class="d-none d-xxl-inline"><?php
+                        <i class="fas fa-globe me-1"></i><span class="d-lg-none d-xxl-inline"><?php
                             echo Locale::getDisplayLanguage($i18n->locale, $i18n->locale);
                         ?></span>
                     </a>
@@ -99,21 +102,21 @@
                 <!-- Section 4: Admin gear + Login/User menu -->
                 <li class="nav-item">
                     <a class="nav-link" href="/admin.php?apiVersion=dev" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
-                        <i class="fas fa-gear"></i>
+                        <i class="fas fa-gear me-1"></i><span class="d-lg-none"><?php echo _("Admin"); ?></span>
                     </a>
                 </li>
                 <li class="nav-item me-2 <?php echo ($hasLoginModal && !$navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-no-auth>
                     <button class="btn btn-outline-primary btn-sm" id="loginBtn" title="<?php echo _('Login'); ?>">
-                        <i class="fas fa-sign-in-alt me-1"></i><span class="d-none d-sm-inline"><?php echo _('Login'); ?></span>
+                        <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
                     </button>
                 </li>
                 <li class="nav-item me-2 <?php echo ($hasLoginModal && $navbarIsAuth) ? '' : 'd-none'; ?>" data-requires-auth>
                     <div class="btn-group" id="userMenu">
                         <span class="btn btn-outline-success btn-sm" id="userInfo">
-                            <i class="fas fa-user me-1"></i><span id="username" class="d-none d-sm-inline"><?php echo htmlspecialchars($navbarUsername); ?></span>
+                            <i class="fas fa-user me-1"></i><span id="username"><?php echo htmlspecialchars($navbarUsername); ?></span>
                         </span>
                         <button class="btn btn-outline-danger btn-sm" id="logoutBtn" title="<?php echo _('Logout'); ?>">
-                            <i class="fas fa-sign-out-alt"></i>
+                            <i class="fas fa-sign-out-alt me-1"></i><span class="d-lg-none"><?php echo _('Logout'); ?></span>
                         </button>
                     </div>
                 </li>
