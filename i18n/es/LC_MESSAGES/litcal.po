@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 17:22+0000\n"
-"PO-Revision-Date: 2025-12-13 17:37+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"POT-Creation-Date: 2025-12-15 16:19+0000\n"
+"PO-Revision-Date: 2025-12-15 17:15+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/es/>\n"
 "Language: es\n"
@@ -173,15 +173,15 @@ msgstr "Fecha exacta hasta el año"
 
 #: admin.php:201
 msgid ""
-"When a liturgical event is expected to be overriden in various years for "
+"When a liturgical event is expected to be overridden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
 "expected date (date can optionally be defined differently for each given "
 "year), and that it should not exist for other given years."
 msgstr ""
-"Cuando se espera que un evento litúrgico sea anulado en varios años por "
-"cualquier razón, afirmamos que debería existir en ciertos años dados en una "
+"Cuando se espera que un evento litúrgico sea reemplazado en varios años por "
+"cualquier razón, afirmamos que debe existir en ciertos años dados en una "
 "fecha esperada (la fecha puede definirse opcionalmente de manera diferente "
-"para cada año dado), y que no debería existir en otros años dados."
+"para cada año dado) y que no debe existir para otros años dados."
 
 #: admin.php:203
 msgid "Variable existence by year"
@@ -243,27 +243,27 @@ msgstr "Recursos"
 msgid "API Version"
 msgstr "Versión de la API"
 
-#: layout/topnavbar.php:48 layout/topnavbar.php:49
+#: layout/topnavbar.php:49 layout/topnavbar.php:50
 msgid "LitCal Project"
 msgstr "Proyecto LitCal"
 
-#: layout/topnavbar.php:62
+#: layout/topnavbar.php:64
 msgid "WebSocket connection status"
 msgstr "Estado de la conexión WebSocket"
 
-#: layout/topnavbar.php:94
+#: layout/topnavbar.php:97 layout/topnavbar.php:105
 msgid "Admin"
 msgstr "Administrador"
 
-#: layout/topnavbar.php:101 layout/sidebar.php:23
+#: layout/topnavbar.php:104 layout/sidebar.php:23
 msgid "Accuracy Tests Admin"
 msgstr "Administración de Pruebas de Precisión"
 
-#: layout/topnavbar.php:106 layout/topnavbar.php:107
+#: layout/topnavbar.php:109 layout/topnavbar.php:110
 msgid "Login"
 msgstr "Iniciar sesión"
 
-#: layout/topnavbar.php:115
+#: layout/topnavbar.php:118 layout/topnavbar.php:119
 msgid "Logout"
 msgstr "Cerrar sesión"
 
