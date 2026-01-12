@@ -936,7 +936,7 @@ const appendAccordionItem = ( obj ) => {
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
                 <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} test-valid">
                     <div class="card-body">
-                        <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> test valid</span><i class="fas fa-circle-info" aria-hidden="true" title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"></i></p>
+                        <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> test valid</span><span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"><i class="fas fa-circle-info" aria-hidden="true"></i></span></p>
                     </div>
                 </div>
             </div>
@@ -947,7 +947,7 @@ const appendAccordionItem = ( obj ) => {
         <div class="accordion-item">
             <h2 class="row g-0 accordion-header" id="${nameSlug}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${nameSlug}" aria-expanded="false" aria-controls="specificUnitTest-${nameSlug}">
-                    <div class="col-12 col-md-4 mb-2 mb-md-0">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<i class="fas fa-circle-info ms-2" aria-hidden="true" title="${obj.description}"></i>${obj.name.length > 50 ? '</small>' : ''}</div>
+                    <div class="col-12 col-md-4 mb-2 mb-md-0">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(obj.description)}"><i class="fas fa-circle-info ms-2" aria-hidden="true"></i></span>${obj.name.length > 50 ? '</small>' : ''}</div>
                     <div class="col-12 col-md-8">
                         <div class="test-status-row">
                             <div class="test-status-item text-white test-results bg-success rounded-start"><i class="fas fa-circle-check fa-fw" aria-hidden="true"></i><span class="status-label">Successful:</span> <span id="successful${nameSlug}TestsCount" class="successfulCount">0</span></div>
@@ -1224,6 +1224,7 @@ const setupPage = () => {
         el.classList.remove('fa-circle-check', 'fa-circle-xmark');
         el.classList.add('fa-circle-question');
     });
+    initInfoTooltips();
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
     const pageLoader = document.querySelector('.page-loader');
@@ -1312,10 +1313,11 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     }
 });
 
-// Store tooltips so we can hide them later
+// Store wide tooltips (error tooltips with copy functionality) so we can hide them later
 const tooltipMap = new Map();
 
-// Show tooltip on click, hide on click outside, or copy to clipboard
+// Show wide tooltip on click, hide on click outside, or copy to clipboard
+// Only applies to .error-tooltip elements, not info icons
 document.body.addEventListener( 'click', function ( event ) {
     if ( event.target.closest( '.btn-copy' ) !== null ) {
         const tooltipElement = event.target.closest( '.tooltip' );
@@ -1335,7 +1337,7 @@ document.body.addEventListener( 'click', function ( event ) {
         return;
     }
 
-    const target = event.target.closest( '[data-bs-toggle="tooltip"]' );
+    const target = event.target.closest( '.error-tooltip[data-bs-toggle="tooltip"]' );
     const tooltipEl = event.target.closest( '.wide-tooltip' );
 
     // When a click occurs anywhere except on the trigger element or the tooltip itself, hide the tooltip
@@ -1370,6 +1372,19 @@ document.body.addEventListener( 'click', function ( event ) {
 
     tooltip.show();
 } );
+
+/**
+ * Initialize Bootstrap hover tooltips for info icons.
+ * Call this after dynamically adding content with tooltip triggers.
+ */
+const initInfoTooltips = () => {
+    document.querySelectorAll( '[data-bs-toggle="tooltip"]:not(.error-tooltip)' ).forEach( el => {
+        // Skip if already initialized
+        if ( !bootstrap.Tooltip.getInstance( el ) ) {
+            new bootstrap.Tooltip( el );
+        }
+    } );
+};
 
 // Optional: Hide tooltip on ESC key
 document.addEventListener( 'keydown', function ( event ) {
