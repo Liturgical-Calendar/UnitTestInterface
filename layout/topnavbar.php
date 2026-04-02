@@ -30,15 +30,15 @@
                 </li>
                 <li class="vr mx-2 d-none d-lg-block"></li>
                 <li class="nav-item d-flex align-items-center">
-                    <label id="apiVersionsDropdown" for="apiVersionsDropdownItems" class="nav-link mb-0 pe-1">
+                    <span class="nav-link mb-0 pe-1">
                         <i class="fas fa-code-branch me-1"></i><span class="d-lg-none d-xl-inline"><?php echo _("API Version"); ?></span>
-                    </label>
-                    <select class="form-select form-select-sm" style="width: auto;"
-                        aria-labelledby="apiVersionsDropdown" id="apiVersionsDropdownItems">
-                        <option id="apiVersion-dev" value="dev" selected>dev</option>
-                        <option id="apiVersion-v4" value="v4">v4</option>
-                        <option id="apiVersion-v5" value="v5">v5</option>
-                    </select>
+                    </span>
+                    <span class="badge bg-secondary" id="apiVersionBadge"><?php
+                        $navApiBasePath = $_ENV['API_BASE_PATH'] ?? '/api/dev';
+                        $navTrimmedPath = trim($navApiBasePath, '/');
+                        $navApiVersion = preg_match('#^api/(.+)$#', $navTrimmedPath, $m) ? $m[1] : $navTrimmedPath;
+                        echo htmlspecialchars($navApiVersion);
+                    ?></span>
                 </li>
             </ul>
             <!-- Right side items -->
@@ -101,7 +101,7 @@
                 ?>
                 <!-- Section 4: Admin gear + Login/User menu -->
                 <li class="nav-item">
-                    <a class="nav-link" href="/admin.php?apiVersion=dev" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
+                    <a class="nav-link" href="/admin.php?apiVersion=<?php echo htmlspecialchars($navApiVersion); ?>" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
                         <i class="fas fa-gear me-1"></i><span class="d-lg-none"><?php echo _("Admin"); ?></span>
                     </a>
                 </li>

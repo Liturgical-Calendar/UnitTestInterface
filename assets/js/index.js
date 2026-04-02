@@ -20,7 +20,7 @@ import {
 /** @typedef {import('./types.js').NationalCalendarMetadata} NationalCalendarMetadata */
 
 // Access global config from window (set by PHP in footer.php)
-const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window.LitCalConfig;
+const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV } = window.LitCalConfig;
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -31,29 +31,20 @@ while ( baseYear <= twentyFiveYearsFromNow ) {
 }
 
 /**
- * An enum-like constant that represents the different endpoints used in the application.
+ * An object that holds the different API endpoint URLs used in the application.
+ * Populated by setEndpoints() based on the configured API_BASE_PATH.
  * @readonly
  * @enum {string}
- * @property {string} VERSION - version of the API
  * @property {string} CALENDARS - endpoint for the index of available calendars
  * @property {string} TESTS - endpoint for the index of available tests
  * @property {string} DECREES - endpoint for decrees
  * @property {string} MISSALS - endpoint for missals
- * @property {string} DATA - endpoint for data
- * @property {string} EVENTS - endpoint for events
- * @property {string} EASTER - endpoint for easter calculations
- * @property {string} SCHEMAS - endpoint for schemas
  */
 const ENDPOINTS = {
-    VERSION: "dev",
     CALENDARS: "",
     TESTS: "",
     DECREES: "",
-    MISSALS: "",
-    DATA: "",
-    EVENTS: "",
-    EASTER: "",
-    SCHEMAS: ""
+    MISSALS: ""
 }
 
 const SOURCE_DATA_PATH = "jsondata/sourcedata";
@@ -102,24 +93,18 @@ const sourceDataChecks = [
 ];
 
 /**
- * Sets the API endpoints according to the version selected in the dropdown.
- *
- * @param {Event} [ev] - An optional event object.
+ * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
+ * The API version is determined by the server configuration, not user selection,
+ * since the WebSocket server can only validate against a single API base path.
  *
  * @return {void}
  */
-const setEndpoints = ( ev ) => {
+const setEndpoints = () => {
     let API_PATH;
     if ( APP_ENV === 'production' ) {
-        if ( undefined !== ev ) {
-            ENDPOINTS.VERSION = ev.currentTarget.value;
-        } else {
-            ENDPOINTS.VERSION = document.querySelector( '#apiVersionsDropdownItems' ).value;
-        }
-        document.querySelector( '#admin_url' ).setAttribute( 'href', `/admin.php?apiversion=${ENDPOINTS.VERSION}` );
-        API_PATH = `/api/${ENDPOINTS.VERSION}/`;
+        const basePath = API_BASE_PATH.replace(/^\/|\/$/g, ''); // strip leading/trailing slashes
+        API_PATH = `/${basePath}/`;
     } else {
-        ENDPOINTS.VERSION = document.querySelector( '#apiVersionsDropdownItems' ).value;
         API_PATH = '/';
     }
     const API_PORT_STR = [ 443, 80 ].includes( API_PORT ) ? '' : `:${API_PORT}`;
@@ -127,19 +112,7 @@ const setEndpoints = ( ev ) => {
     ENDPOINTS.TESTS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}tests`;
     ENDPOINTS.DECREES = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}decrees`;
     ENDPOINTS.MISSALS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}missals`;
-    console.info(`
-        APP_ENV: ${APP_ENV},
-        API_PATH: ${API_PATH},
-        API_PROTOCOL: ${API_PROTOCOL},
-        API_HOST: ${API_HOST},
-        API_PORT: ${API_PORT},
-        API_PORT_STR: ${API_PORT_STR},
-        ENDPOINTS.VERSION: ${ENDPOINTS.VERSION},
-        ENDPOINTS.CALENDARS: ${ENDPOINTS.CALENDARS},
-        ENDPOINTS.TESTS: ${ENDPOINTS.TESTS},
-        ENDPOINTS.DECREES: ${ENDPOINTS.DECREES},
-        ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS}`
-    );
+    console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
 
     sourceDataChecks[ 0 ].sourceFile = ENDPOINTS.CALENDARS;
     sourceDataChecks[ 5 ].sourceFile = ENDPOINTS.DECREES;
@@ -686,7 +659,7 @@ const connectWebSocket = () => {
                 }
                 const cardText = el.querySelector('.card-text');
                 if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
                 }
             });
             updateText('failedCount', ++failedTests);
@@ -1236,8 +1209,6 @@ const setupPage = () => {
     }
 }
 
-document.querySelector('#apiVersionsDropdownItems').addEventListener('change', setEndpoints);
-
 document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) => {
     const pageLoader = document.querySelector('.page-loader');
     if (pageLoader) {
@@ -1366,7 +1337,9 @@ document.body.addEventListener( 'click', function ( event ) {
             customClass: 'wide-tooltip',
             sanitize: false
         } );
-        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        const rawTitle = target.getAttribute( 'data-bs-title' );
+        const linkifiedTitle = escapeQuotesAndLinkifyUrls( rawTitle );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${linkifiedTitle}</div></div>`} );
         tooltipMap.set( target, tooltip );
     }
 

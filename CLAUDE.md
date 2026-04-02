@@ -75,7 +75,7 @@ php -S localhost:3003
 **Requirements:**
 
 - LiturgicalCalendarAPI must be running (default: port 8000)
-- WebSocket server must be running (default: port 8080)
+- WebSocket server must be running (default: port 8082)
 
 ## Code Standards
 
