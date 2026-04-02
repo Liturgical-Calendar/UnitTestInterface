@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 17:22+0000\n"
-"PO-Revision-Date: 2025-12-13 17:24+0000\n"
+"POT-Creation-Date: 2025-12-15 16:19+0000\n"
+"PO-Revision-Date: 2025-12-15 17:15+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Croatian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hr/>\n"
@@ -171,15 +171,16 @@ msgstr "Točan datum do godine"
 
 #: admin.php:201
 msgid ""
-"When a liturgical event is expected to be overriden in various years for "
+"When a liturgical event is expected to be overridden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
 "expected date (date can optionally be defined differently for each given "
 "year), and that it should not exist for other given years."
 msgstr ""
-"Kad se očekuje da će liturgijski događaj biti nadjačan u raznim godinama iz "
-"bilo kojeg razloga, tvrdimo da bi trebao postojati u određenim godinama na "
-"očekivani datum (datum se može opcionalno definirati drugačije za svaku "
-"određenu godinu) i da ne bi trebao postojati u drugim određenim godinama."
+"Kada se očekuje da će liturgijski događaj u različitim godinama biti "
+"zamijenjen iz bilo kojeg razloga, tvrdimo da bi trebao postojati u određenim "
+"godinama na očekivani datum "
+"(datum se opcionalno može definirati drugačije za svaku određenu godinu) i "
+"da ne bi trebao postojati u drugim godinama."
 
 #: admin.php:203
 msgid "Variable existence by year"
@@ -241,27 +242,27 @@ msgstr "Resursi"
 msgid "API Version"
 msgstr "API verzija"
 
-#: layout/topnavbar.php:48 layout/topnavbar.php:49
+#: layout/topnavbar.php:49 layout/topnavbar.php:50
 msgid "LitCal Project"
 msgstr "LitCal projekt"
 
-#: layout/topnavbar.php:62
+#: layout/topnavbar.php:64
 msgid "WebSocket connection status"
 msgstr "Status veze putem WebSocket-a"
 
-#: layout/topnavbar.php:94
+#: layout/topnavbar.php:97 layout/topnavbar.php:105
 msgid "Admin"
 msgstr "Admin"
 
-#: layout/topnavbar.php:101 layout/sidebar.php:23
+#: layout/topnavbar.php:104 layout/sidebar.php:23
 msgid "Accuracy Tests Admin"
 msgstr "Admin Testova Točnosti"
 
-#: layout/topnavbar.php:106 layout/topnavbar.php:107
+#: layout/topnavbar.php:109 layout/topnavbar.php:110
 msgid "Login"
 msgstr "Prijava"
 
-#: layout/topnavbar.php:115
+#: layout/topnavbar.php:118 layout/topnavbar.php:119
 msgid "Logout"
 msgstr "Odjava"
 
