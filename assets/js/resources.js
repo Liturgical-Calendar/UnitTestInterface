@@ -18,7 +18,7 @@ import {
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
 
 // Access global config from window (set by PHP in footer.php)
-const { WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, APP_ENV } = window.LitCalConfig;
+const { WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV } = window.LitCalConfig;
 
 /**
  * This class keeps track of the state of the page and the data it requires to run tests.
@@ -143,9 +143,9 @@ class TestState {
 }
 
 /**
- * Object containing all endpoints used in the application.
+ * Object containing all API endpoint URLs used in the application.
+ * Populated by setEndpoints() based on the configured API_BASE_PATH.
  * @type {Object<string,string>}
- * @property {string} VERSION - version of the API
  * @property {string} CALENDARS - endpoint for calendars
  * @property {string} TESTS - endpoint for tests
  * @property {string} DECREES - endpoint for decrees
@@ -156,7 +156,6 @@ class TestState {
  * @property {string} SCHEMAS - endpoint for schemas
  */
 const ENDPOINTS = {
-    VERSION: "dev",
     CALENDARS: "",
     TESTS: "",
     DECREES: "",
@@ -252,24 +251,18 @@ const sourceDataChecks = [
 
 
 /**
- * Sets the API endpoints according to the version selected in the dropdown.
- *
- * @param {Event} [ev] - An optional event object.
+ * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
+ * The API version is determined by the server configuration, not user selection,
+ * since the WebSocket server can only validate against a single API base path.
  *
  * @return {void}
  */
-const setEndpoints = (ev) => {
+const setEndpoints = () => {
     let API_PATH;
     if (APP_ENV==='production') {
-        if(undefined !== ev) {
-            ENDPOINTS.VERSION = ev.currentTarget.value;
-        } else {
-            ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
-        }
-        document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
-        API_PATH = `/api/${ENDPOINTS.VERSION}`;
+        const basePath = API_BASE_PATH.replace(/^\/|\/$/g, ''); // strip leading/trailing slashes
+        API_PATH = `/${basePath}`;
     } else {
-        ENDPOINTS.VERSION = '';
         API_PATH = '';
     }
     const API_PORT_STR  = [443, 80].includes(API_PORT) ? '' : `:${API_PORT}`;
@@ -281,24 +274,7 @@ const setEndpoints = (ev) => {
     ENDPOINTS.SCHEMAS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/schemas`;
     ENDPOINTS.MISSALS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
     ENDPOINTS.DATA      = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/data`;
-    console.info(
-        `APP_ENV: ${APP_ENV},
-        API_PATH: ${API_PATH},
-        API_PROTOCOL: ${API_PROTOCOL},
-        API_HOST: ${API_HOST},
-        API_PORT: ${API_PORT},
-        API_PORT_STR: ${API_PORT_STR},
-        ENDPOINTS.VERSION: ${ENDPOINTS.VERSION},
-        ENDPOINTS.CALENDARS: ${ENDPOINTS.CALENDARS},
-        ENDPOINTS.DECREES: ${ENDPOINTS.DECREES},
-        ENDPOINTS.TESTS: ${ENDPOINTS.TESTS},
-        ENDPOINTS.EVENTS: ${ENDPOINTS.EVENTS},
-        ENDPOINTS.EASTER: ${ENDPOINTS.EASTER},
-        ENDPOINTS.SCHEMAS: ${ENDPOINTS.SCHEMAS},
-        ENDPOINTS.MISSALS: ${ENDPOINTS.MISSALS},
-        ENDPOINTS.DATA: ${ENDPOINTS.DATA}`
-    );
-    document.querySelector('#admin_url').setAttribute('href', `/admin.php?apiversion=${ENDPOINTS.VERSION}`);
+    console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
     resourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     resourceDataChecks[1].sourceFile = ENDPOINTS.DECREES;
     resourceDataChecks[2].sourceFile = ENDPOINTS.TESTS;
@@ -506,7 +482,7 @@ const connectWebSocket = () => {
                 }
                 const cardText = el.querySelector('.card-text');
                 if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeQuotesAndLinkifyUrls( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
+                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
                 }
             });
             updateText('failedCount', ++failedTests);
@@ -958,8 +934,6 @@ const MsToTimeString = ( ms ) => {
     return timeString.join( ', ' );
 }
 
-document.querySelector('#apiVersionsDropdownItems')?.addEventListener('change', setEndpoints);
-
 document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if( currentState === TestState.Ready || currentState === TestState.JobsFinished ) {
         successfulTests = 0;
@@ -1051,7 +1025,9 @@ document.body.addEventListener( 'click', function ( event ) {
             customClass: 'wide-tooltip',
             sanitize: false
         } );
-        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${target.getAttribute( 'data-bs-title' )}</div></div>`} );
+        const rawTitle = target.getAttribute( 'data-bs-title' );
+        const linkifiedTitle = escapeQuotesAndLinkifyUrls( rawTitle );
+        tooltip.setContent( {'.tooltip-inner': `<div class="d-flex align-items-start"><button class="btn-copy btn-primary btn-sm ms-1 me-2" title="Copy to clipboard"><i class="far fa-copy" aria-hidden="true"></i></button><div class="tooltip-content">${linkifiedTitle}</div></div>`} );
         tooltipMap.set( target, tooltip );
     }
 

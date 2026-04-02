@@ -392,30 +392,10 @@ const countPrevSiblingsWithSelector = (element, selector) => {
 };
 
 const ENDPOINTS = {
-    VERSION: "dev",
     METADATA: `${baseUrl}/calendars`,
     TESTSINDEX: `${baseUrl}/tests`,
     EVENTS: `${baseUrl}/events`
 }
-
-/**
- * Sets the API endpoints according to the version selected in the dropdown.
- *
- * @param {Event} [ev] - An optional event object.
- *
- * @return {void}
- */
-const setEndpoints = (ev = null) => {
-    if(ev) {
-        ENDPOINTS.VERSION = ev.currentTarget.value;
-    } else {
-        ENDPOINTS.VERSION = document.querySelector('#apiVersionsDropdownItems').value;
-    }
-}
-
-document.querySelector('#apiVersionsDropdownItems').value = 'dev';
-document.querySelector('#apiVersionsDropdownItems').disabled = true;
-setEndpoints();
 
 /**
  * LOAD METADATA FOR EXISTING CALENDARS
