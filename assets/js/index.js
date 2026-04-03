@@ -781,6 +781,48 @@ const setTestRunnerBtnLblTxt = ( txt ) => {
 }
 
 /**
+ * Resets all test UI elements back to their initial state.
+ * This includes resetting card colors, icons, counters, timers,
+ * and removing any error tooltips injected during the previous run.
+ */
+const resetTestUI = () => {
+    // Reset all test cards (source data, calendar data, and unit tests)
+    document.querySelectorAll('#testSuiteAccordion .bg-success, #testSuiteAccordion .bg-danger').forEach(el => {
+        el.classList.remove('bg-success', 'bg-danger');
+        el.classList.add('bg-info');
+    });
+    document.querySelectorAll('#testSuiteAccordion .fa-circle-check, #testSuiteAccordion .fa-circle-xmark').forEach(el => {
+        el.classList.remove('fa-circle-check', 'fa-circle-xmark');
+        el.classList.add('fa-circle-question');
+    });
+
+    // Remove error tooltips added during the previous run
+    document.querySelectorAll('#testSuiteAccordion .error-tooltip').forEach(el => el.remove());
+
+    // Reset all success/fail counters displayed in the UI
+    document.querySelectorAll('.successfulCount, .failedCount').forEach(el => el.textContent = '0');
+
+    // Reset all timer displays
+    updateText('total-time', '0');
+    updateText('totalSourceDataTestsTime', '0');
+    updateText('totalCalendarDataTestsTime', '0');
+    updateText('totalUnitTestsTime', '0');
+    document.querySelectorAll('[id$="TestsTime"]').forEach(el => {
+        if (el.id.startsWith('total') && !['totalSourceDataTestsTime', 'totalCalendarDataTestsTime', 'totalUnitTestsTime'].includes(el.id)) {
+            el.textContent = '0';
+        }
+    });
+
+    // Reset internal counter variables
+    successfulSourceDataTests = 0;
+    successfulCalendarDataTests = 0;
+    successfulUnitTests = 0;
+    failedSourceDataTests = 0;
+    failedCalendarDataTests = 0;
+    failedUnitTests = 0;
+}
+
+/**
  * Fetches metadata and tests data from the server.
  * If the promise resolves, it sets the MetaData and UnitTests variables.
  * If the promise rejects, it logs an error message.
@@ -1265,6 +1307,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         failedTests = 0;
         calendarDataReceivedResponses = 0;
         calendarDataExpectedResponses = 0;
+        resetTestUI();
         currentState = ( conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ) ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
