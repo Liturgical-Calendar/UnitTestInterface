@@ -224,6 +224,7 @@ class TestState {
     static ValidatingCalendarData = new TestState( 'ValidatingCalendarData' );
     static SpecificUnitTests = new TestState( 'SpecificUnitTests' );
     static JobsFinished = new TestState( 'JobsFinished' );
+    static Stopped = new TestState( 'Stopped' );
 
     /**
      * Constructs a new TestState object.
@@ -681,7 +682,7 @@ const connectWebSocket = () => {
                 }
             }
         }
-        if ( currentState !== TestState.JobsFinished ) {
+        if ( currentState !== TestState.JobsFinished && currentState !== TestState.Stopped ) {
             runTests();
         }
         performance.mark( 'litcalTestRunnerEnd' );
@@ -1255,7 +1256,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         console.warn('cannot run tests: websocket connection not initialized');
         return;
     }
-    if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
+    if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         index = 0;
         calendarIndex = 0;
         yearIndex = 0;
@@ -1270,17 +1271,35 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
             console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
             performance.mark( 'litcalTestRunnerStart' );
-            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
+            const startBtnEl = document.querySelector('#startTestRunnerBtn');
+            if (startBtnEl) {
+                startBtnEl.disabled = false;
+                startBtnEl.classList.remove('btn-secondary', 'btn-warning');
+                startBtnEl.classList.add('btn-primary');
+            }
+            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate, #startTestRunnerBtn .fa-stop');
             if (rotateIcon) {
-                rotateIcon.classList.add('fa-spin');
+                rotateIcon.classList.remove('fa-stop');
+                rotateIcon.classList.add('fa-rotate', 'fa-spin');
             }
             setTestRunnerBtnLblTxt( 'Tests Running...' );
             console.log( `currentState = ${currentState}` );
             runTests();
         }
     } else {
-        //TODO: perhaps we could allow to interrupt running tests?
-        console.warn( 'Please do not try to start a test run while tests are running!' );
+        // Stop the running test run
+        console.log( 'Stopping test run...' );
+        currentState = TestState.Stopped;
+        const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
+        if (spinIcon) {
+            spinIcon.classList.remove('fa-spin');
+        }
+        setTestRunnerBtnLblTxt( 'Tests Stopped' );
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if (startBtn) {
+            startBtn.classList.remove('btn-primary');
+            startBtn.classList.add('btn-warning');
+        }
     }
 });
 
