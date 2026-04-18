@@ -406,6 +406,7 @@ let calendarDataReceivedResponses = 0;
 
 let connectionAttempt = null;
 let conn;
+let currentRunToken = null;
 
 let currentSelectedCalendar = "VA";
 let currentNationalCalendar = "VA";
@@ -618,6 +619,9 @@ const connectWebSocket = () => {
      * finished, it updates the total test time and displays it.
      */
     conn.onmessage = ( e ) => {
+        if ( currentState === TestState.Stopped || currentRunToken === null ) {
+            return;
+        }
         const responseData = JSON.parse( e.data );
         console.log( responseData );
         if ( responseData.type === "success" ) {
@@ -682,7 +686,7 @@ const connectWebSocket = () => {
                 }
             }
         }
-        if ( currentState !== TestState.JobsFinished && currentState !== TestState.Stopped ) {
+        if ( currentState !== TestState.JobsFinished ) {
             runTests();
         }
         performance.mark( 'litcalTestRunnerEnd' );
@@ -1313,6 +1317,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
             console.warn( 'cannot run tests: websocket connection is not ready' );
             console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
+            currentRunToken = crypto.randomUUID();
             performance.mark( 'litcalTestRunnerStart' );
             const startBtnEl = document.querySelector('#startTestRunnerBtn');
             if (startBtnEl) {
