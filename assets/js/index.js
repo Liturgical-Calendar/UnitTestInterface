@@ -408,6 +408,18 @@ let connectionAttempt = null;
 let conn;
 let currentRunToken = null;
 
+/**
+ * Sends a message over the WebSocket connection, automatically
+ * attaching the current run token for response correlation.
+ * @param {Object} data - The message payload to send.
+ */
+const sendMessage = ( data ) => {
+    if ( currentRunToken !== null ) {
+        data.runToken = currentRunToken;
+    }
+    conn.send( JSON.stringify( data ) );
+};
+
 let currentSelectedCalendar = "VA";
 let currentNationalCalendar = "VA";
 let currentCalendarCategory = "nationalcalendar";
@@ -453,7 +465,7 @@ const runTests = () => {
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
             safeCollapseShow('#sourceDataTests');
-            conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
+            sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
             break;
         }
         case TestState.ExecutingValidations:
@@ -461,7 +473,7 @@ const runTests = () => {
                 console.log( 'one cycle complete, passing to next test..' )
                 messageCounter = 0;
                 if ( index < currentSourceDataChecks.length ) {
-                    conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
+                    sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
                 } else {
                     console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
                     currentState = TestState.ValidatingCalendarData;
@@ -475,15 +487,13 @@ const runTests = () => {
                     calendarDataReceivedResponses = 0;
                     console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
                     Years.forEach( year => {
-                        conn.send(
-                            JSON.stringify( {
-                                action: 'validateCalendar',
-                                year: year,
-                                calendar: currentSelectedCalendar,
-                                category: currentCalendarCategory,
-                                responsetype: currentResponseType
-                            } )
-                        );
+                        sendMessage( {
+                            action: 'validateCalendar',
+                            year: year,
+                            calendar: currentSelectedCalendar,
+                            category: currentCalendarCategory,
+                            responsetype: currentResponseType
+                        } );
                     } );
                 }
             }
@@ -500,19 +510,19 @@ const runTests = () => {
                 console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 performance.mark( 'specificUnitTestsStart' );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                conn.send( JSON.stringify( {
+                sendMessage( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
-                } ) );
+                } );
                 safeCollapseShow('#specificUnitTests');
                 safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
             break;
         case TestState.SpecificUnitTests:
             if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } );
             }
             else if ( ++index < SpecificUnitTestCategories.length ) {
                 yearIndex = 0;
@@ -526,12 +536,12 @@ const runTests = () => {
                 );
                 updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                conn.send( JSON.stringify( {
+                sendMessage( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
-                } ) );
+                } );
                 safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
             else {
@@ -618,6 +628,10 @@ const connectWebSocket = () => {
             return;
         }
         const responseData = JSON.parse( e.data );
+        // Discard responses from a previous run if the server echoes a mismatched token
+        if ( responseData.runToken && responseData.runToken !== currentRunToken ) {
+            return;
+        }
         console.log( responseData );
         if ( responseData.type === "success" ) {
             document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
