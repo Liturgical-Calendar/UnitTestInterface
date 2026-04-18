@@ -800,7 +800,14 @@ const resetTestUI = () => {
         el.classList.add('fa-circle-question');
     });
 
-    // Remove error tooltips added during the previous run
+    // Dispose Bootstrap Tooltip instances to prevent leaked event listeners
+    tooltipMap.forEach(tooltip => {
+        tooltip.hide();
+        tooltip.dispose();
+    });
+    tooltipMap.clear();
+
+    // Remove error tooltip DOM elements added during the previous run
     document.querySelectorAll('#testSuiteAccordion .error-tooltip').forEach(el => el.remove());
 
     // Reset all success/fail counters displayed in the UI
