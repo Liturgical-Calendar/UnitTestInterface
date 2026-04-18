@@ -550,16 +550,11 @@ const runTests = () => {
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
             safeToastShow('#tests-complete');
+            currentRunToken = null;
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
                 spinIcon.classList.add('fa-stop');
-                const btnPrimary = spinIcon.closest('.btn-primary');
-                if (btnPrimary) {
-                    btnPrimary.disabled = true;
-                    btnPrimary.classList.remove('btn-primary');
-                    btnPrimary.classList.add('btn-secondary');
-                }
             }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
             break;
