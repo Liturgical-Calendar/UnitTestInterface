@@ -795,15 +795,21 @@ const resetTestUI = () => {
         el.classList.add('fa-circle-question');
     });
 
-    // Dispose Bootstrap Tooltip instances to prevent leaked event listeners
+    // Dispose Bootstrap Tooltip instances tracked in tooltipMap
     tooltipMap.forEach(tooltip => {
         tooltip.hide();
         tooltip.dispose();
     });
     tooltipMap.clear();
 
-    // Remove error tooltip DOM elements added during the previous run
-    document.querySelectorAll('#testSuiteAccordion .error-tooltip').forEach(el => el.remove());
+    // Remove error tooltip DOM elements, disposing any Bootstrap Tooltip instance on each
+    document.querySelectorAll('#testSuiteAccordion .error-tooltip').forEach(el => {
+        const instance = bootstrap.Tooltip.getInstance(el);
+        if (instance) {
+            instance.dispose();
+        }
+        el.remove();
+    });
 
     // Reset all success/fail counters displayed in the UI
     document.querySelectorAll('.successfulCount, .failedCount').forEach(el => el.textContent = '0');
@@ -1340,6 +1346,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         // Stop the running test run
         console.log( 'Stopping test run...' );
         currentState = TestState.Stopped;
+        currentRunToken = null;
         const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
         if (spinIcon) {
             spinIcon.classList.remove('fa-spin');
