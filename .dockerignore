@@ -1,0 +1,13 @@
+*
+!src
+!includes
+!layout
+!components
+!assets
+!i18n
+!composer.json
+!composer.lock
+!index.php
+!admin.php
+!resources.php
+!.env.example
