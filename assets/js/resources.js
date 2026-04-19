@@ -121,13 +121,14 @@ class TestState {
     static ExecutingResourceValidations = new TestState( 'ExecutingResourceValidations' );
     static ExecutingSourceValidations   = new TestState( 'ExecutingSourceValidations' );
     static JobsFinished                 = new TestState( 'JobsFinished' );
+    static Stopped                      = new TestState( 'Stopped' );
 
     /**
      * Constructs a new TestState object.
      * @param {string} name The name of the TestState, which must be one of the
      *                      following: NotReady, Ready,
      *                      ExecutingResourceValidations,
-     *                      ExecutingSourceValidations, JobsFinished.
+     *                      ExecutingSourceValidations, JobsFinished, Stopped.
      */
     constructor( name ) {
         this.name = name;
@@ -449,7 +450,14 @@ const connectWebSocket = () => {
      * If the test is not finished, it continues running tests and measures the total test time.
      */
     conn.onmessage = ( e ) => {
+        if ( currentState === TestState.Stopped || currentRunToken === null ) {
+            return;
+        }
         const responseData = JSON.parse( e.data );
+        // Discard responses from a previous run if the server echoes a mismatched token
+        if ( responseData.runToken && responseData.runToken !== currentRunToken ) {
+            return;
+        }
         console.log( responseData );
         if ( responseData.type === "success" ) {
             document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
@@ -589,6 +597,64 @@ const setTestRunnerBtnLblTxt = (txt) => {
 }
 
 /**
+ * Sends a message over the WebSocket connection, automatically
+ * attaching the current run token for response correlation.
+ * @param {Object} data - The message payload to send.
+ */
+const sendMessage = ( data ) => {
+    if ( currentRunToken !== null ) {
+        data.runToken = currentRunToken;
+    }
+    conn.send( JSON.stringify( data ) );
+};
+
+/**
+ * Resets all test UI elements back to their initial state.
+ * This includes resetting card colors, icons, counters, timers,
+ * and removing any error tooltips injected during the previous run.
+ */
+const resetTestUI = () => {
+    document.querySelectorAll('#testSuiteAccordion .bg-success, #testSuiteAccordion .bg-danger').forEach(el => {
+        el.classList.remove('bg-success', 'bg-danger');
+        el.classList.add('bg-info');
+    });
+    document.querySelectorAll('#testSuiteAccordion .fa-circle-check, #testSuiteAccordion .fa-circle-xmark').forEach(el => {
+        el.classList.remove('fa-circle-check', 'fa-circle-xmark');
+        el.classList.add('fa-circle-question');
+    });
+
+    // Dispose Bootstrap Tooltip instances tracked in tooltipMap
+    tooltipMap.forEach(tooltip => {
+        tooltip.hide();
+        tooltip.dispose();
+    });
+    tooltipMap.clear();
+
+    // Remove error tooltip DOM elements, disposing any Bootstrap Tooltip instance on each
+    document.querySelectorAll('#testSuiteAccordion .error-tooltip').forEach(el => {
+        const instance = bootstrap.Tooltip.getInstance(el);
+        if (instance) {
+            instance.dispose();
+        }
+        el.remove();
+    });
+
+    // Reset all success/fail counters displayed in the UI
+    document.querySelectorAll('.successfulCount, .failedCount').forEach(el => el.textContent = '0');
+
+    // Reset all timer displays
+    updateText('total-time', '0');
+    updateText('totalResourceDataTestsTime', '0');
+    updateText('totalSourceDataTestsTime', '0');
+
+    // Reset internal counter variables
+    successfulResourceDataTests = 0;
+    successfulSourceDataTests = 0;
+    failedResourceDataTests = 0;
+    failedSourceDataTests = 0;
+};
+
+/**
  * Sets up the page by populating the page with the resource data tests and setting the page status to ready.
  * The page status is set to ready after the page has finished loading and the resource data tests have been
  * populated.
@@ -617,6 +683,7 @@ let startTestRunnerBtnLbl       = '';
 let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let connectionAttempt           = null;
 let conn;
+let currentRunToken             = null;
 let currentResponseType         = "JSON";
 
 let successfulTests             = 0;
@@ -830,13 +897,11 @@ const runTests = () => {
             resourceDataReceivedResponses = 0;
             console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel (expecting ${resourceDataExpectedResponses} responses)...` );
             resourceDataChecks.forEach( check => {
-                conn.send(
-                    JSON.stringify({
-                        action: 'executeValidation',
-                        responsetype: currentResponseType,
-                        ...check
-                    })
-                );
+                sendMessage({
+                    action: 'executeValidation',
+                    responsetype: currentResponseType,
+                    ...check
+                });
             });
             break;
         }
@@ -855,12 +920,10 @@ const runTests = () => {
                 sourceDataReceivedResponses = 0;
                 console.log( `Sending ${sourceDataChecks.length} source data requests in parallel (expecting ${sourceDataExpectedResponses} responses)...` );
                 sourceDataChecks.forEach( check => {
-                    conn.send(
-                        JSON.stringify({
-                            action: 'executeValidation',
-                            ...check
-                        })
-                    );
+                    sendMessage({
+                        action: 'executeValidation',
+                        ...check
+                    });
                 });
             }
             break;
@@ -876,14 +939,9 @@ const runTests = () => {
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
             safeToastShow('#tests-complete');
+            currentRunToken = null;
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
-                const btnPrimary = spinIcon.closest('.btn-primary');
-                if (btnPrimary) {
-                    btnPrimary.disabled = true;
-                    btnPrimary.classList.remove('btn-primary');
-                    btnPrimary.classList.add('btn-secondary');
-                }
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
                 spinIcon.classList.add('fa-stop');
             }
@@ -935,7 +993,11 @@ const MsToTimeString = ( ms ) => {
 }
 
 document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
-    if( currentState === TestState.Ready || currentState === TestState.JobsFinished ) {
+    if (!conn) {
+        console.warn('cannot run tests: websocket connection not initialized');
+        return;
+    }
+    if ( currentState === TestState.Ready || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         successfulTests = 0;
         failedTests = 0;
         successfulResourceDataTests = 0;
@@ -946,23 +1008,44 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         resourceDataReceivedResponses = 0;
         sourceDataExpectedResponses = 0;
         sourceDataReceivedResponses = 0;
+        resetTestUI();
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
             console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
+            currentRunToken = crypto.randomUUID();
             performance.mark( 'litcalTestRunnerStart' );
-            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
+            const startBtnEl = document.querySelector('#startTestRunnerBtn');
+            if (startBtnEl) {
+                startBtnEl.disabled = false;
+                startBtnEl.classList.remove('btn-secondary', 'btn-warning');
+                startBtnEl.classList.add('btn-primary');
+            }
+            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate, #startTestRunnerBtn .fa-stop');
             if (rotateIcon) {
-                rotateIcon.classList.add('fa-spin');
+                rotateIcon.classList.remove('fa-stop');
+                rotateIcon.classList.add('fa-rotate', 'fa-spin');
             }
             setTestRunnerBtnLblTxt('Tests Running...');
             console.log( `currentState = ${currentState}` );
             runTests();
         }
     } else {
-        //TODO: perhaps we could allow to interrupt running tests?
-        console.warn('Please do not try to start a test run while tests are running!');
+        // Stop the running test run
+        console.log( 'Stopping test run...' );
+        currentState = TestState.Stopped;
+        currentRunToken = null;
+        const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
+        if (spinIcon) {
+            spinIcon.classList.remove('fa-spin');
+        }
+        setTestRunnerBtnLblTxt('Tests Stopped');
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if (startBtn) {
+            startBtn.classList.remove('btn-primary');
+            startBtn.classList.add('btn-warning');
+        }
     }
 });
 
