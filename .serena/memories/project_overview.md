@@ -22,7 +22,6 @@
 Production WebSocket endpoint: `wss://litcal-test.johnromanodorazio.com`
 
 ## Repo Location
-`/home/johnrdorazio/development/LiturgicalCalendar/UnitTestInterface`
 
 ## Companion repos
 - `LiturgicalCalendarAPI` — owns the WebSocket server (`src/Health.php`) and source data; this UI cannot work without it

@@ -1,7 +1,7 @@
 # Codebase Structure — UnitTestInterface
 
 ## Top-level layout
-```
+```text
 UnitTestInterface/
 ├── index.php              # Main test runner UI
 ├── admin.php              # Admin interface
