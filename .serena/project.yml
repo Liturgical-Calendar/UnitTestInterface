@@ -133,8 +133,11 @@ default_modes:
 
 # initial prompt for the project. It will always be given to the LLM upon activating the project
 # (contrary to the memories, which are loaded on demand).
-initial_prompt: ""
-
+initial_prompt: |
+  - For source-data WebSocket validation, `category` MUST be `"sourceDataCheck"` — NOT `nationalcalendar` / `widerregioncalendar` / `diocesancalendar`. The server regex-transforms `validate` strings (`wider-region-X`, `national-calendar-X`, `diocesan-calendar-X`, `proprium-de-sanctis-X`) into file paths.
+  - Always pipe server-supplied `classes` selectors through `slugifySelector()` from `common.js` before DOM queries (server emits original casing; client uses slugified card class names).
+  - Bootstrap 5 native JS API. No jQuery despite older README mention.
+  - Liturgical timezone always `Europe/Vatican`.
 # time budget (seconds) per tool call for the retrieval of additional symbol information
 # such as docstrings or parameter information.
 # This overrides the corresponding setting in the global configuration; see the documentation there.
