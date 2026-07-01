@@ -10,8 +10,11 @@ RUN --mount=type=cache,target=/var/cache/apt \
     docker-php-ext-install intl zip calendar gettext && \
     pecl install apcu yaml && \
     docker-php-ext-enable intl zip calendar apcu yaml gettext && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
     rm -rf /var/lib/apt/lists/*
+
+# Copy the Composer binary from the official, pinned image instead of piping the
+# installer through php (which skips signature verification).
+COPY --from=composer:2.8 /usr/bin/composer /usr/local/bin/composer
 
 # Set the working directory
 WORKDIR /var/www/html
@@ -32,10 +35,12 @@ COPY ./components ./components
 COPY ./assets ./assets
 COPY ./i18n ./i18n
 COPY ./*.php ./
-COPY ./.env.example ./.env.local
-
-# Generate default credentials file for Docker (user: admin, password: admin)
-RUN php -r "file_put_contents('credentials.php', \"<?php\ndefine('AUTH_USERS', ['admin' => '\" . password_hash('admin', PASSWORD_BCRYPT) . \"']);\n\");"
+# Ship the template for reference only. Runtime configuration is supplied via
+# environment variables (e.g. `docker run --env-file .env` or `-e KEY=value`);
+# phpdotenv's safeLoad() tolerates the absence of a .env file. We deliberately do
+# NOT bake a .env.local, which would hardcode localhost defaults and a placeholder
+# JWT secret into the image.
+COPY ./.env.example ./.env.example
 
 # Stage 2: final build
 FROM php:8.4-cli AS main
@@ -43,10 +48,12 @@ FROM php:8.4-cli AS main
 # Set the working directory
 WORKDIR /var/www/html
 
-# Install runtime dependencies
+# Install runtime dependencies (shared libraries only, not the -dev packages used
+# for compiling the extensions in the build stage). Versioned names track the base
+# image's Debian release (currently trixie: libicu76, libzip5).
 RUN apt-get update -y && \
     apt-get install -y --no-install-suggests --no-install-recommends \
-    libyaml-0-2 libicu-dev libzip-dev locales-all && \
+    libyaml-0-2 libicu76 libzip5 locales-all && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled PHP extensions from the build stage

@@ -628,8 +628,10 @@ const connectWebSocket = () => {
             return;
         }
         const responseData = JSON.parse( e.data );
-        // Discard responses from a previous run if the server echoes a mismatched token
-        if ( responseData.runToken && responseData.runToken !== currentRunToken ) {
+        // We only reach here with an active run (currentRunToken !== null), so require every
+        // response to carry the matching token. This discards both mismatched responses from a
+        // previous run and untagged stragglers that could otherwise mutate the new run's UI.
+        if ( responseData.runToken !== currentRunToken ) {
             return;
         }
         console.log( responseData );
@@ -799,12 +801,14 @@ const setTestRunnerBtnLblTxt = ( txt ) => {
  * and removing any error tooltips injected during the previous run.
  */
 const resetTestUI = () => {
-    // Reset all test cards (source data, calendar data, and unit tests)
-    document.querySelectorAll('#testSuiteAccordion .bg-success, #testSuiteAccordion .bg-danger').forEach(el => {
+    // Reset all test result cards (source data, calendar data, and unit tests).
+    // Scope to .card so the permanent per-section summary badges (.test-status-item)
+    // keep their fixed green/red styling and are not reset to the "pending" state.
+    document.querySelectorAll('#testSuiteAccordion .card.bg-success, #testSuiteAccordion .card.bg-danger').forEach(el => {
         el.classList.remove('bg-success', 'bg-danger');
         el.classList.add('bg-info');
     });
-    document.querySelectorAll('#testSuiteAccordion .fa-circle-check, #testSuiteAccordion .fa-circle-xmark').forEach(el => {
+    document.querySelectorAll('#testSuiteAccordion .card .fa-circle-check, #testSuiteAccordion .card .fa-circle-xmark').forEach(el => {
         el.classList.remove('fa-circle-check', 'fa-circle-xmark');
         el.classList.add('fa-circle-question');
     });
