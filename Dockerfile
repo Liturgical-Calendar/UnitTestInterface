@@ -1,5 +1,5 @@
 # Use the official PHP 8.4 CLI image as the base image
-FROM php:8.4-cli AS build
+FROM php:8.4-cli-trixie AS build
 
 # Install necessary PHP extensions and Composer in one step to minimize layers
 RUN --mount=type=cache,target=/var/cache/apt \
@@ -43,14 +43,14 @@ COPY ./*.php ./
 COPY ./.env.example ./.env.example
 
 # Stage 2: final build
-FROM php:8.4-cli AS main
+FROM php:8.4-cli-trixie AS main
 
 # Set the working directory
 WORKDIR /var/www/html
 
 # Install runtime dependencies (shared libraries only, not the -dev packages used
-# for compiling the extensions in the build stage). Versioned names track the base
-# image's Debian release (currently trixie: libicu76, libzip5).
+# for compiling the extensions in the build stage). The base image is pinned to
+# Debian trixie (see FROM), so these versioned names (libicu76, libzip5) stay valid.
 RUN apt-get update -y && \
     apt-get install -y --no-install-suggests --no-install-recommends \
     libyaml-0-2 libicu76 libzip5 locales-all && \
