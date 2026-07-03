@@ -73,6 +73,12 @@ include_once('layout/head.php');
                         <option data-responsetype="yaml" value="YML">YAML</option>
                     </select>
                 </div>
+                <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
+                    <label for="pastRunsSelect"><?php echo _("Past Runs"); ?></label>
+                    <select id="pastRunsSelect" class="form-select form-select-sm">
+                        <option value=""><?php echo _("— Live —"); ?></option>
+                    </select>
+                </div>
                 <div class="col-6 col-md-4 col-lg-2">
                     <button id="startTestRunnerBtn" type="button"
                             class="btn btn-primary w-100" disabled
@@ -80,7 +86,7 @@ include_once('layout/head.php');
                         echo _("Run Tests");
                     ?></span></button>
                 </div>
-                <div class="col-12 col-lg-8">
+                <div class="col-12 col-lg-6">
                     <div class="test-status-row">
                         <div class="test-status-item text-white bg-success rounded-start">
                             <i class="fas fa-circle-check fa-fw"></i><span class="status-label"><?php echo _("Successful:"); ?></span> <span id="successfulCount" class="successfulCount">0</span>
