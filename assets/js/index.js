@@ -14,6 +14,16 @@ import {
     slugifySelector
 } from './common.js';
 
+import {
+    applyResultToDom,
+    createResultCollector,
+    nowIsoStamp,
+    postRunResults,
+} from './testResults.js';
+
+const resultCollector = createResultCollector();
+let renderedUnitTests = [];
+
 /** @typedef {import('./types.js').SourceDataCheckMessage} SourceDataCheckMessage */
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
 /** @typedef {import('./types.js').RomanMissalDefinition} RomanMissalDefinition */
@@ -460,6 +470,68 @@ let SpecificUnitTestYears = {};
  * - JobsFinished: In this state, the test runner reports that all jobs have been
  *   finished, and it becomes ready to start a new test run.
  */
+/**
+ * Maps the current TestState to the persisted phase key for a Calendars run.
+ * @returns {('sourceData'|'calendarData'|'unitTest'|null)}
+ */
+const phaseForState = () => {
+    switch ( currentState ) {
+        case TestState.ExecutingValidations: return 'sourceData';
+        case TestState.ValidatingCalendarData: return 'calendarData';
+        case TestState.SpecificUnitTests: return 'unitTest';
+        default: return null;
+    }
+};
+
+/**
+ * Reads a completed performance measure's duration by name, or 0 if absent.
+ * @param {string} name
+ * @returns {number}
+ */
+const measureDuration = ( name ) => {
+    const entries = performance.getEntriesByName( name );
+    return entries.length ? Math.round( entries[ entries.length - 1 ].duration ) : 0;
+};
+
+/**
+ * Assembles the self-contained Calendars run payload from collected results.
+ * @returns {object}
+ */
+const buildCalendarsPayload = () => {
+    const all = resultCollector.all();
+    const toDescriptor = ( r ) => ({
+        id: r.selector,
+        selector: r.selector,
+        status: r.status,
+        message: r.message,
+        test: r.test,
+    });
+    const byPhase = ( phase ) => all.filter( ( r ) => r.phase === phase ).map( toDescriptor );
+    return {
+        schemaVersion: 1,
+        timestamp: nowIsoStamp(),
+        runType: 'calendars',
+        calendar: currentSelectedCalendar,
+        calendarCategory: currentCalendarCategory,
+        responseType: currentResponseType,
+        duration: measureDuration( 'litcalTestRunner' ),
+        counts: { successful: successfulTests, failed: failedTests },
+        timings: {
+            sourceData: measureDuration( 'litcalSourceDataTestRunner' ),
+            calendarData: measureDuration( 'litcalCalendarDataTestRunner' ),
+            unitTests: measureDuration( 'litcalUnitTestRunner' ),
+        },
+        scaffold: {
+            sourceDataChecks: currentSourceDataChecks,
+            years: Years,
+            unitTests: renderedUnitTests,
+        },
+        sourceDataResults: byPhase( 'sourceData' ),
+        calendarDataResults: byPhase( 'calendarData' ),
+        unitTestResults: byPhase( 'unitTest' ),
+    };
+};
+
 const runTests = () => {
     switch ( currentState ) {
         case TestState.ReadyState: {
@@ -570,6 +642,12 @@ const runTests = () => {
                 spinIcon.classList.add('fa-stop');
             }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
+            postRunResults( buildCalendarsPayload() )
+                .then( () => safeToastShow('#results-saved') )
+                .catch( ( err ) => {
+                    console.error( 'Failed to persist run results', err );
+                    safeToastShow('#results-save-failed');
+                });
             break;
         }
     }
@@ -639,15 +717,8 @@ const connectWebSocket = () => {
         }
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-success');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-check');
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('successfulCount', ++successfulTests);
             switch ( currentState ) {
                 case TestState.ExecutingValidations: {
@@ -668,19 +739,8 @@ const connectWebSocket = () => {
             }
         }
         else if ( responseData.type === "error" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-danger');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-xmark');
-                }
-                const cardText = el.querySelector('.card-text');
-                if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('failedCount', ++failedTests);
             switch ( currentState ) {
                 case TestState.ExecutingValidations: {
@@ -1218,6 +1278,7 @@ const setupPage = () => {
     if (specificUnitTestsAccordion) {
         specificUnitTestsAccordion.innerHTML = '';
     }
+    renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
         //console.log( unitTest );
@@ -1237,6 +1298,7 @@ const setupPage = () => {
             }
         }
 
+        renderedUnitTests.push( unitTest );
         SpecificUnitTestCategories.push( {
             "action": "executeUnitTest",
             "test": unitTest.name
@@ -1338,6 +1400,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
+        resultCollector.reset();
         calendarDataReceivedResponses = 0;
         calendarDataExpectedResponses = 0;
         resetTestUI();
