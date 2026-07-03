@@ -16,6 +16,15 @@ const sampleRun = {
     unitTestResults: [],
 };
 
+test.describe('unauthenticated', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    test('rejects unauthenticated requests with 401', async ({ request }) => {
+        const res = await request.get('results.php');
+        expect(res.status()).toBe(401);
+    });
+});
+
 test('rejects path traversal on load', async ({ request }) => {
     const res = await request.get('results.php?file=..%2F..%2Fcomposer.json');
     expect(res.status()).toBe(400);

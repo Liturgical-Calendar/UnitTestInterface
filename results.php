@@ -21,6 +21,9 @@ $dotenv->safeLoad();
 
 JwtAuth::init();
 
+if (!is_dir(__DIR__ . '/logs')) {
+    mkdir(__DIR__ . '/logs', 0775, true);
+}
 $logger = new Logger('results');
 $logger->pushHandler(new StreamHandler(__DIR__ . '/logs/results.log', Level::Warning));
 
@@ -89,7 +92,7 @@ if ($method === 'POST') {
         echo json_encode(['error' => 'Write failed']);
         exit;
     }
-    pruneRuns($data['runType']);
+    pruneRuns($data['runType'], $logger);
     echo json_encode(['ok' => true, 'file' => $name]);
     exit;
 }
@@ -169,7 +172,7 @@ function listRuns(): array
 /**
  * Delete the oldest files of a given run type beyond the retention limit.
  */
-function pruneRuns(string $runType): void
+function pruneRuns(string $runType, Logger $logger): void
 {
     $files = [];
     foreach (glob(RESULTS_DIR . '/*.json') ?: [] as $path) {
@@ -180,6 +183,8 @@ function pruneRuns(string $runType): void
     }
     rsort($files); // newest first by name
     foreach (array_slice($files, RETENTION_PER_TYPE) as $old) {
-        @unlink($old);
+        if (!unlink($old)) {
+            $logger->warning('Failed to prune old run file', ['path' => $old]);
+        }
     }
 }
