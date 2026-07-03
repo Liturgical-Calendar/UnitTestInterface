@@ -33,7 +33,6 @@ UnitTestInterface/
 ├── resources.php          # Resource testing interface
 ├── includes/              # PHP includes
 │   ├── I18n.php          # Internationalization class
-│   ├── auth.php          # HTTP Basic authentication
 │   └── pgettext.php      # Context-aware translation
 ├── layout/                # Layout templates
 │   ├── head.php          # HTML head, CSS/JS includes
@@ -260,9 +259,13 @@ document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
 
 ## Authentication
 
-- HTTP Basic Auth required for all pages
-- Credentials defined in `credentials.php` (not in repo)
-- Password hashing via `password_verify()`
+- JWT-based auth (`src/JwtAuth.php`), shared with the LiturgicalCalendarAPI
+- Access token read from the `litcal_access_token` HttpOnly cookie and verified
+  server-side using `JWT_SECRET` / `JWT_ALGORITHM` (loaded via phpdotenv), which must
+  match the API's JWT settings
+- Login handled by the client-side login modal (`components/login-modal.php`) against
+  the API; UI gated via `data-requires-auth` / `data-requires-no-auth` attributes and
+  `JwtAuth::isAuthenticated()`
 
 ## Key Files
 
@@ -301,5 +304,5 @@ This repository uses **CodeRabbit** for automated code review on pull requests.
 
 - **No build step** - Pure PHP/HTML/JS
 - **Timezone:** Uses Europe/Vatican for liturgical calculations
-- **Security:** HTTP Basic Auth; credentials in excluded file
+- **Security:** JWT auth shared with the API (see Authentication); no secrets baked into the repo or Docker image
 - **Dependencies:** Uses liturgical-calendar/components PHP library
