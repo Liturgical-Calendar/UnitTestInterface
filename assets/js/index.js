@@ -305,11 +305,12 @@ const testTemplate = ( calendarName, year = null ) => {
  * The template has the following structure:
  * - A paragraph with the year of the calendar being tested.
  * @param {number} idx The index of the year to be tested.
+ * @param {Array<number>} years The years array for the current run (may differ from the global Years on replay).
  * @return {string} The HTML template as a string.
  */
-const calDataTestTemplate = ( idx ) => {
-    let i = Years.length - idx;
-    let year = Years[ i ];
+const calDataTestTemplate = ( idx, years ) => {
+    let i = years.length - idx;
+    let year = years[ i ];
     return `
 <div class="col-1${i === 0 || i % 10 === 0 ? ' offset-1' : ''}">
     <p class="text-center mb-0 year-${year} fw-bold">${year}</p>
@@ -1235,7 +1236,7 @@ const buildScaffolding = ( cfg ) => {
         document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
         for ( let i = cfg.years.length; i > 0; i-- ) {
             const idx = cfg.years.length - i;
-            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
+            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i, cfg.years ));
             const yearEl = calendarDataTests.querySelector(`.year-${cfg.years[ idx ]}`);
             yearEl.insertAdjacentHTML('afterend', testTemplate(cfg.calendar, cfg.years[idx]));
         }
