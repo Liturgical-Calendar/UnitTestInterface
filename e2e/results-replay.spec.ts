@@ -26,6 +26,10 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
 
     await page.goto('/');
     await page.waitForSelector('#pastRunsSelect');
+    // Wait for the live scaffold to finish building (setupPage runs after async
+    // metadata fetches); selecting a past run earlier would let setupPage's
+    // rebuild clobber the replayed counters afterwards.
+    await page.waitForSelector('.sourcedata-tests > div');
     await page.selectOption('#pastRunsSelect', file);
 
     await expect(page.locator('#successfulCount')).toHaveText('1');
