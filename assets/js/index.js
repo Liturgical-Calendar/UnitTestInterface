@@ -103,7 +103,10 @@ const setEndpoints = () => {
     let API_PATH;
     if ( APP_ENV === 'production' ) {
         const basePath = API_BASE_PATH.replace(/^\/|\/$/g, ''); // strip leading/trailing slashes
-        API_PATH = `/${basePath}/`;
+        // An empty base path (API served at the root, e.g. the docker stack) must collapse to a
+        // single '/', otherwise the endpoint URL gets a double slash (…:8000//calendars) which the
+        // server can't match to a route when detecting the schema.
+        API_PATH = basePath === '' ? '/' : `/${basePath}/`;
     } else {
         API_PATH = '/';
     }
@@ -224,6 +227,7 @@ class TestState {
     static ValidatingCalendarData = new TestState( 'ValidatingCalendarData' );
     static SpecificUnitTests = new TestState( 'SpecificUnitTests' );
     static JobsFinished = new TestState( 'JobsFinished' );
+    static Stopped = new TestState( 'Stopped' );
 
     /**
      * Constructs a new TestState object.
@@ -405,6 +409,19 @@ let calendarDataReceivedResponses = 0;
 
 let connectionAttempt = null;
 let conn;
+let currentRunToken = null;
+
+/**
+ * Sends a message over the WebSocket connection, automatically
+ * attaching the current run token for response correlation.
+ * @param {Object} data - The message payload to send.
+ */
+const sendMessage = ( data ) => {
+    if ( currentRunToken !== null ) {
+        data.runToken = currentRunToken;
+    }
+    conn.send( JSON.stringify( data ) );
+};
 
 let currentSelectedCalendar = "VA";
 let currentNationalCalendar = "VA";
@@ -451,7 +468,7 @@ const runTests = () => {
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
             safeCollapseShow('#sourceDataTests');
-            conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
+            sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
             break;
         }
         case TestState.ExecutingValidations:
@@ -459,7 +476,7 @@ const runTests = () => {
                 console.log( 'one cycle complete, passing to next test..' )
                 messageCounter = 0;
                 if ( index < currentSourceDataChecks.length ) {
-                    conn.send( JSON.stringify( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } ) );
+                    sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
                 } else {
                     console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
                     currentState = TestState.ValidatingCalendarData;
@@ -473,15 +490,13 @@ const runTests = () => {
                     calendarDataReceivedResponses = 0;
                     console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
                     Years.forEach( year => {
-                        conn.send(
-                            JSON.stringify( {
-                                action: 'validateCalendar',
-                                year: year,
-                                calendar: currentSelectedCalendar,
-                                category: currentCalendarCategory,
-                                responsetype: currentResponseType
-                            } )
-                        );
+                        sendMessage( {
+                            action: 'validateCalendar',
+                            year: year,
+                            calendar: currentSelectedCalendar,
+                            category: currentCalendarCategory,
+                            responsetype: currentResponseType
+                        } );
                     } );
                 }
             }
@@ -498,19 +513,19 @@ const runTests = () => {
                 console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 performance.mark( 'specificUnitTestsStart' );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                conn.send( JSON.stringify( {
+                sendMessage( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
-                } ) );
+                } );
                 safeCollapseShow('#specificUnitTests');
                 safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
             break;
         case TestState.SpecificUnitTests:
             if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                conn.send( JSON.stringify( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } ) );
+                sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } );
             }
             else if ( ++index < SpecificUnitTestCategories.length ) {
                 yearIndex = 0;
@@ -524,12 +539,12 @@ const runTests = () => {
                 );
                 updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                conn.send( JSON.stringify( {
+                sendMessage( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
                     category: currentCalendarCategory
-                } ) );
+                } );
                 safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
             else {
@@ -548,16 +563,11 @@ const runTests = () => {
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
             safeToastShow('#tests-complete');
+            currentRunToken = null;
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
                 spinIcon.classList.add('fa-stop');
-                const btnPrimary = spinIcon.closest('.btn-primary');
-                if (btnPrimary) {
-                    btnPrimary.disabled = true;
-                    btnPrimary.classList.remove('btn-primary');
-                    btnPrimary.classList.add('btn-secondary');
-                }
             }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
             break;
@@ -617,7 +627,16 @@ const connectWebSocket = () => {
      * finished, it updates the total test time and displays it.
      */
     conn.onmessage = ( e ) => {
+        if ( currentState === TestState.Stopped || currentRunToken === null ) {
+            return;
+        }
         const responseData = JSON.parse( e.data );
+        // We only reach here with an active run (currentRunToken !== null), so require every
+        // response to carry the matching token. This discards both mismatched responses from a
+        // previous run and untagged stragglers that could otherwise mutate the new run's UI.
+        if ( responseData.runToken !== currentRunToken ) {
+            return;
+        }
         console.log( responseData );
         if ( responseData.type === "success" ) {
             document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
@@ -777,6 +796,63 @@ const connectWebSocket = () => {
  */
 const setTestRunnerBtnLblTxt = ( txt ) => {
     updateText('startTestRunnerBtnLbl', txt);
+}
+
+/**
+ * Resets all test UI elements back to their initial state.
+ * This includes resetting card colors, icons, counters, timers,
+ * and removing any error tooltips injected during the previous run.
+ */
+const resetTestUI = () => {
+    // Reset all test result cards (source data, calendar data, and unit tests).
+    // Scope to .card so the permanent per-section summary badges (.test-status-item)
+    // keep their fixed green/red styling and are not reset to the "pending" state.
+    document.querySelectorAll('#testSuiteAccordion .card.bg-success, #testSuiteAccordion .card.bg-danger').forEach(el => {
+        el.classList.remove('bg-success', 'bg-danger');
+        el.classList.add('bg-info');
+    });
+    document.querySelectorAll('#testSuiteAccordion .card .fa-circle-check, #testSuiteAccordion .card .fa-circle-xmark').forEach(el => {
+        el.classList.remove('fa-circle-check', 'fa-circle-xmark');
+        el.classList.add('fa-circle-question');
+    });
+
+    // Dispose Bootstrap Tooltip instances tracked in tooltipMap
+    tooltipMap.forEach(tooltip => {
+        tooltip.hide();
+        tooltip.dispose();
+    });
+    tooltipMap.clear();
+
+    // Remove error tooltip DOM elements, disposing any Bootstrap Tooltip instance on each
+    document.querySelectorAll('#testSuiteAccordion .error-tooltip').forEach(el => {
+        const instance = bootstrap.Tooltip.getInstance(el);
+        if (instance) {
+            instance.dispose();
+        }
+        el.remove();
+    });
+
+    // Reset all success/fail counters displayed in the UI
+    document.querySelectorAll('.successfulCount, .failedCount').forEach(el => el.textContent = '0');
+
+    // Reset all timer displays
+    updateText('total-time', '0');
+    updateText('totalSourceDataTestsTime', '0');
+    updateText('totalCalendarDataTestsTime', '0');
+    updateText('totalUnitTestsTime', '0');
+    document.querySelectorAll('[id$="TestsTime"]').forEach(el => {
+        if (el.id.startsWith('total') && !['totalSourceDataTestsTime', 'totalCalendarDataTestsTime', 'totalUnitTestsTime'].includes(el.id)) {
+            el.textContent = '0';
+        }
+    });
+
+    // Reset internal counter variables
+    successfulSourceDataTests = 0;
+    successfulCalendarDataTests = 0;
+    successfulUnitTests = 0;
+    failedSourceDataTests = 0;
+    failedCalendarDataTests = 0;
+    failedUnitTests = 0;
 }
 
 /**
@@ -1255,7 +1331,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         console.warn('cannot run tests: websocket connection not initialized');
         return;
     }
-    if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished ) {
+    if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         index = 0;
         calendarIndex = 0;
         yearIndex = 0;
@@ -1264,23 +1340,44 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         failedTests = 0;
         calendarDataReceivedResponses = 0;
         calendarDataExpectedResponses = 0;
+        resetTestUI();
         currentState = ( conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ) ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
             console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
+            currentRunToken = crypto.randomUUID();
             performance.mark( 'litcalTestRunnerStart' );
-            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate');
+            const startBtnEl = document.querySelector('#startTestRunnerBtn');
+            if (startBtnEl) {
+                startBtnEl.disabled = false;
+                startBtnEl.classList.remove('btn-secondary', 'btn-warning');
+                startBtnEl.classList.add('btn-primary');
+            }
+            const rotateIcon = document.querySelector('#startTestRunnerBtn .fa-rotate, #startTestRunnerBtn .fa-stop');
             if (rotateIcon) {
-                rotateIcon.classList.add('fa-spin');
+                rotateIcon.classList.remove('fa-stop');
+                rotateIcon.classList.add('fa-rotate', 'fa-spin');
             }
             setTestRunnerBtnLblTxt( 'Tests Running...' );
             console.log( `currentState = ${currentState}` );
             runTests();
         }
     } else {
-        //TODO: perhaps we could allow to interrupt running tests?
-        console.warn( 'Please do not try to start a test run while tests are running!' );
+        // Stop the running test run
+        console.log( 'Stopping test run...' );
+        currentState = TestState.Stopped;
+        currentRunToken = null;
+        const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
+        if (spinIcon) {
+            spinIcon.classList.remove('fa-spin');
+        }
+        setTestRunnerBtnLblTxt( 'Tests Stopped' );
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if (startBtn) {
+            startBtn.classList.remove('btn-primary');
+            startBtn.classList.add('btn-warning');
+        }
     }
 });
 
