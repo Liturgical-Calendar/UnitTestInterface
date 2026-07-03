@@ -43,7 +43,7 @@ test('saves, lists, and loads a run', async ({ request }) => {
     expect(save.ok()).toBeTruthy();
     const { ok, file } = await save.json();
     expect(ok).toBe(true);
-    expect(file).toMatch(/^[0-9T-]+Z\.json$/);
+    expect(file).toMatch(/^(calendars|resources)-[0-9T-]+Z\.json$/);
 
     const list = await request.get('results.php');
     expect(list.ok()).toBeTruthy();

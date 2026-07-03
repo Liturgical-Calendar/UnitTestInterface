@@ -21,11 +21,12 @@ $dotenv->safeLoad();
 
 JwtAuth::init();
 
-if (!is_dir(__DIR__ . '/logs')) {
-    mkdir(__DIR__ . '/logs', 0775, true);
-}
 $logger = new Logger('results');
-$logger->pushHandler(new StreamHandler(__DIR__ . '/logs/results.log', Level::Warning));
+if (!is_dir(__DIR__ . '/logs') && !mkdir(__DIR__ . '/logs', 0775, true) && !is_dir(__DIR__ . '/logs')) {
+    // logs directory unavailable; continue without file logging
+} else {
+    $logger->pushHandler(new StreamHandler(__DIR__ . '/logs/results.log', Level::Warning));
+}
 
 header('Content-Type: application/json');
 
@@ -83,7 +84,7 @@ if ($method === 'POST') {
         echo json_encode(['error' => 'Storage unavailable']);
         exit;
     }
-    $name = str_replace(':', '-', $data['timestamp']) . '.json';
+    $name = $data['runType'] . '-' . str_replace(':', '-', $data['timestamp']) . '.json';
     $path = RESULTS_DIR . '/' . $name;
     $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if ($json === false || file_put_contents($path, $json) === false) {
@@ -106,7 +107,7 @@ echo json_encode(['error' => 'Method not allowed']);
  */
 function safeResultPath(string $file): ?string
 {
-    if (!preg_match('/^[0-9T\-Z]+\.json$/', $file)) {
+    if (!preg_match('/^(calendars|resources)-[0-9T\-Z]+\.json$/', $file)) {
         return null;
     }
     if (basename($file) !== $file) {
@@ -165,7 +166,7 @@ function listRuns(): array
             'duration'     => $data['duration'] ?? null,
         ];
     }
-    usort($out, fn($a, $b) => strcmp((string) $b['file'], (string) $a['file']));
+    usort($out, fn($a, $b) => strcmp((string) $b['timestamp'], (string) $a['timestamp']));
     return $out;
 }
 
@@ -174,14 +175,9 @@ function listRuns(): array
  */
 function pruneRuns(string $runType, Logger $logger): void
 {
-    $files = [];
-    foreach (glob(RESULTS_DIR . '/*.json') ?: [] as $path) {
-        $data = json_decode((string) file_get_contents($path), true);
-        if (is_array($data) && ($data['runType'] ?? null) === $runType) {
-            $files[] = $path;
-        }
-    }
-    rsort($files); // newest first by name
+    // Type-prefix in the filename lets us filter by runType without decoding JSON.
+    $files = glob(RESULTS_DIR . '/' . $runType . '-*.json') ?: [];
+    rsort($files); // newest first by name (ISO timestamp follows the prefix, sort is correct)
     foreach (array_slice($files, RETENTION_PER_TYPE) as $old) {
         if (!unlink($old)) {
             $logger->warning('Failed to prune old run file', ['path' => $old]);
