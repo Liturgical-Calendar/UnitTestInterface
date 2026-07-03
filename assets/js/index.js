@@ -1504,6 +1504,28 @@ const replayCalendarsRun = async ( file ) => {
     initInfoTooltips();
 };
 
+/**
+ * Re-derives all module state variables from the current DOM controls and calls setupPage()
+ * to rebuild the scaffold, currentSourceDataChecks, and SpecificUnitTestCategories from live
+ * page state.  Called when the user returns to "— Live —" after viewing a stored run, because
+ * replayCalendarsRun() overwrites currentSelectedCalendar, currentCalendarCategory,
+ * currentResponseType, and currentSourceDataChecks with the stored run's values.
+ */
+const resyncLiveStateFromDom = () => {
+    const calendarSelect = document.querySelector('#APICalendarSelect');
+    const selectedOption = calendarSelect ? calendarSelect.querySelector('option:checked') : null;
+    currentSelectedCalendar = calendarSelect ? calendarSelect.value : currentSelectedCalendar;
+    currentCalendarCategory = selectedOption ? (selectedOption.dataset.calendartype ?? currentCalendarCategory) : currentCalendarCategory;
+    if ( currentCalendarCategory === 'diocesancalendar' ) {
+        currentNationalCalendar = selectedOption ? (selectedOption.dataset.nationalcalendar ?? currentSelectedCalendar) : currentSelectedCalendar;
+    } else {
+        currentNationalCalendar = currentSelectedCalendar;
+    }
+    const responseSelect = document.querySelector('#APIResponseSelect');
+    currentResponseType = responseSelect ? responseSelect.value : currentResponseType;
+    setupPage();
+};
+
 if ( pastRunsSelect ) {
     pastRunsSelect.addEventListener('change', ( e ) => {
         const startBtn = document.querySelector('#startTestRunnerBtn');
@@ -1512,6 +1534,7 @@ if ( pastRunsSelect ) {
                 startBtn.disabled = false;
             }
             resetTestUI();
+            resyncLiveStateFromDom();
             return;
         }
         if ( startBtn ) {

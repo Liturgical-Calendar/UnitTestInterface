@@ -1203,6 +1203,10 @@ if ( pastRunsSelect ) {
             if ( startBtn ) {
                 startBtn.disabled = false;
             }
+            // replayResourcesRun() does not mutate module vars, so no state resync is
+            // needed, but the scaffold is stale (built from replay data). Rebuild it
+            // from the live consts (resourcePaths / sourceDataChecks) before resetting UI.
+            setupPage();
             resetTestUI();
             return;
         }
