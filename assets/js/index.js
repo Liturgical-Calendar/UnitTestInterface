@@ -103,7 +103,10 @@ const setEndpoints = () => {
     let API_PATH;
     if ( APP_ENV === 'production' ) {
         const basePath = API_BASE_PATH.replace(/^\/|\/$/g, ''); // strip leading/trailing slashes
-        API_PATH = `/${basePath}/`;
+        // An empty base path (API served at the root, e.g. the docker stack) must collapse to a
+        // single '/', otherwise the endpoint URL gets a double slash (…:8000//calendars) which the
+        // server can't match to a route when detecting the schema.
+        API_PATH = basePath === '' ? '/' : `/${basePath}/`;
     } else {
         API_PATH = '/';
     }

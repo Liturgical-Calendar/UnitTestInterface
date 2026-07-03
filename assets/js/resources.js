@@ -262,7 +262,9 @@ const setEndpoints = () => {
     let API_PATH;
     if (APP_ENV==='production') {
         const basePath = API_BASE_PATH.replace(/^\/|\/$/g, ''); // strip leading/trailing slashes
-        API_PATH = `/${basePath}`;
+        // An empty base path (API served at the root) must stay empty here, otherwise the
+        // `${API_PATH}/calendars` templates below produce a double slash (…:8000//calendars).
+        API_PATH = basePath === '' ? '' : `/${basePath}`;
     } else {
         API_PATH = '';
     }
