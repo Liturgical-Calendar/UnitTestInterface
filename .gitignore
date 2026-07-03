@@ -20,3 +20,4 @@ e2e/screenshots/*
 # Local git worktrees
 .worktrees/
 .superpowers/
+.serena.local.bak/
