@@ -379,6 +379,23 @@ msgstr "Zavrieť"
 msgid "Create test"
 msgstr "Vytvoriť test"
 
+
+#: index.php:48 resources.php:48
+msgid "Run results saved."
+msgstr ""
+
+#: index.php:56 resources.php:56
+msgid "Could not save run results."
+msgstr ""
+
+#: index.php:85 resources.php:77
+msgid "Past Runs"
+msgstr ""
+
+#: index.php:87 resources.php:79
+msgid "— Live —"
+msgstr ""
+
 #~ msgid "Websocket"
 #~ msgstr "Websocket"
 
