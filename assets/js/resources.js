@@ -14,6 +14,15 @@ import {
     escapeHtmlAttr
 } from './common.js';
 
+import {
+    applyResultToDom,
+    createResultCollector,
+    nowIsoStamp,
+    postRunResults,
+} from './testResults.js';
+
+const resultCollector = createResultCollector();
+
 /** @typedef {import('./types.js').SourceDataCheckMessage} SourceDataCheckMessage */
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
 
@@ -462,15 +471,8 @@ const connectWebSocket = () => {
         }
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-success');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-check');
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('successfulCount', ++successfulTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
@@ -482,19 +484,8 @@ const connectWebSocket = () => {
             }
         }
         else if ( responseData.type === "error" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-danger');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-xmark');
-                }
-                const cardText = el.querySelector('.card-text');
-                if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('failedCount', ++failedTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
@@ -950,6 +941,12 @@ const runTests = () => {
                 spinIcon.classList.add('fa-stop');
             }
             setTestRunnerBtnLblTxt('Tests Complete');
+            postRunResults( buildResourcesPayload() )
+                .then( () => safeToastShow('#results-saved') )
+                .catch( ( err ) => {
+                    console.error( 'Failed to persist run results', err );
+                    safeToastShow('#results-save-failed');
+                });
             break;
         }
     }
@@ -996,6 +993,63 @@ const MsToTimeString = ( ms ) => {
     return timeString.join( ', ' );
 }
 
+/**
+ * Maps the current Resources TestState to the persisted phase key.
+ * @returns {('apiPath'|'sourceData'|null)}
+ */
+const phaseForState = () => {
+    switch ( currentState ) {
+        case TestState.ExecutingResourceValidations: return 'apiPath';
+        case TestState.ExecutingSourceValidations: return 'sourceData';
+        default: return null;
+    }
+};
+
+/**
+ * Reads a completed performance measure's duration by name, or 0 if absent.
+ * @param {string} name
+ * @returns {number}
+ */
+const measureDuration = ( name ) => {
+    const entries = performance.getEntriesByName( name );
+    return entries.length ? Math.round( entries[ entries.length - 1 ].duration ) : 0;
+};
+
+/**
+ * Assembles the self-contained Resources run payload from collected results.
+ * @returns {object}
+ */
+const buildResourcesPayload = () => {
+    const all = resultCollector.all();
+    const toDescriptor = ( r ) => ({
+        id: r.selector,
+        selector: r.selector,
+        status: r.status,
+        message: r.message,
+        test: r.test,
+    });
+    const byPhase = ( phase ) => all.filter( ( r ) => r.phase === phase ).map( toDescriptor );
+    return {
+        schemaVersion: 1,
+        timestamp: nowIsoStamp(),
+        runType: 'resources',
+        calendar: null,
+        responseType: null,
+        duration: measureDuration( 'litcalTestRunner' ),
+        counts: { successful: successfulTests, failed: failedTests },
+        timings: {
+            apiPath: measureDuration( 'litcalResourceDataTestRunner' ),
+            sourceData: measureDuration( 'litcalSourceDataTestRunner' ),
+        },
+        scaffold: {
+            resourceDataChecks: resourceDataChecks,
+            sourceDataChecks: sourceDataChecks,
+        },
+        apiPathResults: byPhase( 'apiPath' ),
+        sourceDataResults: byPhase( 'sourceData' ),
+    };
+};
+
 document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if (!conn) {
         console.warn('cannot run tests: websocket connection not initialized');
@@ -1004,6 +1058,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if ( currentState === TestState.Ready || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         successfulTests = 0;
         failedTests = 0;
+        resultCollector.reset();
         successfulResourceDataTests = 0;
         failedResourceDataTests = 0;
         successfulSourceDataTests = 0;

@@ -42,6 +42,22 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-white bg-success border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-saved">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-floppy-disk fa-fw"></i> <?php echo _("Run results saved."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-save-failed">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Could not save run results."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     </div>
 
