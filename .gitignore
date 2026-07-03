@@ -7,6 +7,9 @@ node_modules/
 logs/
 *.log
 
+# Persisted test run results (issue #30)
+results/*.json
+
 # Playwright
 e2e/.auth/
 playwright-report/
@@ -16,3 +19,4 @@ e2e/screenshots/*
 
 # Local git worktrees
 .worktrees/
+.superpowers/
