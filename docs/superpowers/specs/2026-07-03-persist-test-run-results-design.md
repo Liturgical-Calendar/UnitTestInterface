@@ -27,12 +27,12 @@ pages persist results: **Calendars** (`index.php`) and **Resources** (`resources
 
 ## Design Decisions (confirmed)
 
-| Decision | Choice |
-|----------|--------|
-| Replay model | **Semantic rebuild** from self-contained stored descriptors (no live API re-fetch) |
-| Save trigger | **Auto-save** on run completion + **retention cap** (keep last 50 per run type) |
-| Browse UI | **Per-page dropdown** — `index.php` browses `calendars` runs, `resources.php` browses `resources` runs |
-| Auth | **Authenticated only** — save, list, and load all require a valid JWT |
+| Decision     | Choice                                                                                                 |
+|--------------|--------------------------------------------------------------------------------------------------------|
+| Replay model | **Semantic rebuild** from self-contained stored descriptors (no live API re-fetch)                     |
+| Save trigger | **Auto-save** on run completion + **retention cap** (keep last 50 per run type)                        |
+| Browse UI    | **Per-page dropdown** — `index.php` browses `calendars` runs, `resources.php` browses `resources` runs |
+| Auth         | **Authenticated only** — save, list, and load all require a valid JWT                                  |
 
 ## Architecture
 
@@ -42,11 +42,11 @@ A single flat-file PHP endpoint (matching the existing `index.php` / `admin.php`
 `resources.php` convention), gated by `JwtAuth::isAuthenticated()`. Unauthenticated
 requests receive `401`.
 
-| Request | Action | Response |
-|---------------------------------|-----------------------------------------|----------------------------------------------|
-| `POST results.php` | Save a completed run (body = run JSON) | `{ "ok": true, "file": "<name>.json" }` |
-| `GET results.php` | List stored runs — metadata only | `[{ file, timestamp, runType, calendar, responseType, counts, duration }, …]` |
-| `GET results.php?file=<name>` | Load one run — full JSON | the stored run object |
+| Request                       | Action                                 | Response                                                                      |
+|-------------------------------|----------------------------------------|-------------------------------------------------------------------------------|
+| `POST results.php`            | Save a completed run (body = run JSON) | `{ "ok": true, "file": "<name>.json" }`                                       |
+| `GET results.php`             | List stored runs — metadata only       | `[{ file, timestamp, runType, calendar, responseType, counts, duration }, …]` |
+| `GET results.php?file=<name>` | Load one run — full JSON               | the stored run object                                                         |
 
 **Storage:** `results/*.json`, added to `.gitignore`. Filenames are timestamp-based
 (`2026-07-03T14-30-00Z.json`) so the filesystem sorts them chronologically.

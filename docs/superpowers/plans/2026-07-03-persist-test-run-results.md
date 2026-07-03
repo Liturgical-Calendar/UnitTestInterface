@@ -1,17 +1,24 @@
 # Persist Test Run Results Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans
+> to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Persist every completed test run (Calendars and Resources pages) as a server-side JSON file that any authenticated user can browse and replay onto the dashboard without re-running tests.
+**Goal:** Persist every completed test run (Calendars and Resources pages) as a server-side JSON file that any authenticated user can
+browse and replay onto the dashboard without re-running tests.
 
-**Architecture:** A new flat-file PHP endpoint `results.php` (auth-gated, matching the `admin.php` bootstrap) saves/lists/loads JSON run files under a gitignored `results/` directory with per-run-type retention. A shared ES module `assets/js/testResults.js` centralizes result collection, card painting, and the save/list/load fetch helpers. `index.js` (Calendars) and `resources.js` (Resources) collect descriptors during a run, auto-save at completion, and gain a "Past runs" dropdown that replays a stored run by reusing the existing card-scaffolding templates and applying stored statuses.
+**Architecture:** A new flat-file PHP endpoint `results.php` (auth-gated, matching the `admin.php` bootstrap) saves/lists/loads JSON
+run files under a gitignored `results/` directory with per-run-type retention. A shared ES module `assets/js/testResults.js`
+centralizes result collection, card painting, and the save/list/load fetch helpers. `index.js` (Calendars) and `resources.js`
+(Resources) collect descriptors during a run, auto-save at completion, and gain a "Past runs" dropdown that replays a stored run
+by reusing the existing card-scaffolding templates and applying stored statuses.
 
 **Tech Stack:** PHP 8.1+ (procedural, Monolog, phpdotenv, firebase/php-jwt via `JwtAuth`), native ES6 modules, Bootstrap 5, Playwright e2e.
 
 ## Global Constraints
 
 - PHP target: `>=8.1`. Short array syntax `[]`, 4-space indent, single quotes preferred (PSR-12, lines ≤ 200 chars — `phpcs.xml`).
-- JS: native ES6 modules only (no jQuery, no build step). Page scripts loaded as `<script type="module">`; shared utilities live in `assets/js/*.js` and are imported. Reuse `common.js` exports (`slugify`, `slugifySelector`, `escapeHtmlAttr`, `updateText`, `safeToastShow`).
+- JS: native ES6 modules only (no jQuery, no build step). Page scripts loaded as `<script type="module">`; shared utilities live in
+  `assets/js/*.js` and are imported. Reuse `common.js` exports (`slugify`, `slugifySelector`, `escapeHtmlAttr`, `updateText`, `safeToastShow`).
 - Auth: all endpoint operations require `JwtAuth::isAuthenticated()` (JWT read from the `litcal_access_token` HttpOnly cookie). Browser fetches must send `credentials: 'include'`.
 - WebSocket card identity: a server response's `classes` field (original casing) is the card selector; always pass it through `slugifySelector()` before DOM queries.
 - Timezone: `Europe/Vatican` (`ini_set('date.timezone', 'Europe/Vatican')`).
@@ -24,10 +31,12 @@
 ### Task 1: Storage scaffolding
 
 **Files:**
+
 - Modify: `.gitignore`
 - Create: `results/.gitkeep`
 
 **Interfaces:**
+
 - Produces: a tracked, writable `results/` directory; `results/*.json` ignored by git.
 
 - [ ] **Step 1: Ignore stored runs but keep the directory**
@@ -74,10 +83,12 @@ git commit -m "chore: add gitignored results/ directory for persisted runs (#30)
 ### Task 2: `results.php` endpoint (save / list / load)
 
 **Files:**
+
 - Create: `results.php`
 - Test: `e2e/results-endpoint.spec.ts`
 
 **Interfaces:**
+
 - Produces (HTTP):
   - `POST results.php` — body = run JSON envelope; returns `{ ok: true, file: "<name>.json" }`; validates + prunes.
   - `GET results.php` — returns `Array<{ file, timestamp, runType, calendar, responseType, counts, duration }>` (newest first).
@@ -87,7 +98,8 @@ git commit -m "chore: add gitignored results/ directory for persisted runs (#30)
 
 - [ ] **Step 1: Write the failing e2e test**
 
-Create `e2e/results-endpoint.spec.ts`. It exercises the endpoint over HTTP using the stored auth state (Playwright projects already inject `.auth/user.json`; see `e2e/auth.setup.ts`). `baseURL` comes from `playwright.config.ts`.
+Create `e2e/results-endpoint.spec.ts`. It exercises the endpoint over HTTP using the stored auth state (Playwright projects already
+inject `.auth/user.json`; see `e2e/auth.setup.ts`). `baseURL` comes from `playwright.config.ts`.
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -378,11 +390,14 @@ git commit -m "feat: add results.php endpoint to save/list/load test runs (#30)"
 ### Task 3: Shared `testResults.js` module
 
 **Files:**
+
 - Create: `assets/js/testResults.js`
 
 **Interfaces:**
+
 - Produces (ES module exports):
-  - `applyResultToDom(responseData: { type: 'success'|'error', classes: string, text?: string }): void` — paints target cards (bg-info → bg-success/bg-danger, swaps question icon, appends one error tooltip). Used by both live handlers and replay.
+  - `applyResultToDom(responseData: { type: 'success'|'error', classes: string, text?: string }): void` — paints target cards
+    (bg-info → bg-success/bg-danger, swaps question icon, appends one error tooltip). Used by both live handlers and replay.
   - `createResultCollector(): { record(phase: string, responseData): void, all(): Array<{phase,selector,status,message,test}>, reset(): void }`.
   - `nowIsoStamp(): string` — `YYYY-MM-DDTHH:MM:SSZ` (no milliseconds).
   - `postRunResults(payload: object): Promise<{ok: boolean, file: string}>`.
@@ -507,11 +522,16 @@ git commit -m "feat: add shared testResults.js module (collect/paint/save/load) 
 ### Task 4: Calendars page — collect results and auto-save
 
 **Files:**
+
 - Modify: `assets/js/index.js` (imports ~line 7; `conn.onmessage` success branch ~641-668 and error branch ~670-702; `JobsFinished` block ~563-574; run-start reset ~1336-1344)
 
 **Interfaces:**
-- Consumes: `applyResultToDom`, `createResultCollector`, `nowIsoStamp`, `postRunResults` from `./testResults.js`; existing module state `currentSelectedCalendar`, `currentCalendarCategory`, `currentResponseType`, `currentSourceDataChecks`, `Years`, `successfulTests`, `failedTests`, phase counters/timers.
-- Produces: module state `renderedUnitTests` (Array of full unit-test objects rendered this run) and `resultCollector`; a `calendars` run POSTed at `JobsFinished`. `renderedUnitTests` is consumed by Task 5's replay scaffolding.
+
+- Consumes: `applyResultToDom`, `createResultCollector`, `nowIsoStamp`, `postRunResults` from `./testResults.js`; existing module
+  state `currentSelectedCalendar`, `currentCalendarCategory`, `currentResponseType`, `currentSourceDataChecks`, `Years`,
+  `successfulTests`, `failedTests`, phase counters/timers.
+- Produces: module state `renderedUnitTests` (Array of full unit-test objects rendered this run) and `resultCollector`; a `calendars`
+  run POSTed at `JobsFinished`. `renderedUnitTests` is consumed by Task 5's replay scaffolding.
 
 - [ ] **Step 1: Import shared helpers**
 
@@ -531,7 +551,9 @@ let renderedUnitTests = [];
 
 - [ ] **Step 2: Capture rendered unit tests during scaffolding**
 
-In `setupPage()` (the `UnitTests.forEach` at line 1222), reset `renderedUnitTests` before the loop and push each unit test that is actually rendered (i.e. not filtered out). Change the block so that, right before `SpecificUnitTestCategories = [];` (line 1221), add:
+In `setupPage()` (the `UnitTests.forEach` at line 1222), reset `renderedUnitTests` before the loop and push each unit test that
+is actually rendered (i.e. not filtered out). Change the block so that, right before `SpecificUnitTestCategories = [];` (line
+1221), add:
 
 ```javascript
     renderedUnitTests = [];
@@ -566,7 +588,9 @@ const phaseForState = () => {
 
 - [ ] **Step 4: Route painting through the shared helper and record results**
 
-In `conn.onmessage`, replace the success-branch DOM painting (the `document.querySelectorAll(slugifySelector(responseData.classes)).forEach((el) => { … });` at lines 642-650) with a single call, and record the result. The success branch head becomes:
+In `conn.onmessage`, replace the success-branch DOM painting (the
+`document.querySelectorAll(slugifySelector(responseData.classes)).forEach((el) => { … });` at lines 642-650) with a single call,
+and record the result. The success branch head becomes:
 
 ```javascript
         if ( responseData.type === "success" ) {
@@ -705,11 +729,15 @@ git commit -m "feat: collect and auto-save Calendars run results (#30)"
 ### Task 5: Calendars page — browse and replay past runs
 
 **Files:**
+
 - Modify: `index.php` (header controls row ~52-90), `assets/js/index.js` (`setupPage` scaffolding ~1197-1246; new replay code)
 
 **Interfaces:**
-- Consumes: `fetchRunSummaries`, `fetchRunDetail`, `applyResultToDom` from `./testResults.js`; the `buildScaffolding` extraction; module state setters (`currentSelectedCalendar`, `currentCalendarCategory`, `currentSourceDataChecks`, `renderedUnitTests`).
-- Produces: a `#pastRunsSelect` dropdown and a `replayCalendarsRun(file)` flow that repaints cards, counters, and timers with no WebSocket/API traffic.
+
+- Consumes: `fetchRunSummaries`, `fetchRunDetail`, `applyResultToDom` from `./testResults.js`; the `buildScaffolding` extraction;
+  module state setters (`currentSelectedCalendar`, `currentCalendarCategory`, `currentSourceDataChecks`, `renderedUnitTests`).
+- Produces: a `#pastRunsSelect` dropdown and a `replayCalendarsRun(file)` flow that repaints cards, counters, and timers with no
+  WebSocket/API traffic.
 
 - [ ] **Step 1: Extract `buildScaffolding` from `setupPage`**
 
@@ -752,7 +780,10 @@ const buildScaffolding = ( cfg ) => {
 };
 ```
 
-Then, in `setupPage`, replace the inline scaffolding (lines 1197-1246 — from `document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');` through the `UnitTests.forEach( … )` block that ends at line 1246, including the `.currentSelectedCalendar` update at 1248-1251) with a single call plus the `renderedUnitTests`/`SpecificUnitTestCategories` bookkeeping that must still run for live runs:
+Then, in `setupPage`, replace the inline scaffolding (lines 1197-1246 — from
+`document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');` through the `UnitTests.forEach( … )` block
+that ends at line 1246, including the `.currentSelectedCalendar` update at 1248-1251) with a single call plus the
+`renderedUnitTests`/`SpecificUnitTestCategories` bookkeeping that must still run for live runs:
 
 ```javascript
     renderedUnitTests = [];
@@ -787,7 +818,8 @@ Then, in `setupPage`, replace the inline scaffolding (lines 1197-1246 — from `
     });
 ```
 
-(This supersedes the Task 4 Step 2 edits, which described the same `renderedUnitTests` capture in the pre-refactor loop; applied together in this task, the loop above is the single source of truth.)
+(This supersedes the Task 4 Step 2 edits, which described the same `renderedUnitTests` capture in the pre-refactor loop;
+applied together in this task, the loop above is the single source of truth.)
 
 - [ ] **Step 2: Add the "Past runs" dropdown to `index.php`**
 
@@ -919,7 +951,10 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
 });
 ```
 
-Note: the `.EditioTypica1970` selector must match the class emitted by `sourceDataCheckTemplate` for the seeded check; adjust the seeded `selector`/`validate` to a card class that `sourceDataCheckTemplate` actually renders (confirm by inspecting the rendered scaffolding for a VA source check). Keep the assertion on `#successfulCount` and the disabled button, which do not depend on the exact class.
+Note: the `.EditioTypica1970` selector must match the class emitted by `sourceDataCheckTemplate` for the seeded check; adjust
+the seeded `selector`/`validate` to a card class that `sourceDataCheckTemplate` actually renders (confirm by inspecting the
+rendered scaffolding for a VA source check). Keep the assertion on `#successfulCount` and the disabled button, which do not
+depend on the exact class.
 
 - [ ] **Step 5: Run the replay test**
 
@@ -944,11 +979,17 @@ git commit -m "feat: browse and replay past Calendars runs (#30)"
 ### Task 6: Resources page — collect results and auto-save
 
 **Files:**
-- Modify: `assets/js/resources.js` (imports ~line 7; `conn.onmessage` success branch ~464-483 and error branch ~484-505; `JobsFinished` handling; run-start reset), `resources.php` (toast container)
+
+- Modify: `assets/js/resources.js` (imports ~line 7; `conn.onmessage` success branch ~464-483 and error branch ~484-505;
+  `JobsFinished` handling; run-start reset), `resources.php` (toast container)
 
 **Interfaces:**
-- Consumes: `applyResultToDom`, `createResultCollector`, `nowIsoStamp`, `postRunResults` from `./testResults.js`; module state `resourceDataChecks`, `sourceDataChecks`, `successfulTests`, `failedTests`, phase counters, performance measures `litcalResourceDataTestRunner` / `litcalSourceDataTestRunner` / `litcalTestRunner`.
-- Produces: `resources` run POSTed at completion; `resourceDataChecks`/`sourceDataChecks` (already resolved with `.sourceFile`) stored for replay scaffolding in Task 7.
+
+- Consumes: `applyResultToDom`, `createResultCollector`, `nowIsoStamp`, `postRunResults` from `./testResults.js`; module state
+  `resourceDataChecks`, `sourceDataChecks`, `successfulTests`, `failedTests`, phase counters, performance measures
+  `litcalResourceDataTestRunner` / `litcalSourceDataTestRunner` / `litcalTestRunner`.
+- Produces: `resources` run POSTed at completion; `resourceDataChecks`/`sourceDataChecks` (already resolved with `.sourceFile`)
+  stored for replay scaffolding in Task 7.
 
 - [ ] **Step 1: Import shared helpers**
 
@@ -1066,7 +1107,8 @@ const buildResourcesPayload = () => {
 };
 ```
 
-In the `case TestState.JobsFinished:` handling for Resources (mirror of `index.js` line 563 block — locate the equivalent completion point in `resources.js`), after the completion UI update, add:
+In the `case TestState.JobsFinished:` handling for Resources (mirror of `index.js` line 563 block — locate the equivalent
+completion point in `resources.js`), after the completion UI update, add:
 
 ```javascript
             postRunResults( buildResourcesPayload() )
@@ -1094,9 +1136,11 @@ git commit -m "feat: collect and auto-save Resources run results (#30)"
 ### Task 7: Resources page — browse and replay past runs
 
 **Files:**
+
 - Modify: `resources.php` (header controls), `assets/js/resources.js` (extract `buildScaffolding`, add replay)
 
 **Interfaces:**
+
 - Consumes: `fetchRunSummaries`, `fetchRunDetail`, `applyResultToDom`; the Resources templates `resourceTemplate` (line 322) and `sourceTemplate` (line 351); the scaffolding container(s).
 - Produces: `#pastRunsSelect` on the Resources page and `replayResourcesRun(file)`.
 
@@ -1127,7 +1171,8 @@ const buildScaffolding = ( cfg ) => {
 };
 ```
 
-Confirm the container selectors (`.resourcepaths-tests`, `.sourcedata-tests`) against `resources.php`/`resources.js`; substitute the actual class names the setup code targets. Have the live setup call `buildScaffolding({ resourceDataChecks, sourceDataChecks })`.
+Confirm the container selectors (`.resourcepaths-tests`, `.sourcedata-tests`) against `resources.php`/`resources.js`; substitute
+the actual class names the setup code targets. Have the live setup call `buildScaffolding({ resourceDataChecks, sourceDataChecks })`.
 
 - [ ] **Step 2: Add the "Past Runs" dropdown to `resources.php`**
 
@@ -1201,7 +1246,9 @@ if ( pastRunsSelect ) {
 }
 ```
 
-Confirm `initInfoTooltips`, `MsToTimeString`, `IntlDTOptions`, `resetTestUI`, and the timer element ids (`totalResourceDataTestsTime`, `totalSourceDataTestsTime`, `total-time`) exist in `resources.js`/`resources.php`; substitute actual names where they differ.
+Confirm `initInfoTooltips`, `MsToTimeString`, `IntlDTOptions`, `resetTestUI`, and the timer element ids
+(`totalResourceDataTestsTime`, `totalSourceDataTestsTime`, `total-time`) exist in `resources.js`/`resources.php`;
+substitute actual names where they differ.
 
 - [ ] **Step 4: Syntax-check, lint, commit**
 
@@ -1216,10 +1263,12 @@ git commit -m "feat: browse and replay past Resources runs (#30)"
 ### Task 8: i18n strings and full regression
 
 **Files:**
+
 - Modify: `i18n/en/LC_MESSAGES/*.po` (and template `.pot` if present); run existing extraction if the project has one.
 - Test: full Playwright suite.
 
 **Interfaces:**
+
 - Consumes: the new `_()` strings added in Tasks 4-7 (`"Run results saved."`, `"Could not save run results."`, `"Past Runs"`, `"Past Run"`, `"— Live —"`).
 - Produces: translatable catalog entries so no string renders as a raw msgid.
 
@@ -1296,8 +1345,17 @@ git commit -m "chore: add i18n strings for persisted run results UI (#30)"
 - Testing (endpoint input checks + replay e2e) → Tasks 2, 5, plus full suite in Task 8. ✓
 - i18n for new strings → Task 8. ✓
 
-**Type consistency:** `applyResultToDom` consumes `{type, classes, text}`; live handlers pass the raw `responseData` (has those fields), replay maps descriptors `{status, selector, message}` → `{type, classes, text}` at both call sites (Tasks 5, 7). Collector emits `{phase, selector, status, message, test}`; payload builders map to descriptors `{id, selector, status, message, test}` and split by `phase`. `buildScaffolding` signature differs intentionally per page (Calendars: `{calendar, category, sourceDataChecks, years, unitTests}`; Resources: `{resourceDataChecks, sourceDataChecks}`) and each is only called within its own file. `nowIsoStamp()` produces `HH:MM:SSZ`; the endpoint converts `:`→`-` for the filename and validates the colon form — consistent.
+**Type consistency:** `applyResultToDom` consumes `{type, classes, text}`; live handlers pass the raw `responseData` (has those
+fields), replay maps descriptors `{status, selector, message}` → `{type, classes, text}` at both call sites (Tasks 5, 7).
+Collector emits `{phase, selector, status, message, test}`; payload builders map to descriptors `{id, selector, status, message, test}`
+and split by `phase`. `buildScaffolding` signature differs intentionally per page (Calendars: `{calendar, category, sourceDataChecks,
+years, unitTests}`; Resources: `{resourceDataChecks, sourceDataChecks}`) and each is only called within its own file.
+`nowIsoStamp()` produces `HH:MM:SSZ`; the endpoint converts `:`→`-` for the filename and validates the colon form — consistent.
 
-**Placeholder scan:** No TBD/TODO. The two "confirm the actual identifier" notes (Resources `TestState` names in Task 6 Step 2; Resources container/timer names in Task 7) are explicit verification steps against real files, not deferred work — they exist because `resources.js` internals were not fully read during planning and must be confirmed at implementation time. Every code step ships complete code.
+**Placeholder scan:** No TBD/TODO. The two "confirm the actual identifier" notes (Resources `TestState` names in Task 6 Step 2;
+Resources container/timer names in Task 7) are explicit verification steps against real files, not deferred work — they exist
+because `resources.js` internals were not fully read during planning and must be confirmed at implementation time. Every code
+step ships complete code.
 
-**Known verification points for the implementer (Resources page):** exact `TestState` phase identifiers, scaffolding container class names, and timer element ids in `resources.js`/`resources.php`. These are called out inline in Tasks 6-7; confirm before editing.
+**Known verification points for the implementer (Resources page):** exact `TestState` phase identifiers, scaffolding container class
+names, and timer element ids in `resources.js`/`resources.php`. These are called out inline in Tasks 6-7; confirm before editing.
