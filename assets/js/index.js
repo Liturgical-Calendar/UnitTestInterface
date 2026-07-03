@@ -11,7 +11,6 @@ import {
     safeToastShow,
     updateText,
     slugify,
-    slugifySelector
 } from './common.js';
 
 import {
@@ -19,6 +18,8 @@ import {
     createResultCollector,
     nowIsoStamp,
     postRunResults,
+    fetchRunSummaries,
+    fetchRunDetail,
 } from './testResults.js';
 
 const resultCollector = createResultCollector();
@@ -1217,6 +1218,41 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     return checks;
 };
 
+/**
+ * Renders the empty (bg-info) card scaffolding for all three Calendars phases.
+ * Shared by live setup and stored-run replay so markup stays identical.
+ * @param {{calendar: string, category: string, sourceDataChecks: Array<object>, years: Array<number>, unitTests: Array<object>}} cfg
+ */
+const buildScaffolding = ( cfg ) => {
+    document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');
+    cfg.sourceDataChecks.forEach( ( item, idx ) => {
+        document.querySelectorAll('.sourcedata-tests').forEach(el => el.insertAdjacentHTML('beforeend', sourceDataCheckTemplate( item, idx )));
+    } );
+
+    const calendarDataTests = document.querySelector('.calendardata-tests');
+    if ( calendarDataTests ) {
+        calendarDataTests.innerHTML = '';
+        document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
+        for ( let i = cfg.years.length; i > 0; i-- ) {
+            const idx = cfg.years.length - i;
+            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
+            const yearEl = calendarDataTests.querySelector(`.year-${cfg.years[ idx ]}`);
+            yearEl.insertAdjacentHTML('afterend', testTemplate(cfg.calendar, cfg.years[idx]));
+        }
+    }
+
+    const specificUnitTestsAccordion = document.querySelector('#specificUnitTestsAccordion');
+    if (specificUnitTestsAccordion) {
+        specificUnitTestsAccordion.innerHTML = '';
+    }
+    cfg.unitTests.forEach( unitTest => appendAccordionItem( unitTest ) );
+
+    document.querySelectorAll('.currentSelectedCalendar').forEach(el => {
+        el.textContent = truncate( cfg.calendar, 20 );
+        el.setAttribute('title', cfg.calendar);
+    });
+};
+
 const setupPage = () => {
     // store the original value of the #startTestRunnerBtnLbl for later use
     // but only if it hasn't been set yet (only the first time we do a page setup)
@@ -1254,34 +1290,9 @@ const setupPage = () => {
         currentSourceDataChecks = checks;
     }
 
-    document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');
-    currentSourceDataChecks.forEach( ( item, idx ) => {
-        document.querySelectorAll('.sourcedata-tests').forEach(el => el.insertAdjacentHTML('beforeend', sourceDataCheckTemplate( item, idx )));
-    } );
-
-    const calendarDataTests = document.querySelector('.calendardata-tests');
-    if ( calendarDataTests && calendarDataTests.children.length === 0 ) {
-        document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
-        let idx;
-        for ( let i = Years.length; i > 0; i-- ) {
-            idx = Years.length - i;
-            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
-            const yearEl = calendarDataTests.querySelector(`.year-${Years[ idx ]}`);
-            // Build template with year class baked in, avoiding repeated DOM queries
-            yearEl.insertAdjacentHTML('afterend', testTemplate(currentSelectedCalendar, Years[idx]));
-        }
-    } else if (calendarDataTests) {
-        document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
-    }
-
-    const specificUnitTestsAccordion = document.querySelector('#specificUnitTestsAccordion');
-    if (specificUnitTestsAccordion) {
-        specificUnitTestsAccordion.innerHTML = '';
-    }
     renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
-        //console.log( unitTest );
         if ( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
             if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                 return;
@@ -1297,19 +1308,17 @@ const setupPage = () => {
                 return;
             }
         }
-
         renderedUnitTests.push( unitTest );
-        SpecificUnitTestCategories.push( {
-            "action": "executeUnitTest",
-            "test": unitTest.name
-        } );
+        SpecificUnitTestCategories.push( { "action": "executeUnitTest", "test": unitTest.name } );
         SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
-        appendAccordionItem( unitTest );
     } );
 
-    document.querySelectorAll('.currentSelectedCalendar').forEach(el => {
-        el.textContent = truncate( currentSelectedCalendar, 20 );
-        el.setAttribute('title', currentSelectedCalendar);
+    buildScaffolding({
+        calendar: currentSelectedCalendar,
+        category: currentCalendarCategory,
+        sourceDataChecks: currentSourceDataChecks,
+        years: Years,
+        unitTests: renderedUnitTests,
     });
     let totalTestsCount = document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length;
     updateText('total-tests-count', totalTestsCount);
@@ -1443,6 +1452,77 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         }
     }
 });
+
+const pastRunsSelect = document.querySelector('#pastRunsSelect');
+
+/** Populate the past-runs dropdown from the server (calendars runs only). */
+const loadPastRuns = async () => {
+    if ( !pastRunsSelect ) {
+        return;
+    }
+    try {
+        const summaries = await fetchRunSummaries( 'calendars' );
+        for ( const r of summaries ) {
+            const opt = document.createElement('option');
+            opt.value = r.file;
+            const dt = new Intl.DateTimeFormat(locale, IntlDTOptions).format(new Date(r.timestamp));
+            opt.textContent = `${dt} · ${r.calendar} · ✓${r.counts?.successful ?? 0} ✗${r.counts?.failed ?? 0}`;
+            pastRunsSelect.appendChild(opt);
+        }
+    } catch ( err ) {
+        console.error( 'Could not load past runs', err );
+    }
+};
+
+/**
+ * Replay a stored Calendars run onto the dashboard (no WebSocket/API traffic).
+ * @param {string} file
+ */
+const replayCalendarsRun = async ( file ) => {
+    const run = await fetchRunDetail( file );
+    currentSelectedCalendar = run.calendar;
+    currentCalendarCategory = run.calendarCategory;
+    currentResponseType = run.responseType;
+    currentSourceDataChecks = run.scaffold.sourceDataChecks;
+    buildScaffolding({
+        calendar: run.calendar,
+        category: run.calendarCategory,
+        sourceDataChecks: run.scaffold.sourceDataChecks,
+        years: run.scaffold.years,
+        unitTests: run.scaffold.unitTests,
+    });
+    [ ...run.sourceDataResults, ...run.calendarDataResults, ...run.unitTestResults ].forEach( ( d ) => {
+        applyResultToDom({ type: d.status, classes: d.selector, text: d.message });
+    } );
+    updateText('successfulCount', run.counts.successful);
+    updateText('failedCount', run.counts.failed);
+    updateText('total-time', MsToTimeString( run.duration ));
+    updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
+    updateText('totalCalendarDataTestsTime', MsToTimeString( run.timings.calendarData ));
+    updateText('totalUnitTestsTime', MsToTimeString( run.timings.unitTests ));
+    initInfoTooltips();
+};
+
+if ( pastRunsSelect ) {
+    pastRunsSelect.addEventListener('change', ( e ) => {
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if ( e.target.value === '' ) {
+            if ( startBtn ) {
+                startBtn.disabled = false;
+            }
+            resetTestUI();
+            return;
+        }
+        if ( startBtn ) {
+            startBtn.disabled = true;
+        }
+        replayCalendarsRun( e.target.value ).catch( ( err ) => {
+            console.error( 'Replay failed', err );
+            safeToastShow('#results-save-failed');
+        });
+    });
+    loadPastRuns();
+}
 
 // Store wide tooltips (error tooltips with copy functionality) so we can hide them later
 const tooltipMap = new Map();

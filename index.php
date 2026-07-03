@@ -81,6 +81,12 @@ include_once('layout/head.php');
                         <option data-responsetype="ics" value="ICS">ICS</option>
                     </select>
                 </div>
+                <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
+                    <label for="pastRunsSelect"><?php echo _("Past Runs"); ?></label>
+                    <select id="pastRunsSelect" class="form-select form-select-sm">
+                        <option value=""><?php echo _("— Live —"); ?></option>
+                    </select>
+                </div>
                 <div class="col-12 col-md-4 col-lg-2">
                     <button id="startTestRunnerBtn" type="button"
                             class="btn btn-primary w-100" disabled
