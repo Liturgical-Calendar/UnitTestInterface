@@ -32,8 +32,9 @@ jobs:
           sudo apt-get install -y gettext
           # Extract from every tracked PHP file — a hardcoded list silently drops
           # new files (resources.php and components/login-modal.php were missed
-          # for months, hiding 19 msgids from translators).
-          xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot $(git ls-files '*.php')
+          # for months, hiding 19 msgids from translators). Null-delimited so
+          # paths containing spaces or other IFS characters cannot word-split.
+          git ls-files -z '*.php' | xargs -0 xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot
           echo "POT_LINES_CHANGED=$(git diff -U0 | grep '^[+|-][^+|-]' | grep -Ev '^[+-]"POT-Creation-Date' | wc -l)" >> $GITHUB_OUTPUT
 
       # push the output folder to your repo
