@@ -15,6 +15,7 @@ import {
 
 import {
     applyResultToDom,
+    countByStatus,
     createResultCollector,
     nowIsoStamp,
     postRunResults,
@@ -1191,6 +1192,13 @@ const replayResourcesRun = async ( file ) => {
     } );
     updateText('successfulCount', run.counts.successful);
     updateText('failedCount', run.counts.failed);
+    // Per-phase Successful/Failed badges, derived from the stored descriptors
+    const apiPathCounts = countByStatus( run.apiPathResults );
+    const sourceDataCounts = countByStatus( run.sourceDataResults );
+    updateText('successfulResourceDataTestsCount', apiPathCounts.successful);
+    updateText('failedResourceDataTestsCount', apiPathCounts.failed);
+    updateText('successfulSourceDataTestsCount', sourceDataCounts.successful);
+    updateText('failedSourceDataTestsCount', sourceDataCounts.failed);
     updateText('total-time', MsToTimeString( run.duration ));
     updateText('totalResourceDataTestsTime', MsToTimeString( run.timings.apiPath ));
     updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));

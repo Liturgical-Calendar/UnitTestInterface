@@ -46,6 +46,16 @@ export const createResultCollector = () => {
     };
 };
 
+/**
+ * Tallies stored result descriptors by status.
+ * @param {Array<{status: string}>} descriptors
+ * @returns {{successful: number, failed: number}}
+ */
+export const countByStatus = (descriptors) => ({
+    successful: descriptors.filter((d) => d.status === 'success').length,
+    failed: descriptors.filter((d) => d.status !== 'success').length,
+});
+
 /** Current UTC time as `YYYY-MM-DDTHH:MM:SSZ` (no milliseconds). */
 export const nowIsoStamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 

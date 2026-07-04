@@ -15,6 +15,7 @@ import {
 
 import {
     applyResultToDom,
+    countByStatus,
     createResultCollector,
     nowIsoStamp,
     postRunResults,
@@ -1497,6 +1498,36 @@ const replayCalendarsRun = async ( file ) => {
     } );
     updateText('successfulCount', run.counts.successful);
     updateText('failedCount', run.counts.failed);
+    // Per-phase Successful/Failed badges, derived from the stored descriptors
+    const sourceDataCounts = countByStatus( run.sourceDataResults );
+    const calendarDataCounts = countByStatus( run.calendarDataResults );
+    const unitTestCounts = countByStatus( run.unitTestResults );
+    updateText('successfulSourceDataTestsCount', sourceDataCounts.successful);
+    updateText('failedSourceDataTestsCount', sourceDataCounts.failed);
+    updateText('successfulCalendarDataTestsCount', calendarDataCounts.successful);
+    updateText('failedCalendarDataTestsCount', calendarDataCounts.failed);
+    updateText('successfulUnitTestsCount', unitTestCounts.successful);
+    updateText('failedUnitTestsCount', unitTestCounts.failed);
+    // Per-unit-test badges in the accordion headers, grouped by test name
+    const perTestCounts = new Map();
+    run.unitTestResults.forEach( ( d ) => {
+        if ( !d.test ) {
+            return;
+        }
+        const testSlug = slugify( d.test );
+        const entry = perTestCounts.get( testSlug ) ?? { successful: 0, failed: 0 };
+        entry[ d.status === 'success' ? 'successful' : 'failed' ]++;
+        perTestCounts.set( testSlug, entry );
+    } );
+    perTestCounts.forEach( ( entry, testSlug ) => {
+        updateText(`successful${testSlug}TestsCount`, entry.successful);
+        updateText(`failed${testSlug}TestsCount`, entry.failed);
+    } );
+    // Totals: same DOM-derived counts setupPage computes for a live run
+    updateText('total-tests-count', document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length);
+    updateText('totalSourceDataTestsCount', document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length);
+    updateText('totalCalendarDataTestsCount', document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length);
+    updateText('totalUnitTestsCount', document.querySelectorAll('.specificunittests .test-valid').length);
     updateText('total-time', MsToTimeString( run.duration ));
     updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
     updateText('totalCalendarDataTestsTime', MsToTimeString( run.timings.calendarData ));

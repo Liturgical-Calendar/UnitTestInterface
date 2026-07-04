@@ -1,4 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { unlink } from 'fs/promises';
+import path from 'path';
+
+// Clean up seeded run files so e2e fixtures don't pollute the real Past Runs dropdown.
+const seededFiles: string[] = [];
+test.afterAll(async () => {
+    for (const file of seededFiles) {
+        await unlink(path.join(__dirname, '..', 'results', file)).catch(() => { /* already removed by a parallel project */ });
+    }
+});
 
 const sampleRun = {
     schemaVersion: 1,
@@ -42,6 +52,7 @@ test('saves, lists, and loads a run', async ({ request }) => {
     const save = await request.post('results.php', { data: sampleRun });
     expect(save.ok()).toBeTruthy();
     const { ok, file } = await save.json();
+    seededFiles.push(file);
     expect(ok).toBe(true);
     expect(file).toMatch(/^(calendars|resources)-[0-9T-]+Z\.json$/);
 
