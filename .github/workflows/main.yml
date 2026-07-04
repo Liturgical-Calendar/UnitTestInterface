@@ -7,7 +7,9 @@ on:
   # Triggers the workflow on push or pull request events but only for the given branch
   push:
     branches: [ main ]
-    paths: [ '**.php' ]
+    # Also run when this workflow itself changes, so extraction fixes take
+    # effect immediately instead of waiting for the next .php change.
+    paths: [ '**.php', '.github/workflows/main.yml' ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,7 +30,10 @@ jobs:
         id: update_pot
         run: |
           sudo apt-get install -y gettext
-          xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot index.php admin.php layout/topnavbar.php layout/sidebar.php components/NewTestModal.php
+          # Extract from every tracked PHP file — a hardcoded list silently drops
+          # new files (resources.php and components/login-modal.php were missed
+          # for months, hiding 19 msgids from translators).
+          xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot $(git ls-files '*.php')
           echo "POT_LINES_CHANGED=$(git diff -U0 | grep '^[+|-][^+|-]' | grep -Ev '^[+-]"POT-Creation-Date' | wc -l)" >> $GITHUB_OUTPUT
 
       # push the output folder to your repo
