@@ -857,12 +857,10 @@ const loadAsyncData = () => {
             }
             else if(data.hasOwnProperty('litcal_missals')) {
                 Missals = data.litcal_missals;
-                resourcePaths[`missals-path`] = `/missals`;
-                resourceDataChecks.push({
-                    "validate": "missals-path",
-                    "sourceFile": ENDPOINTS.MISSALS,
-                    "category": "resourceDataCheck"
-                });
+                // NOTE: no push for the top-level 'missals-path' check here — it is already
+                // in the static resourceDataChecks array (and in resourcePaths). Pushing it
+                // again sent the validation twice and inflated the success counter (162)
+                // past the rendered-card total (159).
                 Missals.forEach(missal => {
                     resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
                     resourceDataChecks.push({
