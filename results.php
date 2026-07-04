@@ -151,7 +151,13 @@ function validateRun(array $d): ?string
 function listRuns(): array
 {
     $out = [];
-    foreach (glob(RESULTS_DIR . '/*.json') ?: [] as $path) {
+    // Only list files whose names safeResultPath() would accept on load —
+    // anything else (legacy or foreign .json files) would list but never load.
+    $paths = array_merge(
+        glob(RESULTS_DIR . '/calendars-*.json') ?: [],
+        glob(RESULTS_DIR . '/resources-*.json') ?: []
+    );
+    foreach ($paths as $path) {
         $data = json_decode((string) file_get_contents($path), true);
         if (!is_array($data)) {
             continue;
