@@ -42,6 +42,30 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-white bg-success border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-saved">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-floppy-disk fa-fw"></i> <?php echo _("Run results saved."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-save-failed">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Could not save run results."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-load-failed">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Could not load run results."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -63,6 +87,12 @@ include_once('layout/head.php');
                         <option data-responsetype="yaml" value="YML">YAML</option>
                         <option data-responsetype="xml" value="XML">XML</option>
                         <option data-responsetype="ics" value="ICS">ICS</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
+                    <label for="pastRunsSelect"><?php echo _("Past Runs"); ?></label>
+                    <select id="pastRunsSelect" class="form-select form-select-sm">
+                        <option value=""><?php echo _("— Live —"); ?></option>
                     </select>
                 </div>
                 <div class="col-12 col-md-4 col-lg-2">

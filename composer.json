@@ -21,8 +21,8 @@
     "scripts": {
         "lint": "phpcs || echo 'Linting failed. Please run composer lint:fix to fix the linting issues.'",
         "lint:fix": "phpcbf || echo 'Lint fixing failed. Please check the linting failures and fix them manually.'",
-        "lint:md": "npx --yes markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#vendor\"",
-        "lint:md:fix": "npx --yes markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#vendor\""
+        "lint:md": "npx --yes markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#vendor\" \"#.superpowers\" \"#.serena.local.bak\"",
+        "lint:md:fix": "npx --yes markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#vendor\" \"#.superpowers\" \"#.serena.local.bak\""
     },
     "license": "Apache-2.0",
     "authors": [

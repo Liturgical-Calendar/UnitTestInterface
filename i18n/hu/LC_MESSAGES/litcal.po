@@ -380,6 +380,27 @@ msgstr "Bezárás"
 msgid "Create test"
 msgstr "Teszt létrehozása"
 
+
+#: index.php:48 resources.php:48
+msgid "Run results saved."
+msgstr "A futtatás eredményei elmentve."
+
+#: index.php:56 resources.php:56
+msgid "Could not save run results."
+msgstr "Nem sikerült menteni a futtatás eredményeit."
+
+#: index.php:64 resources.php:64
+msgid "Could not load run results."
+msgstr "Nem sikerült betölteni a futtatás eredményeit."
+
+#: index.php:85 resources.php:77
+msgid "Past Runs"
+msgstr "Korábbi futtatások"
+
+#: index.php:87 resources.php:79
+msgid "— Live —"
+msgstr "— Élő —"
+
 #~ msgid "Websocket"
 #~ msgstr "Websocket"
 
