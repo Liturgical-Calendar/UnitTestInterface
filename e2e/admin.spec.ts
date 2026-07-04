@@ -26,6 +26,14 @@ test.describe('Admin Page - Unauthenticated State', () => {
         expect(isLoginVisible).toBe(true);
     });
 
+    test('should derive a non-empty API version badge when API_BASE_PATH is empty', async ({ adminPage, page }) => {
+        await adminPage.goToAdmin();
+
+        // With an empty (or unset) API_BASE_PATH, the navbar badge must fall
+        // back to 'dev' rather than rendering an empty badge.
+        await expect(page.locator('#apiVersionBadge')).toHaveText('dev');
+    });
+
     test('should have data-requires-auth elements disabled when not logged in', async ({ adminPage, page }) => {
         await adminPage.goToAdmin();
 
