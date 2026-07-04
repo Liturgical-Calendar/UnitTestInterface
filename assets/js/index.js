@@ -11,8 +11,20 @@ import {
     safeToastShow,
     updateText,
     slugify,
-    slugifySelector
 } from './common.js';
+
+import {
+    applyResultToDom,
+    countByStatus,
+    createResultCollector,
+    nowIsoStamp,
+    postRunResults,
+    fetchRunSummaries,
+    fetchRunDetail,
+} from './testResults.js';
+
+const resultCollector = createResultCollector();
+let renderedUnitTests = [];
 
 /** @typedef {import('./types.js').SourceDataCheckMessage} SourceDataCheckMessage */
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
@@ -294,11 +306,12 @@ const testTemplate = ( calendarName, year = null ) => {
  * The template has the following structure:
  * - A paragraph with the year of the calendar being tested.
  * @param {number} idx The index of the year to be tested.
+ * @param {Array<number>} years The years array for the current run (may differ from the global Years on replay).
  * @return {string} The HTML template as a string.
  */
-const calDataTestTemplate = ( idx ) => {
-    let i = Years.length - idx;
-    let year = Years[ i ];
+const calDataTestTemplate = ( idx, years ) => {
+    let i = years.length - idx;
+    let year = years[ i ];
     return `
 <div class="col-1${i === 0 || i % 10 === 0 ? ' offset-1' : ''}">
     <p class="text-center mb-0 year-${year} fw-bold">${year}</p>
@@ -460,6 +473,68 @@ let SpecificUnitTestYears = {};
  * - JobsFinished: In this state, the test runner reports that all jobs have been
  *   finished, and it becomes ready to start a new test run.
  */
+/**
+ * Maps the current TestState to the persisted phase key for a Calendars run.
+ * @returns {('sourceData'|'calendarData'|'unitTest'|null)}
+ */
+const phaseForState = () => {
+    switch ( currentState ) {
+        case TestState.ExecutingValidations: return 'sourceData';
+        case TestState.ValidatingCalendarData: return 'calendarData';
+        case TestState.SpecificUnitTests: return 'unitTest';
+        default: return null;
+    }
+};
+
+/**
+ * Reads a completed performance measure's duration by name, or 0 if absent.
+ * @param {string} name
+ * @returns {number}
+ */
+const measureDuration = ( name ) => {
+    const entries = performance.getEntriesByName( name );
+    return entries.length ? Math.round( entries[ entries.length - 1 ].duration ) : 0;
+};
+
+/**
+ * Assembles the self-contained Calendars run payload from collected results.
+ * @returns {object}
+ */
+const buildCalendarsPayload = () => {
+    const all = resultCollector.all();
+    const toDescriptor = ( r ) => ({
+        id: r.selector,
+        selector: r.selector,
+        status: r.status,
+        message: r.message,
+        test: r.test,
+    });
+    const byPhase = ( phase ) => all.filter( ( r ) => r.phase === phase ).map( toDescriptor );
+    return {
+        schemaVersion: 1,
+        timestamp: nowIsoStamp(),
+        runType: 'calendars',
+        calendar: currentSelectedCalendar,
+        calendarCategory: currentCalendarCategory,
+        responseType: currentResponseType,
+        duration: measureDuration( 'litcalTestRunner' ),
+        counts: { successful: successfulTests, failed: failedTests },
+        timings: {
+            sourceData: measureDuration( 'litcalSourceDataTestRunner' ),
+            calendarData: measureDuration( 'litcalCalendarDataTestRunner' ),
+            unitTests: measureDuration( 'litcalUnitTestRunner' ),
+        },
+        scaffold: {
+            sourceDataChecks: currentSourceDataChecks,
+            years: Years,
+            unitTests: renderedUnitTests,
+        },
+        sourceDataResults: byPhase( 'sourceData' ),
+        calendarDataResults: byPhase( 'calendarData' ),
+        unitTestResults: byPhase( 'unitTest' ),
+    };
+};
+
 const runTests = () => {
     switch ( currentState ) {
         case TestState.ReadyState: {
@@ -570,6 +645,12 @@ const runTests = () => {
                 spinIcon.classList.add('fa-stop');
             }
             setTestRunnerBtnLblTxt( 'Tests Complete' );
+            postRunResults( buildCalendarsPayload() )
+                .then( () => safeToastShow('#results-saved') )
+                .catch( ( err ) => {
+                    console.error( 'Failed to persist run results', err );
+                    safeToastShow('#results-save-failed');
+                });
             break;
         }
     }
@@ -639,15 +720,8 @@ const connectWebSocket = () => {
         }
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-success');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-check');
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('successfulCount', ++successfulTests);
             switch ( currentState ) {
                 case TestState.ExecutingValidations: {
@@ -668,19 +742,8 @@ const connectWebSocket = () => {
             }
         }
         else if ( responseData.type === "error" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-danger');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-xmark');
-                }
-                const cardText = el.querySelector('.card-text');
-                if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('failedCount', ++failedTests);
             switch ( currentState ) {
                 case TestState.ExecutingValidations: {
@@ -1157,6 +1220,41 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     return checks;
 };
 
+/**
+ * Renders the empty (bg-info) card scaffolding for all three Calendars phases.
+ * Shared by live setup and stored-run replay so markup stays identical.
+ * @param {{calendar: string, category: string, sourceDataChecks: Array<object>, years: Array<number>, unitTests: Array<object>}} cfg
+ */
+const buildScaffolding = ( cfg ) => {
+    document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');
+    cfg.sourceDataChecks.forEach( ( item, idx ) => {
+        document.querySelectorAll('.sourcedata-tests').forEach(el => el.insertAdjacentHTML('beforeend', sourceDataCheckTemplate( item, idx )));
+    } );
+
+    const calendarDataTests = document.querySelector('.calendardata-tests');
+    if ( calendarDataTests ) {
+        calendarDataTests.innerHTML = '';
+        document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
+        for ( let i = cfg.years.length; i > 0; i-- ) {
+            const idx = cfg.years.length - i;
+            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i, cfg.years ));
+            const yearEl = calendarDataTests.querySelector(`.year-${cfg.years[ idx ]}`);
+            yearEl.insertAdjacentHTML('afterend', testTemplate(cfg.calendar, cfg.years[idx]));
+        }
+    }
+
+    const specificUnitTestsAccordion = document.querySelector('#specificUnitTestsAccordion');
+    if (specificUnitTestsAccordion) {
+        specificUnitTestsAccordion.innerHTML = '';
+    }
+    cfg.unitTests.forEach( unitTest => appendAccordionItem( unitTest ) );
+
+    document.querySelectorAll('.currentSelectedCalendar').forEach(el => {
+        el.textContent = truncate( cfg.calendar, 20 );
+        el.setAttribute('title', cfg.calendar);
+    });
+};
+
 const setupPage = () => {
     // store the original value of the #startTestRunnerBtnLbl for later use
     // but only if it hasn't been set yet (only the first time we do a page setup)
@@ -1194,33 +1292,9 @@ const setupPage = () => {
         currentSourceDataChecks = checks;
     }
 
-    document.querySelectorAll('.sourcedata-tests').forEach(el => el.innerHTML = '');
-    currentSourceDataChecks.forEach( ( item, idx ) => {
-        document.querySelectorAll('.sourcedata-tests').forEach(el => el.insertAdjacentHTML('beforeend', sourceDataCheckTemplate( item, idx )));
-    } );
-
-    const calendarDataTests = document.querySelector('.calendardata-tests');
-    if ( calendarDataTests && calendarDataTests.children.length === 0 ) {
-        document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
-        let idx;
-        for ( let i = Years.length; i > 0; i-- ) {
-            idx = Years.length - i;
-            calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i ));
-            const yearEl = calendarDataTests.querySelector(`.year-${Years[ idx ]}`);
-            // Build template with year class baked in, avoiding repeated DOM queries
-            yearEl.insertAdjacentHTML('afterend', testTemplate(currentSelectedCalendar, Years[idx]));
-        }
-    } else if (calendarDataTests) {
-        document.querySelectorAll( '.error-tooltip' ).forEach( el => el.remove() );
-    }
-
-    const specificUnitTestsAccordion = document.querySelector('#specificUnitTestsAccordion');
-    if (specificUnitTestsAccordion) {
-        specificUnitTestsAccordion.innerHTML = '';
-    }
+    renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
-        //console.log( unitTest );
         if ( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
             if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                 return;
@@ -1236,18 +1310,17 @@ const setupPage = () => {
                 return;
             }
         }
-
-        SpecificUnitTestCategories.push( {
-            "action": "executeUnitTest",
-            "test": unitTest.name
-        } );
+        renderedUnitTests.push( unitTest );
+        SpecificUnitTestCategories.push( { "action": "executeUnitTest", "test": unitTest.name } );
         SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
-        appendAccordionItem( unitTest );
     } );
 
-    document.querySelectorAll('.currentSelectedCalendar').forEach(el => {
-        el.textContent = truncate( currentSelectedCalendar, 20 );
-        el.setAttribute('title', currentSelectedCalendar);
+    buildScaffolding({
+        calendar: currentSelectedCalendar,
+        category: currentCalendarCategory,
+        sourceDataChecks: currentSourceDataChecks,
+        years: Years,
+        unitTests: renderedUnitTests,
     });
     let totalTestsCount = document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length;
     updateText('total-tests-count', totalTestsCount);
@@ -1338,6 +1411,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         messageCounter = 0;
         successfulTests = 0;
         failedTests = 0;
+        resultCollector.reset();
         calendarDataReceivedResponses = 0;
         calendarDataExpectedResponses = 0;
         resetTestUI();
@@ -1380,6 +1454,130 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         }
     }
 });
+
+const pastRunsSelect = document.querySelector('#pastRunsSelect');
+
+/** Populate the past-runs dropdown from the server (calendars runs only). */
+const loadPastRuns = async () => {
+    if ( !pastRunsSelect ) {
+        return;
+    }
+    try {
+        const summaries = await fetchRunSummaries( 'calendars' );
+        for ( const r of summaries ) {
+            const opt = document.createElement('option');
+            opt.value = r.file;
+            const dt = new Intl.DateTimeFormat(locale, IntlDTOptions).format(new Date(r.timestamp));
+            opt.textContent = `${dt} · ${r.calendar} · ✓${r.counts?.successful ?? 0} ✗${r.counts?.failed ?? 0}`;
+            pastRunsSelect.appendChild(opt);
+        }
+    } catch ( err ) {
+        console.error( 'Could not load past runs', err );
+    }
+};
+
+/**
+ * Replay a stored Calendars run onto the dashboard (no WebSocket/API traffic).
+ * @param {string} file
+ */
+const replayCalendarsRun = async ( file ) => {
+    const run = await fetchRunDetail( file );
+    currentSelectedCalendar = run.calendar;
+    currentCalendarCategory = run.calendarCategory;
+    currentResponseType = run.responseType;
+    currentSourceDataChecks = run.scaffold.sourceDataChecks;
+    buildScaffolding({
+        calendar: run.calendar,
+        category: run.calendarCategory,
+        sourceDataChecks: run.scaffold.sourceDataChecks,
+        years: run.scaffold.years,
+        unitTests: run.scaffold.unitTests,
+    });
+    [ ...run.sourceDataResults, ...run.calendarDataResults, ...run.unitTestResults ].forEach( ( d ) => {
+        applyResultToDom({ type: d.status, classes: d.selector, text: d.message });
+    } );
+    updateText('successfulCount', run.counts.successful);
+    updateText('failedCount', run.counts.failed);
+    // Per-phase Successful/Failed badges, derived from the stored descriptors
+    const sourceDataCounts = countByStatus( run.sourceDataResults );
+    const calendarDataCounts = countByStatus( run.calendarDataResults );
+    const unitTestCounts = countByStatus( run.unitTestResults );
+    updateText('successfulSourceDataTestsCount', sourceDataCounts.successful);
+    updateText('failedSourceDataTestsCount', sourceDataCounts.failed);
+    updateText('successfulCalendarDataTestsCount', calendarDataCounts.successful);
+    updateText('failedCalendarDataTestsCount', calendarDataCounts.failed);
+    updateText('successfulUnitTestsCount', unitTestCounts.successful);
+    updateText('failedUnitTestsCount', unitTestCounts.failed);
+    // Per-unit-test badges in the accordion headers, grouped by test name
+    const perTestCounts = new Map();
+    run.unitTestResults.forEach( ( d ) => {
+        if ( !d.test ) {
+            return;
+        }
+        const testSlug = slugify( d.test );
+        const entry = perTestCounts.get( testSlug ) ?? { successful: 0, failed: 0 };
+        entry[ d.status === 'success' ? 'successful' : 'failed' ]++;
+        perTestCounts.set( testSlug, entry );
+    } );
+    perTestCounts.forEach( ( entry, testSlug ) => {
+        updateText(`successful${testSlug}TestsCount`, entry.successful);
+        updateText(`failed${testSlug}TestsCount`, entry.failed);
+    } );
+    // Totals: same DOM-derived counts setupPage computes for a live run
+    updateText('total-tests-count', document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length);
+    updateText('totalSourceDataTestsCount', document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length);
+    updateText('totalCalendarDataTestsCount', document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length);
+    updateText('totalUnitTestsCount', document.querySelectorAll('.specificunittests .test-valid').length);
+    updateText('total-time', MsToTimeString( run.duration ));
+    updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
+    updateText('totalCalendarDataTestsTime', MsToTimeString( run.timings.calendarData ));
+    updateText('totalUnitTestsTime', MsToTimeString( run.timings.unitTests ));
+    initInfoTooltips();
+};
+
+/**
+ * Re-derives all module state variables from the current DOM controls and calls setupPage()
+ * to rebuild the scaffold, currentSourceDataChecks, and SpecificUnitTestCategories from live
+ * page state.  Called when the user returns to "— Live —" after viewing a stored run, because
+ * replayCalendarsRun() overwrites currentSelectedCalendar, currentCalendarCategory,
+ * currentResponseType, and currentSourceDataChecks with the stored run's values.
+ */
+const resyncLiveStateFromDom = () => {
+    const calendarSelect = document.querySelector('#APICalendarSelect');
+    const selectedOption = calendarSelect ? calendarSelect.querySelector('option:checked') : null;
+    currentSelectedCalendar = calendarSelect ? calendarSelect.value : currentSelectedCalendar;
+    currentCalendarCategory = selectedOption ? (selectedOption.dataset.calendartype ?? currentCalendarCategory) : currentCalendarCategory;
+    if ( currentCalendarCategory === 'diocesancalendar' ) {
+        currentNationalCalendar = selectedOption ? (selectedOption.dataset.nationalcalendar ?? currentSelectedCalendar) : currentSelectedCalendar;
+    } else {
+        currentNationalCalendar = currentSelectedCalendar;
+    }
+    const responseSelect = document.querySelector('#APIResponseSelect');
+    currentResponseType = responseSelect ? responseSelect.value : currentResponseType;
+    setupPage();
+};
+
+if ( pastRunsSelect ) {
+    pastRunsSelect.addEventListener('change', ( e ) => {
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if ( e.target.value === '' ) {
+            if ( startBtn ) {
+                startBtn.disabled = false;
+            }
+            resetTestUI();
+            resyncLiveStateFromDom();
+            return;
+        }
+        if ( startBtn ) {
+            startBtn.disabled = true;
+        }
+        replayCalendarsRun( e.target.value ).catch( ( err ) => {
+            console.error( 'Replay failed', err );
+            safeToastShow('#results-load-failed');
+        });
+    });
+    loadPastRuns();
+}
 
 // Store wide tooltips (error tooltips with copy functionality) so we can hide them later
 const tooltipMap = new Map();

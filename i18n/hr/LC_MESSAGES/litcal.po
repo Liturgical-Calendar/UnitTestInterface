@@ -380,6 +380,27 @@ msgstr "Zatvori"
 msgid "Create test"
 msgstr "Kreiraj test"
 
+
+#: index.php:48 resources.php:48
+msgid "Run results saved."
+msgstr "Rezultati izvođenja su spremljeni."
+
+#: index.php:56 resources.php:56
+msgid "Could not save run results."
+msgstr "Nije moguće spremiti rezultate izvođenja."
+
+#: index.php:64 resources.php:64
+msgid "Could not load run results."
+msgstr "Nije moguće učitati rezultate izvođenja."
+
+#: index.php:85 resources.php:77
+msgid "Past Runs"
+msgstr "Prethodna izvođenja"
+
+#: index.php:87 resources.php:79
+msgid "— Live —"
+msgstr "— Uživo —"
+
 #~ msgid "Websocket"
 #~ msgstr "Websocket"
 

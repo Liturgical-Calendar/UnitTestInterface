@@ -10,15 +10,26 @@ import {
     safeToastShow,
     updateText,
     slugify,
-    slugifySelector,
     escapeHtmlAttr
 } from './common.js';
+
+import {
+    applyResultToDom,
+    countByStatus,
+    createResultCollector,
+    nowIsoStamp,
+    postRunResults,
+    fetchRunSummaries,
+    fetchRunDetail,
+} from './testResults.js';
+
+const resultCollector = createResultCollector();
 
 /** @typedef {import('./types.js').SourceDataCheckMessage} SourceDataCheckMessage */
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
 
 // Access global config from window (set by PHP in footer.php)
-const { WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV } = window.LitCalConfig;
+const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV } = window.LitCalConfig;
 
 /**
  * This class keeps track of the state of the page and the data it requires to run tests.
@@ -462,15 +473,8 @@ const connectWebSocket = () => {
         }
         console.log( responseData );
         if ( responseData.type === "success" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-success');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-check');
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('successfulCount', ++successfulTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
@@ -482,19 +486,8 @@ const connectWebSocket = () => {
             }
         }
         else if ( responseData.type === "error" ) {
-            document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
-                el.classList.remove('bg-info');
-                el.classList.add('bg-danger');
-                const questionIcon = el.querySelector('.fa-circle-question');
-                if (questionIcon) {
-                    questionIcon.classList.remove('fa-circle-question');
-                    questionIcon.classList.add('fa-circle-xmark');
-                }
-                const cardText = el.querySelector('.card-text');
-                if (cardText) {
-                    cardText.insertAdjacentHTML('beforeend', `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr( responseData.text )}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`);
-                }
-            });
+            applyResultToDom( responseData );
+            resultCollector.record( phaseForState(), responseData );
             updateText('failedCount', ++failedTests);
             switch( currentState ) {
                 case TestState.ExecutingResourceValidations:
@@ -659,6 +652,49 @@ const resetTestUI = () => {
 };
 
 /**
+ * Date formatting options for the past-runs dropdown labels.
+ * @type {Intl.DateTimeFormatOptions}
+ */
+const IntlDTOptions = {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC'
+};
+
+/**
+ * Renders the empty (bg-info) card scaffolding for both Resources phases.
+ * Used by the live setup and by replay so the same template code is shared.
+ * @param {{resourceDataChecks: string[], sourceDataChecks: Array<object>}} cfg
+ *   resourceDataChecks — array of resource key strings (keys of the resourcePaths map).
+ *   sourceDataChecks   — array of sourceDataCheck objects with validate/sourceFile/sourceFolder.
+ */
+const buildScaffolding = ( cfg ) => {
+    const resourceContainer = document.querySelector('#resourceDataTests .resourcedata-tests');
+    if ( resourceContainer ) {
+        resourceContainer.innerHTML = '';
+        cfg.resourceDataChecks.forEach( ( resourceKey, idx ) => {
+            resourceContainer.insertAdjacentHTML('beforeend', resourceTemplate( resourceKey, idx ));
+        } );
+    }
+    const sourceContainer = document.querySelector('#sourceDataTests .sourcedata-tests');
+    if ( sourceContainer ) {
+        sourceContainer.innerHTML = '';
+        cfg.sourceDataChecks.forEach( ( item, idx ) => {
+            sourceContainer.insertAdjacentHTML('beforeend', sourceTemplate( item, idx ));
+        } );
+    }
+    // Check-card totals shown in the Time badge parentheses (overall + per section).
+    // Computed here so both the live setup and stored-run replay paths populate them.
+    const totalResourceDataTestsCount = document.querySelectorAll('.resourcedata-tests .file-exists, .resourcedata-tests .json-valid, .resourcedata-tests .schema-valid').length;
+    const totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid').length;
+    updateText('totalResourceDataTestsCount', totalResourceDataTestsCount);
+    updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
+    updateText('total-tests-count', totalResourceDataTestsCount + totalSourceDataTestsCount);
+};
+
+/**
  * Sets up the page by populating the page with the resource data tests and setting the page status to ready.
  * The page status is set to ready after the page has finished loading and the resource data tests have been
  * populated.
@@ -670,10 +706,7 @@ const setupPage = () => {
             startTestRunnerBtnLbl = btnLblEl.textContent;
         }
     }
-    const resourcePathHtml = Object.keys(resourcePaths).map(resourceTemplate).join('');
-    document.querySelector('#resourceDataTests .resourcedata-tests').innerHTML = resourcePathHtml;
-    const sourcePathHtml = sourceDataChecks.map(sourceTemplate).join('');
-    document.querySelector('#sourceDataTests .sourcedata-tests').innerHTML = sourcePathHtml;
+    buildScaffolding({ resourceDataChecks: Object.keys(resourcePaths), sourceDataChecks });
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
     connectWebSocket();
@@ -821,19 +854,13 @@ const loadAsyncData = () => {
 
                 ReadyToRunTests.MetaDataReady = true;
                 console.log( 'Metadata is ready' );
-                if(Missals !== null) {
-                    console.log('Missals was set first, proceeding to setup page...');
-                    setupPage();
-                }
             }
             else if(data.hasOwnProperty('litcal_missals')) {
                 Missals = data.litcal_missals;
-                resourcePaths[`missals-path`] = `/missals`;
-                resourceDataChecks.push({
-                    "validate": "missals-path",
-                    "sourceFile": ENDPOINTS.MISSALS,
-                    "category": "resourceDataCheck"
-                });
+                // NOTE: no push for the top-level 'missals-path' check here — it is already
+                // in the static resourceDataChecks array (and in resourcePaths). Pushing it
+                // again sent the validation twice and inflated the success counter (162)
+                // past the rendered-card total (159).
                 Missals.forEach(missal => {
                     resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
                     resourceDataChecks.push({
@@ -856,10 +883,6 @@ const loadAsyncData = () => {
                 });
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
-                if(MetaData !== null) {
-                    console.log('MetaData was set first, proceeding to setup page...');
-                    setupPage();
-                }
             }
             else if(data.hasOwnProperty('litcal_tests')) {
                 data.litcal_tests.forEach(test => {
@@ -872,6 +895,12 @@ const loadAsyncData = () => {
                 ReadyToRunTests.TestsReady = true;
             }
         });
+        // Render once, after ALL datasets in this Promise.all pass have been processed.
+        // Rendering from inside the metadata/missals branches (gated on each other) fired
+        // mid-loop, before the tests dataset was processed — its per-test source checks
+        // were pushed into sourceDataChecks but never rendered, and the Time badge totals
+        // under-counted until something re-ran setupPage().
+        setupPage();
     });
 }
 
@@ -950,6 +979,12 @@ const runTests = () => {
                 spinIcon.classList.add('fa-stop');
             }
             setTestRunnerBtnLblTxt('Tests Complete');
+            postRunResults( buildResourcesPayload() )
+                .then( () => safeToastShow('#results-saved') )
+                .catch( ( err ) => {
+                    console.error( 'Failed to persist run results', err );
+                    safeToastShow('#results-save-failed');
+                });
             break;
         }
     }
@@ -996,6 +1031,63 @@ const MsToTimeString = ( ms ) => {
     return timeString.join( ', ' );
 }
 
+/**
+ * Maps the current Resources TestState to the persisted phase key.
+ * @returns {('apiPath'|'sourceData'|null)}
+ */
+const phaseForState = () => {
+    switch ( currentState ) {
+        case TestState.ExecutingResourceValidations: return 'apiPath';
+        case TestState.ExecutingSourceValidations: return 'sourceData';
+        default: return null;
+    }
+};
+
+/**
+ * Reads a completed performance measure's duration by name, or 0 if absent.
+ * @param {string} name
+ * @returns {number}
+ */
+const measureDuration = ( name ) => {
+    const entries = performance.getEntriesByName( name );
+    return entries.length ? Math.round( entries[ entries.length - 1 ].duration ) : 0;
+};
+
+/**
+ * Assembles the self-contained Resources run payload from collected results.
+ * @returns {object}
+ */
+const buildResourcesPayload = () => {
+    const all = resultCollector.all();
+    const toDescriptor = ( r ) => ({
+        id: r.selector,
+        selector: r.selector,
+        status: r.status,
+        message: r.message,
+        test: r.test,
+    });
+    const byPhase = ( phase ) => all.filter( ( r ) => r.phase === phase ).map( toDescriptor );
+    return {
+        schemaVersion: 1,
+        timestamp: nowIsoStamp(),
+        runType: 'resources',
+        calendar: null,
+        responseType: null,
+        duration: measureDuration( 'litcalTestRunner' ),
+        counts: { successful: successfulTests, failed: failedTests },
+        timings: {
+            apiPath: measureDuration( 'litcalResourceDataTestRunner' ),
+            sourceData: measureDuration( 'litcalSourceDataTestRunner' ),
+        },
+        scaffold: {
+            resourceDataChecks: resourceDataChecks,
+            sourceDataChecks: sourceDataChecks,
+        },
+        apiPathResults: byPhase( 'apiPath' ),
+        sourceDataResults: byPhase( 'sourceData' ),
+    };
+};
+
 document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if (!conn) {
         console.warn('cannot run tests: websocket connection not initialized');
@@ -1004,6 +1096,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     if ( currentState === TestState.Ready || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         successfulTests = 0;
         failedTests = 0;
+        resultCollector.reset();
         successfulResourceDataTests = 0;
         failedResourceDataTests = 0;
         successfulSourceDataTests = 0;
@@ -1065,6 +1158,79 @@ document.querySelector('#APIResponseSelect')?.addEventListener('change', ( ev ) 
     setupPage();
     ReadyToRunTests.tryEnableBtn();
 });
+
+const pastRunsSelect = document.querySelector('#pastRunsSelect');
+
+/** Populate the past-runs dropdown from the server (resources runs only). */
+const loadPastRuns = async () => {
+    if ( !pastRunsSelect ) {
+        return;
+    }
+    try {
+        const summaries = await fetchRunSummaries( 'resources' );
+        for ( const r of summaries ) {
+            const opt = document.createElement('option');
+            opt.value = r.file;
+            const dt = new Intl.DateTimeFormat(locale, IntlDTOptions).format(new Date(r.timestamp));
+            opt.textContent = `${dt} · ✓${r.counts?.successful ?? 0} ✗${r.counts?.failed ?? 0}`;
+            pastRunsSelect.appendChild(opt);
+        }
+    } catch ( err ) {
+        console.error( 'Could not load past runs', err );
+    }
+};
+
+/**
+ * Replay a stored Resources run onto the dashboard (no WebSocket/API traffic).
+ * @param {string} file
+ */
+const replayResourcesRun = async ( file ) => {
+    const run = await fetchRunDetail( file );
+    buildScaffolding({
+        resourceDataChecks: run.scaffold.resourceDataChecks.map( ( d ) => d.validate ),
+        sourceDataChecks: run.scaffold.sourceDataChecks,
+    });
+    [ ...run.apiPathResults, ...run.sourceDataResults ].forEach( ( d ) => {
+        applyResultToDom({ type: d.status, classes: d.selector, text: d.message });
+    } );
+    updateText('successfulCount', run.counts.successful);
+    updateText('failedCount', run.counts.failed);
+    // Per-phase Successful/Failed badges, derived from the stored descriptors
+    const apiPathCounts = countByStatus( run.apiPathResults );
+    const sourceDataCounts = countByStatus( run.sourceDataResults );
+    updateText('successfulResourceDataTestsCount', apiPathCounts.successful);
+    updateText('failedResourceDataTestsCount', apiPathCounts.failed);
+    updateText('successfulSourceDataTestsCount', sourceDataCounts.successful);
+    updateText('failedSourceDataTestsCount', sourceDataCounts.failed);
+    updateText('total-time', MsToTimeString( run.duration ));
+    updateText('totalResourceDataTestsTime', MsToTimeString( run.timings.apiPath ));
+    updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
+};
+
+if ( pastRunsSelect ) {
+    pastRunsSelect.addEventListener('change', ( e ) => {
+        const startBtn = document.querySelector('#startTestRunnerBtn');
+        if ( e.target.value === '' ) {
+            if ( startBtn ) {
+                startBtn.disabled = false;
+            }
+            // replayResourcesRun() does not mutate module vars, so no state resync is
+            // needed, but the scaffold is stale (built from replay data). Rebuild it
+            // from the live consts (resourcePaths / sourceDataChecks) before resetting UI.
+            setupPage();
+            resetTestUI();
+            return;
+        }
+        if ( startBtn ) {
+            startBtn.disabled = true;
+        }
+        replayResourcesRun( e.target.value ).catch( ( err ) => {
+            console.error( 'Replay failed', err );
+            safeToastShow('#results-load-failed');
+        });
+    });
+    loadPastRuns();
+}
 
 // Store tooltips so we can hide them later
 const tooltipMap = new Map();
