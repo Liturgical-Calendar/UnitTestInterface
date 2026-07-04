@@ -854,10 +854,6 @@ const loadAsyncData = () => {
 
                 ReadyToRunTests.MetaDataReady = true;
                 console.log( 'Metadata is ready' );
-                if(Missals !== null) {
-                    console.log('Missals was set first, proceeding to setup page...');
-                    setupPage();
-                }
             }
             else if(data.hasOwnProperty('litcal_missals')) {
                 Missals = data.litcal_missals;
@@ -889,10 +885,6 @@ const loadAsyncData = () => {
                 });
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
-                if(MetaData !== null) {
-                    console.log('MetaData was set first, proceeding to setup page...');
-                    setupPage();
-                }
             }
             else if(data.hasOwnProperty('litcal_tests')) {
                 data.litcal_tests.forEach(test => {
@@ -905,6 +897,12 @@ const loadAsyncData = () => {
                 ReadyToRunTests.TestsReady = true;
             }
         });
+        // Render once, after ALL datasets in this Promise.all pass have been processed.
+        // Rendering from inside the metadata/missals branches (gated on each other) fired
+        // mid-loop, before the tests dataset was processed — its per-test source checks
+        // were pushed into sourceDataChecks but never rendered, and the Time badge totals
+        // under-counted until something re-ran setupPage().
+        setupPage();
     });
 }
 
