@@ -382,19 +382,23 @@ msgstr "Vytvoriť test"
 
 #: index.php:48 resources.php:48
 msgid "Run results saved."
-msgstr ""
+msgstr "Výsledky spustenia boli uložené."
 
 #: index.php:56 resources.php:56
 msgid "Could not save run results."
-msgstr ""
+msgstr "Nepodarilo sa uložiť výsledky spustenia."
+
+#: index.php:64 resources.php:64
+msgid "Could not load run results."
+msgstr "Nepodarilo sa načítať výsledky spustenia."
 
 #: index.php:85 resources.php:77
 msgid "Past Runs"
-msgstr ""
+msgstr "Predchádzajúce spustenia"
 
 #: index.php:87 resources.php:79
 msgid "— Live —"
-msgstr ""
+msgstr "— Naživo —"
 
 #~ msgid "Websocket"
 #~ msgstr "Websocket"

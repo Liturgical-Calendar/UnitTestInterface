@@ -385,19 +385,23 @@ msgstr "Crea test"
 
 #: index.php:48 resources.php:48
 msgid "Run results saved."
-msgstr ""
+msgstr "Risultati dell'esecuzione salvati."
 
 #: index.php:56 resources.php:56
 msgid "Could not save run results."
-msgstr ""
+msgstr "Impossibile salvare i risultati dell'esecuzione."
+
+#: index.php:64 resources.php:64
+msgid "Could not load run results."
+msgstr "Impossibile caricare i risultati dell'esecuzione."
 
 #: index.php:85 resources.php:77
 msgid "Past Runs"
-msgstr ""
+msgstr "Esecuzioni precedenti"
 
 #: index.php:87 resources.php:79
 msgid "— Live —"
-msgstr ""
+msgstr "— Live —"
 
 #~ msgid "Websocket"
 #~ msgstr "Websocket"

@@ -1226,7 +1226,7 @@ if ( pastRunsSelect ) {
         }
         replayResourcesRun( e.target.value ).catch( ( err ) => {
             console.error( 'Replay failed', err );
-            safeToastShow('#results-save-failed');
+            safeToastShow('#results-load-failed');
         });
     });
     loadPastRuns();

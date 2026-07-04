@@ -11,7 +11,12 @@ test('fresh Resources page renders source checks for all async datasets', async 
     const res = await request.get(`${apiBase}/tests`);
     const { litcal_tests } = await res.json();
     expect(litcal_tests.length).toBeGreaterThan(0);
-    const testSlug = `tests-${litcal_tests[0].name}`.toLowerCase();
+    // Mirror common.js slugify(): lowercase, whitespace → '-', strip other punctuation —
+    // sourceTemplate() derives the card class via slugify(validate).
+    const testSlug = `tests-${litcal_tests[0].name}`
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-_]/g, '');
 
     await page.goto('/resources.php');
     // The run button enables only once ALL async datasets (metadata, missals, tests)
