@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-04 21:18+0000\n"
+"POT-Creation-Date: 2026-07-04 21:58+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,91 +16,6 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-#: index.php:15
-msgid ""
-"There was an error opening the connection to the server over the websocket. "
-"Perhaps the server is offline?"
-msgstr ""
-
-#: index.php:24
-msgid "WebSocket connected successfully!"
-msgstr ""
-
-#: index.php:32
-msgid "WebSocket connection closed."
-msgstr ""
-
-#: index.php:40
-msgid "All tests complete!"
-msgstr ""
-
-#: index.php:48
-msgid "Run results saved."
-msgstr ""
-
-#: index.php:56
-msgid "Could not save run results."
-msgstr ""
-
-#: index.php:64
-msgid "Could not load run results."
-msgstr ""
-
-#: index.php:78
-msgid "Liturgical Calendar"
-msgstr ""
-
-#: index.php:80
-msgid "General Roman"
-msgstr ""
-
-#: index.php:84
-msgid "Response Format"
-msgstr ""
-
-#: index.php:93
-msgid "Past Runs"
-msgstr ""
-
-#: index.php:95
-msgid "— Live —"
-msgstr ""
-
-#: index.php:102
-msgid "Run Tests"
-msgstr ""
-
-#: index.php:108 index.php:132 index.php:168 index.php:198
-msgid "Successful:"
-msgstr ""
-
-#: index.php:111 index.php:135 index.php:171 index.php:201
-msgid "Failed:"
-msgstr ""
-
-#: index.php:115 index.php:139 index.php:175 index.php:205
-#, php-format
-msgid "Time (%s):"
-msgstr ""
-
-#: index.php:128
-msgid "VALIDATE SOURCE DATA"
-msgstr ""
-
-#. translators: %s: <span class="yearMax"></span>
-#: index.php:160
-#, php-format
-msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
-msgstr ""
-
-#: index.php:193
-msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
-msgstr ""
-
-#: index.php:226
-msgid "Loading…"
-msgstr ""
 
 #: admin.php:154
 msgid "Define a Liturgical Accuracy Test"
@@ -219,54 +134,6 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: layout/topnavbar.php:9
-msgid "Toggle sidebar"
-msgstr ""
-
-#: layout/topnavbar.php:23
-msgid "Calendars"
-msgstr ""
-
-#: layout/topnavbar.php:28
-msgid "Resources"
-msgstr ""
-
-#: layout/topnavbar.php:34
-msgid "API Version"
-msgstr ""
-
-#: layout/topnavbar.php:51 layout/topnavbar.php:52
-msgid "LitCal Project"
-msgstr ""
-
-#: layout/topnavbar.php:66
-msgid "WebSocket connection status"
-msgstr ""
-
-#: layout/topnavbar.php:99 layout/topnavbar.php:107
-msgid "Admin"
-msgstr ""
-
-#: layout/topnavbar.php:106 layout/sidebar.php:23
-msgid "Accuracy Tests Admin"
-msgstr ""
-
-#: layout/topnavbar.php:111 layout/topnavbar.php:112
-msgid "Login"
-msgstr ""
-
-#: layout/topnavbar.php:120 layout/topnavbar.php:121
-msgid "Logout"
-msgstr ""
-
-#: layout/sidebar.php:13
-msgid "Catholic Liturgical Calendar"
-msgstr ""
-
-#: layout/sidebar.php:19
-msgid "Accuracy Tests Runner"
-msgstr ""
-
 #: components/NewTestModal.php:6
 msgid "Exact Correspondence Test"
 msgstr ""
@@ -356,4 +223,219 @@ msgstr ""
 
 #: components/NewTestModal.php:127
 msgid "Create test"
+msgstr ""
+
+#: components/login-modal.php:6
+msgid "Session Expiring"
+msgstr ""
+
+#: components/login-modal.php:12 layout/topnavbar.php:120
+#: layout/topnavbar.php:121
+msgid "Logout"
+msgstr ""
+
+#: components/login-modal.php:15
+msgid "Extend Session"
+msgstr ""
+
+#: components/login-modal.php:27
+msgid "Administrator Login"
+msgstr ""
+
+#: components/login-modal.php:33
+msgid "Username"
+msgstr ""
+
+#: components/login-modal.php:37
+msgid "Password"
+msgstr ""
+
+#: components/login-modal.php:40 components/login-modal.php:193
+msgid "Show password"
+msgstr ""
+
+#: components/login-modal.php:47
+msgid "Remember me"
+msgstr ""
+
+#: components/login-modal.php:55
+msgid "Cancel"
+msgstr ""
+
+#: components/login-modal.php:56 components/login-modal.php:340
+#: layout/topnavbar.php:111 layout/topnavbar.php:112
+msgid "Login"
+msgstr ""
+
+#: components/login-modal.php:70 layout/topnavbar.php:99
+#: layout/topnavbar.php:107
+msgid "Admin"
+msgstr ""
+
+#: components/login-modal.php:114
+msgid "Unable to verify authentication status. The server may be unavailable."
+msgstr ""
+
+#: components/login-modal.php:137 components/login-modal.php:565
+msgid "Are you sure you want to logout?"
+msgstr ""
+
+#: components/login-modal.php:188
+msgid "Hide password"
+msgstr ""
+
+#: components/login-modal.php:295
+msgid "Please enter both username and password"
+msgstr ""
+
+#: components/login-modal.php:303
+msgid "Logging in…"
+msgstr ""
+
+#: components/login-modal.php:335
+msgid "Login failed. Please check your credentials."
+msgstr ""
+
+#: components/login-modal.php:451
+msgid "Your session will expire in less than {minutes} minute(s)."
+msgstr ""
+
+#: components/login-modal.php:506
+msgid "Extending..."
+msgstr ""
+
+#: components/login-modal.php:532
+msgid "Failed to extend session. Please login again."
+msgstr ""
+
+#: index.php:15 resources.php:15
+msgid ""
+"There was an error opening the connection to the server over the websocket. "
+"Perhaps the server is offline?"
+msgstr ""
+
+#: index.php:24 resources.php:24
+msgid "WebSocket connected successfully!"
+msgstr ""
+
+#: index.php:32 resources.php:32
+msgid "WebSocket connection closed."
+msgstr ""
+
+#: index.php:40 resources.php:40
+msgid "All tests complete!"
+msgstr ""
+
+#: index.php:48 resources.php:48
+msgid "Run results saved."
+msgstr ""
+
+#: index.php:56 resources.php:56
+msgid "Could not save run results."
+msgstr ""
+
+#: index.php:64 resources.php:64
+msgid "Could not load run results."
+msgstr ""
+
+#: index.php:78
+msgid "Liturgical Calendar"
+msgstr ""
+
+#: index.php:80
+msgid "General Roman"
+msgstr ""
+
+#: index.php:84 resources.php:78
+msgid "Response Format"
+msgstr ""
+
+#: index.php:93 resources.php:85
+msgid "Past Runs"
+msgstr ""
+
+#: index.php:95 resources.php:87
+msgid "— Live —"
+msgstr ""
+
+#: index.php:102 resources.php:94
+msgid "Run Tests"
+msgstr ""
+
+#: index.php:108 index.php:132 index.php:168 index.php:198 resources.php:100
+#: resources.php:126 resources.php:154
+msgid "Successful:"
+msgstr ""
+
+#: index.php:111 index.php:135 index.php:171 index.php:201 resources.php:103
+#: resources.php:129 resources.php:157
+msgid "Failed:"
+msgstr ""
+
+#: index.php:115 index.php:139 index.php:175 index.php:205 resources.php:107
+#: resources.php:133 resources.php:161
+#, php-format
+msgid "Time (%s):"
+msgstr ""
+
+#: index.php:128
+msgid "VALIDATE SOURCE DATA"
+msgstr ""
+
+#. translators: %s: <span class="yearMax"></span>
+#: index.php:160
+#, php-format
+msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+msgstr ""
+
+#: index.php:193
+msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
+msgstr ""
+
+#: index.php:226 resources.php:181
+msgid "Loading…"
+msgstr ""
+
+#: layout/sidebar.php:13
+msgid "Catholic Liturgical Calendar"
+msgstr ""
+
+#: layout/sidebar.php:19
+msgid "Accuracy Tests Runner"
+msgstr ""
+
+#: layout/sidebar.php:23 layout/topnavbar.php:106
+msgid "Accuracy Tests Admin"
+msgstr ""
+
+#: layout/topnavbar.php:9
+msgid "Toggle sidebar"
+msgstr ""
+
+#: layout/topnavbar.php:23
+msgid "Calendars"
+msgstr ""
+
+#: layout/topnavbar.php:28
+msgid "Resources"
+msgstr ""
+
+#: layout/topnavbar.php:34
+msgid "API Version"
+msgstr ""
+
+#: layout/topnavbar.php:51 layout/topnavbar.php:52
+msgid "LitCal Project"
+msgstr ""
+
+#: layout/topnavbar.php:66
+msgid "WebSocket connection status"
+msgstr ""
+
+#: resources.php:121
+msgid "API Paths"
+msgstr ""
+
+#: resources.php:150
+msgid "Source data"
 msgstr ""
