@@ -685,6 +685,9 @@ const buildScaffolding = ( cfg ) => {
             sourceContainer.insertAdjacentHTML('beforeend', sourceTemplate( item, idx ));
         } );
     }
+    // Total check-card count shown in the Time badge parentheses. Computed here so
+    // both the live setup and stored-run replay paths populate it.
+    updateText('total-tests-count', document.querySelectorAll('.resourcedata-tests .file-exists, .resourcedata-tests .json-valid, .resourcedata-tests .schema-valid, .sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid').length);
 };
 
 /**
