@@ -34,7 +34,9 @@
                         <i class="fas fa-code-branch me-1"></i><span class="d-lg-none d-xl-inline"><?php echo _("API Version"); ?></span>
                     </span>
                     <span class="badge bg-secondary" id="apiVersionBadge"><?php
-                        $navApiBasePath = $_ENV['API_BASE_PATH'] ?? '/api/dev';
+                        // Treat an empty API_BASE_PATH (root-mounted local API) the same as unset:
+                        // fall back to '/api/dev' so the badge never renders empty.
+                        $navApiBasePath = ( isset($_ENV['API_BASE_PATH']) && $_ENV['API_BASE_PATH'] !== '' ) ? $_ENV['API_BASE_PATH'] : '/api/dev';
                         $navTrimmedPath = trim($navApiBasePath, '/');
                         $navApiVersion = preg_match('#^api/(.+)$#', $navTrimmedPath, $m) ? $m[1] : $navTrimmedPath;
                         echo htmlspecialchars($navApiVersion);
