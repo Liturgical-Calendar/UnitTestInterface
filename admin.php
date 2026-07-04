@@ -5,6 +5,7 @@ ini_set('date.timezone', 'Europe/Vatican');
 
 require_once 'vendor/autoload.php';
 
+use LiturgicalCalendar\Components\ApiClient as ComponentsApiClient;
 use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
 use LiturgicalCalendar\UnitTestInterface\ApiClient;
@@ -97,6 +98,14 @@ $internalBaseUrl = ( isset($_ENV['API_INTERNAL_URL']) && $_ENV['API_INTERNAL_URL
     ? rtrim($_ENV['API_INTERNAL_URL'], '/')
     : $baseUrl;
 
+// Bootstrap the components library's ApiClient singleton with the server-side API URL
+// BEFORE any component (CalendarSelect) is constructed. Without this, the library
+// auto-initializes its MetadataProvider against the public production API
+// (litcal.johnromanodorazio.com) — the CalendarSelect 'url' option does not exist in v3,
+// so metadata was silently fetched from the public host, hanging the page whenever that
+// host is unreachable.
+ComponentsApiClient::getInstance(['apiUrl' => $internalBaseUrl, 'logger' => $logger]);
+
 // Create PSR-compliant HTTP client
 $apiClient = new ApiClient(null, 10, 5, $logger);
 
@@ -166,7 +175,9 @@ include_once 'layout/sidebar.php';
                 <div class="row justify-content-center align-items-start">
                     <div class="form-group col col-md-3 border border-top-0 border-bottom-0 border-end-0 border-secondary">
                         <?php
-                            $options = ['locale' => $i18n->locale, 'url' => $internalBaseUrl];
+                            // NOTE: metadata URL comes from the ComponentsApiClient singleton
+                            // bootstrapped above — CalendarSelect v3 has no 'url' option.
+                            $options = ['locale' => $i18n->locale];
                             $CalendarSelect = new CalendarSelect($options)
                                                     ->class('form-select')
                                                     ->id('APICalendarSelect')
