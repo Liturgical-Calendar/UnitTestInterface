@@ -64,6 +64,9 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
     // Time badge total: (1 resource check + 1 source check) × 3 cards each = 6.
     // Populated by buildScaffolding, so live runs and replay both get it.
     await expect(page.locator('#total-tests-count')).toHaveText('6');
+    // Per-section Time badge totals: 3 cards per seeded check in each section
+    await expect(page.locator('#totalResourceDataTestsCount')).toHaveText('3');
+    await expect(page.locator('#totalSourceDataTestsCount')).toHaveText('3');
     // The resource-data file-exists card for calendars-path must be green (bg-success)
     await expect(page.locator('.calendars-path.file-exists')).toHaveClass(/bg-success/);
     await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();

@@ -685,9 +685,13 @@ const buildScaffolding = ( cfg ) => {
             sourceContainer.insertAdjacentHTML('beforeend', sourceTemplate( item, idx ));
         } );
     }
-    // Total check-card count shown in the Time badge parentheses. Computed here so
-    // both the live setup and stored-run replay paths populate it.
-    updateText('total-tests-count', document.querySelectorAll('.resourcedata-tests .file-exists, .resourcedata-tests .json-valid, .resourcedata-tests .schema-valid, .sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid').length);
+    // Check-card totals shown in the Time badge parentheses (overall + per section).
+    // Computed here so both the live setup and stored-run replay paths populate them.
+    const totalResourceDataTestsCount = document.querySelectorAll('.resourcedata-tests .file-exists, .resourcedata-tests .json-valid, .resourcedata-tests .schema-valid').length;
+    const totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid').length;
+    updateText('totalResourceDataTestsCount', totalResourceDataTestsCount);
+    updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
+    updateText('total-tests-count', totalResourceDataTestsCount + totalSourceDataTestsCount);
 };
 
 /**
