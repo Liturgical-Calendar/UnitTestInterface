@@ -89,6 +89,13 @@ if ($apiVersion === '') {
     $apiVersion = 'dev';
 }
 $baseUrl    = $isLocalhost ? "$schema://$host:$port" : "$schema://$host/api/$apiVersion";
+// Server-side (PHP -> API) requests may need a different URL than the browser-facing
+// $baseUrl: in the docker stack the API is reachable from this container only via the
+// docker network (http://litcal-api:8000), while the browser reaches it via the
+// host-published port. Mirrors the API_INTERNAL_URL pattern used by LiturgicalCalendarFrontend.
+$internalBaseUrl = ( isset($_ENV['API_INTERNAL_URL']) && $_ENV['API_INTERNAL_URL'] !== '' )
+    ? rtrim($_ENV['API_INTERNAL_URL'], '/')
+    : $baseUrl;
 
 // Create PSR-compliant HTTP client
 $apiClient = new ApiClient(null, 10, 5, $logger);
@@ -100,7 +107,7 @@ $i18n = new I18n();
 
 // Fetch tests data from API
 try {
-    $testsData   = $apiClient->fetchJsonWithKey("$baseUrl/tests", 'litcal_tests');
+    $testsData   = $apiClient->fetchJsonWithKey("$internalBaseUrl/tests", 'litcal_tests');
     $LitCalTests = $testsData['litcal_tests'];
 } catch (RuntimeException $e) {
     $logger->error('Failed to fetch tests data', ['error' => $e->getMessage()]);
@@ -111,7 +118,7 @@ try {
 }
 
 // Fetch events data from API with locale (before HTML output for consistent error pages)
-$eventsEndpoint = "$baseUrl/events";
+$eventsEndpoint = "$internalBaseUrl/events";
 $apiClient->setLocale($i18n->locale);
 try {
     $eventsData = $apiClient->fetchJsonWithKey($eventsEndpoint, 'litcal_events');
@@ -159,7 +166,7 @@ include_once 'layout/sidebar.php';
                 <div class="row justify-content-center align-items-start">
                     <div class="form-group col col-md-3 border border-top-0 border-bottom-0 border-end-0 border-secondary">
                         <?php
-                            $options = ['locale' => $i18n->locale, 'url' => $baseUrl];
+                            $options = ['locale' => $i18n->locale, 'url' => $internalBaseUrl];
                             $CalendarSelect = new CalendarSelect($options)
                                                     ->class('form-select')
                                                     ->id('APICalendarSelect')
