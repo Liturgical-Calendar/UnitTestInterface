@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-15 16:19+0000\n"
+"POT-Creation-Date: 2026-07-04 21:17+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,58 +35,78 @@ msgstr ""
 msgid "All tests complete!"
 msgstr ""
 
-#: index.php:54
-msgid "Liturgical Calendar"
+#: index.php:48
+msgid "Run results saved."
 msgstr ""
 
 #: index.php:56
+msgid "Could not save run results."
+msgstr ""
+
+#: index.php:64
+msgid "Could not load run results."
+msgstr ""
+
+#: index.php:78
+msgid "Liturgical Calendar"
+msgstr ""
+
+#: index.php:80
 msgid "General Roman"
 msgstr ""
 
-#: index.php:60
+#: index.php:84
 msgid "Response Format"
 msgstr ""
 
-#: index.php:72
+#: index.php:93
+msgid "Past Runs"
+msgstr ""
+
+#: index.php:95
+msgid "— Live —"
+msgstr ""
+
+#: index.php:102
 msgid "Run Tests"
 msgstr ""
 
-#: index.php:78 index.php:102 index.php:138 index.php:168
+#: index.php:108 index.php:132 index.php:168 index.php:198
 msgid "Successful:"
 msgstr ""
 
-#: index.php:81 index.php:105 index.php:141 index.php:171
+#: index.php:111 index.php:135 index.php:171 index.php:201
 msgid "Failed:"
 msgstr ""
 
-#: index.php:85 index.php:109 index.php:145 index.php:175
+#: index.php:115 index.php:139 index.php:175 index.php:205
 #, php-format
 msgid "Time (%s):"
 msgstr ""
 
-#: index.php:98
+#: index.php:128
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
 #. translators: %s: <span class="yearMax"></span>
-#: index.php:130
+#: index.php:160
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr ""
 
-#: index.php:163
+#: index.php:193
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:196
+#: index.php:226
 msgid "Loading…"
 msgstr ""
 
-#: admin.php:138
+#: admin.php:154
 msgid "Define a Liturgical Accuracy Test"
 msgstr ""
 
-#: admin.php:140
+#: admin.php:156
 msgid ""
 "In order to verify that the liturgical calendar data produced by the API is "
 "accurate, we can create Liturgical Accuracy Tests that allow us to verify "
@@ -94,34 +114,34 @@ msgid ""
 "expected dates from year to year."
 msgstr ""
 
-#: admin.php:145
+#: admin.php:161
 msgid "Edit an existing test"
 msgstr ""
 
-#: admin.php:158
+#: admin.php:174
 msgid "Create a New Test"
 msgstr ""
 
-#: admin.php:167
+#: admin.php:185
 msgid "Calendar to test"
 msgstr ""
 
-#: admin.php:175
+#: admin.php:193
 msgid "Test Type"
 msgstr ""
 
-#: admin.php:180
+#: admin.php:198
 msgid ""
 "In the span of years for which we are making an assertion, we assert that "
 "the liturgical event should exist, and should fall on an expected date (date "
 "can optionally be defined differently for each given year)"
 msgstr ""
 
-#: admin.php:182
+#: admin.php:200
 msgid "Exact date"
 msgstr ""
 
-#: admin.php:187
+#: admin.php:205
 msgid ""
 "When a liturgical event should only exist after a certain year, we assert "
 "that for a certain span of years before such year the liturgical event "
@@ -130,11 +150,11 @@ msgid ""
 "optionally be defined differently for each given year)."
 msgstr ""
 
-#: admin.php:189
+#: admin.php:207
 msgid "Exact date since year"
 msgstr ""
 
-#: admin.php:194
+#: admin.php:212
 msgid ""
 "When a liturgical event should no longer exist after a certain year, we "
 "assert that for a certain span of years before such year the liturgical "
@@ -143,11 +163,11 @@ msgid ""
 "such year the liturgical event should not exist."
 msgstr ""
 
-#: admin.php:196
+#: admin.php:214
 msgid "Exact date until year"
 msgstr ""
 
-#: admin.php:201
+#: admin.php:219
 msgid ""
 "When a liturgical event is expected to be overridden in various years for "
 "whatever reason, we assert that it should exist in certain given years on an "
@@ -155,47 +175,47 @@ msgid ""
 "year), and that it should not exist for other given years."
 msgstr ""
 
-#: admin.php:203
+#: admin.php:221
 msgid "Variable existence by year"
 msgstr ""
 
-#: admin.php:207
+#: admin.php:225
 msgid "Please login to create or edit tests."
 msgstr ""
 
-#: admin.php:219 admin.php:220
+#: admin.php:237 admin.php:238
 msgid "Name of Test"
 msgstr ""
 
-#: admin.php:229 components/NewTestModal.php:30
+#: admin.php:247 components/NewTestModal.php:30
 msgid "Description"
 msgstr ""
 
-#: admin.php:234
+#: admin.php:252
 msgid "Per year assertions"
 msgstr ""
 
-#: admin.php:245
+#: admin.php:263
 msgid "Login to view and edit test details."
 msgstr ""
 
-#: admin.php:249
+#: admin.php:267
 msgid "Save Accuracy Test"
 msgstr ""
 
-#: admin.php:266
+#: admin.php:284
 msgid "Add or Edit Comment"
 msgstr ""
 
-#: admin.php:271
+#: admin.php:289
 msgid "Comment"
 msgstr ""
 
-#: admin.php:272
+#: admin.php:290
 msgid "This test is significant because…"
 msgstr ""
 
-#: admin.php:276
+#: admin.php:294
 msgid "Save"
 msgstr ""
 
@@ -336,24 +356,4 @@ msgstr ""
 
 #: components/NewTestModal.php:127
 msgid "Create test"
-msgstr ""
-
-#: index.php:48 resources.php:48
-msgid "Run results saved."
-msgstr ""
-
-#: index.php:56 resources.php:56
-msgid "Could not save run results."
-msgstr ""
-
-#: index.php:64 resources.php:64
-msgid "Could not load run results."
-msgstr ""
-
-#: index.php:85 resources.php:77
-msgid "Past Runs"
-msgstr ""
-
-#: index.php:87 resources.php:79
-msgid "— Live —"
 msgstr ""
