@@ -246,7 +246,7 @@ const sanitizeOnSetValue = {
                 value = (target['event_key']) + 'Test';
                 break;
             case 'test_type':
-                if( false === [TestType.ExactCorrespondence, TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil, TestType.VariableCorrespondence ].includes( value ) ) {
+                if( false === [TestType.ExactCorrespondence, TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil ].includes( value ) ) {
                     console.warn(`property ${prop} of this object must have a valid TestType value`);
                     return;
                 }
@@ -920,8 +920,7 @@ let isotopeYearsToTestGrid = null;
 const modalLabel = {
     exactCorrespondence: 'Exact Date Correspondence Test',
     exactCorrespondenceSince: 'Exact Date Correspondence Since Year Test',
-    exactCorrespondenceUntil: 'Exact Date Correspondence Until Year Test',
-    variableCorrespondence: 'Variable Existence Test'
+    exactCorrespondenceUntil: 'Exact Date Correspondence Until Year Test'
 }
 
 const ArrayRange = (start, end, endInclusive) => Array.from({length: (end - start)+endInclusive}, (v, k) => k + start);
@@ -944,7 +943,7 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
     }
     document.querySelector('#yearsToTestGrid').innerHTML = '';
     const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
-    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
+    const hammerIcon = '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
     let htmlStr = '';
     let years;
     let minYear = 1970;
@@ -1016,8 +1015,8 @@ document.querySelector('#modalDefineTest').addEventListener('show.bs.modal', ev 
                 document.querySelector('#yearSinceUntilShadow').value = pivotYear;
             }
         }
-        // Apply visual indication for Variable Existence tests
-        if (currentTestType === TestType.VariableCorrespondence && proxiedTest.assertions) {
+        // Apply visual indication for the years marked as non-existing in an Exact Correspondence test
+        if (currentTestType === TestType.ExactCorrespondence && proxiedTest.assertions) {
             proxiedTest.assertions.forEach(assertion => {
                 if (assertion.assert === AssertType.EventNotExists) {
                     const yearSpan = document.querySelector(`#yearsToTestGrid .testYearSpan.year-${assertion.year}`);
@@ -1116,7 +1115,7 @@ document.addEventListener('change', ev => {
     isotopeYearsToTestGrid?.destroy();
     document.querySelector('#yearsToTestGrid').innerHTML = '';
     const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
-    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
+    const hammerIcon = '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
     const currentEventKey = document.querySelector('#existingLitEventName').value;
     const existingOption = document.querySelector(`#existingLitEventsList option[value="${escapeSelector(currentEventKey)}"]`);
     let htmlStr = '';
@@ -1164,7 +1163,7 @@ document.addEventListener('click', ev => {
 
     // Generate icons
     const removeIcon = '<i class="fas fa-circle-xmark ms-1 opacity-50" aria-hidden="true" role="button" title="remove"></i>';
-    const hammerIcon = currentTestType === TestType.ExactCorrespondence ? '' : '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
+    const hammerIcon = '<i class="fas fa-hammer me-1 opacity-50" aria-hidden="true" role="button" title="set year"></i>';
 
     // Reinstate the span
     deletedSpan.classList.remove('deleted');
@@ -1184,7 +1183,7 @@ document.addEventListener('click', ev => {
 
     const parentEl      = hammerIcon.parentElement;
     const grandParentEl = parentEl.parentElement;
-    const bgClass       = currentTestType === TestType.VariableCorrespondence ? 'bg-warning' : 'bg-info';
+    const bgClass       = currentTestType === TestType.ExactCorrespondence ? 'bg-warning' : 'bg-info';
     if ([TestType.ExactCorrespondenceSince, TestType.ExactCorrespondenceUntil].includes(currentTestType)) {
         grandParentEl.querySelectorAll('.testYearSpan').forEach(el => {
             el.classList.remove('bg-info', 'bg-warning');

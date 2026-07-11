@@ -12,8 +12,7 @@
 export const TestType = Object.freeze({
     ExactCorrespondence:        'exactCorrespondence',
     ExactCorrespondenceSince:   'exactCorrespondenceSince',
-    ExactCorrespondenceUntil:   'exactCorrespondenceUntil',
-    VariableCorrespondence:     'variableCorrespondence'
+    ExactCorrespondenceUntil:   'exactCorrespondenceUntil'
 });
 
 /**

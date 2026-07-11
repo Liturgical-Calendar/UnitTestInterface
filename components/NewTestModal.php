@@ -60,7 +60,7 @@
                                                         . 'by clicking on the hammer icon inside one of the years in the range.'
                                                     );
                                                     ?> </small>
-                                                <small class="variableCorrespondence d-none"> <?php
+                                                <small class="exactCorrespondence d-none"> <?php
                                                     echo _(
                                                         'Finally, set the years in which the liturgical event shouldn\'t exist '
                                                         . 'by clicking on the hammer icon inside the years in the range.'
@@ -89,9 +89,6 @@
                                     ?></div>
                                     <div class="invalid-feedback exactCorrespondenceUntil d-none"><?php
                                         echo _("Please set the year until which the liturgical event should exist.");
-                                    ?></div>
-                                    <div class="invalid-feedback variableCorrespondence d-none"><?php
-                                        echo _("Please set the years in which the liturgical event should not exist.");
                                     ?></div>
                                 </div>
                             </div>
