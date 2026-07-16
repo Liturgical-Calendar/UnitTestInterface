@@ -1,0 +1,76 @@
+# Patterns excluded from `rsync --delete` deploys.
+#
+# These patterns serve two purposes:
+#   1. Files matched here are NOT transferred from the runner.
+#   2. Files matched here are NOT removed on the destination by --delete.
+#
+# Anything that should live only on the server (env files, runtime
+# logs, server-managed state) MUST be listed here so it isn't wiped
+# on deploy.
+
+# --- VCS / CI / agent metadata ---
+.git/
+.github/
+.gitignore
+.dockerignore
+.serena/
+.serena.local.bak/
+.semgrep/
+.superpowers/
+.worktrees/
+.claude/
+
+# --- IDE / local tooling ---
+.vscode/
+.idea/
+.phpcs.cache
+
+# --- Tests, dev-only sources ---
+e2e/
+docs/
+playwright.config.ts
+playwright-report/
+test-results/
+
+# --- Build / dev configuration with no runtime role ---
+phpcs.xml
+.markdownlint.yml
+Dockerfile
+
+# --- Node / Bun (only used for E2E tests + markdown linting) ---
+node_modules/
+package.json
+bun.lock
+
+# --- Project meta files ---
+CLAUDE.md
+CODE_OF_CONDUCT.md
+README.md
+
+# --- TRACKED EXAMPLE FILE (transferred + overwritten every deploy) ---
+# The "+" prefix is an rsync include-override: this rule must precede the
+# matching ".env.*" exclude below for first-match-wins to honor it. We
+# intentionally DO want .env.example to ship and overwrite the server's
+# copy on every deploy so admins can diff it against .env.production to
+# spot new or deprecated environment variables.
++ .env.example
+
+# --- SERVER-MANAGED FILES (never transferred, never --delete) ---
+# .env / .env.production carry the live secrets; logs/ accumulates
+# runtime logs. Both stay untouched by rsync.
+.env
+.env.*
+/logs/*
+
+# --- RUNTIME TEST-RUN RESULTS (preserve server-side state) ---
+# results/*.json are stored test runs written by results.php at runtime.
+# Excludes contents only; the directory itself ships (it is tracked via
+# .gitkeep locally but .gitkeep matches this pattern, so the dir is also
+# created in a pre-rsync SSH-exec step).
+/results/*
+
+# --- DEPLOY RESTART SENTINEL (server-managed) ---
+# After rsync, the deploy drops tmp/restart.txt for a root-side php-fpm
+# reload watcher (see deploy.yaml). Exclude the contents so --delete never
+# races the sentinel; the dir is created pre-rsync.
+/tmp/*

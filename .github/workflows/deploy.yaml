@@ -1,0 +1,228 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Validate required environment configuration
+        env:
+          APP_PATH: ${{ vars.VPS_APP_PATH }}
+          APP_URL: ${{ vars.VPS_APP_URL }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          missing=0
+          if [ -z "${APP_PATH}" ]; then
+            echo "::error::Environment variable VPS_APP_PATH is not set for 'production'." >&2
+            missing=1
+          fi
+          if [ -z "${APP_URL}" ]; then
+            echo "::error::Environment variable VPS_APP_URL is not set for 'production'." >&2
+            missing=1
+          fi
+          if [ -z "${VPS_HOST}" ]; then
+            echo "::error::Secret VPS_HOST is not set for 'production'." >&2
+            missing=1
+          fi
+          if [ -z "${VPS_USER}" ]; then
+            echo "::error::Secret VPS_USERNAME is not set for 'production'." >&2
+            missing=1
+          fi
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "::error::Secret VPS_SSH_PRIVATE_KEY is not set for 'production'." >&2
+            missing=1
+          fi
+          if [ -z "${VPS_KNOWN_HOSTS}" ]; then
+            echo "::error::Secret VPS_SSH_KNOWN_HOSTS is not set for 'production'. Refusing to deploy without a pinned host key." >&2
+            missing=1
+          fi
+          [ "${missing}" -eq 0 ]
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: intl, json, gettext, curl, mbstring
+          tools: composer:v2
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts --no-plugins --prefer-dist
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KNOWN_HOSTS}" ]; then
+            echo "::error::Secret VPS_SSH_KNOWN_HOSTS is empty. Refusing to deploy without a pinned host key." >&2
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # The deploy target must already look like a UnitTestInterface checkout
+      # (resources.php is present in every deployed revision). This guards a
+      # misconfigured VPS_APP_PATH: a wrong path would otherwise rsync the app
+      # into a junk directory and "deploy" nothing. On failure, list the
+      # parent directory so the correct name can be read from the log.
+      - name: Verify deploy target
+        env:
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.VPS_APP_PATH }}
+        run: |
+          set -euo pipefail
+          q_marker=$(printf '%q' "${DEPLOY_PATH}/resources.php")
+          q_parent=$(printf '%q' "$(dirname "${DEPLOY_PATH}")")
+          remote_cmd="if [ -f ${q_marker} ]; then echo TARGET_OK; else echo TARGET_MISSING; ls -1 ${q_parent} 2>/dev/null || true; fi"
+          output=$(ssh -i ~/.ssh/deploy_key -p "${VPS_PORT}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=2 \
+            "${VPS_USER}@${VPS_HOST}" \
+            "${remote_cmd}")
+          if [ "$(printf '%s\n' "${output}" | head -n 1)" != "TARGET_OK" ]; then
+            echo "::error::${DEPLOY_PATH}/resources.php not found on the server. VPS_APP_PATH is probably wrong; candidates in $(dirname "${DEPLOY_PATH}"):" >&2
+            printf '%s\n' "${output}" | tail -n +2 >&2
+            exit 1
+          fi
+          echo "Deploy target verified: ${DEPLOY_PATH}"
+
+      - name: Ensure runtime dirs exist
+        env:
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.VPS_APP_PATH }}
+        run: |
+          set -euo pipefail
+          remote_cmd=$(printf 'mkdir -p %q %q %q' \
+            "${DEPLOY_PATH}/results" \
+            "${DEPLOY_PATH}/logs" \
+            "${DEPLOY_PATH}/tmp")
+          ssh -i ~/.ssh/deploy_key -p "${VPS_PORT}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=2 \
+            "${VPS_USER}@${VPS_HOST}" \
+            "${remote_cmd}"
+
+      - name: Deploy via rsync
+        env:
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.VPS_APP_PATH }}
+        run: |
+          set -euo pipefail
+          rsync \
+            --archive --no-owner --no-group \
+            --compress --human-readable --verbose \
+            --delete --protect-args \
+            --exclude-from=.github/deploy/rsync-exclude.txt \
+            -e "ssh -i ~/.ssh/deploy_key -p ${VPS_PORT} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=2" \
+            ./ "${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH%/}/"
+
+      # Best-effort php-fpm reload so freshly-deployed .mo translations take
+      # effect (php-fpm caches each .mo in the worker for its whole lifetime).
+      # Mirrors the frontend's Passenger-style sentinel hand-off: drop
+      # tmp/restart.txt and wait for a root-side systemd path-watcher to
+      # consume it. Unlike the frontend this is NON-FATAL, because a watcher
+      # unit for this vhost may not be configured on the VPS (yet): a missed
+      # reload only delays new translations, it does not break the deploy.
+      - name: Signal php-fpm reload (best effort)
+        env:
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.VPS_APP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh_opts=(
+            -i ~/.ssh/deploy_key
+            -p "${VPS_PORT}"
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile=~/.ssh/known_hosts
+            -o ConnectTimeout=10
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+          )
+          target="${VPS_USER}@${VPS_HOST}"
+          q_tmp=$(printf '%q' "${DEPLOY_PATH}/tmp")
+          q_sentinel=$(printf '%q' "${DEPLOY_PATH}/tmp/restart.txt")
+          ssh "${ssh_opts[@]}" "${target}" "set -e; mkdir -p ${q_tmp}; touch ${q_sentinel}"
+          reloaded=0
+          deadline=$(( $(date +%s) + 30 ))
+          while [ "$(date +%s)" -lt "${deadline}" ]; do
+            state=$(timeout 15 ssh "${ssh_opts[@]}" "${target}" "[ -e ${q_sentinel} ] && echo PRESENT || echo GONE") || { sleep 2; continue; }
+            if [ "${state}" = GONE ]; then
+              reloaded=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "${reloaded}" = 1 ]; then
+            echo "php-fpm reload sentinel consumed by the watcher; reload completed."
+          else
+            echo "::warning::php-fpm reload not confirmed: tmp/restart.txt was not consumed within ~30s. If no path-watcher unit exists for this vhost, new .mo translations apply only after the next natural php-fpm reload."
+          fi
+
+      # The homepage must respond, and the deployed resources.js must be
+      # byte-identical to the revision we just shipped — this catches a
+      # successful rsync to the wrong vhost (200 from stale code).
+      - name: Post-deploy health check
+        env:
+          APP_URL: ${{ vars.VPS_APP_URL }}
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --retry-delay 5 --max-time 15 \
+            "${APP_URL%/}/" -o /dev/null
+          deployed_sha=$(curl -fsS --retry 3 --retry-delay 5 --max-time 15 \
+            "${APP_URL%/}/assets/js/resources.js" | sha256sum | awk '{print $1}')
+          local_sha=$(sha256sum assets/js/resources.js | awk '{print $1}')
+          if [ "${deployed_sha}" != "${local_sha}" ]; then
+            echo "::error::Deployed assets/js/resources.js does not match the shipped revision (deployed ${deployed_sha}, expected ${local_sha})." >&2
+            exit 1
+          fi
+          echo "Health check passed: ${APP_URL} serves the deployed revision."
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
