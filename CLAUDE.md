@@ -54,11 +54,20 @@ UnitTestInterface/
 
 ## Development Setup
 
-```bash
-# Install dependencies
-composer install
+**Option 1 — full docker stack:** `docker compose up -d` in the LiturgicalCalendarFrontend repository runs the API,
+WebSocket server, PostgreSQL, auth services, and this test interface (`litcal-tests` service, port 3003).
+This repository is bind-mounted into the container, so local changes are picked up live.
 
-# Start development server
+**Option 2 — without docker:**
+
+```bash
+# In LiturgicalCalendarAPI: start PostgreSQL (required by the API), then API + WS server
+docker compose up -d db litcal-migrate
+composer start              # API on localhost:8000
+composer ws:start           # WebSocket server on localhost:8082
+
+# In this repository: install dependencies and start the dev server
+composer install
 php -S localhost:3003
 
 # VSCode: Use Ctrl+Shift+B and select "litcal-tests-webui"
@@ -75,6 +84,15 @@ php -S localhost:3003
 
 - LiturgicalCalendarAPI must be running (default: port 8000)
 - WebSocket server must be running (default: port 8082)
+- PostgreSQL must be reachable by the API (without it the API returns empty HTTP 200 responses)
+
+**WSL2 note (browser on Windows, non-docker setup):** set `WS_HOST=127.0.0.1` (not `localhost`) — Windows browsers
+resolve `localhost` to IPv6 `::1`, but WSL does not forward Windows-side IPv6 loopback into the VM (in either NAT or
+mirrored networking mode; only IPv4 loopback passes through), so the connection closes immediately (code 1006). HTTP
+falls back to IPv4, WebSockets do not. Binding the WS server to IPv6 inside WSL (`WS_HOST="[::]"` in the API's env)
+does not help — the Windows-to-WSL `::1` path itself is missing. Keep `API_HOST=localhost`: the WS server
+(`Health.php`) matches resource URLs against the API's configured host when resolving JSON schemas, so `127.0.0.1`
+there makes the base API path `schema-valid` checks fail. The docker stack is unaffected.
 
 ## Code Standards
 
