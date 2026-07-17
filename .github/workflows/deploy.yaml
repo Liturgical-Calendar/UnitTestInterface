@@ -159,14 +159,16 @@ jobs:
             -e "ssh -i ~/.ssh/deploy_key -p ${VPS_PORT} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=2" \
             ./ "${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH%/}/"
 
-      # Best-effort php-fpm reload so freshly-deployed .mo translations take
-      # effect (php-fpm caches each .mo in the worker for its whole lifetime).
-      # Mirrors the frontend's Passenger-style sentinel hand-off: drop
-      # tmp/restart.txt and wait for a root-side systemd path-watcher to
-      # consume it. Unlike the frontend this is NON-FATAL, because a watcher
-      # unit for this vhost may not be configured on the VPS (yet): a missed
-      # reload only delays new translations, it does not break the deploy.
-      - name: Signal php-fpm reload (best effort)
+      # php-fpm reload so freshly-deployed .mo translations take effect
+      # (php-fpm caches each .mo in the worker for its whole lifetime).
+      # Shares the frontend's Passenger-style sentinel hand-off: drop
+      # tmp/restart.txt and wait for the root-side systemd path-watcher
+      # (litcal-fpm-reload.path, see .github/deploy/systemd/README.md) to
+      # reload php-fpm and consume the sentinel. Touching the file only
+      # proves we asked; the watcher deleting it is what proves the reload
+      # ran — an unconsumed sentinel fails the deploy rather than silently
+      # shipping stale translations.
+      - name: Signal php-fpm reload
         env:
           VPS_USER: ${{ secrets.VPS_USERNAME }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -189,7 +191,7 @@ jobs:
           q_sentinel=$(printf '%q' "${DEPLOY_PATH}/tmp/restart.txt")
           ssh "${ssh_opts[@]}" "${target}" "set -e; mkdir -p ${q_tmp}; touch ${q_sentinel}"
           reloaded=0
-          deadline=$(( $(date +%s) + 30 ))
+          deadline=$(( $(date +%s) + 60 ))
           while [ "$(date +%s)" -lt "${deadline}" ]; do
             state=$(timeout 15 ssh "${ssh_opts[@]}" "${target}" "[ -e ${q_sentinel} ] && echo PRESENT || echo GONE") || { sleep 2; continue; }
             if [ "${state}" = GONE ]; then
@@ -201,7 +203,8 @@ jobs:
           if [ "${reloaded}" = 1 ]; then
             echo "php-fpm reload sentinel consumed by the watcher; reload completed."
           else
-            echo "::warning::php-fpm reload not confirmed: tmp/restart.txt was not consumed within ~30s. If no path-watcher unit exists for this vhost, new .mo translations apply only after the next natural php-fpm reload."
+            echo "::error::php-fpm reload not confirmed: tmp/restart.txt was not consumed within ~60s. Check the litcal-fpm-reload.path unit on the VPS (see .github/deploy/systemd/README.md)." >&2
+            exit 1
           fi
 
       # The homepage must respond, and the deployed resources.js must be
