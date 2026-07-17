@@ -56,21 +56,20 @@ README.md
 + .env.example
 
 # --- SERVER-MANAGED FILES (never transferred, never --delete) ---
-# .env / .env.production carry the live secrets; logs/ accumulates
-# runtime logs. Both stay untouched by rsync.
+# .env / .env.production carry the live secrets. .well-known/ holds
+# Plesk-managed Let's Encrypt ACME challenge files — deleting it can
+# break certificate renewal. Both stay untouched by rsync.
 .env
 .env.*
-/logs/*
+/.well-known/
 
-# --- RUNTIME TEST-RUN RESULTS (preserve server-side state) ---
-# results/*.json are stored test runs written by results.php at runtime.
-# Excludes contents only; the directory itself ships (it is tracked via
-# .gitkeep locally but .gitkeep matches this pattern, so the dir is also
-# created in a pre-rsync SSH-exec step).
-/results/*
-
-# --- DEPLOY RESTART SENTINEL (server-managed) ---
-# After rsync, the deploy drops tmp/restart.txt for a root-side php-fpm
-# reload watcher (see deploy.yaml). Exclude the contents so --delete never
-# races the sentinel; the dir is created pre-rsync.
-/tmp/*
+# --- RUNTIME DIRECTORIES (server-side state, created pre-rsync) ---
+# Whole-directory excludes: rsync neither transfers nor --delete-s these
+# paths. logs/ accumulates runtime logs; results/*.json are stored test
+# runs written by results.php; tmp/restart.txt is the php-fpm reload
+# sentinel consumed by a root-side watcher (see deploy.yaml). All three
+# directories are created by the "Ensure runtime dirs exist" SSH step
+# before rsync runs, so they need not ship from the repo.
+/logs/
+/results/
+/tmp/
