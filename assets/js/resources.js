@@ -240,22 +240,22 @@ const resourceDataChecks = [
 const sourceDataChecks = [
     {
         "validate": "memorials-from-decrees",
-        "sourceFile": "jsondata/sourcedata/decrees/decrees.json",
+        "sourceFile": "jsondata/sourcedata/rite/roman/decrees/decrees.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "memorials-from-decrees-i18n",
-        "sourceFolder": "jsondata/sourcedata/decrees/i18n",
+        "sourceFolder": "jsondata/sourcedata/rite/roman/decrees/i18n",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore",
-        "sourceFile": "jsondata/sourcedata/missals/propriumdetempore/propriumdetempore.json",
+        "sourceFile": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json",
         "category": "sourceDataCheck"
     },
     {
         "validate": "proprium-de-tempore-i18n",
-        "sourceFolder": "jsondata/sourcedata/missals/propriumdetempore/i18n",
+        "sourceFolder": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/i18n",
         "category": "sourceDataCheck"
     }
 ];
