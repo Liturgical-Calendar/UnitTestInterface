@@ -59,7 +59,7 @@ const ENDPOINTS = {
     MISSALS: ""
 }
 
-const SOURCE_DATA_PATH = "jsondata/sourcedata";
+const SOURCE_DATA_PATH = "jsondata/sourcedata/rite/roman";
 
 /**
  * Array of objects that define the source data checks.
