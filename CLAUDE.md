@@ -156,11 +156,21 @@ The test interface communicates with the LiturgicalCalendarAPI's Health websocke
 
 Messages sent to the server must include an `action` property:
 
-| Action              | Purpose                                    | Required Properties                            | Optional Properties                                    |
-|---------------------|--------------------------------------------|------------------------------------------------|--------------------------------------------------------|
-| `executeValidation` | Validate source data files against schemas | `category`, `validate`, `sourceFile`           | `sourceFolder` (replaces `sourceFile`), `responsetype` |
-| `validateCalendar`  | Validate generated calendar data           | `category`, `calendar`, `year`, `responsetype` | `rite`                                                 |
-| `executeUnitTest`   | Run a specific unit test                   | `category`, `calendar`, `year`, `test`         | `rite`                                                 |
+| Action              | Purpose                                    | Required Properties                                                      | Optional Properties |
+|---------------------|--------------------------------------------|--------------------------------------------------------------------------|---------------------|
+| `executeValidation` | Validate source data files against schemas | `category`, `validate`, **exactly one of** `sourceFile` / `sourceFolder` | `responsetype`      |
+| `validateCalendar`  | Validate generated calendar data           | `category`, `calendar`, `year`, `responsetype`                           | `rite`              |
+| `executeUnitTest`   | Run a specific unit test                   | `category`, `calendar`, `year`, `test`                                   | `rite`              |
+
+`executeValidation` therefore has two request shapes — a single file, or a folder of i18n files:
+
+```javascript
+{ "action": "executeValidation", "category": "sourceDataCheck", "validate": "national-calendar-IT",      "sourceFile":   "IT" }
+{ "action": "executeValidation", "category": "sourceDataCheck", "validate": "national-calendar-IT-i18n", "sourceFolder": "IT" }
+```
+
+`Health::validateMessageProperties()` lists `sourceFile` as required but special-cases its absence when `sourceFolder` is present, so
+sending both, or neither, is not a supported shape. Only `resources.js` currently sends `sourceFolder`.
 
 Every message also carries a `runToken` (a UUID identifying the whole run), injected centrally by `sendMessage()`.
 

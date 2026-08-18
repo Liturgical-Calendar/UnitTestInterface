@@ -40,7 +40,10 @@ vendor/bin/phpcs         # raw equivalent
 ## Markdown
 
 ```bash
-composer lint:md         # markdownlint-cli2 over **/*.md (excl. node_modules, vendor)
+composer lint:md         # markdownlint-cli2 over **/*.md
+                         # excludes: node_modules, vendor, .superpowers, .serena.local.bak,
+                         #           test-results, playwright-report (the last two are gitignored
+                         #           Playwright artifacts that otherwise fail the run — and the hook)
 composer lint:md:fix
 ```
 

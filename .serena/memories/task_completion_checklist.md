@@ -64,6 +64,8 @@ GitHub Actions workflow `.github/workflows/main.yml` runs quality checks on push
     `buildUniversalSourceDataChecks()`); the server reads the **path**
   - `sourceDataCheck` when `sourceFile` is a bare id the server expands into a path (the wider-region,
     national, missal and diocesan checks in `buildNonVASourceDataChecks()`); the server reads the **`validate` slug**
+  - `resourceDataCheck` when `sourceFile` is an absolute API URL (the endpoint checks in `resources.js`);
+    the server reads the **URL**. Never substitute `sourceDataCheck` here
   - Getting this wrong yields a `null` schema and an "Unable to detect schema" card, not a loud failure
 - Verify `sourceDataCheck` `validate` strings follow the `wider-region-…` / `national-calendar-…` /
   `diocesan-calendar-…` / `proprium-de-sanctis-…` patterns (`universalcalendar` labels are PascalCase and are
