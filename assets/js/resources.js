@@ -886,9 +886,18 @@ const loadAsyncData = () => {
             }
             else if(data.hasOwnProperty('litcal_tests')) {
                 data.litcal_tests.forEach(test => {
+                    // Since API #787 the test corpus is rite-partitioned on disk:
+                    // jsondata/tests/{rite}/{name}.json. `rite` is a required property of
+                    // `applies_to` since API #785 (falling back to the legacy `appliesTo`
+                    // property, mirroring the handling in index.js's handleAppliesToOrFilter()).
+                    const rite = test.applies_to?.rite ?? test.appliesTo?.rite;
+                    if (!rite) {
+                        console.warn(`Test ${test.name} has no applies_to.rite; skipping its source-data check`);
+                        return;
+                    }
                     sourceDataChecks.push({
                         "validate": `tests-${test.name}`,
-                        "sourceFile": `jsondata/tests/${test.name}.json`,
+                        "sourceFile": `jsondata/tests/${rite}/${test.name}.json`,
                         "category": "sourceDataCheck"
                     });
                 })
