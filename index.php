@@ -77,7 +77,7 @@ include_once('layout/head.php');
                 <div class="col-6 col-md-4 col-lg-2">
                     <label for="APICalendarSelect"><?php echo _("Liturgical Calendar"); ?></label>
                     <select id="APICalendarSelect" class="form-select form-select-sm">
-                        <option data-calendartype="nationalcalendar" value="VA"><?php echo _("General Roman"); ?></option>
+                        <option data-calendartype="nationalcalendar" data-rite="roman" value="VA"><?php echo _("General Roman"); ?></option>
                     </select>
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
