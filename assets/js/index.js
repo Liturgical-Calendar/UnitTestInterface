@@ -32,7 +32,17 @@ let renderedUnitTests = [];
 /** @typedef {import('./types.js').NationalCalendarMetadata} NationalCalendarMetadata */
 
 // Access global config from window (set by PHP in footer.php)
-const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV } = window.LitCalConfig;
+const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV, riteLabels = {} } = window.LitCalConfig;
+
+/**
+ * Returns the translated display label for a liturgical rite (or for a rite-level calendar id,
+ * which is the same string in the API: the `ambrosian` calendar belongs to the `ambrosian` rite).
+ * Falls back to the raw identifier so that a rite added upstream before this interface knows about
+ * it still renders something readable instead of `undefined`.
+ * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
+ * @return {string} The translated label, or the identifier itself when no translation is known.
+ */
+const riteLabel = ( rite ) => riteLabels[ rite ] ?? rite;
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -59,50 +69,81 @@ const ENDPOINTS = {
     MISSALS: ""
 }
 
-const SOURCE_DATA_PATH = "jsondata/sourcedata/rite/roman";
+const ROMAN_SOURCE_DATA_PATH = "jsondata/sourcedata/rite/roman";
+const AMBROSIAN_SOURCE_DATA_PATH = "jsondata/sourcedata/rite/ambrosian";
 
 /**
- * Array of objects that define the source data checks.
- * Each object must contain the following properties:
+ * Builds the array of universal (rite level) source data checks for the given rite.
+ * Each object contains the following properties:
  * - `validate`: the name of the class that will be used to match the response from the websocket backend.
  *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
  * - `sourceFile`: the URL of the resource to check.
  * - `category`: a string that indicates the category of the source data check.
  *                Currently, the only category is 'universalcalendar'.
- * @type {Array<{validate: string, sourceFile: string, category: string}>}
+ *
+ * The Roman rite carries the historical set of six checks. The Ambrosian rite has a single Missal
+ * (the 2024 edition) and no decrees corpus of its own — the decrees source data lives under the
+ * Roman rite folder only — so it carries three checks.
+ *
+ * Note that `ENDPOINTS` is populated by `setEndpoints()` before any source data check is built,
+ * so reading it here (rather than at module evaluation time) always yields the resolved URLs.
+ *
+ * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
+ * @return {Array<{validate: string, sourceFile: string, category: string}>} The universal source data checks.
  */
-const sourceDataChecks = [
-    {
-        "validate": "LitCalMetadata",
-        "sourceFile": ENDPOINTS.CALENDARS,
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeTempore",
-        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeSanctis1970",
-        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdesanctis_1970/propriumdesanctis_1970.json`,
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeSanctis2002",
-        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdesanctis_2002/propriumdesanctis_2002.json`,
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "PropriumDeSanctis2008",
-        "sourceFile": `${SOURCE_DATA_PATH}/missals/propriumdesanctis_2008/propriumdesanctis_2008.json`,
-        "category": "universalcalendar"
-    },
-    {
-        "validate": "MemorialsFromDecrees",
-        "sourceFile": ENDPOINTS.DECREES,
-        "category": "universalcalendar"
+const buildUniversalSourceDataChecks = ( rite ) => {
+    if ( rite === 'ambrosian' ) {
+        return [
+            {
+                "validate": "LitCalMetadata",
+                "sourceFile": ENDPOINTS.CALENDARS,
+                "category": "universalcalendar"
+            },
+            {
+                "validate": "PropriumDeTempore",
+                "sourceFile": `${AMBROSIAN_SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
+                "category": "universalcalendar"
+            },
+            {
+                "validate": "PropriumDeSanctis2024",
+                "sourceFile": `${AMBROSIAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2024/propriumdesanctis.json`,
+                "category": "universalcalendar"
+            }
+        ];
     }
-];
+    return [
+        {
+            "validate": "LitCalMetadata",
+            "sourceFile": ENDPOINTS.CALENDARS,
+            "category": "universalcalendar"
+        },
+        {
+            "validate": "PropriumDeTempore",
+            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
+            "category": "universalcalendar"
+        },
+        {
+            "validate": "PropriumDeSanctis1970",
+            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_1970/propriumdesanctis_1970.json`,
+            "category": "universalcalendar"
+        },
+        {
+            "validate": "PropriumDeSanctis2002",
+            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2002/propriumdesanctis_2002.json`,
+            "category": "universalcalendar"
+        },
+        {
+            "validate": "PropriumDeSanctis2008",
+            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2008/propriumdesanctis_2008.json`,
+            "category": "universalcalendar"
+        },
+        {
+            "validate": "MemorialsFromDecrees",
+            "sourceFile": ENDPOINTS.DECREES,
+            "category": "universalcalendar"
+        }
+    ];
+};
 
 /**
  * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
@@ -128,9 +169,6 @@ const setEndpoints = () => {
     ENDPOINTS.DECREES = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}decrees`;
     ENDPOINTS.MISSALS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}missals`;
     console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
-
-    sourceDataChecks[ 0 ].sourceFile = ENDPOINTS.CALENDARS;
-    sourceDataChecks[ 5 ].sourceFile = ENDPOINTS.DECREES;
 }
 
 class ReadyToRunTests {
@@ -439,6 +477,11 @@ const sendMessage = ( data ) => {
 let currentSelectedCalendar = "VA";
 let currentNationalCalendar = "VA";
 let currentCalendarCategory = "nationalcalendar";
+/**
+ * The liturgical rite of the currently selected calendar.
+ * Derived from the `data-rite` attribute of the selected option; 'roman' when unknown.
+ */
+let currentRite = "roman";
 let currentResponseType = "JSON";
 let currentSourceDataChecks = [];
 /**
@@ -446,6 +489,12 @@ let currentSourceDataChecks = [];
 */
 let countryNames = new Intl.DisplayNames( locale, { type: 'region' } );
 let CalendarNations = [];
+/**
+ * Rite level calendars announced by the /calendars metadata (currently only the Ambrosian rite).
+ * These are top level calendars, peers of the General Roman calendar, not children of any nation.
+ * @type {Array<{calendar_id: string, rite: string, locales: Array<string>, settings: object}>}
+ */
+let RiteCalendars = [];
 let selectOptions = {};
 let SpecificUnitTestCategories = [];
 let SpecificUnitTestYears = {};
@@ -516,6 +565,7 @@ const buildCalendarsPayload = () => {
         runType: 'calendars',
         calendar: currentSelectedCalendar,
         calendarCategory: currentCalendarCategory,
+        rite: currentRite,
         responseType: currentResponseType,
         duration: measureDuration( 'litcalTestRunner' ),
         counts: { successful: successfulTests, failed: failedTests },
@@ -570,6 +620,7 @@ const runTests = () => {
                             year: year,
                             calendar: currentSelectedCalendar,
                             category: currentCalendarCategory,
+                            rite: currentRite,
                             responsetype: currentResponseType
                         } );
                     } );
@@ -592,7 +643,8 @@ const runTests = () => {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
-                    category: currentCalendarCategory
+                    category: currentCalendarCategory,
+                    rite: currentRite
                 } );
                 safeCollapseShow('#specificUnitTests');
                 safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
@@ -600,7 +652,7 @@ const runTests = () => {
             break;
         case TestState.SpecificUnitTests:
             if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory } );
+                sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, rite: currentRite } );
             }
             else if ( ++index < SpecificUnitTestCategories.length ) {
                 yearIndex = 0;
@@ -618,7 +670,8 @@ const runTests = () => {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
-                    category: currentCalendarCategory
+                    category: currentCalendarCategory,
+                    rite: currentRite
                 } );
                 safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
             }
@@ -969,14 +1022,23 @@ const fetchMetadataAndTests = () => {
                 console.log( data );
                 if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                     MetaData = data.litcal_metadata;
-                    const { national_calendars_keys, diocesan_calendars } = MetaData;
+                    const { national_calendars_keys, diocesan_calendars, ambrosian_calendars = [] } = MetaData;
+                    RiteCalendars = ambrosian_calendars;
                     diocesan_calendars.forEach( diocesanCalendar => {
                         if ( CalendarNations.indexOf( diocesanCalendar.nation ) === -1 ) {
                             CalendarNations.push( diocesanCalendar.nation );
                             selectOptions[ diocesanCalendar.nation ] = [];
                         }
+                        // `rite` is a required property of diocesan_calendars entries, but default it
+                        // defensively so that an older API deployment still yields a usable option.
+                        const diocesanRite = diocesanCalendar.rite ?? 'roman';
+                        // Only non-Roman dioceses get their rite spelled out in the label, so that the
+                        // (large) majority of Roman dioceses read exactly as they always have.
+                        const dioceseLabel = diocesanRite === 'roman'
+                            ? diocesanCalendar.diocese
+                            : `${diocesanCalendar.diocese} (${riteLabel( diocesanRite )})`;
                         selectOptions[ diocesanCalendar.nation ].push(
-                            `<option data-calendartype="diocesancalendar" data-nationalcalendar="${diocesanCalendar.nation}" value="${diocesanCalendar.calendar_id}">${diocesanCalendar.diocese}</option>`
+                            `<option data-calendartype="diocesancalendar" data-nationalcalendar="${escapeHtmlAttr( diocesanCalendar.nation )}" data-rite="${escapeHtmlAttr( diocesanRite )}" value="${escapeHtmlAttr( diocesanCalendar.calendar_id )}">${escapeHtmlAttr( dioceseLabel )}</option>`
                         );
                     } )
                     nations = national_calendars_keys;
@@ -1090,6 +1152,27 @@ const appendAccordionItem = ( obj ) => {
 const CALENDAR_SCOPE_KEYS = [ 'national_calendar', 'national_calendars', 'diocesan_calendar', 'diocesan_calendars' ];
 
 /**
+ * Determines whether a unit test belongs to the liturgical rite of the currently selected calendar.
+ *
+ * The rite is deliberately kept out of {@link CALENDAR_SCOPE_KEYS} and out of
+ * {@link handleAppliesToOrFilter}: it is an orthogonal dimension, not one of the mutually exclusive
+ * calendar identity keys, and a rite only scope (e.g. `{ "rite": "ambrosian" }`) carries no calendar
+ * identity at all. Handled here, such a scope correctly restricts the test to its own rite instead of
+ * falling through the calendar scope switch and being kept for every calendar.
+ *
+ * A test with no `rite` in its scope predates the rite dimension and is Roman by construction, so it
+ * defaults to 'roman' rather than being kept unconditionally (which would be a fail open filter).
+ *
+ * @param {Object} unitTest - The unit test to check.
+ * @returns {Boolean} true if the unit test applies to the current rite, false otherwise.
+ */
+const testAppliesToCurrentRite = ( unitTest ) => {
+    const scope = unitTest.applies_to ?? unitTest.appliesTo;
+    const testRite = scope?.rite ?? 'roman';
+    return testRite === currentRite;
+};
+
+/**
  * Function to determine if a unit test should be filtered out based on its `appliesTo` or `applies_to` property
  * @param {Object} unitTest - The unit test to check
  * @param {String} appliesToOrFilter - The property to check, either 'appliesTo' or 'applies_to', or 'filter'
@@ -1180,7 +1263,11 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         nation = diocesanData.nation;
     }
 
-    const checks = [...sourceDataChecks];
+    // National and diocesan calendars always start from the Roman universal corpus: national
+    // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
+    // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
+    // corpus is a separate (pre-existing) design question.
+    const checks = buildUniversalSourceDataChecks( 'roman' );
 
     const nationalCalendarData = MetaData.national_calendars.find(
         nationalCalendar => nationalCalendar.calendar_id === nation
@@ -1281,24 +1368,38 @@ const setupPage = () => {
     }
 
     const apiCalendarSelect = document.querySelector('#APICalendarSelect');
-    if ( apiCalendarSelect && apiCalendarSelect.children.length === 1 ) {
+    // Populate the select exactly once. A `dataset` flag rather than a children count, so that the
+    // guard doesn't silently break the day index.php ships a second server rendered option.
+    if ( apiCalendarSelect && !apiCalendarSelect.dataset.populated ) {
+        // Rite level calendars are peers of the General Roman calendar, so they go immediately after
+        // it and before the nations. Their id is a rite name, never a region code, so they must not
+        // be passed to countryNames.of() (Intl.DisplayNames throws on a non-region value, which would
+        // abort setupPage() entirely).
+        RiteCalendars.forEach( riteCalendar => {
+            apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="ritecalendar" data-rite="${escapeHtmlAttr( riteCalendar.rite )}" value="${escapeHtmlAttr( riteCalendar.calendar_id )}">${escapeHtmlAttr( riteLabel( riteCalendar.calendar_id ) )}</option>`);
+        } );
         nations.forEach( item => {
             if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
-                apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>`);
+                apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" data-rite="roman" value="${item}">${countryNames.of( item )}</option>`);
             }
         } );
         CalendarNations.forEach( item => {
             console.log( `retrieving localized data for ${item}, for display purposes...` );
-            apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" value="${item}">${countryNames.of( item )}</option>`);
+            apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" data-rite="roman" value="${item}">${countryNames.of( item )}</option>`);
             const optGroup = document.createElement('optgroup');
             optGroup.label = countryNames.of( item );
             apiCalendarSelect.appendChild(optGroup);
             selectOptions[ item ].forEach( groupItem => optGroup.insertAdjacentHTML('beforeend', groupItem) );
         } );
+        apiCalendarSelect.dataset.populated = 'true';
     }
 
-    if ( currentSelectedCalendar === 'VA' ) {
-        currentSourceDataChecks = [ ...sourceDataChecks ];
+    if ( currentCalendarCategory === 'ritecalendar' ) {
+        // A rite level calendar has no national or diocesan layer: its source data is exactly the
+        // universal corpus of its own rite.
+        currentSourceDataChecks = buildUniversalSourceDataChecks( currentRite );
+    } else if ( currentSelectedCalendar === 'VA' ) {
+        currentSourceDataChecks = buildUniversalSourceDataChecks( 'roman' );
     } else {
         const checks = buildNonVASourceDataChecks(currentSelectedCalendar, currentCalendarCategory);
         if (checks === null) {
@@ -1310,6 +1411,9 @@ const setupPage = () => {
     renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
+        if ( false === testAppliesToCurrentRite( unitTest ) ) {
+            return;
+        }
         if ( unitTest.hasOwnProperty( 'appliesTo' ) ) {
             if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                 return;
@@ -1384,12 +1488,18 @@ document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) =
     currentSelectedCalendar = ev.currentTarget.value;
     const selectedOption = document.querySelector('#APICalendarSelect option:checked');
     currentCalendarCategory = selectedOption.dataset.calendartype;
+    currentRite = selectedOption.dataset.rite ?? 'roman';
     if ( currentCalendarCategory === 'diocesancalendar' ) {
         currentNationalCalendar = selectedOption.dataset.nationalcalendar;
+    } else if ( currentCalendarCategory === 'ritecalendar' ) {
+        // A rite level calendar has no national calendar. null (rather than the calendar id) keeps
+        // `scope.national_calendars.includes( currentNationalCalendar )` false, so national scoped
+        // tests are correctly excluded from it.
+        currentNationalCalendar = null;
     } else {
         currentNationalCalendar = currentSelectedCalendar;
     }
-    console.log( 'currentCalendarCategory = ' + currentCalendarCategory );
+    console.log( 'currentCalendarCategory = ' + currentCalendarCategory + ', currentRite = ' + currentRite );
     document.querySelectorAll(`.calendar-${slugify(oldSelectedCalendar)}`).forEach(el => {
         el.classList.remove(`calendar-${slugify(oldSelectedCalendar)}`);
         el.classList.add(`calendar-${slugify(currentSelectedCalendar)}`);
@@ -1499,6 +1609,8 @@ const replayCalendarsRun = async ( file ) => {
     const run = await fetchRunDetail( file );
     currentSelectedCalendar = run.calendar;
     currentCalendarCategory = run.calendarCategory;
+    // Runs stored before the rite dimension existed have no `rite`; they were all Roman.
+    currentRite = run.rite ?? 'roman';
     currentResponseType = run.responseType;
     currentSourceDataChecks = run.scaffold.sourceDataChecks;
     buildScaffolding({
@@ -1562,8 +1674,12 @@ const resyncLiveStateFromDom = () => {
     const selectedOption = calendarSelect ? calendarSelect.querySelector('option:checked') : null;
     currentSelectedCalendar = calendarSelect ? calendarSelect.value : currentSelectedCalendar;
     currentCalendarCategory = selectedOption ? (selectedOption.dataset.calendartype ?? currentCalendarCategory) : currentCalendarCategory;
+    currentRite = selectedOption ? (selectedOption.dataset.rite ?? 'roman') : 'roman';
     if ( currentCalendarCategory === 'diocesancalendar' ) {
         currentNationalCalendar = selectedOption ? (selectedOption.dataset.nationalcalendar ?? currentSelectedCalendar) : currentSelectedCalendar;
+    } else if ( currentCalendarCategory === 'ritecalendar' ) {
+        // See the #APICalendarSelect change handler: a rite level calendar has no national calendar.
+        currentNationalCalendar = null;
     } else {
         currentNationalCalendar = currentSelectedCalendar;
     }

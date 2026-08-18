@@ -20,9 +20,11 @@
 /**
  * Message for calendar test requests.
  * @typedef {Object} CalendarTestMessage
- * @property {string} calendar - The calendar identifier (e.g., "VA", "USA", "DIOCESANNAME")
- * @property {"nationalcalendar"|"diocesancalendar"} category - The calendar category
+ * @property {string} calendar - The calendar identifier (e.g., "VA", "USA", "DIOCESANNAME", "ambrosian")
+ * @property {"nationalcalendar"|"diocesancalendar"|"ritecalendar"} category - The calendar category
  * @property {number} year - The year to test
+ * @property {"roman"|"ambrosian"} [rite] - The liturgical rite; optional, the server resolves it from
+ *                                          the calendar metadata (or defaults to Roman) when omitted
  */
 
 /**
