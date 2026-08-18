@@ -1079,6 +1079,17 @@ const appendAccordionItem = ( obj ) => {
 }
 
 /**
+ * The calendar-scope keys that `applies_to` / `appliesTo` / `filter` (excludes) may carry, in the
+ * order they are checked. `rite` is deliberately excluded from this list: since API #785 it is a
+ * separate dimension present on every scope object (required on `applies_to`), not one of the
+ * calendar-identity keys this function filters on. Selecting the key explicitly here — rather than
+ * relying on `Object.keys(...).length` or `Object.keys(...)[0]` — avoids depending on key count or
+ * key order, both of which broke once already when `rite` became a sibling required property.
+ * @type {Array<string>}
+ */
+const CALENDAR_SCOPE_KEYS = [ 'national_calendar', 'national_calendars', 'diocesan_calendar', 'diocesan_calendars' ];
+
+/**
  * Function to determine if a unit test should be filtered out based on its `appliesTo` or `applies_to` property
  * @param {Object} unitTest - The unit test to check
  * @param {String} appliesToOrFilter - The property to check, either 'appliesTo' or 'applies_to', or 'filter'
@@ -1090,28 +1101,32 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
     //      When the older schema is deprecated we can clean up and simplify this code
     let appliesToProp = unitTest.hasOwnProperty( 'appliesTo' ) ? 'appliesTo' : 'applies_to';
     let searchProp = appliesToOrFilter === 'appliesTo' ? appliesToProp : appliesToOrFilter;
-    let prop = Object.keys( unitTest[ searchProp ] )[ 0 ];
+    let scope = unitTest[ searchProp ];
+    // Explicitly select the calendar-scope key present on this scope object, ignoring `rite`.
+    // A scope with no calendar-scope key (e.g. a rite-only `{ rite: "roman" }`) falls through the
+    // switch with no case matched, leaving shouldReturn at its default of false.
+    let prop = CALENDAR_SCOPE_KEYS.find( key => scope.hasOwnProperty( key ) );
     switch ( prop ) {
         case 'national_calendar':
             if ( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = ( currentNationalCalendar !== unitTest[ appliesToProp ].national_calendar );
+                shouldReturn = ( currentNationalCalendar !== scope.national_calendar );
             } else {
-                shouldReturn = ( currentNationalCalendar === unitTest[ appliesToProp ].national_calendar );
+                shouldReturn = ( currentNationalCalendar === scope.national_calendar );
             }
             break;
         case 'national_calendars':
             if ( appliesToOrFilter === 'appliesTo' ) {
-                shouldReturn = ( false === unitTest[ appliesToProp ].national_calendars.includes( currentNationalCalendar ) );
+                shouldReturn = ( false === scope.national_calendars.includes( currentNationalCalendar ) );
             } else {
-                shouldReturn = ( unitTest[ appliesToProp ].national_calendars.includes( currentNationalCalendar ) );
+                shouldReturn = ( scope.national_calendars.includes( currentNationalCalendar ) );
             }
             break;
         case 'diocesan_calendar':
             if ( currentCalendarCategory === 'diocesancalendar' ) {
                 if ( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( currentSelectedCalendar !== unitTest[ appliesToProp ].diocesan_calendar );
+                    shouldReturn = ( currentSelectedCalendar !== scope.diocesan_calendar );
                 } else {
-                    shouldReturn = ( currentSelectedCalendar === unitTest[ appliesToProp ].diocesan_calendar );
+                    shouldReturn = ( currentSelectedCalendar === scope.diocesan_calendar );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
@@ -1120,9 +1135,9 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
         case 'diocesan_calendars':
             if ( currentCalendarCategory === 'diocesancalendar' ) {
                 if ( appliesToOrFilter === 'appliesTo' ) {
-                    shouldReturn = ( false === unitTest[ appliesToProp ].diocesan_calendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( false === scope.diocesan_calendars.includes( currentSelectedCalendar ) );
                 } else {
-                    shouldReturn = ( unitTest[ appliesToProp ].diocesan_calendars.includes( currentSelectedCalendar ) );
+                    shouldReturn = ( scope.diocesan_calendars.includes( currentSelectedCalendar ) );
                 }
             } else {
                 shouldReturn = appliesToOrFilter === 'appliesTo' ? true : false;
@@ -1295,17 +1310,17 @@ const setupPage = () => {
     renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
-        if ( unitTest.hasOwnProperty( 'appliesTo' ) && Object.keys( unitTest.appliesTo ).length === 1 ) {
+        if ( unitTest.hasOwnProperty( 'appliesTo' ) ) {
             if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                 return;
             }
         }
-        else if ( unitTest.hasOwnProperty( 'applies_to' ) && Object.keys( unitTest.applies_to ).length === 1 ) {
+        else if ( unitTest.hasOwnProperty( 'applies_to' ) ) {
             if ( true === handleAppliesToOrFilter( unitTest, 'appliesTo' ) ) {
                 return;
             }
         }
-        if ( unitTest.hasOwnProperty( 'filter' ) && Object.keys( unitTest.filter ).length === 1 ) {
+        if ( unitTest.hasOwnProperty( 'filter' ) ) {
             if ( true === handleAppliesToOrFilter( unitTest, 'filter' ) ) {
                 return;
             }
