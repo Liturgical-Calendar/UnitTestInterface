@@ -2,11 +2,46 @@ import { slugifySelector, escapeHtmlAttr } from './common.js';
 
 /**
  * Paint a single server response (or stored descriptor) onto its target cards.
- * @param {{type: string, classes: string, text?: string}} responseData
+ *
+ * Never throws. `classes` is a raw CSS selector built server-side, so a missing, empty or
+ * malformed value used to raise out of `conn.onmessage` — and because the state machine is
+ * driven from that handler, the whole run then wedged with no diagnostic (#43).
+ *
+ * @param {{type: string, classes?: string, text?: string}} responseData
+ * @returns {number} how many cards were painted; 0 means the response matched nothing, which
+ *                   is worth a warning because the counters increment regardless and the
+ *                   totals then drift away from the rendered cards.
  */
 export const applyResultToDom = (responseData) => {
+    // Guard the argument itself, not just its `classes`: `JSON.parse('null')` yields `null`, and
+    // reading `.type` off it throws — which would break the no-throw contract this function
+    // documents, in the one code path that exists to keep a bad frame from wedging the run.
+    if (null === responseData || 'object' !== typeof responseData) {
+        console.warn('Response was not an object; nothing to paint.', responseData);
+        return 0;
+    }
+
     const isSuccess = responseData.type === 'success';
-    document.querySelectorAll(slugifySelector(responseData.classes)).forEach((el) => {
+    const selector = typeof responseData.classes === 'string' ? responseData.classes.trim() : '';
+
+    if ('' === selector) {
+        console.warn('Response carried no `classes` selector; nothing to paint.', responseData);
+        return 0;
+    }
+
+    let targets;
+    try {
+        targets = document.querySelectorAll(slugifySelector(selector));
+    } catch (selectorError) {
+        console.warn(`Response carried an unusable \`classes\` selector "${selector}"; nothing to paint.`, selectorError);
+        return 0;
+    }
+
+    if (0 === targets.length) {
+        console.warn(`No card matched \`classes\` selector "${selector}" — the run totals will drift from the rendered cards.`, responseData);
+    }
+
+    targets.forEach((el) => {
         el.classList.remove('bg-info');
         el.classList.add(isSuccess ? 'bg-success' : 'bg-danger');
         const questionIcon = el.querySelector('.fa-circle-question');
@@ -24,6 +59,8 @@ export const applyResultToDom = (responseData) => {
             }
         }
     });
+
+    return targets.length;
 };
 
 /**
