@@ -92,8 +92,9 @@ The three categories are **not interchangeable** — each reads a different fiel
 | `resourceDataCheck` | the `sourceFile` URL                  | `sourceFile` is an absolute API URL (`resources.js`) |
 
 Under `sourceDataCheck` the data path is `sourceFile` / `sourceFolder` **as supplied**; the server reconstructs it from the slug only for
-`wider-region-…`, `national-calendar-…`, `diocesan-calendar-…` and `proprium-de-sanctis-…-i18n`. Hence those send a bare id while the
-decrees, temporale and tests checks send real paths under the same category.
+four families — `wider-region-…`, `national-calendar-…`, `diocesan-calendar-…` and `proprium-de-sanctis-…` — each in both its plain form
+(`sourceFile`) and its `-i18n` form (`sourceFolder`). Hence those send a bare id (`IT`, `Europe`, `EDITIO_TYPICA_1970`) while the decrees,
+temporale and tests checks send real paths under the same category.
 
 `universalcalendar` — the universal checks from `buildUniversalSourceDataChecks()`. `validate` here is PascalCase and is a display/CSS
 label only, never a schema key:

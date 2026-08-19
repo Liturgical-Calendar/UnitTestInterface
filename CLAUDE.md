@@ -200,9 +200,12 @@ vocabularies sharing a property name in the first place.
 | `resourceDataCheck` | the `sourceFile` URL                  | `sourceFile` is an absolute API URL (`resources.js`) |
 
 Note what `sourceDataCheck` does **not** imply: the data path is whatever `sourceFile` / `sourceFolder` says, *as supplied*. The server
-reconstructs it from the slug only for `wider-region-…`, `national-calendar-…`, `diocesan-calendar-…` and `proprium-de-sanctis-…-i18n`.
-That is why those messages send a bare id (`IT`, `Europe`) while the other `sourceDataCheck` messages send a real path — the decrees file,
-the temporale file, and `jsondata/tests/{rite}/{name}.json` are all sent as full paths under this same category.
+reconstructs it from the slug only for four slug families — `wider-region-…`, `national-calendar-…`, `diocesan-calendar-…` and
+`proprium-de-sanctis-…` — each in **both** its plain form (with `sourceFile`) and its `-i18n` form (with `sourceFolder`); the missal pair
+resolves through `RomanMissal::getSanctoraleFileName()` / `getSanctoraleI18nFilePath()`.
+
+That is why those messages send a bare id (`IT`, `Europe`, `EDITIO_TYPICA_1970`) while every other `sourceDataCheck` message sends a real
+path — the decrees file, the temporale file and `jsondata/tests/{rite}/{name}.json` are all sent as full paths under this same category.
 
 #### `universalcalendar` — when the message carries a path
 

@@ -32,9 +32,10 @@ document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
   - `sourceDataCheck` — from the `validate` **slug** (the wider-region / national / missal / diocesan checks)
   - `resourceDataCheck` — from the `sourceFile` **URL** (the API endpoint checks in `resources.js`)
 - Choosing wrong yields a `null` schema and an "Unable to detect schema" card, not a loud failure
-- Under `sourceDataCheck` the server regexes the `validate` slug to compute the file path for `wider-region-…`,
-  `national-calendar-…`, `diocesan-calendar-…` and `proprium-de-sanctis-…-i18n` only; every other slug uses
-  `sourceFile` / `sourceFolder` as supplied
+- Under `sourceDataCheck` the server regexes the `validate` slug to compute the file path for four families only —
+  `wider-region-…`, `national-calendar-…`, `diocesan-calendar-…` and `proprium-de-sanctis-…` — each in both its
+  plain form (`sourceFile`) and its `-i18n` form (`sourceFolder`); every other slug (decrees, temporale, tests)
+  uses `sourceFile` / `sourceFolder` as supplied
 - For missals, build the slug from `missalDef.region` / `year_published` (see project_structure memory)
 
 ## API date handling
