@@ -156,17 +156,68 @@ The test interface communicates with the LiturgicalCalendarAPI's Health websocke
 
 Messages sent to the server must include an `action` property:
 
-| Action              | Purpose                                      | Required Properties                              |
-|---------------------|----------------------------------------------|--------------------------------------------------|
-| `executeValidation` | Validate source data files against schemas   | `category`, `validate`, `sourceFile`             |
-| `validateCalendar`  | Validate generated calendar data             | `category`, `calendar`, `year`, `responsetype`   |
-| `executeUnitTest`   | Run a specific unit test                     | `category`, `calendar`, `year`, `test`           |
+| Action              | Purpose                                    | Required Properties                                                      | Optional Properties |
+|---------------------|--------------------------------------------|--------------------------------------------------------------------------|---------------------|
+| `executeValidation` | Validate source data files against schemas | `category`, `validate`, **exactly one of** `sourceFile` / `sourceFolder` | `responsetype`      |
+| `validateCalendar`  | Validate generated calendar data           | `category`, `calendar`, `year`, `responsetype`                           | `rite`              |
+| `executeUnitTest`   | Run a specific unit test                   | `category`, `calendar`, `year`, `test`                                   | `rite`              |
+
+`executeValidation` therefore has two request shapes — a single file, or a folder of i18n files:
+
+```javascript
+{ "action": "executeValidation", "category": "sourceDataCheck", "validate": "national-calendar-IT",      "sourceFile":   "IT" }
+{ "action": "executeValidation", "category": "sourceDataCheck", "validate": "national-calendar-IT-i18n", "sourceFolder": "IT" }
+```
+
+`Health::validateMessageProperties()` lists `sourceFile` as required but special-cases its absence when `sourceFolder` is present, so
+sending both, or neither, is not a supported shape. Only `resources.js` currently sends `sourceFolder`.
+
+Messages sent during an active run also carry a `runToken` (a UUID identifying that run), added by `sendMessage()` — which attaches it
+**only when a run token is currently set**, so anything sent outside a run goes without one.
+
+**Beware:** `category` names two unrelated things depending on the action:
+
+- on `executeValidation` it selects a *schema-resolution strategy* — in practice exactly three: `universalcalendar`, `sourceDataCheck`,
+  `resourceDataCheck` (see below);
+- on `validateCalendar` and `executeUnitTest` it names a *calendar type* — `nationalcalendar`, `diocesancalendar` or `ritecalendar`.
+
+The two sets are disjoint in use. The hazard is that the server's `retrieveSchemaForCategory()` switch *also* still carries legacy arms named
+`nationalcalendar`, `diocesancalendar`, `widerregioncalendar` and `propriumdesanctis`. On `executeValidation` those resolve a schema but leave
+the raw `sourceFile` as the data path — so the file read fails afterwards. Never use them on `executeValidation`. See
+LiturgicalCalendarAPI#805 (their removal) and #806 (a proposal to disentangle the naming).
 
 ### Source Data Validation Categories
 
-**IMPORTANT:** For source data validation (`executeValidation`), the `category` field determines how the server resolves file paths.
+**IMPORTANT:** For source data validation (`executeValidation`), the `category` field determines how the server resolves the schema, and
+**the two categories consume different inputs**. Picking the wrong one does not fail loudly — it yields a `null` schema and the card reports
+*"Unable to detect schema for dataPath …"*.
 
-Use `category: "sourceDataCheck"` for validating source files:
+| category            | Server resolves the schema from        | Use when `sourceFile` is                     |
+|---------------------|----------------------------------------|----------------------------------------------|
+| `universalcalendar` | the `sourceFile` path                  | a real path or an API URL                    |
+| `sourceDataCheck`   | the `validate` label (anchored slugs)  | a bare id the server expands into a path     |
+| `resourceDataCheck` | the `sourceFile` URL                   | an absolute API URL (used by `resources.js`) |
+
+#### `universalcalendar` — when the message carries a path
+
+The universal checks built by `buildUniversalSourceDataChecks()` send real filesystem paths and API URLs, so the server resolves their
+schema from the **path**. These use PascalCase `validate` labels, which are display/CSS labels only and are *not* schema keys:
+
+```javascript
+{
+    "validate": "PropriumDeTempore",
+    "sourceFile": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json",
+    "category": "universalcalendar"   // NOT "sourceDataCheck" — the path is the schema key here
+}
+```
+
+Switching these to `sourceDataCheck` would feed `PropriumDeTempore` to the slug regexes below, match nothing, and break **every** universal
+check in both rites. (An automated reviewer proposed exactly that on PR #41, citing an earlier version of this section that documented only
+`sourceDataCheck`.)
+
+#### `sourceDataCheck` — when the message carries a bare id
+
+Use `category: "sourceDataCheck"` for validating source files whose path the server reconstructs from the `validate` slug:
 
 ```javascript
 // Wider region check
@@ -232,18 +283,15 @@ The `missal_id` from the API must be converted to the `validate` format:
 
 **Conversion Logic:**
 
+Build the slug from the missal's **structured metadata**, not by string-splitting `missal_id`. `region === 'VA'` means editio typica, so the
+region segment is omitted:
+
 ```javascript
-const parts = missal_id.split('_');
-let validateStr;
-if (parts.length === 2 && /^[A-Z]{2}$/.test(parts[0])) {
-    // Regional: "IT_1983" -> "proprium-de-sanctis-IT-1983"
-    validateStr = `proprium-de-sanctis-${parts[0]}-${parts[1]}`;
-} else {
-    // Editio Typica: "EDITIO_TYPICA_1970" -> "proprium-de-sanctis-1970"
-    const year = parts[parts.length - 1];
-    validateStr = `proprium-de-sanctis-${year}`;
-}
+const validateStr = `proprium-de-sanctis${missalDef.region === 'VA' ? '' : `-${missalDef.region}`}-${missalDef.year_published}`;
 ```
+
+This is what `buildNonVASourceDataChecks()` in `assets/js/index.js` and the missal loop in `assets/js/resources.js` actually do. An earlier
+version of this section documented a `missal_id.split('_')` parse; that is no longer the code and should not be reintroduced.
 
 The server's `Health.php` uses `RomanMissal::getSanctoraleFileName()` to resolve the actual file path from this pattern.
 
@@ -257,11 +305,19 @@ Server responses include:
 
 ```javascript
 {
-    "type": "success" | "error",
+    "type": "success" | "error",   // "echobot" is also emitted for protocol errors, and is NOT handled by the client
     "text": "Human-readable message",
-    "classes": ".selector.for.card.update"
+    "classes": ".selector.for.card.update",
+    "runToken": "<uuid>",          // echoed; responses whose token does not match the active run are dropped
+    "test": "StIgnatiusOfLoyolaTest"  // executeUnitTest responses only; slugified into #specificUnitTest-<slug>
 }
 ```
+
+**`classes` is a literal CSS selector** built server-side and passed to `document.querySelectorAll()`. It is also the *only* per-request
+correlation mechanism — `runToken` identifies a run, not a request — so card class names in this repo are effectively part of the API's
+contract. Three grammars are in use: `.{validate-slug}.{step}`, `.calendar-{slug}.{step}.year-{n}`, and `.{test-slug}.year-{n}.test-valid`,
+where `{step}` is `file-exists`, `json-valid` or `schema-valid`. Each `executeValidation` yields exactly **3** responses (one per step), a
+constant the client hardcodes when counting phase completion. See #42 / #43.
 
 ### CSS Class Slugification
 

@@ -1,6 +1,7 @@
 # Codebase Structure — UnitTestInterface
 
 ## Top-level layout
+
 ```text
 UnitTestInterface/
 ├── index.php              # Main test runner UI
@@ -44,6 +45,7 @@ UnitTestInterface/
 ```
 
 ## Key JS classes / enums (`assets/js/AssertionsBuilder.js`)
+
 - `TestType` — enum of test kinds (`exactCorrespondence`, `exactCorrespondenceSince`, …)
 - `AssertType` — enum of assertion kinds (`eventNotExists`, `eventExists` AND `hasExpectedDate`)
 - `LitGrade` — enum of liturgical grades (`WEEKDAY` … `HIGHER_SOLEMNITY`)
@@ -51,33 +53,66 @@ UnitTestInterface/
 - `Assertion` — single assertion model
 
 ## PHP-defined globals exposed to JS
+
 - `locale` — for `Intl.DateTimeFormat`
 - `LitcalEvents` — array of liturgical events from API
 
 ## WebSocket message protocol
 
 ### Required `action` field
-| Action               | Purpose                                          | Required props                                   |
-|----------------------|--------------------------------------------------|--------------------------------------------------|
-| `executeValidation`  | Validate source data files vs schemas            | `category`, `validate`, `sourceFile`             |
-| `validateCalendar`   | Validate generated calendar data                 | `category`, `calendar`, `year`, `responsetype`   |
-| `executeUnitTest`    | Run a specific unit test                         | `category`, `calendar`, `year`, `test`           |
 
-### Source data validation: ALWAYS use `category: "sourceDataCheck"`
-The server (`Health.php`) regex-transforms `validate` strings into file paths:
-- `wider-region-{Region}` → wider region file
-- `national-calendar-{CC}` → national calendar file
-- `diocesan-calendar-{id}` → diocesan calendar file
+| Action              | Purpose                               | Required props                                                       | Optional props |
+|---------------------|---------------------------------------|----------------------------------------------------------------------|----------------|
+| `executeValidation` | Validate source data files vs schemas | `category`, `validate`, exactly one of `sourceFile` / `sourceFolder` | `responsetype` |
+| `validateCalendar`  | Validate generated calendar data      | `category`, `calendar`, `year`, `responsetype`                       | `rite`         |
+| `executeUnitTest`   | Run a specific unit test              | `category`, `calendar`, `year`, `test`                               | `rite`         |
 
-Examples:
+Messages sent during an active run also carry a `runToken` (a UUID identifying that run), added by `sendMessage()` — which attaches it
+**only when a run token is currently set**, so anything sent outside a run goes without one.
+
+`category` names **two unrelated things** depending on the action:
+
+- on `executeValidation` it selects a schema-resolution strategy — in practice exactly three: `universalcalendar`, `sourceDataCheck`,
+  `resourceDataCheck` (below);
+- on `validateCalendar` and `executeUnitTest` it names a calendar type: `nationalcalendar`, `diocesancalendar`, `ritecalendar`.
+
+The two sets are disjoint in use. The hazard is that the server's `retrieveSchemaForCategory()` switch *also* still carries legacy arms named
+`nationalcalendar`, `diocesancalendar`, `widerregioncalendar` and `propriumdesanctis`; on `executeValidation` those resolve a schema but leave
+the raw `sourceFile` as the data path, so the file read then fails. Do not use them there. See LiturgicalCalendarAPI#805 / #806.
+
+### Source data validation: pick the category that matches the input
+
+The three categories are **not interchangeable** — each reads a different field. Choosing wrong yields a `null` schema and an
+"Unable to detect schema" card, not a loud failure.
+
+| category            | Server resolves the schema from        | Use when `sourceFile` is                     |
+|---------------------|----------------------------------------|----------------------------------------------|
+| `universalcalendar` | the `sourceFile` path                  | a real path or an API URL                    |
+| `sourceDataCheck`   | the `validate` label (anchored slugs)  | a bare id the server expands into a path     |
+| `resourceDataCheck` | the `sourceFile` URL                   | an absolute API URL (used by `resources.js`) |
+
+`universalcalendar` — the universal checks from `buildUniversalSourceDataChecks()`. `validate` here is PascalCase and is a display/CSS
+label only, never a schema key:
+
 ```javascript
-{ "validate": "wider-region-Europe",                  "sourceFile": "Europe",          "category": "sourceDataCheck" }
-{ "validate": "national-calendar-IT",                 "sourceFile": "IT",              "category": "sourceDataCheck" }
-{ "validate": "diocesan-calendar-roma_lazio_it",      "sourceFile": "roma_lazio_it",   "category": "sourceDataCheck" }
+{ "validate": "PropriumDeTempore", "sourceFile": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json", "category": "universalcalendar" }
 ```
-**Wrong** categories like `widerregioncalendar`/`nationalcalendar`/`diocesancalendar` cause the server to use the raw `sourceFile` as a path → fails.
+
+`sourceDataCheck` — the checks from `buildNonVASourceDataChecks()`, where the server regex-transforms the `validate` slug into a path
+(`wider-region-{Region}`, `national-calendar-{CC}`, `diocesan-calendar-{id}`, `proprium-de-sanctis-…`):
+
+```javascript
+{ "validate": "wider-region-Europe",             "sourceFile": "Europe",        "category": "sourceDataCheck" }
+{ "validate": "national-calendar-IT",            "sourceFile": "IT",            "category": "sourceDataCheck" }
+{ "validate": "diocesan-calendar-roma_lazio_it", "sourceFile": "roma_lazio_it", "category": "sourceDataCheck" }
+```
+
+`resourceDataCheck` — API endpoint checks in `resources.js`, where `sourceFile` is an absolute URL. Never substitute `sourceDataCheck` here.
+
+Categories like `widerregioncalendar` / `nationalcalendar` / `diocesancalendar` are **not** valid on `executeValidation`.
 
 ### Missal (Proprium de Sanctis) validation
+
 Convert `missal_id` → `validate` string:
 
 | missal_id             | validate format                  |
@@ -87,24 +122,32 @@ Convert `missal_id` → `validate` string:
 | `EDITIO_TYPICA_1970`  | `proprium-de-sanctis-1970`       |
 | `EDITIO_TYPICA_2002`  | `proprium-de-sanctis-2002`       |
 
+Build the slug from the missal's **structured metadata**, not by splitting `missal_id` (`region === 'VA'` means editio typica, so the region
+segment is omitted):
+
 ```javascript
-const parts = missal_id.split('_');
-let validateStr;
-if (parts.length === 2 && /^[A-Z]{2}$/.test(parts[0])) {
-    validateStr = `proprium-de-sanctis-${parts[0]}-${parts[1]}`;     // regional
-} else {
-    const year = parts[parts.length - 1];
-    validateStr = `proprium-de-sanctis-${year}`;                     // editio typica
-}
+const validateStr = `proprium-de-sanctis${missalDef.region === 'VA' ? '' : `-${missalDef.region}`}-${missalDef.year_published}`;
 ```
+
 Server resolves via `RomanMissal::getSanctoraleFileName()`.
 
 **Note:** the API's `/missals` endpoint returns `api_path` (URL), NOT `data_path` — do not pass `api_path` directly; always use `sourceDataCheck` with the proper `validate` format.
 
 ### Server response shape
+
 ```javascript
-{ "type": "success" | "error", "text": "…", "classes": ".SomeSelector" }
+{
+    "type": "success" | "error",   // "echobot" is also emitted for protocol errors, and is NOT handled by the client
+    "text": "…",
+    "classes": ".SomeSelector",
+    "runToken": "<uuid>",          // echoed; responses whose token does not match the active run are dropped
+    "test": "StIgnatiusOfLoyolaTest"  // executeUnitTest responses only
+}
 ```
+
+Each `executeValidation` yields exactly **3** responses (`file-exists`, `json-valid`, `schema-valid`) — a constant both `index.js` and
+`resources.js` hardcode when counting phase completion. See #42 / #43.
+
 Server sends selectors with **original casing** but client uses **slugified** card class names. Always pass through `slugifySelector()` from `common.js`:
 
 ```javascript
@@ -112,4 +155,5 @@ document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
 ```
 
 ## API date format
+
 RFC 3339 datetimes, all-day, UTC: `"2018-05-21T00:00:00+00:00"`. Use `new Date()` + `Intl.DateTimeFormat({ timeZone: 'UTC' })` for display.
