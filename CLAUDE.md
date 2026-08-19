@@ -172,12 +172,19 @@ Messages sent to the server must include an `action` property:
 `Health::validateMessageProperties()` lists `sourceFile` as required but special-cases its absence when `sourceFolder` is present, so
 sending both, or neither, is not a supported shape. Only `resources.js` currently sends `sourceFolder`.
 
-Every message also carries a `runToken` (a UUID identifying the whole run), injected centrally by `sendMessage()`.
+Messages sent during an active run also carry a `runToken` (a UUID identifying that run), added by `sendMessage()` — which attaches it
+**only when a run token is currently set**, so anything sent outside a run goes without one.
 
-**Beware:** `category` carries two unrelated vocabularies depending on the action. On `executeValidation` it selects a *schema-resolution
-strategy* (below). On `validateCalendar` and `executeUnitTest` it names a *calendar type* — `nationalcalendar`, `diocesancalendar` or
-`ritecalendar`. The names `nationalcalendar` and `diocesancalendar` appear in both vocabularies meaning different things. See
-LiturgicalCalendarAPI#806 for a proposal to disentangle this.
+**Beware:** `category` names two unrelated things depending on the action:
+
+- on `executeValidation` it selects a *schema-resolution strategy* — in practice exactly three: `universalcalendar`, `sourceDataCheck`,
+  `resourceDataCheck` (see below);
+- on `validateCalendar` and `executeUnitTest` it names a *calendar type* — `nationalcalendar`, `diocesancalendar` or `ritecalendar`.
+
+The two sets are disjoint in use. The hazard is that the server's `retrieveSchemaForCategory()` switch *also* still carries legacy arms named
+`nationalcalendar`, `diocesancalendar`, `widerregioncalendar` and `propriumdesanctis`. On `executeValidation` those resolve a schema but leave
+the raw `sourceFile` as the data path — so the file read fails afterwards. Never use them on `executeValidation`. See
+LiturgicalCalendarAPI#805 (their removal) and #806 (a proposal to disentangle the naming).
 
 ### Source Data Validation Categories
 

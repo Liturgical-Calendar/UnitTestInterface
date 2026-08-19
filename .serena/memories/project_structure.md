@@ -67,11 +67,18 @@ UnitTestInterface/
 | `validateCalendar`  | Validate generated calendar data      | `category`, `calendar`, `year`, `responsetype`                       | `rite`         |
 | `executeUnitTest`   | Run a specific unit test              | `category`, `calendar`, `year`, `test`                               | `rite`         |
 
-Every message also carries a `runToken` (a UUID identifying the whole run), injected centrally by `sendMessage()`.
+Messages sent during an active run also carry a `runToken` (a UUID identifying that run), added by `sendMessage()` — which attaches it
+**only when a run token is currently set**, so anything sent outside a run goes without one.
 
-`category` carries **two unrelated vocabularies** depending on the action: a schema-resolution strategy on `executeValidation` (below), and a
-calendar type (`nationalcalendar` / `diocesancalendar` / `ritecalendar`) on the other two. The first two names appear in both, meaning
-different things. See LiturgicalCalendarAPI#806.
+`category` names **two unrelated things** depending on the action:
+
+- on `executeValidation` it selects a schema-resolution strategy — in practice exactly three: `universalcalendar`, `sourceDataCheck`,
+  `resourceDataCheck` (below);
+- on `validateCalendar` and `executeUnitTest` it names a calendar type: `nationalcalendar`, `diocesancalendar`, `ritecalendar`.
+
+The two sets are disjoint in use. The hazard is that the server's `retrieveSchemaForCategory()` switch *also* still carries legacy arms named
+`nationalcalendar`, `diocesancalendar`, `widerregioncalendar` and `propriumdesanctis`; on `executeValidation` those resolve a schema but leave
+the raw `sourceFile` as the data path, so the file read then fails. Do not use them there. See LiturgicalCalendarAPI#805 / #806.
 
 ### Source data validation: pick the category that matches the input
 
