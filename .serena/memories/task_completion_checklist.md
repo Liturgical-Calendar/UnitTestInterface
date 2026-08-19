@@ -62,8 +62,10 @@ GitHub Actions workflow `.github/workflows/main.yml` runs quality checks on push
 - Verify the `category` matches how the server resolves the schema — the two are NOT interchangeable:
   - `universalcalendar` when `sourceFile` is a real path or an API URL (the universal checks in
     `buildUniversalSourceDataChecks()`); the server reads the **path**
-  - `sourceDataCheck` when `sourceFile` is a bare id the server expands into a path (the wider-region,
-    national, missal and diocesan checks in `buildNonVASourceDataChecks()`); the server reads the **`validate` slug**
+  - `sourceDataCheck` when the `validate` slug should choose the schema (the wider-region, national, missal and
+    diocesan checks in `buildNonVASourceDataChecks()`); the server reads the **`validate` slug**, and reconstructs
+    the data path from it only for `wider-region-…` / `national-calendar-…` / `diocesan-calendar-…` /
+    `proprium-de-sanctis-…-i18n` — every other slug uses `sourceFile` / `sourceFolder` as supplied
   - `resourceDataCheck` when `sourceFile` is an absolute API URL (the endpoint checks in `resources.js`);
     the server reads the **URL**. Never substitute `sourceDataCheck` here
   - Getting this wrong yields a `null` schema and an "Unable to detect schema" card, not a loud failure

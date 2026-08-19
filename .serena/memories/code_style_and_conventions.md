@@ -27,9 +27,15 @@ document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
 
 ## WebSocket categories (CRITICAL)
 
-- For **all** source-data validations, use `category: "sourceDataCheck"` (NOT `nationalcalendar` / `widerregioncalendar` / `diocesancalendar`)
-- The server uses regex on the `validate` field to compute file paths
-- For missals, convert `missal_id` to `proprium-de-sanctis-…` form (see project_structure memory)
+- `executeValidation` takes exactly three categories, and they are NOT interchangeable — each resolves the schema from a different field:
+  - `universalcalendar` — from the `sourceFile` **path** (the universal checks in `buildUniversalSourceDataChecks()`)
+  - `sourceDataCheck` — from the `validate` **slug** (the wider-region / national / missal / diocesan checks)
+  - `resourceDataCheck` — from the `sourceFile` **URL** (the API endpoint checks in `resources.js`)
+- Choosing wrong yields a `null` schema and an "Unable to detect schema" card, not a loud failure
+- Under `sourceDataCheck` the server regexes the `validate` slug to compute the file path for `wider-region-…`,
+  `national-calendar-…`, `diocesan-calendar-…` and `proprium-de-sanctis-…-i18n` only; every other slug uses
+  `sourceFile` / `sourceFolder` as supplied
+- For missals, build the slug from `missalDef.region` / `year_published` (see project_structure memory)
 
 ## API date handling
 
