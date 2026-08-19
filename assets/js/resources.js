@@ -1009,11 +1009,15 @@ const runTests = () => {
             // below records a real occurrence — a double-sent validation inflated the success
             // counter (162) past the rendered-card total (159).
             //
-            // `>=` is load-bearing here beyond the duplicate case: `sourceDataChecks.length * 3`
-            // assumes three frames per check, but a `sourceFolder` check emits one frame per
-            // i18n file, so the real total exceeds the estimate and `===` could never match.
-            // The principled fix is per-request correlation, which needs a per-request id the
-            // protocol does not have. See #42 and LiturgicalCalendarAPI#806.
+            // `sourceDataChecks.length * 3` is now exact: LiturgicalCalendarAPI#809 made a
+            // `sourceFolder` check emit one frame per step like every other check, where it
+            // previously emitted one per failing i18n file and overshot this estimate.
+            //
+            // `>=` remains the right comparison all the same. Counting frames cannot tell a
+            // duplicate from a legitimate one, so it tolerates an unexpected extra rather than
+            // hanging the phase on it. The principled fix is per-request correlation — count
+            // each expected request id once — which needs a per-request id the protocol does
+            // not carry (only a per-*run* `runToken`). See #42 and LiturgicalCalendarAPI#806.
             if ( resourceDataReceivedResponses >= resourceDataExpectedResponses ) {
                 console.log( `All ${resourceDataExpectedResponses} resource data responses received!` );
                 console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );

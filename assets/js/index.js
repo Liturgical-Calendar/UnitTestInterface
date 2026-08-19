@@ -606,10 +606,14 @@ const runTests = () => {
             // The cure is per-request correlation — deduplicate by request id and count each
             // expected id once — which the protocol cannot express today: it carries only a
             // per-*run* `runToken`, no per-request id. See #42 and LiturgicalCalendarAPI#806.
-            // Deduplicating on `classes` instead is NOT a safe substitute: on a `sourceFolder`
-            // check the server emits one frame per i18n file, all sharing the same `classes`,
-            // so dropping "duplicates" would discard real failures and under-count into the
-            // very wedge this guards against.
+            //
+            // Deduplicating on `classes` is not that cure either. It is a display selector, not
+            // an identity: the server chooses it to address a card, so two frames sharing one is
+            // a rendering decision rather than a statement that the second is redundant.
+            // (Until LiturgicalCalendarAPI#809 that was concretely unsafe — a `sourceFolder`
+            // check emitted one frame per failing i18n file, all with the same `classes`, so
+            // discarding "duplicates" would have dropped real failures. That specific hazard is
+            // gone; the reason not to rely on the selector for identity is not.)
             if ( ++messageCounter >= 3 ) {
                 console.log( 'one cycle complete, passing to next test..' )
                 messageCounter = 0;
