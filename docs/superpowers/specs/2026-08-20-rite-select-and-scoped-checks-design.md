@@ -19,7 +19,8 @@ shared module both runners already import — rather than being written twice.
 
 - A rite control on both runner pages, defaulting to Roman.
 - `index.php`: source-data checks and accuracy tests scoped by **both** the selected rite and the selected calendar.
-- `resources.php`: rite-scoped items filtered by the selected rite; rite-independent items always checked.
+- `resources.php`: rite-scoped items filtered by the selected rite; the six rite-independent collection
+  endpoints always checked; every rite-qualified request sends its rite segment explicitly.
 - Close the under-coverage the issue opens on: the Ambrosian temporale, the Ambrosian sanctorale, and both of
   their `i18n` folders become checkable.
 - Retire the two divergent vocabularies for the same files (`PropriumDeTempore` + `universalcalendar` in
@@ -57,14 +58,14 @@ than unpicks.
 
 ## Design Decisions (confirmed)
 
-| Decision                     | Choice                                                                                            |
-|------------------------------|---------------------------------------------------------------------------------------------------|
-| Inventory source             | **Hardcoded list** in `wsProtocol.js`; `/validations` adoption deferred wholesale to #42          |
-| Component library            | **`@liturgical-calendar/components-js`** (ESM), not `liturgy-components-php`                      |
-| `index.php` calendar control | **Full adoption** — library `CalendarSelect` linked to `RiteSelect`, replacing our hand-built one |
-| `resources.php` control      | **`RiteSelect` only** — the page is exhaustive, not calendar-scoped                               |
-| `resources.php` filter rule  | Rite narrows only rite-scoped items; bare API paths, wider regions and nations always run         |
-| Delivery                     | **Import map + pinned CDN `+esm`**, mirroring `LiturgicalCalendarFrontend`                        |
+| Decision                     | Choice                                                                                                                     |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| Inventory source             | **Hardcoded list** in `wsProtocol.js`; `/validations` adoption deferred wholesale to #42                                   |
+| Component library            | **`@liturgical-calendar/components-js`** (ESM), not `liturgy-components-php`                                               |
+| `index.php` calendar control | **Full adoption** — library `CalendarSelect` linked to `RiteSelect`, replacing our hand-built one                          |
+| `resources.php` control      | **`RiteSelect` only** — the page is exhaustive, not calendar-scoped                                                        |
+| `resources.php` filter rule  | Only the six rite-independent collection endpoints escape the predicate; nations, wider regions and missals are Roman-only |
+| Delivery                     | **Import map + pinned CDN `+esm`**, mirroring `LiturgicalCalendarFrontend`                                                 |
 
 ## Architecture
 
@@ -150,7 +151,11 @@ if ($calendar === 'VA' || $category === 'ritecalendar') {
 ```
 
 Both forms resolve to `/roman/{year}`. Client and server stay consistent because the server builds the `classes`
-selector from the calendar id the client sends. Runs stored before this change replay from their own stored
+selector from the calendar id the client sends.
+
+Beyond idiom, this matters ahead of time: Vatican City is expected to gain its own calendar data as a national
+calendar, distinct from the General Roman Calendar. Once that lands, `VA` and the General Roman Calendar are two
+different things, and any code still using them interchangeably becomes wrong rather than merely loose. Runs stored before this change replay from their own stored
 scaffold, so they remain internally consistent too.
 
 #### Accuracy-test filtering is already correct
@@ -166,28 +171,69 @@ is re-sourced from the `RiteSelect`.
 ### 3. `resources.php` — `RiteSelect` only
 
 No `CalendarSelect`: the page health-checks every path and every calendar the API supports, so it is not
-calendar-scoped. The rite selection narrows only what is genuinely rite-partitioned.
+calendar-scoped. The rite selection narrows what is rite-partitioned and hides what does not exist under the
+selected rite.
 
-| Check family                                                                     | Rite-scoped? |
-|----------------------------------------------------------------------------------|--------------|
-| `/calendars`, `/decrees`, `/tests`, `/events`, `/easter`, `/schemas`, `/missals` | No           |
-| Wider region source data and `/data/widerregion/…` paths                         | No           |
-| National calendar source data and `/data`, `/events` per-nation paths            | No           |
-| Universal source corpus (temporale, sanctorale, decrees, and their `i18n`)       | **Yes**      |
-| Diocesan calendar source data and per-diocese paths                              | **Yes**      |
-| Test corpus (`jsondata/tests/{rite}/{name}.json`)                                | **Yes**      |
+#### The API's rite model
 
-Every nation's calendar is Roman — only dioceses carry a non-Roman rite — so national calendars sit on the
-rite-independent side. Keeping the bare API paths unfiltered is what preserves the page as a real health check of
-the API as a whole under either rite selection.
+`Router::extractRiteSegment()` accepts an optional leading rite segment on `calendar`, `events` and `data`.
+`/tests` resolves its rite separately, through `extractTestsRite()`, which has a third state: no segment means
+*all* rites, distinct from an explicit `roman`.
 
-There is deliberately **no "All rites" option**. It was considered — an exhaustive page that shows one rite at
-a time is a narrower health check than one that shows everything — and declined, because the library's
-`RiteSelect` validates its values against the known rites, so "all" would have to be injected post-mount or the
-page would need a hand-written select instead. Running the page twice covers the same ground.
+The tiering is not symmetric. `RegionalDataHandler` states it:
+
+> Only the diocesan tier exists under more than one rite; `RegionalDataParams::validateRiteCompatibility()`
+> rejects a national or wider-region request under a non-Roman rite before any path is built.
+
+`openapi.json` agrees, listing `/calendar/ambrosian/diocese/{id}` and `/events/ambrosian/diocese/{id}` with no
+national counterparts. So national and wider-region resources are **Roman-only**, not rite-independent:
+requesting one under Ambrosian is an error, not a no-op. `/missals` is Roman-only too — `RomanMissal` carries no
+Ambrosian edition, and the Ambrosian sanctorale reaches the inventory as an explicit item instead.
+
+Omitting the segment is safe: `Router::canonicalRiteUrl()` advertises the explicit form through an RFC 6596
+`Link: rel="canonical"` header rather than redirecting, deliberately, because these routes accept POST. Existing
+unprefixed URLs therefore keep working. We send the canonical rite-qualified form regardless, because under
+Ambrosian the unprefixed form would silently resolve to Roman.
+
+#### What runs under each selection
+
+| Check family                                                                     | Roman                         | Ambrosian           |
+|----------------------------------------------------------------------------------|-------------------------------|---------------------|
+| `/calendars`, `/decrees`, `/tests`, `/easter`, `/schemas`, `/missals`            | ✓                             | ✓                   |
+| `/events` (collection)                                                           | `/events/roman`               | `/events/ambrosian` |
+| Wider region source data, `/data/{rite}/widerregion/{k}`                         | ✓ (`roman`)                   | —                   |
+| National source data, `/data/{rite}/nation/{k}`, `/events/{rite}/nation/{k}`     | ✓ (`roman`)                   | —                   |
+| Per-missal `/missals/{id}` and `proprium-de-sanctis-*` source data               | ✓ (`roman`)                   | —                   |
+| Diocesan source data, `/data/{rite}/diocese/{id}`, `/events/{rite}/diocese/{id}` | Roman dioceses                | Ambrosian dioceses  |
+| Universal source corpus (temporale, sanctorale, decrees, `i18n`)                 | 4 Roman items + Roman missals | 4 Ambrosian items   |
+| Test corpus (`jsondata/tests/{rite}/{name}.json`)                                | `tests/roman/*`               | `tests/ambrosian/*` |
+
+Only the six rite-independent collection endpoints sit outside the predicate. Everything else carries a rite and
+is filtered by `inRiteScope()`, which keeps the rule uniform: one predicate, one exception list.
+
+The consequence, accepted deliberately: the Ambrosian view of the page is thin, and a national-calendar
+regression is invisible while Ambrosian is selected. That is the honest reflection of an API in which those
+resources do not exist under that rite — showing them would mean issuing requests the API rejects.
+
+#### Not in scope
+
+`resources.php` health-checks no `/temporale`, `/temporale/{event_key}` or `/validations` path, and no
+`/calendar/…` path at all. The first two are endpoints that shipped after the page's check list was last
+extended; `/calendar` is covered from `index.php` instead, through the `validateCalendar` WebSocket action, which
+already sends `rite` and whose path `Health::buildCalendarRequestPath()` already prefixes with `$ritePath`. All
+of this is filed separately rather than folded in here.
+
+#### No "All rites" option
+
+Considered — an exhaustive page that shows one rite at a time is a narrower health check than one that shows
+everything — and declined, because the library's `RiteSelect` validates its values against the known rites, so
+"all" would have to be injected post-mount or the page would need a hand-written select instead. Running the
+page under each rite covers the same ground.
+
+#### Where the rite comes from
 
 Diocesan filtering reads `diocesanCalendar.rite ?? 'roman'`; test filtering reads
-`test.applies_to?.rite ?? test.appliesTo?.rite`, both of which the page already resolves.
+`test.applies_to?.rite ?? test.appliesTo?.rite`. Both are already resolved by the page today.
 
 ### 4. Shared metadata via `ApiBase`
 
@@ -272,9 +318,13 @@ top-level option. The replacements assert behaviour instead:
 
 A new spec covers `resources.php`:
 
-- Bare API-path cards are present under **both** rite selections.
-- Wider-region and national-calendar cards are present under both.
-- The universal source cards, diocesan cards and test cards change with the selection.
+- The six rite-independent collection cards (`/calendars`, `/decrees`, `/tests`, `/easter`, `/schemas`,
+  `/missals`) are present under **both** rite selections.
+- Wider-region, national-calendar and per-missal cards are present under Roman and **absent** under Ambrosian.
+- Diocesan, universal-source and test cards change with the selection.
+- Every rite-qualified URL a card carries names a rite explicitly — no card requests an unprefixed
+  `/data/…`, `/events/…` or `/calendar/…` path, which would silently resolve to Roman under an Ambrosian
+  selection.
 
 `result-painting.spec.ts` and the replay specs are checked for the `.calendar-va` → `.calendar-roman` change.
 
@@ -291,3 +341,11 @@ assertions keep to that constraint by exercising the scaffold, which is built pu
 - The WebSocket messaging section notes that `universalcalendar` is now the single vocabulary for the universal
   corpus on both pages, and that `sourceFolder` is no longer `resources.js`-only.
 - The `Key Files` table gains `assets/js/wsProtocol.js`.
+
+Two follow-ups are filed rather than folded in:
+
+- **This repo** — `resources.php` health-checks no `/temporale`, `/temporale/{event_key}` or `/validations`
+  path. All three shipped after the page's check list was last extended.
+- **LiturgicalCalendarAPI** — `openapi.json` documents `/data/nation/{key}`, `/data/diocese/{key}` and
+  `/data/widerregion/{key}` with no rite segment, though `Router::extractRiteSegment()` accepts one on `data`
+  exactly as it does on `calendar` and `events`. The schema understates the route.
