@@ -785,7 +785,12 @@ const connectWebSocket = () => {
         // We only reach here with an active run (currentRunToken !== null), so require every
         // response to carry the matching token. This discards both mismatched responses from a
         // previous run and untagged stragglers that could otherwise mutate the new run's UI.
-        if ( responseData.runToken !== currentRunToken ) {
+        //
+        // The object test is load-bearing, not defensive noise: `JSON.parse('null')` succeeds and
+        // returns `null`, so reading `.runToken` off it throws a TypeError — between the two
+        // try/catch blocks, escaping both, and wedging the run exactly as an unparseable frame
+        // used to. Bare scalars box rather than throw, but are rejected here all the same.
+        if ( null === responseData || 'object' !== typeof responseData || responseData.runToken !== currentRunToken ) {
             return;
         }
         console.log( responseData );

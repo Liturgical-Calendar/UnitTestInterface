@@ -483,7 +483,12 @@ const connectWebSocket = () => {
         // Require the matching token, as index.js does. This page used to accept *untagged*
         // responses (`responseData.runToken && …`), so the two runners disagreed about which
         // frames belong to the current run; the server tags every frame once a run token is set.
-        if ( responseData.runToken !== currentRunToken ) {
+        //
+        // The object test is load-bearing, not defensive noise: `JSON.parse('null')` succeeds and
+        // returns `null`, so reading `.runToken` off it throws a TypeError — between the two
+        // try/catch blocks, escaping both, and wedging the run exactly as an unparseable frame
+        // used to. Bare scalars box rather than throw, but are rejected here all the same.
+        if ( null === responseData || 'object' !== typeof responseData || responseData.runToken !== currentRunToken ) {
             return;
         }
         console.log( responseData );
