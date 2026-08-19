@@ -23,6 +23,8 @@ import {
     fetchRunDetail,
 } from './testResults.js';
 
+import { sendCancelRun } from './wsProtocol.js';
+
 const resultCollector = createResultCollector();
 let renderedUnitTests = [];
 
@@ -1640,6 +1642,9 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     } else {
         // Stop the running test run
         console.log( 'Stopping test run...' );
+        // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
+        // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
+        sendCancelRun( conn, currentRunToken );
         currentState = TestState.Stopped;
         currentRunToken = null;
         const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
