@@ -54,6 +54,16 @@ test('a response with a malformed classes selector paints nothing instead of thr
     expect(await paint(page, { type: 'error', classes: '.((not a selector', text: 'boom' })).toBe(0);
 });
 
+test('a null response paints nothing instead of throwing', async ({ page }) => {
+    // Reachable through the run loop: a frame of the literal text `null` parses to `null`, and
+    // the painter reads `.type` off its argument before anything else.
+    expect(await paint(page, null)).toBe(0);
+});
+
+test('a non-object response paints nothing instead of throwing', async ({ page }) => {
+    expect(await paint(page, 42)).toBe(0);
+});
+
 test('a well-formed selector matching no card paints nothing instead of throwing', async ({ page }) => {
     expect(await paint(page, { type: 'success', classes: '.no-such-card.file-exists', text: 'ok' })).toBe(0);
 });

@@ -764,6 +764,31 @@ const connectWebSocket = () => {
      * corresponding failed count and marks the test as failed. If the test is
      * finished, it updates the total test time and displays it.
      */
+    /**
+     * Count a frame we could not attribute to a specific check.
+     *
+     * The frame is unusable, but the *phase* is still known from `currentState`, so the failure
+     * is booked against both the global total and the current phase's total. Incrementing only
+     * the global one would leave the header count and the per-phase counts disagreeing, which is
+     * the same silent drift #43 flags for unmatched selectors.
+     */
+    const countUnattributableFailure = () => {
+        updateText( 'failedCount', ++failedTests );
+        switch ( currentState ) {
+            case TestState.ExecutingValidations:
+                updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
+                break;
+            case TestState.ValidatingCalendarData:
+                updateText( 'failedCalendarDataTestsCount', ++failedCalendarDataTests );
+                break;
+            case TestState.SpecificUnitTests:
+                // Only the phase total: without a usable `test` property there is no per-test
+                // accordion counter to attribute it to.
+                updateText( 'failedUnitTestsCount', ++failedUnitTests );
+                break;
+        }
+    };
+
     conn.onmessage = ( e ) => {
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
@@ -776,7 +801,7 @@ const connectWebSocket = () => {
             // runTests() is never called again and the run wedges with the spinner still going
             // and nothing in the UI to say why (#43). Count it and keep the run moving.
             console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
-            updateText( 'failedCount', ++failedTests );
+            countUnattributableFailure();
             if ( currentState !== TestState.JobsFinished ) {
                 runTests();
             }
@@ -844,13 +869,13 @@ const connectWebSocket = () => {
                 // Silently ignoring it (while still advancing the state machine below) is how a
                 // protocol error used to disappear from the UI entirely.
                 console.error( `Unexpected response type "${responseData.type}" — treating as a failure.`, responseData );
-                updateText( 'failedCount', ++failedTests );
+                countUnattributableFailure();
             }
         } catch ( handlerError ) {
             // Same reasoning as the parse guard: a response we cannot process must not stop
             // the run from finishing.
             console.error( 'Failed to process a WebSocket response.', handlerError, responseData );
-            updateText( 'failedCount', ++failedTests );
+            countUnattributableFailure();
         }
         if ( currentState !== TestState.JobsFinished ) {
             runTests();

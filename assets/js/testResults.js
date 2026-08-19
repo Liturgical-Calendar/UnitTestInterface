@@ -13,6 +13,14 @@ import { slugifySelector, escapeHtmlAttr } from './common.js';
  *                   totals then drift away from the rendered cards.
  */
 export const applyResultToDom = (responseData) => {
+    // Guard the argument itself, not just its `classes`: `JSON.parse('null')` yields `null`, and
+    // reading `.type` off it throws — which would break the no-throw contract this function
+    // documents, in the one code path that exists to keep a bad frame from wedging the run.
+    if (null === responseData || 'object' !== typeof responseData) {
+        console.warn('Response was not an object; nothing to paint.', responseData);
+        return 0;
+    }
+
     const isSuccess = responseData.type === 'success';
     const selector = typeof responseData.classes === 'string' ? responseData.classes.trim() : '';
 
