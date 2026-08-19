@@ -156,11 +156,12 @@ The test interface communicates with the LiturgicalCalendarAPI's Health websocke
 
 Messages sent to the server must include an `action` property:
 
-| Action              | Purpose                                    | Required Properties                                                      | Optional Properties |
-|---------------------|--------------------------------------------|--------------------------------------------------------------------------|---------------------|
-| `executeValidation` | Validate source data files against schemas | `category`, `validate`, **exactly one of** `sourceFile` / `sourceFolder` | `responsetype`      |
-| `validateCalendar`  | Validate generated calendar data           | `category`, `calendar`, `year`, `responsetype`                           | `rite`              |
-| `executeUnitTest`   | Run a specific unit test                   | `category`, `calendar`, `year`, `test`                                   | `rite`              |
+| Action              | Purpose                                    | Required Properties                                                      | Optional Properties            |
+|---------------------|--------------------------------------------|--------------------------------------------------------------------------|--------------------------------|
+| `executeValidation` | Validate source data files against schemas | `category`, `validate`, **exactly one of** `sourceFile` / `sourceFolder` | `responsetype`                 |
+| `validateCalendar`  | Validate generated calendar data           | `category`, `calendar`, `year`, `responsetype`                           | `rite`                         |
+| `executeUnitTest`   | Run a specific unit test                   | `category`, `calendar`, `year`, `test`                                   | `rite`                         |
+| `cancelRun`         | Abandon a run, dropping its queued backlog | `runToken`                                                               | *(none — no response is sent)* |
 
 `executeValidation` therefore has two request shapes — a single file, or a folder of i18n files:
 
@@ -172,8 +173,10 @@ Messages sent to the server must include an `action` property:
 `Health::validateMessageProperties()` lists `sourceFile` as required but special-cases its absence when `sourceFolder` is present, so
 sending both, or neither, is not a supported shape. Only `resources.js` currently sends `sourceFolder`.
 
-Messages sent during an active run also carry a `runToken` (a UUID identifying that run), added by `sendMessage()` — which attaches it
-**only when a run token is currently set**, so anything sent outside a run goes without one.
+Messages sent during an active run also carry a `runToken` (a UUID identifying that run). For the other three actions, it is added by
+`sendMessage()` — which attaches it **only when a run token is currently set**, so anything sent outside a run goes without one. `cancelRun`
+is the exception: `sendCancelRun()` in `assets/js/wsProtocol.js` builds its own frame rather than going through `sendMessage()`, and
+`runToken` is **required**, not optional — it names the run being abandoned.
 
 **Beware:** `category` names two unrelated things depending on the action:
 
