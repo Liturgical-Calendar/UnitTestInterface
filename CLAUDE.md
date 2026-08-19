@@ -181,10 +181,11 @@ Messages sent during an active run also carry a `runToken` (a UUID identifying t
   `resourceDataCheck` (see below);
 - on `validateCalendar` and `executeUnitTest` it names a *calendar type* — `nationalcalendar`, `diocesancalendar` or `ritecalendar`.
 
-The two sets are disjoint in use. The hazard is that the server's `retrieveSchemaForCategory()` switch *also* still carries legacy arms named
-`nationalcalendar`, `diocesancalendar`, `widerregioncalendar` and `propriumdesanctis`. On `executeValidation` those resolve a schema but leave
-the raw `sourceFile` as the data path — so the file read fails afterwards. Never use them on `executeValidation`. See
-LiturgicalCalendarAPI#805 (their removal) and #806 (a proposal to disentangle the naming).
+The two sets are disjoint. `executeValidation` accepts exactly the three categories below; the calendar-type names are not valid there and
+never were usable — until LiturgicalCalendarAPI#805 removed them, `nationalcalendar`, `diocesancalendar`, `widerregioncalendar` and
+`propriumdesanctis` lingered in the server's `retrieveSchemaForCategory()` switch, where they resolved a schema and then failed on the file
+read. They now return no schema at all, which reports the real problem. See LiturgicalCalendarAPI#806 for a proposal to stop the two
+vocabularies sharing a property name in the first place.
 
 ### Source Data Validation Categories
 
@@ -192,11 +193,19 @@ LiturgicalCalendarAPI#805 (their removal) and #806 (a proposal to disentangle th
 **the two categories consume different inputs**. Picking the wrong one does not fail loudly — it yields a `null` schema and the card reports
 *"Unable to detect schema for dataPath …"*.
 
-| category            | Server resolves the schema from        | Use when `sourceFile` is                     |
-|---------------------|----------------------------------------|----------------------------------------------|
-| `universalcalendar` | the `sourceFile` path                  | a real path or an API URL                    |
-| `sourceDataCheck`   | the `validate` label (anchored slugs)  | a bare id the server expands into a path     |
-| `resourceDataCheck` | the `sourceFile` URL                   | an absolute API URL (used by `resources.js`) |
+| category            | Server resolves the schema from       | Use when                                             |
+|---------------------|---------------------------------------|------------------------------------------------------|
+| `universalcalendar` | the `sourceFile` path                 | `sourceFile` is a real path or an API URL            |
+| `sourceDataCheck`   | the `validate` label (anchored slugs) | `validate` is one of the recognised slugs            |
+| `resourceDataCheck` | the `sourceFile` URL                  | `sourceFile` is an absolute API URL (`resources.js`) |
+
+Note what `sourceDataCheck` does **not** imply: the data path is whatever `sourceFile` / `sourceFolder` says, *as supplied*. The server
+reconstructs it from the slug only for four slug families — `wider-region-…`, `national-calendar-…`, `diocesan-calendar-…` and
+`proprium-de-sanctis-…` — each in **both** its plain form (with `sourceFile`) and its `-i18n` form (with `sourceFolder`); the missal pair
+resolves through `RomanMissal::getSanctoraleFileName()` / `getSanctoraleI18nFilePath()`.
+
+That is why those messages send a bare id (`IT`, `Europe`, `EDITIO_TYPICA_1970`) while every other `sourceDataCheck` message sends a real
+path — the decrees file, the temporale file and `jsondata/tests/{rite}/{name}.json` are all sent as full paths under this same category.
 
 #### `universalcalendar` — when the message carries a path
 
@@ -215,9 +224,10 @@ Switching these to `sourceDataCheck` would feed `PropriumDeTempore` to the slug 
 check in both rites. (An automated reviewer proposed exactly that on PR #41, citing an earlier version of this section that documented only
 `sourceDataCheck`.)
 
-#### `sourceDataCheck` — when the message carries a bare id
+#### `sourceDataCheck` — when the `validate` slug is the schema key
 
-Use `category: "sourceDataCheck"` for validating source files whose path the server reconstructs from the `validate` slug:
+Use `category: "sourceDataCheck"` when the schema should be chosen by the `validate` slug. For the calendar slugs below the server also
+reconstructs the data path from that slug, so `sourceFile` carries a bare id:
 
 ```javascript
 // Wider region check
@@ -248,7 +258,9 @@ The server's `Health.php` uses regex patterns to transform these `validate` valu
 - `national-calendar-{CC}` → `JsonData::NATIONAL_CALENDAR_FILE` path
 - `diocesan-calendar-{id}` → `JsonData::DIOCESAN_CALENDAR_FILE` path
 
-Using incorrect categories (like `widerregioncalendar`) causes the server to use the raw `sourceFile` value as the path, which fails.
+Those `// NOT …` notes name categories that are no longer valid anywhere on `executeValidation`: LiturgicalCalendarAPI#805 removed them, so
+they now resolve no schema and the card reports *"Unable to detect schema for dataPath …"*. Before that they resolved a schema and then
+failed on the file read, which was harder to diagnose.
 
 ### Missal (Proprium de Sanctis) Validation
 
