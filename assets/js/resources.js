@@ -466,37 +466,66 @@ const connectWebSocket = () => {
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
         }
-        const responseData = JSON.parse( e.data );
-        // Discard responses from a previous run if the server echoes a mismatched token
-        if ( responseData.runToken && responseData.runToken !== currentRunToken ) {
+        let responseData;
+        try {
+            responseData = JSON.parse( e.data );
+        } catch ( parseError ) {
+            // The state machine is driven from this handler: an exception escaping here means
+            // runTests() is never called again and the run wedges with the spinner still going
+            // and nothing in the UI to say why (#43). Count it and keep the run moving.
+            console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
+            updateText( 'failedCount', ++failedTests );
+            if ( currentState !== TestState.JobsFinished ) {
+                runTests();
+            }
+            return;
+        }
+        // Require the matching token, as index.js does. This page used to accept *untagged*
+        // responses (`responseData.runToken && …`), so the two runners disagreed about which
+        // frames belong to the current run; the server tags every frame once a run token is set.
+        if ( responseData.runToken !== currentRunToken ) {
             return;
         }
         console.log( responseData );
-        if ( responseData.type === "success" ) {
-            applyResultToDom( responseData );
-            resultCollector.record( phaseForState(), responseData );
-            updateText('successfulCount', ++successfulTests);
-            switch( currentState ) {
-                case TestState.ExecutingResourceValidations:
-                    updateText('successfulResourceDataTestsCount', ++successfulResourceDataTests);
-                    break;
-                case TestState.ExecutingSourceValidations:
-                    updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
-                    break;
+        try {
+            if ( responseData.type === "success" ) {
+                applyResultToDom( responseData );
+                resultCollector.record( phaseForState(), responseData );
+                updateText('successfulCount', ++successfulTests);
+                switch( currentState ) {
+                    case TestState.ExecutingResourceValidations:
+                        updateText('successfulResourceDataTestsCount', ++successfulResourceDataTests);
+                        break;
+                    case TestState.ExecutingSourceValidations:
+                        updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
+                        break;
+                }
             }
-        }
-        else if ( responseData.type === "error" ) {
-            applyResultToDom( responseData );
-            resultCollector.record( phaseForState(), responseData );
-            updateText('failedCount', ++failedTests);
-            switch( currentState ) {
-                case TestState.ExecutingResourceValidations:
-                    updateText('failedResourceDataTestsCount', ++failedResourceDataTests);
-                    break;
-                case TestState.ExecutingSourceValidations:
-                    updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
-                    break;
+            else if ( responseData.type === "error" ) {
+                applyResultToDom( responseData );
+                resultCollector.record( phaseForState(), responseData );
+                updateText('failedCount', ++failedTests);
+                switch( currentState ) {
+                    case TestState.ExecutingResourceValidations:
+                        updateText('failedResourceDataTestsCount', ++failedResourceDataTests);
+                        break;
+                    case TestState.ExecutingSourceValidations:
+                        updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
+                        break;
+                }
             }
+            else {
+                // `echobot` is what the server returns for a malformed or unrecognised message.
+                // Silently ignoring it (while still advancing the state machine below) is how a
+                // protocol error used to disappear from the UI entirely.
+                console.error( `Unexpected response type "${responseData.type}" — treating as a failure.`, responseData );
+                updateText( 'failedCount', ++failedTests );
+            }
+        } catch ( handlerError ) {
+            // Same reasoning as the parse guard: a response we cannot process must not stop
+            // the run from finishing.
+            console.error( 'Failed to process a WebSocket response.', handlerError, responseData );
+            updateText( 'failedCount', ++failedTests );
         }
         if ( currentState !== TestState.JobsFinished ) {
             runTests();
@@ -950,7 +979,11 @@ const runTests = () => {
         case TestState.ExecutingResourceValidations:
             // Count responses from parallel requests (all requests already sent)
             resourceDataReceivedResponses++;
-            if ( resourceDataReceivedResponses === resourceDataExpectedResponses ) {
+            // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
+            // and the phase would never complete (#43). The comment on the wider-region push
+            // below records a real occurrence — a double-sent validation inflated the success
+            // counter (162) past the rendered-card total (159).
+            if ( resourceDataReceivedResponses >= resourceDataExpectedResponses ) {
                 console.log( `All ${resourceDataExpectedResponses} resource data responses received!` );
                 console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
                 currentState = TestState.ExecutingSourceValidations;
@@ -972,7 +1005,8 @@ const runTests = () => {
         case TestState.ExecutingSourceValidations:
             // Count responses from parallel requests (all requests already sent)
             sourceDataReceivedResponses++;
-            if ( sourceDataReceivedResponses === sourceDataExpectedResponses ) {
+            // `>=`, not `===` — see the note on the resource-data counter above.
+            if ( sourceDataReceivedResponses >= sourceDataExpectedResponses ) {
                 console.log( `All ${sourceDataExpectedResponses} source data responses received!` );
                 currentState = TestState.JobsFinished;
                 runTests();

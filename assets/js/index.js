@@ -597,7 +597,10 @@ const runTests = () => {
             break;
         }
         case TestState.ExecutingValidations:
-            if ( ++messageCounter === 3 ) {
+            // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
+            // and the phase would never complete (#43). The repo already has a recorded incident
+            // of a double-sent validation inflating the counters past the rendered-card total.
+            if ( ++messageCounter >= 3 ) {
                 console.log( 'one cycle complete, passing to next test..' )
                 messageCounter = 0;
                 if ( index < currentSourceDataChecks.length ) {
@@ -630,7 +633,8 @@ const runTests = () => {
         case TestState.ValidatingCalendarData:
             // Count responses from parallel requests (all requests already sent)
             calendarDataReceivedResponses++;
-            if ( calendarDataReceivedResponses === calendarDataExpectedResponses ) {
+            // `>=`, not `===` — see the note on the source-data counter above.
+            if ( calendarDataReceivedResponses >= calendarDataExpectedResponses ) {
                 console.log( `All ${calendarDataExpectedResponses} calendar data responses received!` );
                 console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
                 currentState = TestState.SpecificUnitTests;
@@ -764,7 +768,20 @@ const connectWebSocket = () => {
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
         }
-        const responseData = JSON.parse( e.data );
+        let responseData;
+        try {
+            responseData = JSON.parse( e.data );
+        } catch ( parseError ) {
+            // The state machine is driven from this handler: an exception escaping here means
+            // runTests() is never called again and the run wedges with the spinner still going
+            // and nothing in the UI to say why (#43). Count it and keep the run moving.
+            console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
+            updateText( 'failedCount', ++failedTests );
+            if ( currentState !== TestState.JobsFinished ) {
+                runTests();
+            }
+            return;
+        }
         // We only reach here with an active run (currentRunToken !== null), so require every
         // response to carry the matching token. This discards both mismatched responses from a
         // previous run and untagged stragglers that could otherwise mutate the new run's UI.
@@ -772,49 +789,63 @@ const connectWebSocket = () => {
             return;
         }
         console.log( responseData );
-        if ( responseData.type === "success" ) {
-            applyResultToDom( responseData );
-            resultCollector.record( phaseForState(), responseData );
-            updateText('successfulCount', ++successfulTests);
-            switch ( currentState ) {
-                case TestState.ExecutingValidations: {
-                    updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
-                    break;
-                }
-                case TestState.ValidatingCalendarData: {
-                    updateText('successfulCalendarDataTestsCount', ++successfulCalendarDataTests);
-                    break;
-                }
-                case TestState.SpecificUnitTests: {
-                    updateText('successfulUnitTestsCount', ++successfulUnitTests);
-                    const testSlug = slugify(responseData.test);
-                    const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
-                    updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
-                    break;
-                }
-            }
-        }
-        else if ( responseData.type === "error" ) {
-            applyResultToDom( responseData );
-            resultCollector.record( phaseForState(), responseData );
-            updateText('failedCount', ++failedTests);
-            switch ( currentState ) {
-                case TestState.ExecutingValidations: {
-                    updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
-                    break;
-                }
-                case TestState.ValidatingCalendarData: {
-                    updateText('failedCalendarDataTestsCount', ++failedCalendarDataTests);
-                    break;
-                }
-                case TestState.SpecificUnitTests: {
-                    updateText('failedUnitTestsCount', ++failedUnitTests);
-                    const testSlug = slugify(responseData.test);
-                    const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
-                    updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
-                    break;
+        try {
+            if ( responseData.type === "success" ) {
+                applyResultToDom( responseData );
+                resultCollector.record( phaseForState(), responseData );
+                updateText('successfulCount', ++successfulTests);
+                switch ( currentState ) {
+                    case TestState.ExecutingValidations: {
+                        updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
+                        break;
+                    }
+                    case TestState.ValidatingCalendarData: {
+                        updateText('successfulCalendarDataTestsCount', ++successfulCalendarDataTests);
+                        break;
+                    }
+                    case TestState.SpecificUnitTests: {
+                        updateText('successfulUnitTestsCount', ++successfulUnitTests);
+                        const testSlug = slugify(responseData.test);
+                        const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
+                        updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
+                        break;
+                    }
                 }
             }
+            else if ( responseData.type === "error" ) {
+                applyResultToDom( responseData );
+                resultCollector.record( phaseForState(), responseData );
+                updateText('failedCount', ++failedTests);
+                switch ( currentState ) {
+                    case TestState.ExecutingValidations: {
+                        updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
+                        break;
+                    }
+                    case TestState.ValidatingCalendarData: {
+                        updateText('failedCalendarDataTestsCount', ++failedCalendarDataTests);
+                        break;
+                    }
+                    case TestState.SpecificUnitTests: {
+                        updateText('failedUnitTestsCount', ++failedUnitTests);
+                        const testSlug = slugify(responseData.test);
+                        const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
+                        updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
+                        break;
+                    }
+                }
+            }
+            else {
+                // `echobot` is what the server returns for a malformed or unrecognised message.
+                // Silently ignoring it (while still advancing the state machine below) is how a
+                // protocol error used to disappear from the UI entirely.
+                console.error( `Unexpected response type "${responseData.type}" — treating as a failure.`, responseData );
+                updateText( 'failedCount', ++failedTests );
+            }
+        } catch ( handlerError ) {
+            // Same reasoning as the parse guard: a response we cannot process must not stop
+            // the run from finishing.
+            console.error( 'Failed to process a WebSocket response.', handlerError, responseData );
+            updateText( 'failedCount', ++failedTests );
         }
         if ( currentState !== TestState.JobsFinished ) {
             runTests();
