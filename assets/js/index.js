@@ -600,6 +600,16 @@ const runTests = () => {
             // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
             // and the phase would never complete (#43). The repo already has a recorded incident
             // of a double-sent validation inflating the counters past the rendered-card total.
+            //
+            // This is a mitigation, not a cure. Counting frames cannot distinguish a duplicate
+            // from a legitimate one, so a duplicate still completes the phase one frame early.
+            // The cure is per-request correlation — deduplicate by request id and count each
+            // expected id once — which the protocol cannot express today: it carries only a
+            // per-*run* `runToken`, no per-request id. See #42 and LiturgicalCalendarAPI#806.
+            // Deduplicating on `classes` instead is NOT a safe substitute: on a `sourceFolder`
+            // check the server emits one frame per i18n file, all sharing the same `classes`,
+            // so dropping "duplicates" would discard real failures and under-count into the
+            // very wedge this guards against.
             if ( ++messageCounter >= 3 ) {
                 console.log( 'one cycle complete, passing to next test..' )
                 messageCounter = 0;
