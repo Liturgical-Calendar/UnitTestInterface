@@ -43,6 +43,25 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
 if ($pageName === 'admin') {
     echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
 }
+
+// The two runner pages mount liturgy-components-js controls (issue #48). The import map must
+// precede the first module load, which is the page script emitted immediately below.
+//
+// In development the specifier resolves to a symlink at assets/components-js, so a local
+// checkout of the library is picked up without publishing; in every other environment it
+// resolves to a pinned CDN build. Mirrors LiturgicalCalendarFrontend/layout/footer.php.
+if (in_array($pageName, ['index', 'resources'], true)) {
+    $componentsJsUrl = ($_ENV['APP_ENV'] ?? 'production') === 'development'
+        ? './assets/components-js/index.js'
+        : 'https://cdn.jsdelivr.net/npm/@liturgical-calendar/components-js@2.7.0/+esm';
+    echo '<script type="importmap">'
+        . json_encode(
+            ['imports' => ['@liturgical-calendar/components-js' => $componentsJsUrl]],
+            JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+        )
+        . '</script>';
+}
+
 if (file_exists("assets/js/{$pageName}.js")) {
     echo "<script type=\"module\" src=\"assets/js/{$pageName}.js\"></script>";
 }

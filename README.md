@@ -5,6 +5,9 @@ sends unit test requests in succession and collects the response data asynchrono
 
 The UI implements native ES6 JavaScript, `Bootstrap 5`, and `Font Awesome`.
 
+External assets are loaded from `cdnjs.cloudflare.com` (Bootstrap, Font Awesome) and
+`cdn.jsdelivr.net` (sb-admin styles, `@liturgical-calendar/components-js`).
+
 ## Some notes about the Unit Test server
 
 The websocket **server** is at [Liturgical-Calendar/LiturgicalCalendarAPI/blob/development/public/LitCalTestServer.php](https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI/blob/development/public/LitCalTestServer.php).

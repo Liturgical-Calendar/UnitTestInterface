@@ -1,5 +1,9 @@
 vendor/
 node_modules/
+
+# Development-only symlink to a local liturgy-components-js checkout (issue #48).
+# Production resolves the same specifier to a pinned CDN build; see layout/footer.php.
+assets/components-js
 .claude/
 .env
 .env.*

@@ -22,7 +22,8 @@ on a responsive dashboard.
 - **Communication:** WebSocket (Ratchet-based server in LiturgicalCalendarAPI)
 - **i18n:** GNU gettext with 10+ language translations
 - **Code Quality:** PHP_CodeSniffer (PSR-12)
-- **Component Library:** liturgical-calendar/components (PHP UI components)
+- **Component Libraries:** `@liturgical-calendar/components-js` (ESM, `index.php` + `resources.php`);
+  liturgical-calendar/components (PHP, `admin.php` only)
 
 ## Project Structure
 
@@ -79,6 +80,15 @@ php -S localhost:3003
 2. Configure WebSocket server: `WS_PROTOCOL`, `WS_HOST`, `WS_PORT`
 3. Configure API server: `API_PROTOCOL`, `API_HOST`, `API_PORT`
 4. Set `APP_ENV` (development|production)
+5. For a local `liturgy-components-js` checkout, symlink it (development only):
+
+   ```bash
+   ln -sfn ../../liturgy-components-js/dist assets/components-js
+   ```
+
+   When `APP_ENV=development` the import map in `layout/footer.php` points the
+   `@liturgical-calendar/components-js` specifier at this symlink; otherwise it resolves to a
+   pinned jsDelivr build. There is no bundler and no `npm install` step for it.
 
 **Requirements:**
 
