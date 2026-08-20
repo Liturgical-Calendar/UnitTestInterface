@@ -23,7 +23,21 @@ import {
     fetchRunDetail,
 } from './testResults.js';
 
-import { sendCancelRun } from './wsProtocol.js';
+import {
+    sendCancelRun,
+    toWireTarget,
+    universalChecksForRite,
+    testAppliesToRite,
+    CALENDAR_SCOPE_KEYS,
+} from './wsProtocol.js';
+
+// `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
+// top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
+// production, a stale symlink in development) fails the whole module's evaluation before any of
+// its own code — including a try/catch — ever runs; nothing below this point would execute at
+// all. `mountCalendarControls()` instead performs a dynamic `await import(...)` inside its own
+// try/catch, so that failure is catchable and degrades to the `#controls-load-failed` toast
+// (final review of #48, finding 1) instead of silently killing the page.
 
 const resultCollector = createResultCollector();
 let renderedUnitTests = [];
@@ -34,17 +48,19 @@ let renderedUnitTests = [];
 /** @typedef {import('./types.js').NationalCalendarMetadata} NationalCalendarMetadata */
 
 // Access global config from window (set by PHP in footer.php)
-const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV, riteLabels = {} } = window.LitCalConfig;
-
-/**
- * Returns the translated display label for a liturgical rite (or for a rite-level calendar id,
- * which is the same string in the API: the `ambrosian` calendar belongs to the `ambrosian` rite).
- * Falls back to the raw identifier so that a rite added upstream before this interface knows about
- * it still renders something readable instead of `undefined`.
- * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
- * @return {string} The translated label, or the identifier itself when no translation is known.
- */
-const riteLabel = ( rite ) => riteLabels[ rite ] ?? rite;
+const {
+    locale,
+    WS_PROTOCOL,
+    WS_PORT,
+    WS_HOST,
+    API_PROTOCOL,
+    API_PORT,
+    API_HOST,
+    API_BASE_PATH,
+    APP_ENV,
+    riteSelectLabel: riteSelectLabelText = 'Liturgical Rite',
+    calendarSelectLabel: calendarSelectLabelText = 'Liturgical Calendar',
+} = window.LitCalConfig;
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -71,81 +87,25 @@ const ENDPOINTS = {
     MISSALS: ""
 }
 
-const ROMAN_SOURCE_DATA_PATH = "jsondata/sourcedata/rite/roman";
-const AMBROSIAN_SOURCE_DATA_PATH = "jsondata/sourcedata/rite/ambrosian";
-
 /**
- * Builds the array of universal (rite level) source data checks for the given rite.
- * Each object contains the following properties:
- * - `validate`: the name of the class that will be used to match the response from the websocket backend.
- *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
- * - `sourceFile`: the URL of the resource to check.
- * - `category`: a string that indicates the category of the source data check.
- *                Currently, the only category is 'universalcalendar'.
+ * The universal source-data checks for a rite, plus the two API-path checks this page renders
+ * alongside them.
  *
- * The Roman rite carries the historical set of six checks. The Ambrosian rite has a single Missal
- * (the 2024 edition) and no decrees corpus of its own — the decrees source data lives under the
- * Roman rite folder only — so it carries three checks.
- *
- * Note that `ENDPOINTS` is populated by `setEndpoints()` before any source data check is built,
- * so reading it here (rather than at module evaluation time) always yields the resolved URLs.
+ * The corpus itself comes from `wsProtocol.js` so that `resources.js` checks the same files under
+ * the same names. The `/calendars` metadata check is rite-independent and belongs to no rite's
+ * corpus, so it is added here rather than listed there.
  *
  * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
- * @return {Array<{validate: string, sourceFile: string, category: string}>} The universal source data checks.
+ * @returns {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
  */
-const buildUniversalSourceDataChecks = ( rite ) => {
-    if ( rite === 'ambrosian' ) {
-        return [
-            {
-                "validate": "LitCalMetadata",
-                "sourceFile": ENDPOINTS.CALENDARS,
-                "category": "universalcalendar"
-            },
-            {
-                "validate": "PropriumDeTempore",
-                "sourceFile": `${AMBROSIAN_SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
-                "category": "universalcalendar"
-            },
-            {
-                "validate": "PropriumDeSanctis2024",
-                "sourceFile": `${AMBROSIAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2024/propriumdesanctis.json`,
-                "category": "universalcalendar"
-            }
-        ];
-    }
-    return [
-        {
-            "validate": "LitCalMetadata",
-            "sourceFile": ENDPOINTS.CALENDARS,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeTempore",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeSanctis1970",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_1970/propriumdesanctis_1970.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeSanctis2002",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2002/propriumdesanctis_2002.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeSanctis2008",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2008/propriumdesanctis_2008.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "MemorialsFromDecrees",
-            "sourceFile": ENDPOINTS.DECREES,
-            "category": "universalcalendar"
-        }
-    ];
-};
+const buildUniversalSourceDataChecks = ( rite ) => [
+    {
+        "validate": "LitCalMetadata",
+        "sourceFile": ENDPOINTS.CALENDARS,
+        "category": "universalcalendar"
+    },
+    ...universalChecksForRite( rite )
+];
 
 /**
  * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
@@ -172,6 +132,91 @@ const setEndpoints = () => {
     ENDPOINTS.MISSALS = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}missals`;
     console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
 }
+
+/**
+ * The API's base URL, without a trailing slash and without an endpoint.
+ *
+ * `setEndpoints()` builds per-endpoint URLs from the same parts; this is what ApiClient and
+ * ApiBase want instead. Derived rather than stored so the two cannot drift.
+ *
+ * @returns {string}
+ */
+const getApiBaseUrl = () => {
+    const endpoint = ENDPOINTS.CALENDARS;
+    return endpoint.replace(/\/calendars$/, '');
+};
+
+/**
+ * The loaded metadata base shared by the library's selects and by our own check builders.
+ *
+ * One instance, so `/calendars` is fetched once rather than once per consumer, and so the
+ * dioceses our checks iterate are exactly the ones the calendar select offers.
+ *
+ * @type {?import('@liturgical-calendar/components-js').ApiBase}
+ */
+let apiBase = null;
+
+/** @type {?import('@liturgical-calendar/components-js').RiteSelect} */
+let riteSelect = null;
+
+/** @type {?import('@liturgical-calendar/components-js').CalendarSelect} */
+let calendarSelect = null;
+
+/**
+ * Mounts the rite select and the calendar select, linked to one another.
+ *
+ * Order matters and is enforced by the library: `linkToRiteSelect()` attaches a listener to the
+ * rite select's DOM element, so that element must already be mounted. Linking also switches the
+ * calendar select into rite-aware mode, which is what makes its empty option self-label as the
+ * rite-level calendar ("General Roman Calendar" / "Ambrosian Calendar") instead of "---".
+ *
+ * `linkToRiteSelect()` defaults to dispatching `change` on the calendar select after every rite
+ * change and after the initial apply, which is what drives our own change handler and therefore
+ * `setupPage()`. Do not pass `false` — nothing else would rebuild the scaffold.
+ *
+ * @returns {Promise<void>}
+ */
+const mountCalendarControls = async () => {
+    const baseUrl = getApiBaseUrl();
+    /** @type {typeof import('@liturgical-calendar/components-js')} */
+    let componentsJs;
+    try {
+        // The dynamic import is inside the try: a failed module load (CDN outage, blocked host,
+        // stale dev symlink) rejects here exactly like a failed ApiClient.init() call, instead of
+        // aborting evaluation of this whole file before this function even exists.
+        componentsJs = await import( '@liturgical-calendar/components-js' );
+        await componentsJs.ApiClient.init( baseUrl );
+    } catch ( err ) {
+        // A CDN or metadata failure leaves both mount points empty. Say so: without this the page
+        // shows a control-less header and an empty scaffold, which reads like "nothing to check"
+        // rather than like a failure, and the run button stays disabled with no explanation.
+        console.error( 'Could not initialise the calendar controls', err );
+        safeToastShow( '#controls-load-failed' );
+        return;
+    }
+    const { ApiBase, CalendarSelect, RiteSelect, CalendarSelectFilter } = componentsJs;
+    apiBase = ApiBase.resolve( baseUrl );
+
+    riteSelect = new RiteSelect( locale )
+        .id( 'riteSelect' )
+        .class( 'form-select form-select-sm' )
+        .label( { class: 'form-label', text: riteSelectLabelText } );
+    riteSelect.appendTo( '#riteSelectMount' );
+
+    calendarSelect = new CalendarSelect( locale )
+        .filter( CalendarSelectFilter.NONE )
+        .allowNull( true )
+        .id( 'APICalendarSelect' )
+        .class( 'form-select form-select-sm' )
+        .label( { class: 'form-label', text: calendarSelectLabelText } );
+    calendarSelect.appendTo( '#calendarSelectMount' );
+
+    calendarSelect.linkToRiteSelect( riteSelect );
+
+    riteSelect._domElement.addEventListener( 'change', () => {
+        currentRite = riteSelect._domElement.value;
+    } );
+};
 
 class ReadyToRunTests {
     static PageReady = false;
@@ -386,11 +431,21 @@ const sourceDataCheckTemplate = ( item, idx ) => {
         categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
     }
     const validateSlug = slugify(item.validate);
-    const escapedSourceFile = escapeHtmlAttr(item.sourceFile);
+    // A check names either a single file or a folder of i18n files, never both. Reading only
+    // `sourceFile` rendered `title="undefined"` for every folder check; index.js never sent one
+    // before #48 added the i18n folders to the universal corpus.
+    const escapedSourceFile = escapeHtmlAttr(item.sourceFile ?? item.sourceFolder ?? '');
     const escapedValidate = escapeHtmlAttr(item.validate);
     const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(categoryStr)}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
+    // The truncation width tracks whether this is a folder check, not category: since #48 moved
+    // the four i18n-folder checks to category 'sourceDataCheck' (see wsProtocol.js's
+    // UNIVERSAL_CHECKS docblock for why), they would otherwise fall into the 14-char bucket meant
+    // for short slugs like `national-calendar-IT`. At 14 chars, "AmbrosianProprium..." and its
+    // sibling both truncate to the identical "ambrosian-pro*", which is genuinely ambiguous on the
+    // card grid. Folder checks get the wider budget regardless of category.
+    const validateLabelWidth = ( 'sourceFolder' in item ) ? 30 : ( item.category !== 'universalcalendar' ? 14 : 22 );
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${escapedSourceFile}">${item.category !== 'universalcalendar' ? truncate( escapedValidate, 14 ) : truncate( escapedValidate, 22 )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${escapedSourceFile}">${truncate( escapedValidate, validateLabelWidth )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
@@ -440,7 +495,6 @@ let index;
 let calendarIndex;
 let yearIndex;
 let messageCounter;
-let nations = [];
 
 let startTestRunnerBtnLbl = '';
 
@@ -476,28 +530,20 @@ const sendMessage = ( data ) => {
     conn.send( JSON.stringify( data ) );
 };
 
-let currentSelectedCalendar = "VA";
-let currentNationalCalendar = "VA";
-let currentCalendarCategory = "nationalcalendar";
+// The rite-level calendar of the default rite, which is what the calendar select's empty option
+// selects on mount. Not 'VA': `Health::buildCalendarRequestPath()` resolves both to /roman/{year},
+// but Vatican City is to gain its own national calendar data distinct from the General Roman
+// Calendar, so the two must stop sharing an identifier.
+let currentSelectedCalendar = "roman";
+let currentNationalCalendar = null;
+let currentCalendarCategory = "ritecalendar";
 /**
  * The liturgical rite of the currently selected calendar.
- * Derived from the `data-rite` attribute of the selected option; 'roman' when unknown.
+ * Derived from the rite select's own value (see `resolveCalendarTargetFromControls()`); 'roman' by default.
  */
 let currentRite = "roman";
 let currentResponseType = "JSON";
 let currentSourceDataChecks = [];
-/**
- * The locale variable is defined in footer.php
-*/
-let countryNames = new Intl.DisplayNames( locale, { type: 'region' } );
-let CalendarNations = [];
-/**
- * Rite level calendars announced by the /calendars metadata (currently only the Ambrosian rite).
- * These are top level calendars, peers of the General Roman calendar, not children of any nation.
- * @type {Array<{calendar_id: string, rite: string, locales: Array<string>, settings: object}>}
- */
-let RiteCalendars = [];
-let selectOptions = {};
 let SpecificUnitTestCategories = [];
 let SpecificUnitTestYears = {};
 
@@ -1099,29 +1145,6 @@ const fetchMetadataAndTests = () => {
                 console.log( data );
                 if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                     MetaData = data.litcal_metadata;
-                    const { national_calendars_keys, diocesan_calendars, ambrosian_calendars = [] } = MetaData;
-                    RiteCalendars = ambrosian_calendars;
-                    diocesan_calendars.forEach( diocesanCalendar => {
-                        if ( CalendarNations.indexOf( diocesanCalendar.nation ) === -1 ) {
-                            CalendarNations.push( diocesanCalendar.nation );
-                            selectOptions[ diocesanCalendar.nation ] = [];
-                        }
-                        // `rite` is a required property of diocesan_calendars entries, but default it
-                        // defensively so that an older API deployment still yields a usable option.
-                        const diocesanRite = diocesanCalendar.rite ?? 'roman';
-                        // Only non-Roman dioceses get their rite spelled out in the label, so that the
-                        // (large) majority of Roman dioceses read exactly as they always have.
-                        const dioceseLabel = diocesanRite === 'roman'
-                            ? diocesanCalendar.diocese
-                            : `${diocesanCalendar.diocese} (${riteLabel( diocesanRite )})`;
-                        selectOptions[ diocesanCalendar.nation ].push(
-                            `<option data-calendartype="diocesancalendar" data-nationalcalendar="${escapeHtmlAttr( diocesanCalendar.nation )}" data-rite="${escapeHtmlAttr( diocesanRite )}" value="${escapeHtmlAttr( diocesanCalendar.calendar_id )}">${escapeHtmlAttr( dioceseLabel )}</option>`
-                        );
-                    } )
-                    nations = national_calendars_keys;
-                    nations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) )
-                    CalendarNations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) );
-                    //console.log(`value of CalendarNations: ${CalendarNations}`);
                     if ( UnitTests !== null && RomanMissals !== null ) {
                         ReadyToRunTests.AsyncDataReady = true;
                         console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
@@ -1195,7 +1218,7 @@ const appendAccordionItem = ( obj ) => {
     } );
 
     document.querySelector('#specificUnitTestsAccordion').insertAdjacentHTML('beforeend', `
-        <div class="accordion-item">
+        <div class="accordion-item" id="${nameSlug}">
             <h2 class="row g-0 accordion-header" id="${nameSlug}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${nameSlug}" aria-expanded="false" aria-controls="specificUnitTest-${nameSlug}">
                     <div class="col-12 col-md-4 mb-2 mb-md-0">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(obj.description)}"><i class="fas fa-circle-info ms-2" aria-hidden="true"></i></span>${obj.name.length > 50 ? '</small>' : ''}</div>
@@ -1216,38 +1239,6 @@ const appendAccordionItem = ( obj ) => {
     let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${nameSlug} .test-valid`).length;
     updateText(`total${nameSlug}TestsCount`, specificUnitTestTotalCount);
 }
-
-/**
- * The calendar-scope keys that `applies_to` / `appliesTo` / `filter` (excludes) may carry, in the
- * order they are checked. `rite` is deliberately excluded from this list: since API #785 it is a
- * separate dimension present on every scope object (required on `applies_to`), not one of the
- * calendar-identity keys this function filters on. Selecting the key explicitly here — rather than
- * relying on `Object.keys(...).length` or `Object.keys(...)[0]` — avoids depending on key count or
- * key order, both of which broke once already when `rite` became a sibling required property.
- * @type {Array<string>}
- */
-const CALENDAR_SCOPE_KEYS = [ 'national_calendar', 'national_calendars', 'diocesan_calendar', 'diocesan_calendars' ];
-
-/**
- * Determines whether a unit test belongs to the liturgical rite of the currently selected calendar.
- *
- * The rite is deliberately kept out of {@link CALENDAR_SCOPE_KEYS} and out of
- * {@link handleAppliesToOrFilter}: it is an orthogonal dimension, not one of the mutually exclusive
- * calendar identity keys, and a rite only scope (e.g. `{ "rite": "ambrosian" }`) carries no calendar
- * identity at all. Handled here, such a scope correctly restricts the test to its own rite instead of
- * falling through the calendar scope switch and being kept for every calendar.
- *
- * A test with no `rite` in its scope predates the rite dimension and is Roman by construction, so it
- * defaults to 'roman' rather than being kept unconditionally (which would be a fail open filter).
- *
- * @param {Object} unitTest - The unit test to check.
- * @returns {Boolean} true if the unit test applies to the current rite, false otherwise.
- */
-const testAppliesToCurrentRite = ( unitTest ) => {
-    const scope = unitTest.applies_to ?? unitTest.appliesTo;
-    const testRite = scope?.rite ?? 'roman';
-    return testRite === currentRite;
-};
 
 /**
  * Function to determine if a unit test should be filtered out based on its `appliesTo` or `applies_to` property
@@ -1444,39 +1435,23 @@ const setupPage = () => {
         }
     }
 
-    const apiCalendarSelect = document.querySelector('#APICalendarSelect');
-    // Populate the select exactly once. A `dataset` flag rather than a children count, so that the
-    // guard doesn't silently break the day index.php ships a second server rendered option.
-    if ( apiCalendarSelect && !apiCalendarSelect.dataset.populated ) {
-        // Rite level calendars are peers of the General Roman calendar, so they go immediately after
-        // it and before the nations. Their id is a rite name, never a region code, so they must not
-        // be passed to countryNames.of() (Intl.DisplayNames throws on a non-region value, which would
-        // abort setupPage() entirely).
-        RiteCalendars.forEach( riteCalendar => {
-            apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="ritecalendar" data-rite="${escapeHtmlAttr( riteCalendar.rite )}" value="${escapeHtmlAttr( riteCalendar.calendar_id )}">${escapeHtmlAttr( riteLabel( riteCalendar.calendar_id ) )}</option>`);
-        } );
-        nations.forEach( item => {
-            if ( false === CalendarNations.includes( item ) && item !== "VA" ) {
-                apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" data-rite="roman" value="${item}">${countryNames.of( item )}</option>`);
-            }
-        } );
-        CalendarNations.forEach( item => {
-            console.log( `retrieving localized data for ${item}, for display purposes...` );
-            apiCalendarSelect.insertAdjacentHTML('beforeend', `<option data-calendartype="nationalcalendar" data-rite="roman" value="${item}">${countryNames.of( item )}</option>`);
-            const optGroup = document.createElement('optgroup');
-            optGroup.label = countryNames.of( item );
-            apiCalendarSelect.appendChild(optGroup);
-            selectOptions[ item ].forEach( groupItem => optGroup.insertAdjacentHTML('beforeend', groupItem) );
-        } );
-        apiCalendarSelect.dataset.populated = 'true';
-    }
-
     if ( currentCalendarCategory === 'ritecalendar' ) {
-        // A rite level calendar has no national or diocesan layer: its source data is exactly the
-        // universal corpus of its own rite.
+        // A rite-level calendar has no national or diocesan layer: its source data is the universal
+        // corpus of its own rite, plus — for the Roman rite — the editio typica missals, which the
+        // General Roman Calendar uses and no national calendar supplies. Derived from /missals
+        // rather than hardcoded, so a new editio typica needs no edit here.
         currentSourceDataChecks = buildUniversalSourceDataChecks( currentRite );
-    } else if ( currentSelectedCalendar === 'VA' ) {
-        currentSourceDataChecks = buildUniversalSourceDataChecks( 'roman' );
+        if ( currentRite === 'roman' ) {
+            Object.values( RomanMissals )
+                .filter( missalDef => missalDef.region === 'VA' )
+                .forEach( missalDef => {
+                    currentSourceDataChecks.push({
+                        "validate": `proprium-de-sanctis-${missalDef.year_published}`,
+                        "sourceFile": missalDef.missal_id,
+                        "category": "sourceDataCheck"
+                    });
+                } );
+        }
     } else {
         const checks = buildNonVASourceDataChecks(currentSelectedCalendar, currentCalendarCategory);
         if (checks === null) {
@@ -1488,7 +1463,7 @@ const setupPage = () => {
     renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
-        if ( false === testAppliesToCurrentRite( unitTest ) ) {
+        if ( false === testAppliesToRite( unitTest, currentRite ) ) {
             return;
         }
         if ( unitTest.hasOwnProperty( 'appliesTo' ) ) {
@@ -1554,28 +1529,86 @@ const setupPage = () => {
     }
 }
 
-document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) => {
+/**
+ * Resolves the calendar/category/national-calendar triple from the current state of the mounted
+ * controls, via `toWireTarget()` and (for a diocesan calendar) the loaded `apiBase` metadata.
+ *
+ * Shared by `handleCalendarSelectChange()` and `resyncLiveStateFromDom()`, which both need to
+ * derive the same triple from the same two library controls — the former on a live user change,
+ * the latter when restoring live state after viewing a stored past run.
+ *
+ * `riteSelect` / `calendarSelect` are null when `mountCalendarControls()` failed (a CDN or
+ * metadata failure — see its catch block and the `#controls-load-failed` toast). Both callers of
+ * this function are reachable in that case: `resyncLiveStateFromDom()` via the `pastRunsSelect`
+ * listener, which is registered unconditionally, regardless of whether the mount succeeded.
+ * Falling back to whatever module state already holds keeps the rest of the page degrading
+ * gracefully instead of throwing on `null._domElement`.
+ *
+ * @returns {{rite: string, calendar: string, category: string, nationalCalendar: ?string}}
+ */
+const resolveCalendarTargetFromControls = () => {
+    if ( !riteSelect || !calendarSelect ) {
+        return {
+            rite: currentRite,
+            calendar: currentSelectedCalendar,
+            category: currentCalendarCategory,
+            nationalCalendar: currentNationalCalendar,
+        };
+    }
+    const rite = riteSelect._domElement.value;
+    const selectEl = calendarSelect._domElement;
+    const selectedOption = selectEl.options[ selectEl.selectedIndex ] ?? null;
+
+    const target = toWireTarget(
+        selectEl.value,
+        selectedOption?.dataset?.calendartype ?? '',
+        rite
+    );
+
+    let nationalCalendar;
+    if ( target.category === 'diocesancalendar' ) {
+        // The library's diocese options carry no parent-nation attribute, so resolve it from the
+        // same loaded metadata the select was built from.
+        const diocesanData = apiBase
+            .diocesanCalendars( rite )
+            .find( entry => entry.calendar_id === target.calendar );
+        nationalCalendar = diocesanData ? diocesanData.nation : null;
+    } else if ( target.category === 'ritecalendar' ) {
+        // A rite-level calendar has no national calendar. null (rather than the calendar id) keeps
+        // `scope.national_calendars.includes( currentNationalCalendar )` false, so national-scoped
+        // tests are correctly excluded from it.
+        nationalCalendar = null;
+    } else {
+        nationalCalendar = target.calendar;
+    }
+
+    return { rite, calendar: target.calendar, category: target.category, nationalCalendar };
+};
+
+/**
+ * Reacts to a calendar or rite change.
+ *
+ * Attached after `mountCalendarControls()` rather than at module scope: the element does not
+ * exist until the library renders it. Registered once, on the element the library created.
+ *
+ * `currentRite` is read from the rite select, not from the option — the library's options carry
+ * no `data-rite`, because the rite is the select's own state now rather than each option's.
+ */
+const handleCalendarSelectChange = () => {
     const pageLoader = document.querySelector('.page-loader');
     if (pageLoader) {
         pageLoader.style.display = 'block';
         pageLoader.style.opacity = '1';
     }
     ReadyToRunTests.PageReady = false;
+
     const oldSelectedCalendar = currentSelectedCalendar;
-    currentSelectedCalendar = ev.currentTarget.value;
-    const selectedOption = document.querySelector('#APICalendarSelect option:checked');
-    currentCalendarCategory = selectedOption.dataset.calendartype;
-    currentRite = selectedOption.dataset.rite ?? 'roman';
-    if ( currentCalendarCategory === 'diocesancalendar' ) {
-        currentNationalCalendar = selectedOption.dataset.nationalcalendar;
-    } else if ( currentCalendarCategory === 'ritecalendar' ) {
-        // A rite level calendar has no national calendar. null (rather than the calendar id) keeps
-        // `scope.national_calendars.includes( currentNationalCalendar )` false, so national scoped
-        // tests are correctly excluded from it.
-        currentNationalCalendar = null;
-    } else {
-        currentNationalCalendar = currentSelectedCalendar;
-    }
+    const target = resolveCalendarTargetFromControls();
+    currentRite = target.rite;
+    currentSelectedCalendar = target.calendar;
+    currentCalendarCategory = target.category;
+    currentNationalCalendar = target.nationalCalendar;
+
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory + ', currentRite = ' + currentRite );
     document.querySelectorAll(`.calendar-${slugify(oldSelectedCalendar)}`).forEach(el => {
         el.classList.remove(`calendar-${slugify(oldSelectedCalendar)}`);
@@ -1583,7 +1616,7 @@ document.querySelector('#APICalendarSelect').addEventListener('change', ( ev ) =
     });
     setupPage();
     ReadyToRunTests.tryEnableBtn();
-});
+};
 
 document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) => {
     const pageLoader = document.querySelector('.page-loader');
@@ -1748,21 +1781,20 @@ const replayCalendarsRun = async ( file ) => {
  * page state.  Called when the user returns to "— Live —" after viewing a stored run, because
  * replayCalendarsRun() overwrites currentSelectedCalendar, currentCalendarCategory,
  * currentResponseType, and currentSourceDataChecks with the stored run's values.
+ *
+ * Derives the calendar/category/rite/national-calendar state the same way
+ * `handleCalendarSelectChange()` does — via `resolveCalendarTargetFromControls()` — rather than
+ * reading `data-rite` / `data-nationalcalendar` attributes: the library's `CalendarSelect` emits
+ * neither, since the rite lives on the rite select's own value now, and a diocese's parent nation
+ * is resolved from the loaded `apiBase` metadata instead.
  */
 const resyncLiveStateFromDom = () => {
-    const calendarSelect = document.querySelector('#APICalendarSelect');
-    const selectedOption = calendarSelect ? calendarSelect.querySelector('option:checked') : null;
-    currentSelectedCalendar = calendarSelect ? calendarSelect.value : currentSelectedCalendar;
-    currentCalendarCategory = selectedOption ? (selectedOption.dataset.calendartype ?? currentCalendarCategory) : currentCalendarCategory;
-    currentRite = selectedOption ? (selectedOption.dataset.rite ?? 'roman') : 'roman';
-    if ( currentCalendarCategory === 'diocesancalendar' ) {
-        currentNationalCalendar = selectedOption ? (selectedOption.dataset.nationalcalendar ?? currentSelectedCalendar) : currentSelectedCalendar;
-    } else if ( currentCalendarCategory === 'ritecalendar' ) {
-        // See the #APICalendarSelect change handler: a rite level calendar has no national calendar.
-        currentNationalCalendar = null;
-    } else {
-        currentNationalCalendar = currentSelectedCalendar;
-    }
+    const target = resolveCalendarTargetFromControls();
+    currentRite = target.rite;
+    currentSelectedCalendar = target.calendar;
+    currentCalendarCategory = target.category;
+    currentNationalCalendar = target.nationalCalendar;
+
     const responseSelect = document.querySelector('#APIResponseSelect');
     currentResponseType = responseSelect ? responseSelect.value : currentResponseType;
     setupPage();
@@ -1874,5 +1906,12 @@ document.addEventListener( 'keydown', function ( event ) {
 } );
 
 setEndpoints();
+await mountCalendarControls();
+// Absent when mountCalendarControls() failed (see its catch block); the rest of the page's
+// initialisation must still run so the failure degrades to the #controls-load-failed toast
+// rather than a dead page.
+if ( calendarSelect ) {
+    calendarSelect._domElement.addEventListener( 'change', handleCalendarSelectChange );
+}
 fetchMetadataAndTests();
 connectWebSocket();

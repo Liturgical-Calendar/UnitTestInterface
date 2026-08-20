@@ -22,7 +22,8 @@ on a responsive dashboard.
 - **Communication:** WebSocket (Ratchet-based server in LiturgicalCalendarAPI)
 - **i18n:** GNU gettext with 10+ language translations
 - **Code Quality:** PHP_CodeSniffer (PSR-12)
-- **Component Library:** liturgical-calendar/components (PHP UI components)
+- **Component Libraries:** `@liturgical-calendar/components-js` (ESM, `index.php` + `resources.php`);
+  liturgical-calendar/components (PHP, `admin.php` only)
 
 ## Project Structure
 
@@ -79,6 +80,15 @@ php -S localhost:3003
 2. Configure WebSocket server: `WS_PROTOCOL`, `WS_HOST`, `WS_PORT`
 3. Configure API server: `API_PROTOCOL`, `API_HOST`, `API_PORT`
 4. Set `APP_ENV` (development|production)
+5. For a local `liturgy-components-js` checkout, symlink it (development only):
+
+   ```bash
+   ln -sfn ../../liturgy-components-js/dist assets/components-js
+   ```
+
+   When `APP_ENV=development` the import map in `layout/footer.php` points the
+   `@liturgical-calendar/components-js` specifier at this symlink; otherwise it resolves to a
+   pinned jsDelivr build. There is no bundler and no `npm install` step for it.
 
 **Requirements:**
 
@@ -171,7 +181,10 @@ Messages sent to the server must include an `action` property:
 ```
 
 `Health::validateMessageProperties()` lists `sourceFile` as required but special-cases its absence when `sourceFolder` is present, so
-sending both, or neither, is not a supported shape. Only `resources.js` currently sends `sourceFolder`.
+sending both, or neither, is not a supported shape. Both runner pages send `sourceFolder` — for the i18n folder entries in
+`UNIVERSAL_CHECKS` as well as for the wider-region, national, diocesan and missal `-i18n` checks `resources.js` builds — but a folder check
+is always sent as `category: "sourceDataCheck"`; see the "universalcalendar — when the message carries a path" subsection below for why no
+other category is safe to use with `sourceFolder`.
 
 Messages sent during an active run also carry a `runToken` (a UUID identifying that run). For the other three actions, it is added by
 `sendMessage()` — which attaches it **only when a run token is currently set**, so anything sent outside a run goes without one. `cancelRun`
@@ -212,8 +225,14 @@ path — the decrees file, the temporale file and `jsondata/tests/{rite}/{name}.
 
 #### `universalcalendar` — when the message carries a path
 
-The universal checks built by `buildUniversalSourceDataChecks()` send real filesystem paths and API URLs, so the server resolves their
-schema from the **path**. These use PascalCase `validate` labels, which are display/CSS labels only and are *not* schema keys:
+The universal source corpus is defined once, in `assets/js/wsProtocol.js`'s `UNIVERSAL_CHECKS`, and consumed by both runner pages. Category
+is **not** uniform across that list, and the split is load-bearing, not cosmetic:
+
+- the four **file** entries (`PropriumDeTempore`, `MemorialsFromDecrees`, `AmbrosianPropriumDeTempore`, `AmbrosianPropriumDeSanctis`) use
+  `category: "universalcalendar"` with a real filesystem path, so the server resolves their schema from the **path**. These PascalCase
+  `validate` labels are display/CSS labels only and are *not* schema keys;
+- the four **i18n folder** entries (`proprium-de-tempore-i18n`, `memorials-from-decrees-i18n`, `ambrosian-proprium-de-tempore-i18n`,
+  `ambrosian-proprium-de-sanctis-i18n`) use `category: "sourceDataCheck"` with hyphenated `-i18n` slugs instead.
 
 ```javascript
 {
@@ -221,11 +240,27 @@ schema from the **path**. These use PascalCase `validate` labels, which are disp
     "sourceFile": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json",
     "category": "universalcalendar"   // NOT "sourceDataCheck" — the path is the schema key here
 }
+{
+    "validate": "proprium-de-tempore-i18n",
+    "sourceFolder": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/i18n",
+    "category": "sourceDataCheck"     // NOT "universalcalendar" — a folder check never is, see below
+}
 ```
 
-Switching these to `sourceDataCheck` would feed `PropriumDeTempore` to the slug regexes below, match nothing, and break **every** universal
-check in both rites. (An automated reviewer proposed exactly that on PR #41, citing an earlier version of this section that documented only
-`sourceDataCheck`.)
+**Why the split exists:** `Health::executeValidation()` nests its *entire* `sourceFolder` data-path resolution inside
+`if ($category === 'sourceDataCheck')` (`Health.php` lines 609-660). Under any other category — including `universalcalendar` — a message
+falls into the branch that requires `sourceFile` and `throw`s when only `sourceFolder` is present, and that uncaught exception closes the
+WebSocket connection instead of returning a per-card result. So a folder check sent as `universalcalendar` does not fail one card — it wedges
+the whole run, and that failure mode was expensive to rediscover once. The two Roman folder slugs resolve through `Health`'s
+`legacySlugToId` table; the two Ambrosian ones through its surviving `/-i18n$/` regex arm.
+
+Switching a file entry to `sourceDataCheck` would feed e.g. `PropriumDeTempore` to the slug regexes below, match nothing, and leave the card
+reporting "Unable to detect schema for dataPath …". (An automated reviewer proposed exactly that on PR #41, citing an earlier version of
+this section that documented only `sourceDataCheck`.)
+
+The real convergence between the two runner pages is narrower than "one category for everything", but still true: both `index.js` and
+`resources.js` now import `UNIVERSAL_CHECKS` from `wsProtocol.js` and send the identical message for the same file, closing the
+`PropriumDeTempore`-vs-`proprium-de-tempore` divergence that issue #42 documents.
 
 #### `sourceDataCheck` — when the `validate` slug is the schema key
 
@@ -264,6 +299,32 @@ The server's `Health.php` uses regex patterns to transform these `validate` valu
 Those `// NOT …` notes name categories that are no longer valid anywhere on `executeValidation`: LiturgicalCalendarAPI#805 removed them, so
 they now resolve no schema and the card reports *"Unable to detect schema for dataPath …"*. Before that they resolved a schema and then
 failed on the file read, which was harder to diagnose.
+
+### Rite Scoping
+
+Both runner pages carry a `RiteSelect` from `@liturgical-calendar/components-js`, defaulting to `roman`. The predicate is `inRiteScope()`
+in `assets/js/wsProtocol.js`; an absent `rite` means Roman, never "every rite", because a fail-open filter would request Roman-only
+resources under the Ambrosian rite, which the API rejects.
+
+Only the diocesan tier exists under more than one rite. National calendars, wider regions and the `/missals` registry are Roman-only —
+`RegionalDataParams::validateRiteCompatibility()` rejects a national or wider-region request under a non-Roman rite — so `resources.php`
+omits them entirely when the Ambrosian rite is selected rather than requesting and failing them.
+
+Per-nation and per-diocese `/data` and `/events` URLs are sent **rite-qualified** (`/data/ambrosian/diocese/milano_it`); an unprefixed URL
+silently resolves to Roman, which would be a wrong-green. The `/events` and `/tests` **collections** are rite-qualified too. The other five
+collection endpoints — `/calendars`, `/decrees`, `/easter`, `/schemas`, `/missals` — carry no rite dimension and stay bare.
+
+`/calendar/{rite}` is the exception: `Health` resolves no schema for either form of it, so it is not checkable as a resource path at all.
+`index.php` validates calendars through the `validateCalendar` action instead, which is rite-aware in its own right.
+
+This requires two LiturgicalCalendarAPI changes: **#813**, which taught the `resourceDataCheck` regexes an optional rite segment and
+routed the diocesan path sites through `JsonData::diocesanCalendarFileFor($rite)`; and **#816**, which strips a trailing rite segment
+before `getPathToSchemaFile()`'s exact-match lookup so the bare rite-qualified collection form resolves to the bare form's schema.
+
+On `index.php`, the calendar select is the library's, linked to the rite select. Its options carry `data-calendartype="national"|"diocesan"`
+and no `data-rite`, and the rite-level calendar is its empty option — `toWireTarget()` in `wsProtocol.js` maps all three onto the protocol's
+`nationalcalendar` / `diocesancalendar` / `ritecalendar` vocabulary. The General Roman Calendar is sent as
+`{calendar: 'roman', category: 'ritecalendar'}`, no longer as `VA`.
 
 ### Missal (Proprium de Sanctis) Validation
 
@@ -364,6 +425,8 @@ document.querySelectorAll(slugifySelector(responseData.classes)).forEach(el => {
 | `admin.php`                      | Admin interface                     |
 | `assets/js/index.js`             | WebSocket communication, test logic |
 | `assets/js/AssertionsBuilder.js` | Test assertion builder              |
+| `assets/js/wsProtocol.js`        | Shared WebSocket protocol helpers   |
+| `assets/js/resources.js`         | Resources runner logic              |
 | `includes/I18n.php`              | Locale detection, gettext setup     |
 
 ## Internationalization
