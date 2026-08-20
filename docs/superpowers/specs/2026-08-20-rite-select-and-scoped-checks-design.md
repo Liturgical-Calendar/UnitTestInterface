@@ -192,8 +192,20 @@ Ambrosian edition, and the Ambrosian sanctorale reaches the inventory as an expl
 
 Omitting the segment is safe: `Router::canonicalRiteUrl()` advertises the explicit form through an RFC 6596
 `Link: rel="canonical"` header rather than redirecting, deliberately, because these routes accept POST. Existing
-unprefixed URLs therefore keep working. We send the canonical rite-qualified form regardless, because under
-Ambrosian the unprefixed form would silently resolve to Roman.
+unprefixed URLs therefore keep working. We send the canonical rite-qualified form on the **per-nation and
+per-diocese** paths, because under Ambrosian the unprefixed form would silently resolve to Roman.
+
+The **collection** endpoints stay unprefixed, and must. `Health::retrieveSchemaForCategory()` resolves a
+rite-qualified resource URL only through its `/events/…` and `/data/…` arms, both of which require `nation/` or
+`diocese/` after the optional rite segment; a bare `/events/roman` matches neither those nor the exact-route
+table in `getPathToSchemaFile()`, so it would report *"Unable to detect schema"*. The consequence is a real but
+small gap — the Ambrosian events catalogue at `/events/ambrosian` cannot be health-checked — which goes in the
+follow-up issue rather than being worked around here.
+
+This rite-qualified form depends on LiturgicalCalendarAPI#813, merged 2026-08-20, which taught the
+`resourceDataCheck` regexes an optional `(?:roman|ambrosian)/` segment and routed the three diocesan path sites
+through `JsonData::diocesanCalendarFileFor($rite)`. Before it, every Ambrosian diocesan check resolved against
+the Roman tree.
 
 #### What runs under each selection
 
@@ -345,7 +357,8 @@ assertions keep to that constraint by exercising the scaffold, which is built pu
 Two follow-ups are filed rather than folded in:
 
 - **This repo** — `resources.php` health-checks no `/temporale`, `/temporale/{event_key}` or `/validations`
-  path. All three shipped after the page's check list was last extended.
+  path, and cannot health-check the rite-qualified collection endpoints `/events/{rite}` or `/calendar/{rite}`,
+  because `Health` resolves collection schemas by exact route match.
 - **LiturgicalCalendarAPI** — `openapi.json` documents `/data/nation/{key}`, `/data/diocese/{key}` and
   `/data/widerregion/{key}` with no rite segment, though `Router::extractRiteSegment()` accepts one on `data`
   exactly as it does on `calendar` and `events`. The schema understates the route.
