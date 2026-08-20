@@ -53,6 +53,34 @@ body {
     font-size: 0.6rem;
 }
 
+/*
+ * Check labels wrap rather than being truncated to a character budget, so they vary in height:
+ * `national-calendar-IT` takes one line where `ambrosian-proprium-de-tempore-i18n` takes three.
+ *
+ * Each column is a flex column whose label box absorbs the line's spare height. Bootstrap already
+ * stretches every column in a grid line to the height of the tallest, and the three cards below
+ * the label have identical intrinsic heights, so every label box resolves to the same height —
+ * that of the tallest label on the line — and the cards start level across the whole line.
+ *
+ * This replaces an `h-25` on the label box, which asked for 25% of a height the label itself
+ * helped determine: a three-line label spilled out of the grey box and over the card beneath it
+ * instead of enlarging the box. No character budget can fix that either — it is a proxy for pixel
+ * width and cannot know that `m` is far wider than `i`.
+ */
+.sourcedata-tests > div,
+.resourcedata-tests > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.sourcedata-tests > div > :first-child,
+.resourcedata-tests > div > :first-child {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .test-results {
     font-size: 0.8rem;
 }
