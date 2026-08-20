@@ -94,3 +94,36 @@ test('the rite-level calendar is named by its rite, not by VA', async ({ page })
     await selectRite(page, 'ambrosian');
     await expect(page.locator('.calendar-ambrosian').first()).toHaveCount(1);
 });
+
+test('degrades cleanly when the calendar controls fail to mount', async ({ page }) => {
+    // mountCalendarControls() calls ApiClient.init(), whose ApiBase.load() fetches the same
+    // /calendars URL fetchMetadataAndTests() fetches afterwards (see index.js's bootstrap:
+    // `await mountCalendarControls()` runs strictly before `fetchMetadataAndTests()`). Failing
+    // only the first hit reproduces "the library's initial fetch fails" without also breaking
+    // the page's own metadata fetch, so the rest of the page can be observed initialising normally.
+    let calendarsRequestCount = 0;
+    await page.route('**/calendars', async (route) => {
+        calendarsRequestCount += 1;
+        if (calendarsRequestCount === 1) {
+            await route.abort('failed');
+        } else {
+            await route.continue();
+        }
+    });
+
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (err) => pageErrors.push(err));
+
+    await page.goto('/');
+
+    // The failure is surfaced, not swallowed...
+    await expect(page.locator('#controls-load-failed')).toBeVisible({ timeout: 10000 });
+    // ...neither library control was mounted...
+    await expect(page.locator('#riteSelect')).toHaveCount(0);
+    await expect(page.locator('#APICalendarSelect')).toHaveCount(0);
+    // ...but module evaluation did not abort: fetchMetadataAndTests() and connectWebSocket()
+    // still ran, and the live scaffold still builds from the second (successful) /calendars fetch.
+    await waitForLiveScaffold(page);
+
+    expect(pageErrors).toEqual([]);
+});

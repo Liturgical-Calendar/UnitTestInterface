@@ -52,20 +52,9 @@ const {
     API_HOST,
     API_BASE_PATH,
     APP_ENV,
-    riteLabels = {},
     riteSelectLabel: riteSelectLabelText = 'Liturgical Rite',
     calendarSelectLabel: calendarSelectLabelText = 'Liturgical Calendar',
 } = window.LitCalConfig;
-
-/**
- * Returns the translated display label for a liturgical rite (or for a rite-level calendar id,
- * which is the same string in the API: the `ambrosian` calendar belongs to the `ambrosian` rite).
- * Falls back to the raw identifier so that a rite added upstream before this interface knows about
- * it still renders something readable instead of `undefined`.
- * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
- * @return {string} The translated label, or the identifier itself when no translation is known.
- */
-const riteLabel = ( rite ) => riteLabels[ rite ] ?? rite;
 
 const Years = [];
 const thisYear = new Date().getFullYear();
@@ -539,7 +528,6 @@ let index;
 let calendarIndex;
 let yearIndex;
 let messageCounter;
-let nations = [];
 
 let startTestRunnerBtnLbl = '';
 
@@ -589,12 +577,6 @@ let currentCalendarCategory = "ritecalendar";
 let currentRite = "roman";
 let currentResponseType = "JSON";
 let currentSourceDataChecks = [];
-/**
- * The locale variable is defined in footer.php
-*/
-let countryNames = new Intl.DisplayNames( locale, { type: 'region' } );
-let CalendarNations = [];
-let selectOptions = {};
 let SpecificUnitTestCategories = [];
 let SpecificUnitTestYears = {};
 
@@ -1196,28 +1178,6 @@ const fetchMetadataAndTests = () => {
                 console.log( data );
                 if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                     MetaData = data.litcal_metadata;
-                    const { national_calendars_keys, diocesan_calendars } = MetaData;
-                    diocesan_calendars.forEach( diocesanCalendar => {
-                        if ( CalendarNations.indexOf( diocesanCalendar.nation ) === -1 ) {
-                            CalendarNations.push( diocesanCalendar.nation );
-                            selectOptions[ diocesanCalendar.nation ] = [];
-                        }
-                        // `rite` is a required property of diocesan_calendars entries, but default it
-                        // defensively so that an older API deployment still yields a usable option.
-                        const diocesanRite = diocesanCalendar.rite ?? 'roman';
-                        // Only non-Roman dioceses get their rite spelled out in the label, so that the
-                        // (large) majority of Roman dioceses read exactly as they always have.
-                        const dioceseLabel = diocesanRite === 'roman'
-                            ? diocesanCalendar.diocese
-                            : `${diocesanCalendar.diocese} (${riteLabel( diocesanRite )})`;
-                        selectOptions[ diocesanCalendar.nation ].push(
-                            `<option data-calendartype="diocesancalendar" data-nationalcalendar="${escapeHtmlAttr( diocesanCalendar.nation )}" data-rite="${escapeHtmlAttr( diocesanRite )}" value="${escapeHtmlAttr( diocesanCalendar.calendar_id )}">${escapeHtmlAttr( dioceseLabel )}</option>`
-                        );
-                    } )
-                    nations = national_calendars_keys;
-                    nations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) )
-                    CalendarNations.sort( ( a, b ) => countryNames.of( a ).localeCompare( countryNames.of( b ) ) );
-                    //console.log(`value of CalendarNations: ${CalendarNations}`);
                     if ( UnitTests !== null && RomanMissals !== null ) {
                         ReadyToRunTests.AsyncDataReady = true;
                         console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
@@ -1631,9 +1591,24 @@ const setupPage = () => {
  * derive the same triple from the same two library controls — the former on a live user change,
  * the latter when restoring live state after viewing a stored past run.
  *
+ * `riteSelect` / `calendarSelect` are null when `mountCalendarControls()` failed (a CDN or
+ * metadata failure — see its catch block and the `#controls-load-failed` toast). Both callers of
+ * this function are reachable in that case: `resyncLiveStateFromDom()` via the `pastRunsSelect`
+ * listener, which is registered unconditionally, regardless of whether the mount succeeded.
+ * Falling back to whatever module state already holds keeps the rest of the page degrading
+ * gracefully instead of throwing on `null._domElement`.
+ *
  * @returns {{rite: string, calendar: string, category: string, nationalCalendar: ?string}}
  */
 const resolveCalendarTargetFromControls = () => {
+    if ( !riteSelect || !calendarSelect ) {
+        return {
+            rite: currentRite,
+            calendar: currentSelectedCalendar,
+            category: currentCalendarCategory,
+            nationalCalendar: currentNationalCalendar,
+        };
+    }
     const rite = riteSelect._domElement.value;
     const selectEl = calendarSelect._domElement;
     const selectedOption = selectEl.options[ selectEl.selectedIndex ] ?? null;
@@ -1986,6 +1961,11 @@ document.addEventListener( 'keydown', function ( event ) {
 
 setEndpoints();
 await mountCalendarControls();
-calendarSelect._domElement.addEventListener( 'change', handleCalendarSelectChange );
+// Absent when mountCalendarControls() failed (see its catch block); the rest of the page's
+// initialisation must still run so the failure degrades to the #controls-load-failed toast
+// rather than a dead page.
+if ( calendarSelect ) {
+    calendarSelect._domElement.addEventListener( 'change', handleCalendarSelectChange );
+}
 fetchMetadataAndTests();
 connectWebSocket();
