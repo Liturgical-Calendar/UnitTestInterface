@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-18 17:19+0000\n"
+"POT-Creation-Date: 2026-08-20 08:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -338,70 +338,66 @@ msgstr ""
 msgid "Could not load run results."
 msgstr ""
 
-#: index.php:78
-msgid "Liturgical Calendar"
+#: index.php:72 resources.php:72
+msgid "Could not load the calendar controls."
 msgstr ""
 
-#: index.php:80
-msgid "General Roman"
-msgstr ""
-
-#: index.php:84 resources.php:78
+#: index.php:91 resources.php:88
 msgid "Response Format"
 msgstr ""
 
-#: index.php:93 resources.php:85
+#: index.php:100 resources.php:95
 msgid "Past Runs"
 msgstr ""
 
-#: index.php:95 resources.php:87
+#: index.php:102 resources.php:97
 msgid "— Live —"
 msgstr ""
 
-#: index.php:102 resources.php:94
+#: index.php:109 resources.php:104
 msgid "Run Tests"
 msgstr ""
 
-#: index.php:108 index.php:132 index.php:168 index.php:198 resources.php:100
-#: resources.php:126 resources.php:154
+#: index.php:115 index.php:139 index.php:175 index.php:205 resources.php:110
+#: resources.php:136 resources.php:164
 msgid "Successful:"
 msgstr ""
 
-#: index.php:111 index.php:135 index.php:171 index.php:201 resources.php:103
-#: resources.php:129 resources.php:157
+#: index.php:118 index.php:142 index.php:178 index.php:208 resources.php:113
+#: resources.php:139 resources.php:167
 msgid "Failed:"
 msgstr ""
 
-#: index.php:115 index.php:139 index.php:175 index.php:205 resources.php:107
-#: resources.php:133 resources.php:161
+#: index.php:122 index.php:146 index.php:182 index.php:212 resources.php:117
+#: resources.php:143 resources.php:171
 #, php-format
 msgid "Time (%s):"
 msgstr ""
 
-#: index.php:128
+#: index.php:135
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
 #. translators: %s: <span class="yearMax"></span>
-#: index.php:160
+#: index.php:167
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
 msgstr ""
 
-#: index.php:193
+#: index.php:200
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:226 resources.php:181
+#: index.php:233 resources.php:191
 msgid "Loading…"
 msgstr ""
 
 #: layout/footer.php:38
-msgid "Roman Rite"
+msgid "Liturgical Rite"
 msgstr ""
 
-#: layout/footer.php:38
-msgid "Ambrosian Rite"
+#: layout/footer.php:39
+msgid "Liturgical Calendar"
 msgstr ""
 
 #: layout/sidebar.php:13
@@ -440,10 +436,10 @@ msgstr ""
 msgid "WebSocket connection status"
 msgstr ""
 
-#: resources.php:121
+#: resources.php:131
 msgid "API Paths"
 msgstr ""
 
-#: resources.php:150
+#: resources.php:160
 msgid "Source data"
 msgstr ""
