@@ -25,3 +25,6 @@ e2e/screenshots/*
 .worktrees/
 .superpowers/
 .serena.local.bak/
+
+# Semgrep Guardian plugin scaffolding (empty local placeholder, no shared rules)
+.semgrep/
