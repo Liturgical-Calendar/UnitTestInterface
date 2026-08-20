@@ -145,9 +145,13 @@ test('every per-nation and per-diocese URL names its rite explicitly', async ({ 
         // running zero times and the test passing for the wrong reason.
         expect(collectedUrls.length).toBeGreaterThan(0);
         for (const url of collectedUrls) {
-            // An unprefixed /data/nation/IT or /events/diocese/x resolves to Roman silently,
-            // which would be a wrong-green under the Ambrosian rite.
-            expect(url).toMatch(/\/(data|events)\/(roman|ambrosian)\/(nation|diocese|widerregion)\//);
+            // Anchored to the rite currently SELECTED, not merely to some rite: under Ambrosian
+            // every Roman-only family (nations, wider regions, missals) is dropped and the
+            // diocesan tier is Ambrosian, so a surviving /data/roman/... URL is stale state, not
+            // a legitimate mix. An unprefixed /data/nation/IT resolves to Roman silently, which
+            // would be a wrong-green under Ambrosian — the rite-agnostic filter above lets that
+            // form reach this assertion rather than screening it out.
+            expect(url).toMatch(new RegExp(`/(data|events)/${rite}/(nation|diocese|widerregion)/`));
         }
     }
 });
@@ -157,7 +161,11 @@ test('degrades cleanly when the components-js library itself fails to load', asy
     // runner page (final review of #48, finding 1): a static top-level `import … from
     // '@liturgical-calendar/components-js'` fails evaluation of the whole module — including
     // mountRiteSelect()'s own try/catch — before any of resources.js runs at all.
-    await page.route('**/components-js/**', (route) => route.abort('failed'));
+    // A regex, not a glob: the import map resolves to `assets/components-js/index.js` under
+    // APP_ENV=development but to `.../components-js@2.7.0/+esm` otherwise, and
+    // '**/components-js/**' matches only the first — so under a production-shaped config the
+    // glob would abort nothing and this test would pass without ever exercising the failure.
+    await page.route(/components-js(@[^/]+)?\//, (route) => route.abort('failed'));
 
     const pageErrors: Error[] = [];
     page.on('pageerror', (err) => pageErrors.push(err));

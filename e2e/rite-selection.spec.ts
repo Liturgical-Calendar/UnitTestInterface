@@ -138,7 +138,11 @@ test('degrades cleanly when the components-js library itself fails to load', asy
     // makes reproduces exactly that: no toast, no scaffold, a spinner forever, and zero
     // `pageerror` (a thrown module-load rejection surfaces to the page as an unhandled promise
     // rejection, not a `pageerror` event, which is why this failure mode is easy to miss).
-    await page.route('**/components-js/**', (route) => route.abort('failed'));
+    // A regex, not a glob: the import map resolves to `assets/components-js/index.js` under
+    // APP_ENV=development but to `.../components-js@2.7.0/+esm` otherwise, and
+    // '**/components-js/**' matches only the first — so under a production-shaped config the
+    // glob would abort nothing and this test would pass without ever exercising the failure.
+    await page.route(/components-js(@[^/]+)?\//, (route) => route.abort('failed'));
 
     const pageErrors: Error[] = [];
     page.on('pageerror', (err) => pageErrors.push(err));
