@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { installWebSocketStub } from './websocket-stub';
 
 /**
  * Rite scoping on the Resources runner (issue #48).
@@ -149,4 +150,92 @@ test('every per-nation and per-diocese URL names its rite explicitly', async ({ 
             expect(url).toMatch(/\/(data|events)\/(roman|ambrosian)\/(nation|diocese|widerregion)\//);
         }
     }
+});
+
+test('degrades cleanly when the components-js library itself fails to load', async ({ page }) => {
+    // Same failure point as the analogous test in rite-selection.spec.ts, applied to the other
+    // runner page (final review of #48, finding 1): a static top-level `import … from
+    // '@liturgical-calendar/components-js'` fails evaluation of the whole module — including
+    // mountRiteSelect()'s own try/catch — before any of resources.js runs at all.
+    await page.route('**/components-js/**', (route) => route.abort('failed'));
+
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (err) => pageErrors.push(err));
+
+    await page.goto('/resources.php');
+
+    await expect(page.locator('#controls-load-failed')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#riteSelect')).toHaveCount(0);
+    // ...but the rest of the page's initialisation still ran: setEndpoints(), loadAsyncData() and
+    // the WebSocket connect it triggers via setupPage() are not downstream of the failed import.
+    await waitForScaffold(page);
+
+    expect(pageErrors).toEqual([]);
+});
+
+test('a rapid double rite change does not duplicate checks', async ({ page }) => {
+    // Finding 2 (final review of #48): loadAsyncData() had no in-flight guard, and its `.then`
+    // pushed into the current module arrays regardless of whether a newer rite change had since
+    // started another call. roman -> ambrosian -> roman in quick succession used to take
+    // .sourcedata-tests from 64 cards to 124, with 60 duplicate `validate` slugs.
+    await page.goto('/resources.php');
+    await waitForScaffold(page);
+
+    // Rapid and unawaited between selections: the point is to start the `ambrosian` and `roman`
+    // loadAsyncData() calls before either one's fetches (or the page's own initial call) has
+    // resolved, which is exactly the race this finding describes.
+    await page.selectOption('#riteSelect', 'ambrosian');
+    await page.selectOption('#riteSelect', 'roman');
+    await waitForScaffold(page);
+    // Give any stale, still-in-flight loadAsyncData() call time to (wrongly) resolve and push
+    // before asserting — the race is exactly what this delay is here to let finish.
+    await page.waitForTimeout(3000);
+
+    const classNamesOf = (selector: string) =>
+        page.locator(selector).evaluateAll((els) => els.map((e) => e.className));
+
+    // Every check contributes exactly one `.file-exists` card, carrying its (slugified) `validate`
+    // value as a class. A duplicated check would render two cards with the identical class list.
+    const sourceFileExists = await classNamesOf('.sourcedata-tests .file-exists');
+    const resourceFileExists = await classNamesOf('.resourcedata-tests .file-exists');
+    expect(sourceFileExists.length).toBeGreaterThan(0);
+    expect(resourceFileExists.length).toBeGreaterThan(0);
+    expect(new Set(sourceFileExists).size).toBe(sourceFileExists.length);
+    expect(new Set(resourceFileExists).size).toBe(resourceFileExists.length);
+
+    // The counter-vs-card drift finding 2 warns about (and issue #43 exists to prevent): the
+    // "Time" badge totals are computed straight from the rendered card counts, so they stay
+    // exactly 3x the (now duplicate-free) file-exists counts.
+    const totals = await page.evaluate(() => ({
+        resource: document.getElementById('totalResourceDataTestsCount')?.textContent,
+        source: document.getElementById('totalSourceDataTestsCount')?.textContent,
+    }));
+    expect(Number(totals.resource)).toBe(resourceFileExists.length * 3);
+    expect(Number(totals.source)).toBe(sourceFileExists.length * 3);
+});
+
+test('a rite change is blocked for the duration of a run', async ({ page }) => {
+    // Finding 3 (final review of #48): resetCheckListsForRite() wipes the rendered cards and
+    // swaps both check lists mid-run without touching currentState, currentRunToken or the
+    // response counters, and sends no cancelRun. In-flight frames keep arriving with a matching
+    // runToken, paint nothing (their cards are gone), still increment the received counter, and
+    // can trip the phase gate early — eventually storing a run of all-blue cards. Guarding this by
+    // disabling the rite select for the run's duration is simpler than teaching every counter and
+    // the run token to survive a mid-run swap, and it prevents the scenario outright.
+    await installWebSocketStub(page);
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await expect(page.locator('#riteSelect')).toBeEnabled();
+
+    await startBtn.click();
+    // The stub never replies, so the run parks after its first batch of requests — enough for the
+    // rite select to have been disabled by the run's start.
+    await expect(page.locator('#riteSelect')).toBeDisabled();
+
+    // Stopping the run (same button, now in its stop role) must release the control again, so the
+    // page is genuinely idle afterwards rather than stuck with an un-selectable rite.
+    await startBtn.click();
+    await expect(page.locator('#riteSelect')).toBeEnabled();
 });

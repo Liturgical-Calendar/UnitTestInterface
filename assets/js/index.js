@@ -31,13 +31,13 @@ import {
     CALENDAR_SCOPE_KEYS,
 } from './wsProtocol.js';
 
-import {
-    ApiClient,
-    ApiBase,
-    CalendarSelect,
-    RiteSelect,
-    CalendarSelectFilter,
-} from '@liturgical-calendar/components-js';
+// `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
+// top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
+// production, a stale symlink in development) fails the whole module's evaluation before any of
+// its own code — including a try/catch — ever runs; nothing below this point would execute at
+// all. `mountCalendarControls()` instead performs a dynamic `await import(...)` inside its own
+// try/catch, so that failure is catchable and degrades to the `#controls-load-failed` toast
+// (final review of #48, finding 1) instead of silently killing the page.
 
 const resultCollector = createResultCollector();
 let renderedUnitTests = [];
@@ -156,10 +156,10 @@ const getApiBaseUrl = () => {
  */
 let apiBase = null;
 
-/** @type {?RiteSelect} */
+/** @type {?import('@liturgical-calendar/components-js').RiteSelect} */
 let riteSelect = null;
 
-/** @type {?CalendarSelect} */
+/** @type {?import('@liturgical-calendar/components-js').CalendarSelect} */
 let calendarSelect = null;
 
 /**
@@ -178,8 +178,14 @@ let calendarSelect = null;
  */
 const mountCalendarControls = async () => {
     const baseUrl = getApiBaseUrl();
+    /** @type {typeof import('@liturgical-calendar/components-js')} */
+    let componentsJs;
     try {
-        await ApiClient.init( baseUrl );
+        // The dynamic import is inside the try: a failed module load (CDN outage, blocked host,
+        // stale dev symlink) rejects here exactly like a failed ApiClient.init() call, instead of
+        // aborting evaluation of this whole file before this function even exists.
+        componentsJs = await import( '@liturgical-calendar/components-js' );
+        await componentsJs.ApiClient.init( baseUrl );
     } catch ( err ) {
         // A CDN or metadata failure leaves both mount points empty. Say so: without this the page
         // shows a control-less header and an empty scaffold, which reads like "nothing to check"
@@ -188,6 +194,7 @@ const mountCalendarControls = async () => {
         safeToastShow( '#controls-load-failed' );
         return;
     }
+    const { ApiBase, CalendarSelect, RiteSelect, CalendarSelectFilter } = componentsJs;
     apiBase = ApiBase.resolve( baseUrl );
 
     riteSelect = new RiteSelect( locale )

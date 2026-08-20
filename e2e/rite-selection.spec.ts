@@ -128,6 +128,35 @@ test('degrades cleanly when the calendar controls fail to mount', async ({ page 
     expect(pageErrors).toEqual([]);
 });
 
+test('degrades cleanly when the components-js library itself fails to load', async ({ page }) => {
+    // Distinct failure point from the test above, and the one final review found unprotected
+    // (final review of #48, finding 1): before the fix, `@liturgical-calendar/components-js` was
+    // imported with a static top-level `import … from`. A static specifier that fails to resolve
+    // (a jsDelivr outage, a blocked host in production, a stale symlink in development) fails
+    // evaluation of the WHOLE module before any of index.js's own code — including
+    // mountCalendarControls()'s try/catch — ever runs. Aborting every request the library itself
+    // makes reproduces exactly that: no toast, no scaffold, a spinner forever, and zero
+    // `pageerror` (a thrown module-load rejection surfaces to the page as an unhandled promise
+    // rejection, not a `pageerror` event, which is why this failure mode is easy to miss).
+    await page.route('**/components-js/**', (route) => route.abort('failed'));
+
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (err) => pageErrors.push(err));
+
+    await page.goto('/');
+
+    // The failure is surfaced...
+    await expect(page.locator('#controls-load-failed')).toBeVisible({ timeout: 10000 });
+    // ...neither library control was mounted...
+    await expect(page.locator('#riteSelect')).toHaveCount(0);
+    await expect(page.locator('#APICalendarSelect')).toHaveCount(0);
+    // ...but the rest of the page's initialisation still ran: fetchMetadataAndTests() and
+    // connectWebSocket() are not downstream of the failed dynamic import.
+    await waitForLiveScaffold(page);
+
+    expect(pageErrors).toEqual([]);
+});
+
 test('the source-data scaffold follows the rite, and covers i18n folders', async ({ page }) => {
     await page.goto('/');
     await waitForLiveScaffold(page);

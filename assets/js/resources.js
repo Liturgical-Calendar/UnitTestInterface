@@ -29,7 +29,13 @@ import {
     inRiteScope,
 } from './wsProtocol.js';
 
-import { ApiClient, ApiBase, RiteSelect } from '@liturgical-calendar/components-js';
+// `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
+// top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
+// production, a stale symlink in development) fails the whole module's evaluation before any of
+// its own code — including a try/catch — ever runs; nothing below this point would execute at
+// all. `mountRiteSelect()` instead performs a dynamic `await import(...)` inside its own
+// try/catch, so that failure is catchable and degrades to the `#controls-load-failed` toast
+// (final review of #48, finding 1) instead of silently killing the page.
 
 const resultCollector = createResultCollector();
 
@@ -244,6 +250,21 @@ const resourceDataChecks = [
  * @type {string}
  */
 let currentRite = 'roman';
+
+/**
+ * Incremented on every rite change. `loadAsyncData()` captures the value current when it starts
+ * and discards its results if the generation has since moved on — i.e. another rite change
+ * started a newer `loadAsyncData()` call before this one's fetches resolved.
+ *
+ * Needed because `loadAsyncData()` has no in-flight guard of its own: its `.then` pushes into the
+ * module-level `sourceDataChecks` / `resourceDataChecks` arrays, so two overlapping calls (a rapid
+ * double rite change — roman -> ambrosian -> roman within the round-trip time of the `/calendars`,
+ * `/missals` and `/tests` fetches) both resolve and both push, duplicating every check (final
+ * review of #48, finding 2).
+ *
+ * @type {number}
+ */
+let loadAsyncDataGeneration = 0;
 
 /**
  * The source data checks for the current run, rebuilt on every rite change.
@@ -830,7 +851,7 @@ const methodAndHeaders = Object.freeze({
  */
 const getApiBaseUrl = () => ENDPOINTS.CALENDARS.replace(/\/calendars$/, '');
 
-/** @type {?RiteSelect} */
+/** @type {?import('@liturgical-calendar/components-js').RiteSelect} */
 let riteSelect = null;
 
 /**
@@ -846,15 +867,24 @@ let riteSelect = null;
  */
 const mountRiteSelect = async () => {
     const baseUrl = getApiBaseUrl();
+    /** @type {typeof import('@liturgical-calendar/components-js')} */
+    let componentsJs;
     try {
-        await ApiClient.init( baseUrl );
+        // The dynamic import is inside the try: a failed module load (CDN outage, blocked host,
+        // stale dev symlink) rejects here exactly like a failed ApiClient.init() call, instead of
+        // aborting evaluation of this whole file before this function even exists.
+        componentsJs = await import( '@liturgical-calendar/components-js' );
+        await componentsJs.ApiClient.init( baseUrl );
     } catch ( err ) {
         // Same reasoning as index.js: an unmounted control must not look like an empty result set.
         console.error( 'Could not initialise the rite select', err );
         safeToastShow( '#controls-load-failed' );
         return;
     }
-    ApiBase.resolve( baseUrl );
+    const { RiteSelect } = componentsJs;
+    // Note: no `ApiBase` here. This page has no CalendarSelect and reads no shared metadata
+    // through it, so `ApiBase` would be resolved and never touched again — see spec §4's
+    // amendment on why the two pages do not yet share one `ApiBase` instance.
 
     riteSelect = new RiteSelect( locale )
         .id( 'riteSelect' )
@@ -867,6 +897,30 @@ const mountRiteSelect = async () => {
         resetCheckListsForRite();
         loadAsyncData();
     } );
+};
+
+/**
+ * Disables (or re-enables) the rite select for the duration of a test run.
+ *
+ * A rite change during an active run is unsafe: `resetCheckListsForRite()` wipes the rendered
+ * cards and swaps both check lists, but touches none of `currentState`, the response counters or
+ * `currentRunToken`, and sends no `cancelRun`. In-flight frames would keep arriving with a
+ * matching `runToken`, paint nothing (their cards are gone), still increment the received
+ * counter, and could trip the `>=` phase gate early — advancing to `JobsFinished` and storing a
+ * run of all-blue cards (final review of #48, finding 3).
+ *
+ * Disabling the control for the run's duration is simpler than teaching every counter and the run
+ * token to survive a mid-run rite swap, and it prevents the scenario outright rather than merely
+ * recovering from it after the fact — the control is only `#startTestRunnerBtn`'s exclusive
+ * counterpart while a run owns the page.
+ *
+ * @param {boolean} disabled
+ * @returns {void}
+ */
+const setRiteSelectDisabledForRun = ( disabled ) => {
+    if ( riteSelect?._domElement ) {
+        riteSelect._domElement.disabled = disabled;
+    }
 };
 
 /**
@@ -905,13 +959,27 @@ const resetCheckListsForRite = () => {
  * When the data is loaded, it sets the necessary variables and proceeds to
  * set up the page by populating the page with the resource data tests and setting
  * the page status to ready.
+ *
+ * Has no in-flight guard by itself — a rapid double rite change starts a second call before the
+ * first one's fetches resolve, and both `.then` callbacks would otherwise push into the same
+ * module-level `sourceDataChecks` / `resourceDataChecks` arrays, duplicating every check (final
+ * review of #48, finding 2). `loadAsyncDataGeneration` is the guard: this call captures the
+ * generation current when it starts, and discards its results if a newer call has since started.
  */
 const loadAsyncData = () => {
+    const myGeneration = ++loadAsyncDataGeneration;
     Promise.all([
         fetch( ENDPOINTS.CALENDARS, methodAndHeaders).then(response => response.json()),
         fetch( ENDPOINTS.MISSALS, methodAndHeaders).then(response => response.json()),
         fetch( ENDPOINTS.TESTS, methodAndHeaders).then(response => response.json())
     ]).then(dataArr => {
+        if ( myGeneration !== loadAsyncDataGeneration ) {
+            // A newer rite change started another loadAsyncData() call before this one's fetches
+            // resolved; that call owns the current scaffold. Applying this stale generation's
+            // results on top of it would duplicate every check.
+            console.log( 'Discarding stale loadAsyncData() results — a newer rite change has since started' );
+            return;
+        }
         dataArr.forEach(data => {
             if(data.hasOwnProperty('litcal_metadata')) {
                 MetaData = data.litcal_metadata;
@@ -1170,6 +1238,7 @@ const runTests = () => {
             console.log( 'All jobs finished!' );
             safeToastShow('#tests-complete');
             currentRunToken = null;
+            setRiteSelectDisabledForRun( false );
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
@@ -1309,6 +1378,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
             console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
             currentRunToken = crypto.randomUUID();
+            setRiteSelectDisabledForRun( true );
             performance.mark( 'litcalTestRunnerStart' );
             const startBtnEl = document.querySelector('#startTestRunnerBtn');
             if (startBtnEl) {
@@ -1333,6 +1403,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         sendCancelRun( conn, currentRunToken );
         currentState = TestState.Stopped;
         currentRunToken = null;
+        setRiteSelectDisabledForRun( false );
         const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
         if (spinIcon) {
             spinIcon.classList.remove('fa-spin');

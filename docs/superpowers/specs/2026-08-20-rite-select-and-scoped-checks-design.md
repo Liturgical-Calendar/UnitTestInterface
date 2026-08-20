@@ -256,12 +256,23 @@ page under each rite covers the same ground.
 Diocesan filtering reads `diocesanCalendar.rite ?? 'roman'`; test filtering reads
 `test.applies_to?.rite ?? test.appliesTo?.rite`. Both are already resolved by the page today.
 
-### 4. Shared metadata via `ApiBase`
+### 4. Shared metadata via `ApiBase` (deferred)
 
-Both pages resolve a single `ApiBase` (exported from the library) and `load()` it once. The library's selects use
-it, and our check-builders read `.metadata`, `.nationalCalendars()` and `.diocesanCalendars( rite )` from the same
-instance. This removes the second `/calendars` fetch that full adoption would otherwise introduce on `index.php`,
-and hands `resources.js` a rite-filtered diocese list without a local filter.
+**Amendment (final pre-merge review, 2026-08-20):** this section originally claimed both pages resolve a single
+`ApiBase` and `load()` it once, removing the second `/calendars` fetch that full adoption would otherwise introduce
+on `index.php`. That was not implemented. `index.php` calls `ApiBase.resolve( baseUrl )` in `mountCalendarControls()`
+only to obtain the instance the library's own `CalendarSelect`/`RiteSelect` already loaded internally, then still
+runs its own separate `/calendars` fetch in `fetchMetadataAndTests()` for its own check-builders; `resources.js` has
+no `CalendarSelect` and no use for `ApiBase` at all — the `ApiBase.resolve( baseUrl )` call once present there was
+dead code, discarding its result, and has been removed. Both pages therefore fetch `/calendars` twice apiece today
+(once through the library's internal load, once through each page's own fetch), and `resources.js`'s diocese
+filtering still goes through the local `inRiteScope()` predicate rather than an `ApiBase.diocesanCalendars( rite )`
+call.
+
+Sharing one `ApiBase` instance between a page's own check-builders and the library's selects — to collapse the
+duplicate `/calendars` fetch and to hand `resources.js` a rite-filtered diocese list without a local filter — is
+real, but it is a larger refactor than fits this late in #48. It is deliberately deferred as future work rather
+than attempted here.
 
 ### 5. `assets/js/wsProtocol.js` — the shared module
 

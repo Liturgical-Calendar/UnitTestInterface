@@ -35,7 +35,6 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
             API_HOST: <?php echo json_encode($_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com'); ?>,
             API_BASE_PATH: <?php echo json_encode($_ENV['API_BASE_PATH'] ?? '/api/dev'); ?>,
             APP_ENV: <?php echo json_encode($_ENV['APP_ENV'] ?? 'production'); ?>,
-            riteLabels: <?php echo json_encode(['roman' => _('Roman Rite'), 'ambrosian' => _('Ambrosian Rite')]); ?>,
             riteSelectLabel: <?php echo json_encode(_('Liturgical Rite')); ?>,
             calendarSelectLabel: <?php echo json_encode(_('Liturgical Calendar')); ?>,
             isAuthenticated: <?php echo isset($isAuthenticated) ? ($isAuthenticated ? 'true' : 'false') : 'false'; ?>
