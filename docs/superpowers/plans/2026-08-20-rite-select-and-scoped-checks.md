@@ -26,7 +26,10 @@ rite predicate, the universal source-data inventory and the selection→protocol
   `@liturgical-calendar/components-js` to `package.json` dependencies — nothing installs it; the import map
   resolves it.
 - **`appendTo()` returns `undefined`.** Never chain off it, never assign its result.
-- **Server API dependency:** requires LiturgicalCalendarAPI **#813** (merged 2026-08-20). Earlier servers cannot resolve schemas for rite-qualified resource URLs.
+- **Server API dependency:** requires LiturgicalCalendarAPI **#813** and **#816**, both merged 2026-08-20.
+  #813 made item routes (`/events/roman/nation/IT`) rite-aware and fixed the diocesan source paths; #816 made
+  the bare rite-qualified collection form (`/events/roman`, `/tests/roman`) resolve to the bare form's schema.
+  Earlier servers report *"Unable to detect schema for dataPath …"* for both shapes.
 - **Rite identifiers** are exactly `roman` and `ambrosian`. Default is `roman`.
 - **Card class names are part of the API contract** — the server echoes `classes` selectors built from the `validate` values we send. Changing a `validate` value changes a card class.
 
@@ -1285,7 +1288,6 @@ test('the rite-independent collection endpoints are checked under both rites', a
     const required = [
         'calendars-path',
         'decrees-path',
-        'tests-path',
         'easter-path',
         'schemas-path',
         'missals-path',
@@ -1301,6 +1303,32 @@ test('the rite-independent collection endpoints are checked under both rites', a
     for (const slug of required) {
         expect(ambrosian).toContain(slug);
     }
+});
+
+test('the /events and /tests collection checks name the selected rite', async ({ page }) => {
+    await page.goto('/resources.php');
+    await waitForScaffold(page);
+
+    const collectionUrls = async () =>
+        page.locator('[title]').evaluateAll(
+            (els) => els.map((e) => e.getAttribute('title') ?? '')
+                       .filter((t) => /\/(events|tests)\/(roman|ambrosian)$/.test(t))
+        );
+
+    expect(await collectionUrls()).toEqual(
+        expect.arrayContaining([
+            expect.stringMatching(/\/events\/roman$/),
+            expect.stringMatching(/\/tests\/roman$/),
+        ])
+    );
+
+    await selectRite(page, 'ambrosian');
+    expect(await collectionUrls()).toEqual(
+        expect.arrayContaining([
+            expect.stringMatching(/\/events\/ambrosian$/),
+            expect.stringMatching(/\/tests\/ambrosian$/),
+        ])
+    );
 });
 
 test('national, wider-region and per-missal checks are Roman-only', async ({ page }) => {
@@ -1504,10 +1532,51 @@ Filter the tests loop by rite, replacing the existing `const rite = …` guard b
                 })
 ```
 
-Note: the bare `/events` collection check in `resourceDataChecks` stays **unprefixed**.
-`Health::retrieveSchemaForCategory()` resolves a rite-qualified resource URL only through arms
-that require `nation/` or `diocese/` after the rite segment, so `/events/roman` would resolve no
-schema at all. That gap is recorded in the follow-up issue in Task 6.
+Finally, rite-qualify the two collection endpoints whose content differs by rite. Add this
+function next to `setEndpoints()`, and call it from `setEndpoints()` and on every rite change:
+
+```javascript
+/**
+ * Points the two rite-qualified collection checks at the selected rite.
+ *
+ * `/events` and `/tests` are collections whose content differs by rite, and both accept the
+ * segment. The other five static checks — /calendars, /decrees, /easter, /schemas, /missals —
+ * carry no rite dimension and keep their bare URLs.
+ *
+ * Requires LiturgicalCalendarAPI#816: before it, `getPathToSchemaFile()` matched collection routes
+ * by exact string equality, so `/events/roman` resolved no schema. It now strips a trailing rite
+ * segment before the match.
+ *
+ * `/calendar/{rite}` is deliberately absent — Health resolves no schema for either form of it, so
+ * it is not checkable as a resource path. index.php validates calendars through the
+ * `validateCalendar` action instead.
+ *
+ * @param {string} rite - The selected rite.
+ * @returns {void}
+ */
+const setRiteQualifiedEndpoints = ( rite ) => {
+    const eventsCheck = resourceDataChecks.find( check => check.validate === 'events-path' );
+    const testsCheck  = resourceDataChecks.find( check => check.validate === 'tests-path' );
+    eventsCheck.sourceFile = `${ENDPOINTS.EVENTS}/${rite}`;
+    testsCheck.sourceFile  = `${ENDPOINTS.TESTS}/${rite}`;
+};
+```
+
+In `setEndpoints()`, delete these two lines:
+
+```javascript
+    resourceDataChecks[2].sourceFile = ENDPOINTS.TESTS;
+    resourceDataChecks[3].sourceFile = ENDPOINTS.EVENTS;
+```
+
+and add a single call after the remaining assignments:
+
+```javascript
+    setRiteQualifiedEndpoints( currentRite );
+```
+
+Note `resourceDataChecks[2]` and `[3]` are `tests-path` and `events-path` respectively; the other
+five index assignments stay as they are.
 
 - [ ] **Step 7: Mount the rite select and rebuild on change**
 
@@ -1570,6 +1639,8 @@ const mountRiteSelect = async () => {
 const resetCheckListsForRite = () => {
     const STATIC_RESOURCE_CHECK_COUNT = 7;
     resourceDataChecks.length = STATIC_RESOURCE_CHECK_COUNT;
+    // Two of those seven address a rite; the truncation keeps the entries but not their aim.
+    setRiteQualifiedEndpoints( currentRite );
     Object.keys( resourcePaths )
         .filter( key => /^(data-path|events-path|missals-path)-/.test( key ) )
         .forEach( key => delete resourcePaths[ key ] );
@@ -1610,7 +1681,7 @@ If the enclosing function is not `async`, make it so, or wrap in an IIFE as in T
 
 Run: `npx playwright test e2e/resources-rite.spec.ts --project=chromium`
 
-Expected: PASS, 5 tests.
+Expected: PASS, 6 tests.
 
 - [ ] **Step 9: Verify against a live server**
 
@@ -1690,13 +1761,19 @@ when the Ambrosian rite is selected rather than requesting and failing them.
 
 Per-nation and per-diocese `/data` and `/events` URLs are sent **rite-qualified**
 (`/data/ambrosian/diocese/milano_it`); an unprefixed URL silently resolves to Roman, which would be
-a wrong-green. Collection endpoints stay unprefixed: `Health::retrieveSchemaForCategory()` resolves
-a rite-qualified resource URL only through arms requiring `nation/` or `diocese/` after the rite
-segment, so `/events/roman` resolves no schema.
+a wrong-green. The `/events` and `/tests` **collections** are rite-qualified too. The other five
+collection endpoints — `/calendars`, `/decrees`, `/easter`, `/schemas`, `/missals` — carry no rite
+dimension and stay bare.
 
-This requires LiturgicalCalendarAPI **#813**, which taught those regexes an optional
-`(?:roman|ambrosian)/` segment and routed the diocesan path sites through
-`JsonData::diocesanCalendarFileFor($rite)`.
+`/calendar/{rite}` is the exception: `Health` resolves no schema for either form of it, so it is
+not checkable as a resource path at all. `index.php` validates calendars through the
+`validateCalendar` action instead, which is rite-aware in its own right.
+
+This requires two LiturgicalCalendarAPI changes: **#813**, which taught the `resourceDataCheck`
+regexes an optional rite segment and routed the diocesan path sites through
+`JsonData::diocesanCalendarFileFor($rite)`; and **#816**, which strips a trailing rite segment
+before `getPathToSchemaFile()`'s exact-match lookup so the bare rite-qualified collection form
+resolves to the bare form's schema.
 
 On `index.php`, the calendar select is the library's, linked to the rite select. Its options carry
 `data-calendartype="national"|"diocesan"` and no `data-rite`, and the rite-level calendar is its
@@ -1734,18 +1811,15 @@ Ask the user to confirm before creating either — the second lands in a differe
 Issue in **this** repo:
 
 ```text
-Title: resources.php does not health-check /temporale, /validations, or the rite-qualified collection endpoints
+Title: resources.php does not health-check /temporale or /validations
 
-Three gaps, all noticed while implementing #48:
+Two endpoints shipped after this page's check list was last extended, and neither is covered:
 
-- `/temporale` and `/temporale/{event_key}` are never checked; the endpoint shipped after the
-  page's check list was last extended.
-- `/validations` is never checked; same reason (LiturgicalCalendarAPI#811).
-- `/events/{rite}` and `/calendar/{rite}` cannot be checked at all.
-  `Health::retrieveSchemaForCategory()` resolves a rite-qualified resource URL only through arms
-  that require `nation/` or `diocese/` after the rite segment, and `getPathToSchemaFile()` matches
-  collection routes exactly, so `/events/ambrosian` resolves no schema. The Ambrosian events
-  catalogue is therefore unverifiable from this interface.
+- `/temporale` and `/temporale/{event_key}`.
+- `/validations` (LiturgicalCalendarAPI#811), which is the endpoint #42 will consume.
+
+Noticed while implementing #48. Not folded in there because that issue is the rite control and
+rite filtering, and neither endpoint has a rite dimension to filter on.
 ```
 
 Issue in **LiturgicalCalendarAPI**:
