@@ -280,28 +280,46 @@ export const toWireTarget = ( value, calendartype, rite ) => { /* … */ };
 
 `testAppliesToCurrentRite()` and `CALENDAR_SCOPE_KEYS` move here too, unchanged.
 
-#### The eight universal checks, and one vocabulary
+#### The eight universal checks
 
-All eight entries use `category: "universalcalendar"` with a real path. This is verified to work for every one of
-them, `i18n` folders included:
+The four **file** entries use `category: "universalcalendar"` with a real path.
+`Health::retrieveSchemaForCategory( 'universalcalendar', … )` delegates to `getPathToSchemaFile()`, which
+resolves through `CheckableInventory::byPath()` — and the inventory contains all four, Ambrosian included.
 
-- `Health::retrieveSchemaForCategory( 'universalcalendar', … )` delegates to `getPathToSchemaFile()`, which now
-  resolves through `CheckableInventory::byPath()` — and the inventory contains all eight items.
-- `sourceFolder` handling in `Health::executeValidation()` is category-agnostic (it branches on
-  `property_exists( $validation, 'sourceFolder' )`, not on `category`), and
-  `Health::validateMessageProperties()` special-cases a missing `sourceFile` whenever `sourceFolder` is present
-  without restricting that to a category.
+The four **i18n folder** entries use `category: "sourceDataCheck"` with a hyphenated `-i18n` slug.
 
-| `rite`      | Item                          | `kind` |
-|-------------|-------------------------------|--------|
-| `roman`     | Proprium de Tempore           | file   |
-| `roman`     | Proprium de Tempore `i18n`    | folder |
-| `roman`     | Memorials from Decrees        | file   |
-| `roman`     | Memorials from Decrees `i18n` | folder |
-| `ambrosian` | Proprium de Tempore           | file   |
-| `ambrosian` | Proprium de Tempore `i18n`    | folder |
-| `ambrosian` | Proprium de Sanctis           | file   |
-| `ambrosian` | Proprium de Sanctis `i18n`    | folder |
+This split is forced by the server, not chosen. An earlier version of this spec asserted that
+`universalcalendar` covered folders too, on the strength of `Health::executeValidation()` branching on
+`property_exists( $validation, 'sourceFolder' )` rather than on the category. That reading was wrong: the
+whole `sourceFolder` **dataPath resolution** block sits inside `if ( $category === 'sourceDataCheck' )`
+(`Health.php:609-660`). Under `universalcalendar` the `else` branch runs, requires `sourceFile`, and throws —
+which Ratchet turns into a closed connection, wedging the run rather than failing one card.
+
+Verified against the live WebSocket server rather than by reading:
+
+| frame                                                             | result            |
+|-------------------------------------------------------------------|-------------------|
+| folder + `universalcalendar`                                      | connection CLOSED |
+| folder + `sourceDataCheck` + `proprium-de-tempore-i18n`           | 3 × success       |
+| folder + `sourceDataCheck` + `ambrosian-proprium-de-tempore-i18n` | 3 × success       |
+| folder + `sourceDataCheck` + `ambrosian-proprium-de-sanctis-i18n` | 3 × success       |
+| file + `universalcalendar` (Ambrosian temporale)                  | 3 × success       |
+
+The two Roman folder slugs are the ones `Health`'s `$legacySlugToId` table already maps onto inventory ids;
+the two Ambrosian ones resolve through its surviving `/-i18n$/` regex arm, which returns the `I18N` schema.
+Both therefore work on today's server with no API change. The Roman pair is also exactly what `resources.js`
+already sends, so the two pages agree there for free.
+
+| `rite`      | Item                          | `kind` | `category`          | `validate`                           |
+|-------------|-------------------------------|--------|---------------------|--------------------------------------|
+| `roman`     | Proprium de Tempore           | file   | `universalcalendar` | `PropriumDeTempore`                  |
+| `roman`     | Proprium de Tempore `i18n`    | folder | `sourceDataCheck`   | `proprium-de-tempore-i18n`           |
+| `roman`     | Memorials from Decrees        | file   | `universalcalendar` | `MemorialsFromDecrees`               |
+| `roman`     | Memorials from Decrees `i18n` | folder | `sourceDataCheck`   | `memorials-from-decrees-i18n`        |
+| `ambrosian` | Proprium de Tempore           | file   | `universalcalendar` | `AmbrosianPropriumDeTempore`         |
+| `ambrosian` | Proprium de Tempore `i18n`    | folder | `sourceDataCheck`   | `ambrosian-proprium-de-tempore-i18n` |
+| `ambrosian` | Proprium de Sanctis           | file   | `universalcalendar` | `AmbrosianPropriumDeSanctis`         |
+| `ambrosian` | Proprium de Sanctis `i18n`    | folder | `sourceDataCheck`   | `ambrosian-proprium-de-sanctis-i18n` |
 
 The Roman sanctorale is **not** in this list: it is per-missal and both pages already derive it from `/missals`
 metadata, whose editions are all Roman.
@@ -310,9 +328,11 @@ This retires from `index.js`: `ROMAN_SOURCE_DATA_PATH`, `AMBROSIAN_SOURCE_DATA_P
 `buildUniversalSourceDataChecks()`. And from `resources.js`: the four-entry `sourceDataChecks` literal. The four
 Ambrosian entries are new coverage — the gap the issue opens on.
 
-Because both pages now send one vocabulary for these files, the split #42 documents (`PropriumDeTempore` +
-`universalcalendar` versus `proprium-de-tempore` + `sourceDataCheck` for the same file on disk) is closed as a
-side effect.
+Both pages now send the same message for the same file, which closes the divergence #42 documents
+(`PropriumDeTempore` + `universalcalendar` in one page versus `proprium-de-tempore` + `sourceDataCheck` in the
+other, for one file on disk). The file/folder category split that remains is not that divergence: it is one
+rule, applied identically by both pages, and it exists because the server resolves a folder's data path only
+under `sourceDataCheck`. #806 section B removes the distinction along with client-supplied paths.
 
 ## Error Handling
 
