@@ -66,6 +66,14 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-white bg-danger border-0 p-3 shadow" aria-live="assertive" role="alert" id="controls-load-failed">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Could not load the calendar controls."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -74,6 +82,8 @@ include_once('layout/head.php');
 
         <div id="testsContainer">
             <div class="row mb-3 text-center g-2 litcaltests-header align-items-end">
+                <!-- Rendered by liturgy-components-js; resources.js mounts it here (issue #48). -->
+                <div class="col-6 col-md-4 col-lg-2" id="riteSelectMount"></div>
                 <div class="col-6 col-md-4 col-lg-2">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">

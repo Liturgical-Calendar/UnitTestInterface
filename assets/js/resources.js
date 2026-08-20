@@ -23,7 +23,13 @@ import {
     fetchRunDetail,
 } from './testResults.js';
 
-import { sendCancelRun } from './wsProtocol.js';
+import {
+    sendCancelRun,
+    universalChecksForRite,
+    inRiteScope,
+} from './wsProtocol.js';
+
+import { ApiClient, ApiBase, RiteSelect } from '@liturgical-calendar/components-js';
 
 const resultCollector = createResultCollector();
 
@@ -31,7 +37,10 @@ const resultCollector = createResultCollector();
 /** @typedef {import('./types.js').WebSocketResponse} WebSocketResponse */
 
 // Access global config from window (set by PHP in footer.php)
-const { locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV } = window.LitCalConfig;
+const {
+    locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV,
+    riteSelectLabel: riteSelectLabelText = 'Liturgical Rite',
+} = window.LitCalConfig;
 
 /**
  * This class keeps track of the state of the page and the data it requires to run tests.
@@ -231,36 +240,21 @@ const resourceDataChecks = [
 ];
 
 /**
- * An array of objects with the following properties:
- * - `validate`: the name of the class that will be used to match the response from the websocket backend.
- *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
- * - `sourceFile`: the URL of the resource to check.
- * - `category`: a string that indicates the category of the source data check.
- *                Currently, the only category is 'sourceDataCheck'.
- * @type {Array<{validate: string, sourceFile: string, category: string}>}
+ * The liturgical rite currently selected. Drives which checks are built.
+ * @type {string}
  */
-const sourceDataChecks = [
-    {
-        "validate": "memorials-from-decrees",
-        "sourceFile": "jsondata/sourcedata/rite/roman/decrees/decrees.json",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "memorials-from-decrees-i18n",
-        "sourceFolder": "jsondata/sourcedata/rite/roman/decrees/i18n",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-tempore",
-        "sourceFile": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json",
-        "category": "sourceDataCheck"
-    },
-    {
-        "validate": "proprium-de-tempore-i18n",
-        "sourceFolder": "jsondata/sourcedata/rite/roman/missals/propriumdetempore/i18n",
-        "category": "sourceDataCheck"
-    }
-];
+let currentRite = 'roman';
+
+/**
+ * The source data checks for the current run, rebuilt on every rite change.
+ *
+ * Starts as the universal corpus of the selected rite — shared with index.js via wsProtocol.js,
+ * so both pages check the same files under the same names — and is then extended by
+ * `loadAsyncData()` with the wider-region, national, missal, diocesan and test entries.
+ *
+ * @type {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
+ */
+let sourceDataChecks = universalChecksForRite( currentRite );
 
 
 
@@ -293,12 +287,41 @@ const setEndpoints = () => {
     console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
     resourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     resourceDataChecks[1].sourceFile = ENDPOINTS.DECREES;
-    resourceDataChecks[2].sourceFile = ENDPOINTS.TESTS;
-    resourceDataChecks[3].sourceFile = ENDPOINTS.EVENTS;
     resourceDataChecks[4].sourceFile = ENDPOINTS.EASTER;
     resourceDataChecks[5].sourceFile = ENDPOINTS.SCHEMAS;
     resourceDataChecks[6].sourceFile = ENDPOINTS.MISSALS;
+    setRiteQualifiedEndpoints( currentRite );
 }
+
+/**
+ * Points the two rite-qualified collection checks at the selected rite.
+ *
+ * `/events` and `/tests` are collections whose content differs by rite, and both accept the
+ * segment. The other five static checks — /calendars, /decrees, /easter, /schemas, /missals —
+ * carry no rite dimension and keep their bare URLs.
+ *
+ * Requires LiturgicalCalendarAPI#816: before it, `getPathToSchemaFile()` matched collection routes
+ * by exact string equality, so `/events/roman` resolved no schema. It now strips a trailing rite
+ * segment before the match.
+ *
+ * `/calendar/{rite}` is deliberately absent — Health resolves no schema for either form of it, so
+ * it is not checkable as a resource path. index.php validates calendars through the
+ * `validateCalendar` action instead.
+ *
+ * @param {string} rite - The selected rite.
+ * @returns {void}
+ */
+const setRiteQualifiedEndpoints = ( rite ) => {
+    const eventsCheck = resourceDataChecks.find( check => check.validate === 'events-path' );
+    const testsCheck  = resourceDataChecks.find( check => check.validate === 'tests-path' );
+    eventsCheck.sourceFile = `${ENDPOINTS.EVENTS}/${rite}`;
+    testsCheck.sourceFile  = `${ENDPOINTS.TESTS}/${rite}`;
+    // resourcePaths holds the display label shown above each card (resourceTemplate()'s `path`),
+    // independent from the request URL above — it must be kept in step by hand or the label goes
+    // stale and no longer names the rite the request actually targets.
+    resourcePaths['events-path'] = `/events/${rite}`;
+    resourcePaths['tests-path']  = `/tests/${rite}`;
+};
 
 /**
  * Object containing API endpoint paths for resources
@@ -802,6 +825,81 @@ const methodAndHeaders = Object.freeze({
 });
 
 /**
+ * The API's base URL, without a trailing slash and without an endpoint.
+ * @returns {string}
+ */
+const getApiBaseUrl = () => ENDPOINTS.CALENDARS.replace(/\/calendars$/, '');
+
+/** @type {?RiteSelect} */
+let riteSelect = null;
+
+/**
+ * Mounts the rite select.
+ *
+ * No CalendarSelect here: this page is exhaustive rather than calendar-scoped — it checks every
+ * calendar the API supports, so there is nothing to select between.
+ *
+ * A rite change resets every check list and re-runs the whole discovery pass, because the rite
+ * determines which calendars, missals and tests are in scope, not merely how they are labelled.
+ *
+ * @returns {Promise<void>}
+ */
+const mountRiteSelect = async () => {
+    const baseUrl = getApiBaseUrl();
+    try {
+        await ApiClient.init( baseUrl );
+    } catch ( err ) {
+        // Same reasoning as index.js: an unmounted control must not look like an empty result set.
+        console.error( 'Could not initialise the rite select', err );
+        safeToastShow( '#controls-load-failed' );
+        return;
+    }
+    ApiBase.resolve( baseUrl );
+
+    riteSelect = new RiteSelect( locale )
+        .id( 'riteSelect' )
+        .class( 'form-select form-select-sm' )
+        .label( { class: 'form-label', text: riteSelectLabelText } );
+    riteSelect.appendTo( '#riteSelectMount' );
+
+    riteSelect._domElement.addEventListener( 'change', ( ev ) => {
+        currentRite = ev.target.value;
+        resetCheckListsForRite();
+        loadAsyncData();
+    } );
+};
+
+/**
+ * Returns every check list to its pre-discovery state for the newly selected rite.
+ *
+ * `resourceDataChecks` is truncated to its static head — the rite-independent collection
+ * endpoints — rather than rebuilt, so the URLs `setEndpoints()` wrote into it survive.
+ *
+ * Also empties the rendered scaffold synchronously, before `loadAsyncData()`'s fetches resolve.
+ * `loadAsyncData()` rebuilds it from scratch once the new rite's metadata is in, but that is an
+ * async round trip; without this, the previous rite's cards would stay on screen — showing e.g.
+ * national-calendar checks under Ambrosian — until the fetch completes and `buildScaffolding()`
+ * finally clears and repopulates them itself.
+ *
+ * @returns {void}
+ */
+const resetCheckListsForRite = () => {
+    const STATIC_RESOURCE_CHECK_COUNT = 7;
+    resourceDataChecks.length = STATIC_RESOURCE_CHECK_COUNT;
+    // Two of those seven address a rite; the truncation keeps the entries but not their aim.
+    setRiteQualifiedEndpoints( currentRite );
+    Object.keys( resourcePaths )
+        .filter( key => /^(data-path|events-path|missals-path)-/.test( key ) )
+        .forEach( key => delete resourcePaths[ key ] );
+    sourceDataChecks = universalChecksForRite( currentRite );
+    ReadyToRunTests.MetaDataReady = false;
+    ReadyToRunTests.MissalsReady  = false;
+    ReadyToRunTests.TestsReady    = false;
+    document.querySelectorAll( '#resourceDataTests .resourcedata-tests, #sourceDataTests .sourcedata-tests' )
+        .forEach( el => { el.innerHTML = ''; } );
+};
+
+/**
  * Loads all the asynchronous data needed for the page to function.
  * This includes the calendars metadata and the missals metadata.
  * When the data is loaded, it sets the necessary variables and proceeds to
@@ -819,7 +917,11 @@ const loadAsyncData = () => {
                 MetaData = data.litcal_metadata;
                 const { national_calendars, diocesan_calendars, wider_regions } = MetaData;
 
-                wider_regions.forEach(region => {
+                // Wider regions exist only in the Roman rite: RegionalDataParams
+                // ::validateRiteCompatibility() rejects a wider-region request under any other,
+                // so building these under Ambrosian would issue requests the API refuses.
+                if ( currentRite === 'roman' ) {
+                    wider_regions.forEach(region => {
                     const widerRegion = region.name;
                     sourceDataChecks.push({
                         "validate": `wider-region-${widerRegion}`,
@@ -838,16 +940,19 @@ const loadAsyncData = () => {
                     console.log(region);
                     const widerRegionFirstLang = region.locales[0];
                     console.log(widerRegionFirstLang);
-                    resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/widerregion/${widerRegion}`;
+                    resourcePaths[`data-path-wider-region-${widerRegion}`] = `/data/roman/widerregion/${widerRegion}`;
                     resourceDataChecks.push({
                         "validate": `data-path-wider-region-${widerRegion}`,
-                        "sourceFile": ENDPOINTS.DATA + `/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
+                        "sourceFile": ENDPOINTS.DATA + `/roman/widerregion/${widerRegion}?locale=${widerRegionFirstLang}`,
                         "category": "resourceDataCheck"
                     });
 
-                });
+                    });
+                }
 
-                national_calendars.slice(1).forEach(nationalCalendar => {
+                // National calendars are Roman-only for the same reason as wider regions.
+                if ( currentRite === 'roman' ) {
+                    national_calendars.slice(1).forEach(nationalCalendar => {
                     const nation = nationalCalendar.calendar_id;
                     sourceDataChecks.push({
                         "validate": `national-calendar-${nation}`,
@@ -861,22 +966,26 @@ const loadAsyncData = () => {
                     });
 
                     nationalCalendar.locales.forEach(locale => {
-                        resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/nation/${nation}?locale=${locale}`;
+                        resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/roman/nation/${nation}?locale=${locale}`;
                         resourceDataChecks.push({
                             "validate": `data-path-nation-${nation}-${locale}`,
-                            "sourceFile": ENDPOINTS.DATA + `/nation/${nation}?locale=${locale}`,
+                            "sourceFile": ENDPOINTS.DATA + `/roman/nation/${nation}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
-                        resourcePaths[`events-path-nation-${nation}-${locale}`] = `/events/nation/${nation}?locale=${locale}`;
+                        resourcePaths[`events-path-nation-${nation}-${locale}`] = `/events/roman/nation/${nation}?locale=${locale}`;
                         resourceDataChecks.push({
                             "validate": `events-path-nation-${nation}-${locale}`,
-                            "sourceFile": ENDPOINTS.EVENTS + `/nation/${nation}?locale=${locale}`,
+                            "sourceFile": ENDPOINTS.EVENTS + `/roman/nation/${nation}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
                     })
-                });
+                    });
+                }
 
-                diocesan_calendars.forEach(diocesanCalendar => {
+                // The diocesan tier is the only one that exists under more than one rite.
+                diocesan_calendars
+                    .filter( diocesanCalendar => inRiteScope( diocesanCalendar, currentRite ) )
+                    .forEach(diocesanCalendar => {
                     const diocese = diocesanCalendar.calendar_id;
                     sourceDataChecks.push({
                         "validate": `diocesan-calendar-${diocese}`,
@@ -891,16 +1000,16 @@ const loadAsyncData = () => {
 
 
                     diocesanCalendar.locales.forEach(locale => {
-                        resourcePaths[`data-path-diocese-${diocese}-${locale}`] = `/data/diocese/${diocese}?locale=${locale}`;
+                        resourcePaths[`data-path-diocese-${diocese}-${locale}`] = `/data/${currentRite}/diocese/${diocese}?locale=${locale}`;
                         resourceDataChecks.push({
                             "validate": `data-path-diocese-${diocese}-${locale}`,
-                            "sourceFile": ENDPOINTS.DATA + `/diocese/${diocese}?locale=${locale}`,
+                            "sourceFile": ENDPOINTS.DATA + `/${currentRite}/diocese/${diocese}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
-                        resourcePaths[`events-path-diocese-${diocese}-${locale}`] = `/events/diocese/${diocese}?locale=${locale}`;
+                        resourcePaths[`events-path-diocese-${diocese}-${locale}`] = `/events/${currentRite}/diocese/${diocese}?locale=${locale}`;
                         resourceDataChecks.push({
                             "validate": `events-path-diocese-${diocese}-${locale}`,
-                            "sourceFile": ENDPOINTS.EVENTS + `/diocese/${diocese}?locale=${locale}`,
+                            "sourceFile": ENDPOINTS.EVENTS + `/${currentRite}/diocese/${diocese}?locale=${locale}`,
                             "category": "resourceDataCheck"
                         });
                     });
@@ -917,26 +1026,31 @@ const loadAsyncData = () => {
                 // in the static resourceDataChecks array (and in resourcePaths). Pushing it
                 // again sent the validation twice and inflated the success counter (162)
                 // past the rendered-card total (159).
-                Missals.forEach(missal => {
-                    resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
-                    resourceDataChecks.push({
-                        "validate": `missals-path-${missal.missal_id}`,
-                        "sourceFile": ENDPOINTS.MISSALS + `/${missal.missal_id}`,
-                        "category": "resourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}`,
-                        "sourceFile": missal.missal_id,
-                        "category": "sourceDataCheck"
-                    });
-                    if (missal.hasOwnProperty('locales')) {
+                //
+                // /missals lists Roman editions only — RomanMissal carries no Ambrosian edition,
+                // and the Ambrosian sanctorale reaches the inventory as an explicit item instead.
+                if ( currentRite === 'roman' ) {
+                    Missals.forEach(missal => {
+                        resourcePaths[`missals-path-${missal.missal_id}`] = `/missals/${missal.missal_id}`;
+                        resourceDataChecks.push({
+                            "validate": `missals-path-${missal.missal_id}`,
+                            "sourceFile": ENDPOINTS.MISSALS + `/${missal.missal_id}`,
+                            "category": "resourceDataCheck"
+                        });
                         sourceDataChecks.push({
-                            "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}-i18n`,
-                            "sourceFolder": missal.missal_id,
+                            "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}`,
+                            "sourceFile": missal.missal_id,
                             "category": "sourceDataCheck"
                         });
-                    }
-                });
+                        if (missal.hasOwnProperty('locales')) {
+                            sourceDataChecks.push({
+                                "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}-i18n`,
+                                "sourceFolder": missal.missal_id,
+                                "category": "sourceDataCheck"
+                            });
+                        }
+                    });
+                }
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
             }
@@ -949,6 +1063,9 @@ const loadAsyncData = () => {
                     const rite = test.applies_to?.rite ?? test.appliesTo?.rite;
                     if (!rite) {
                         console.warn(`Test ${test.name} has no applies_to.rite; skipping its source-data check`);
+                        return;
+                    }
+                    if ( rite !== currentRite ) {
                         return;
                     }
                     sourceDataChecks.push({
@@ -1379,4 +1496,5 @@ document.addEventListener( 'keydown', function ( event ) {
 } );
 
 setEndpoints();
+await mountRiteSelect();
 loadAsyncData();
