@@ -127,3 +127,67 @@ test('degrades cleanly when the calendar controls fail to mount', async ({ page 
 
     expect(pageErrors).toEqual([]);
 });
+
+test('the source-data scaffold follows the rite, and covers i18n folders', async ({ page }) => {
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+
+    const cardClasses = async () =>
+        page.locator('.sourcedata-tests .card').evaluateAll(
+            (els) => els.map((e) => e.className)
+        );
+
+    const roman = (await cardClasses()).join(' ');
+    expect(roman).toContain('propriumdetempore');
+    expect(roman).toContain('propriumdetemporei18n');
+    expect(roman).toContain('memorialsfromdecrees');
+    expect(roman).toContain('memorialsfromdecreesi18n');
+    expect(roman).not.toContain('ambrosianpropriumdetempore');
+
+    await selectRite(page, 'ambrosian');
+    const ambrosian = (await cardClasses()).join(' ');
+    expect(ambrosian).toContain('ambrosianpropriumdetempore');
+    expect(ambrosian).toContain('ambrosianpropriumdetemporei18n');
+    expect(ambrosian).toContain('ambrosianpropriumdesanctis');
+    expect(ambrosian).toContain('ambrosianpropriumdesanctisi18n');
+    // The Roman corpus is gone, not merely joined.
+    expect(ambrosian).not.toContain('memorialsfromdecrees');
+});
+
+test('an i18n folder card names its folder rather than "undefined"', async ({ page }) => {
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+    const titles = await page.locator('.sourcedata-tests p span[title]').evaluateAll(
+        (els) => els.map((e) => e.getAttribute('title'))
+    );
+    expect(titles.length).toBeGreaterThan(0);
+    expect(titles).not.toContain('undefined');
+    expect(titles.some((t) => (t ?? '').endsWith('/i18n'))).toBe(true);
+});
+
+test('accuracy tests are filtered by rite', async ({ page, request }) => {
+    const tests = (await (await request.get(`${apiBase}/tests`)).json()).litcal_tests;
+    const ambrosianOnly = tests.filter(
+        (t: any) => (t.applies_to?.rite ?? t.appliesTo?.rite) === 'ambrosian'
+    );
+    test.skip(ambrosianOnly.length === 0, 'no Ambrosian tests published');
+
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+
+    const names = async () =>
+        page.locator('#specificUnitTestsAccordion .accordion-item').evaluateAll(
+            (els) => els.map((e) => e.id)
+        );
+
+    const underRoman = (await names()).join(' ');
+    for (const t of ambrosianOnly) {
+        expect(underRoman).not.toContain(t.name.toLowerCase());
+    }
+
+    await selectRite(page, 'ambrosian');
+    const underAmbrosian = (await names()).join(' ');
+    for (const t of ambrosianOnly) {
+        expect(underAmbrosian).toContain(t.name.toLowerCase());
+    }
+});

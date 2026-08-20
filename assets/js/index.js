@@ -23,7 +23,13 @@ import {
     fetchRunDetail,
 } from './testResults.js';
 
-import { sendCancelRun, toWireTarget } from './wsProtocol.js';
+import {
+    sendCancelRun,
+    toWireTarget,
+    universalChecksForRite,
+    testAppliesToRite,
+    CALENDAR_SCOPE_KEYS,
+} from './wsProtocol.js';
 
 import {
     ApiClient,
@@ -81,81 +87,25 @@ const ENDPOINTS = {
     MISSALS: ""
 }
 
-const ROMAN_SOURCE_DATA_PATH = "jsondata/sourcedata/rite/roman";
-const AMBROSIAN_SOURCE_DATA_PATH = "jsondata/sourcedata/rite/ambrosian";
-
 /**
- * Builds the array of universal (rite level) source data checks for the given rite.
- * Each object contains the following properties:
- * - `validate`: the name of the class that will be used to match the response from the websocket backend.
- *      Must coincide with the class on the card, that's how the Websocket backend (Health class) knows which classes to send back.
- * - `sourceFile`: the URL of the resource to check.
- * - `category`: a string that indicates the category of the source data check.
- *                Currently, the only category is 'universalcalendar'.
+ * The universal source-data checks for a rite, plus the two API-path checks this page renders
+ * alongside them.
  *
- * The Roman rite carries the historical set of six checks. The Ambrosian rite has a single Missal
- * (the 2024 edition) and no decrees corpus of its own — the decrees source data lives under the
- * Roman rite folder only — so it carries three checks.
- *
- * Note that `ENDPOINTS` is populated by `setEndpoints()` before any source data check is built,
- * so reading it here (rather than at module evaluation time) always yields the resolved URLs.
+ * The corpus itself comes from `wsProtocol.js` so that `resources.js` checks the same files under
+ * the same names. The `/calendars` metadata check is rite-independent and belongs to no rite's
+ * corpus, so it is added here rather than listed there.
  *
  * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
- * @return {Array<{validate: string, sourceFile: string, category: string}>} The universal source data checks.
+ * @returns {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
  */
-const buildUniversalSourceDataChecks = ( rite ) => {
-    if ( rite === 'ambrosian' ) {
-        return [
-            {
-                "validate": "LitCalMetadata",
-                "sourceFile": ENDPOINTS.CALENDARS,
-                "category": "universalcalendar"
-            },
-            {
-                "validate": "PropriumDeTempore",
-                "sourceFile": `${AMBROSIAN_SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
-                "category": "universalcalendar"
-            },
-            {
-                "validate": "PropriumDeSanctis2024",
-                "sourceFile": `${AMBROSIAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2024/propriumdesanctis.json`,
-                "category": "universalcalendar"
-            }
-        ];
-    }
-    return [
-        {
-            "validate": "LitCalMetadata",
-            "sourceFile": ENDPOINTS.CALENDARS,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeTempore",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdetempore/propriumdetempore.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeSanctis1970",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_1970/propriumdesanctis_1970.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeSanctis2002",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2002/propriumdesanctis_2002.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "PropriumDeSanctis2008",
-            "sourceFile": `${ROMAN_SOURCE_DATA_PATH}/missals/propriumdesanctis_2008/propriumdesanctis_2008.json`,
-            "category": "universalcalendar"
-        },
-        {
-            "validate": "MemorialsFromDecrees",
-            "sourceFile": ENDPOINTS.DECREES,
-            "category": "universalcalendar"
-        }
-    ];
-};
+const buildUniversalSourceDataChecks = ( rite ) => [
+    {
+        "validate": "LitCalMetadata",
+        "sourceFile": ENDPOINTS.CALENDARS,
+        "category": "universalcalendar"
+    },
+    ...universalChecksForRite( rite )
+];
 
 /**
  * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
@@ -474,7 +424,10 @@ const sourceDataCheckTemplate = ( item, idx ) => {
         categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
     }
     const validateSlug = slugify(item.validate);
-    const escapedSourceFile = escapeHtmlAttr(item.sourceFile);
+    // A check names either a single file or a folder of i18n files, never both. Reading only
+    // `sourceFile` rendered `title="undefined"` for every folder check; index.js never sent one
+    // before #48 added the i18n folders to the universal corpus.
+    const escapedSourceFile = escapeHtmlAttr(item.sourceFile ?? item.sourceFolder ?? '');
     const escapedValidate = escapeHtmlAttr(item.validate);
     const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(categoryStr)}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
@@ -1251,7 +1204,7 @@ const appendAccordionItem = ( obj ) => {
     } );
 
     document.querySelector('#specificUnitTestsAccordion').insertAdjacentHTML('beforeend', `
-        <div class="accordion-item">
+        <div class="accordion-item" id="${nameSlug}">
             <h2 class="row g-0 accordion-header" id="${nameSlug}Header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#specificUnitTest-${nameSlug}" aria-expanded="false" aria-controls="specificUnitTest-${nameSlug}">
                     <div class="col-12 col-md-4 mb-2 mb-md-0">${obj.name.length > 50 ? '<small>' : ''}<i class="fas fa-flask-vial fa-fw me-2" aria-hidden="true"></i>${obj.name}<span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(obj.description)}"><i class="fas fa-circle-info ms-2" aria-hidden="true"></i></span>${obj.name.length > 50 ? '</small>' : ''}</div>
@@ -1272,38 +1225,6 @@ const appendAccordionItem = ( obj ) => {
     let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${nameSlug} .test-valid`).length;
     updateText(`total${nameSlug}TestsCount`, specificUnitTestTotalCount);
 }
-
-/**
- * The calendar-scope keys that `applies_to` / `appliesTo` / `filter` (excludes) may carry, in the
- * order they are checked. `rite` is deliberately excluded from this list: since API #785 it is a
- * separate dimension present on every scope object (required on `applies_to`), not one of the
- * calendar-identity keys this function filters on. Selecting the key explicitly here — rather than
- * relying on `Object.keys(...).length` or `Object.keys(...)[0]` — avoids depending on key count or
- * key order, both of which broke once already when `rite` became a sibling required property.
- * @type {Array<string>}
- */
-const CALENDAR_SCOPE_KEYS = [ 'national_calendar', 'national_calendars', 'diocesan_calendar', 'diocesan_calendars' ];
-
-/**
- * Determines whether a unit test belongs to the liturgical rite of the currently selected calendar.
- *
- * The rite is deliberately kept out of {@link CALENDAR_SCOPE_KEYS} and out of
- * {@link handleAppliesToOrFilter}: it is an orthogonal dimension, not one of the mutually exclusive
- * calendar identity keys, and a rite only scope (e.g. `{ "rite": "ambrosian" }`) carries no calendar
- * identity at all. Handled here, such a scope correctly restricts the test to its own rite instead of
- * falling through the calendar scope switch and being kept for every calendar.
- *
- * A test with no `rite` in its scope predates the rite dimension and is Roman by construction, so it
- * defaults to 'roman' rather than being kept unconditionally (which would be a fail open filter).
- *
- * @param {Object} unitTest - The unit test to check.
- * @returns {Boolean} true if the unit test applies to the current rite, false otherwise.
- */
-const testAppliesToCurrentRite = ( unitTest ) => {
-    const scope = unitTest.applies_to ?? unitTest.appliesTo;
-    const testRite = scope?.rite ?? 'roman';
-    return testRite === currentRite;
-};
 
 /**
  * Function to determine if a unit test should be filtered out based on its `appliesTo` or `applies_to` property
@@ -1501,11 +1422,22 @@ const setupPage = () => {
     }
 
     if ( currentCalendarCategory === 'ritecalendar' ) {
-        // A rite level calendar has no national or diocesan layer: its source data is exactly the
-        // universal corpus of its own rite.
+        // A rite-level calendar has no national or diocesan layer: its source data is the universal
+        // corpus of its own rite, plus — for the Roman rite — the editio typica missals, which the
+        // General Roman Calendar uses and no national calendar supplies. Derived from /missals
+        // rather than hardcoded, so a new editio typica needs no edit here.
         currentSourceDataChecks = buildUniversalSourceDataChecks( currentRite );
-    } else if ( currentSelectedCalendar === 'VA' ) {
-        currentSourceDataChecks = buildUniversalSourceDataChecks( 'roman' );
+        if ( currentRite === 'roman' ) {
+            Object.values( RomanMissals )
+                .filter( missalDef => missalDef.region === 'VA' )
+                .forEach( missalDef => {
+                    currentSourceDataChecks.push({
+                        "validate": `proprium-de-sanctis-${missalDef.year_published}`,
+                        "sourceFile": missalDef.missal_id,
+                        "category": "sourceDataCheck"
+                    });
+                } );
+        }
     } else {
         const checks = buildNonVASourceDataChecks(currentSelectedCalendar, currentCalendarCategory);
         if (checks === null) {
@@ -1517,7 +1449,7 @@ const setupPage = () => {
     renderedUnitTests = [];
     SpecificUnitTestCategories = [];
     UnitTests.forEach( unitTest => {
-        if ( false === testAppliesToCurrentRite( unitTest ) ) {
+        if ( false === testAppliesToRite( unitTest, currentRite ) ) {
             return;
         }
         if ( unitTest.hasOwnProperty( 'appliesTo' ) ) {
