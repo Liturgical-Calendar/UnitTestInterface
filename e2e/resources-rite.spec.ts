@@ -124,21 +124,29 @@ test('every per-nation and per-diocese URL names its rite explicitly', async ({ 
 
     const urls = async () =>
         page.locator('[title]').evaluateAll(
-            // Scoped to actual per-nation/per-diocese/per-wider-region paths, not the bare
-            // `/data/{rite}/nation` in isolation nor the rite-qualified collection endpoints
-            // (`/events/{rite}`, `/tests/{rite}`) already covered by the collection-check test.
+            // Deliberately rite-AGNOSTIC: the rite segment is optional here so that both the
+            // correct form (/data/roman/nation/IT) and the buggy unprefixed form
+            // (/data/nation/IT) survive the filter and reach the assertion below. Scoped to
+            // actual per-nation/per-diocese/per-wider-region paths, excluding the bare
+            // collection endpoints (/events/{rite}, /tests/{rite}) already covered by the
+            // collection-check test above.
             (els) => els.map((e) => e.getAttribute('title') ?? '')
-                       .filter((t) => /\/(data|events)\/(roman|ambrosian)\/(nation|diocese|widerregion)\//.test(t))
+                       .filter((t) => /\/(data|events)\/(?:(?:roman|ambrosian)\/)?(nation|diocese|widerregion)\//.test(t))
         );
 
     for (const rite of ['roman', 'ambrosian']) {
         if (rite === 'ambrosian') {
             await selectRite(page, rite);
         }
-        for (const url of await urls()) {
+        const collectedUrls = await urls();
+        // A guard against a silently-vacuous loop: if the filter above ever stops matching
+        // anything (e.g. a label format change), this fails loudly instead of the loop below
+        // running zero times and the test passing for the wrong reason.
+        expect(collectedUrls.length).toBeGreaterThan(0);
+        for (const url of collectedUrls) {
             // An unprefixed /data/nation/IT or /events/diocese/x resolves to Roman silently,
             // which would be a wrong-green under the Ambrosian rite.
-            expect(url).toMatch(/\/(data|events)\/(roman|ambrosian)\//);
+            expect(url).toMatch(/\/(data|events)\/(roman|ambrosian)\/(nation|diocese|widerregion)\//);
         }
     }
 });
