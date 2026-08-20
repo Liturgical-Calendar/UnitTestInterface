@@ -81,11 +81,11 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
 });
 
 test('restores live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
-    // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live VA
-    // scaffold which has 6 sourceDataChecks (sourceDataChecks const in index.js).
-    // After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold shows
-    // only 1 check. Returning to "— Live —" must re-sync state from the DOM controls and
-    // rebuild the scaffold via setupPage(), restoring the 6-check VA layout.
+    // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live
+    // General Roman scaffold which has 6 sourceDataChecks (buildUniversalSourceDataChecks('roman')
+    // in index.js). After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold
+    // shows only 1 check. Returning to "— Live —" must re-sync state from the DOM controls and
+    // rebuild the scaffold via setupPage(), restoring the 6-check General Roman layout.
     const run = {
         schemaVersion: 1,
         timestamp: '2026-07-03T11:00:00Z',
@@ -119,9 +119,10 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
     await page.selectOption('#pastRunsSelect', file);
     await expect(page.locator('.sourcedata-tests > div')).toHaveCount(1);
 
-    // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the VA scaffold (6 checks)
+    // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the General Roman scaffold
+    // (6 checks)
     await page.selectOption('#pastRunsSelect', '');
     await expect(page.locator('.sourcedata-tests > div')).toHaveCount(6);
-    // .currentSelectedCalendar cells must reflect the live dropdown value ('VA'), not 'IT'
-    await expect(page.locator('.currentSelectedCalendar').first()).toContainText('VA');
+    // .currentSelectedCalendar cells must reflect the live dropdown value ('roman'), not 'IT'
+    await expect(page.locator('.currentSelectedCalendar').first()).toContainText('roman');
 });

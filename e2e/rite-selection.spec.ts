@@ -1,128 +1,96 @@
 import { test, expect, Page } from '@playwright/test';
 
 /**
- * Rite awareness (issue #39).
+ * Rite awareness on the Calendars runner (issues #39, #48).
  *
- * The API made the liturgical rite a first-class dimension: /calendars announces rite-level
- * calendars under `ambrosian_calendars`, and every diocesan calendar carries a required `rite`.
- * These specs cover the parts of that capability that need no WebSocket server: what ends up in
- * the calendar dropdown, and how selecting a rite-level calendar reshapes the live scaffold.
+ * #39 made the calendar dropdown rite-aware by hand; #48 replaced it with liturgy-components-js's
+ * CalendarSelect linked to a RiteSelect. These specs therefore assert behaviour — what the rite
+ * selection does to the calendar list and to the scaffold — rather than the markup of either
+ * control, which is now the library's business and may change under us.
  */
 
 const apiBase = `${process.env.API_PROTOCOL || 'http'}://${process.env.API_HOST || 'localhost'}:${process.env.API_PORT || '8000'}`;
-
-/** Mirrors common.js slugify(): lowercase, whitespace → '-', strip other punctuation. */
-const slugify = (value: string) => value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
 
 /**
  * Waits for setupPage() to have rendered the live scaffold.
  *
  * Deliberately NOT `expect('#startTestRunnerBtn').toBeEnabled()`: the run button also requires a
- * live WebSocket connection, and playwright.config.ts starts no WebSocket server. The scaffold, on
- * the other hand, is built purely from the /calendars, /missals and /tests fetches.
+ * live WebSocket connection, and playwright.config.ts starts no WebSocket server.
  */
 const waitForLiveScaffold = async (page: Page) => {
     await page.waitForSelector('.sourcedata-tests > div', { timeout: 15000 });
 };
 
-test('the Ambrosian rite-level calendar is offered as a peer of the General Roman calendar', async ({ page, request }) => {
-    const metadata = await (await request.get(`${apiBase}/calendars`)).json();
-    const ambrosianCalendars = metadata.litcal_metadata.ambrosian_calendars;
-    expect(ambrosianCalendars.length).toBeGreaterThan(0);
+const selectRite = async (page: Page, rite: string) => {
+    await page.selectOption('#riteSelect', rite);
+    await waitForLiveScaffold(page);
+};
 
+test('both controls mount, and the rite select defaults to Roman', async ({ page }) => {
     await page.goto('/');
     await waitForLiveScaffold(page);
 
-    for (const cal of ambrosianCalendars) {
-        const option = page.locator(`#APICalendarSelect > option[value="${cal.calendar_id}"]`);
-        await expect(option).toHaveCount(1);
-        await expect(option).toHaveAttribute('data-calendartype', 'ritecalendar');
-        await expect(option).toHaveAttribute('data-rite', cal.rite);
-        // The label is the translated rite name, never the raw id and never `undefined`.
-        await expect(option).not.toHaveText(cal.calendar_id);
-        await expect(option).not.toHaveText('undefined');
-    }
-
-    // Rite-level calendars are peers of General Roman: they sit directly after it, before the
-    // per-nation options and optgroups.
-    const topLevelValues = await page.locator('#APICalendarSelect > option').evaluateAll(
-        (opts) => opts.map((o) => (o as HTMLOptionElement).value)
-    );
-    expect(topLevelValues[0]).toBe('VA');
-    expect(topLevelValues.slice(1, 1 + ambrosianCalendars.length).sort()).toEqual(
-        ambrosianCalendars.map((c: { calendar_id: string }) => c.calendar_id).sort()
-    );
-
-    // The General Roman option must declare its rite too, so the change handler never has to guess.
-    await expect(page.locator('#APICalendarSelect > option[value="VA"]')).toHaveAttribute('data-rite', 'roman');
+    await expect(page.locator('#riteSelect')).toHaveCount(1);
+    await expect(page.locator('#APICalendarSelect')).toHaveCount(1);
+    await expect(page.locator('#riteSelect')).toHaveValue('roman');
+    // The rite-level calendar is the empty option, and it is selected by default.
+    await expect(page.locator('#APICalendarSelect')).toHaveValue('');
 });
 
-test('Ambrosian dioceses are distinguishable from Roman ones in the dropdown', async ({ page, request }) => {
-    const metadata = await (await request.get(`${apiBase}/calendars`)).json();
-    const diocesanCalendars: { calendar_id: string; diocese: string; rite: string }[] =
-        metadata.litcal_metadata.diocesan_calendars;
-    const ambrosianDioceses = diocesanCalendars.filter((d) => d.rite === 'ambrosian');
-    const romanDioceses = diocesanCalendars.filter((d) => d.rite === 'roman');
+test('the calendar select partitions by the selected rite', async ({ page, request }) => {
+    const metadata = (await (await request.get(`${apiBase}/calendars`)).json()).litcal_metadata;
+    const ambrosianDioceses = metadata.diocesan_calendars
+        .filter((d: { rite?: string }) => d.rite === 'ambrosian')
+        .map((d: { calendar_id: string }) => d.calendar_id);
     expect(ambrosianDioceses.length).toBeGreaterThan(0);
-    expect(romanDioceses.length).toBeGreaterThan(0);
 
     await page.goto('/');
     await waitForLiveScaffold(page);
 
-    for (const diocese of ambrosianDioceses) {
-        const option = page.locator(`#APICalendarSelect option[value="${diocese.calendar_id}"]`);
-        await expect(option).toHaveCount(1);
-        await expect(option).toHaveAttribute('data-calendartype', 'diocesancalendar');
-        await expect(option).toHaveAttribute('data-rite', 'ambrosian');
-        // The rite is spelled out in the label, so the diocese is distinguishable at a glance.
-        await expect(option).toContainText(diocese.diocese);
-        const label = (await option.textContent()) ?? '';
-        expect(label).not.toBe(diocese.diocese);
+    const valuesUnder = async () =>
+        page.locator('#APICalendarSelect option').evaluateAll(
+            (opts) => opts.map((o) => (o as HTMLOptionElement).value).filter((v) => v !== '')
+        );
+
+    const roman = await valuesUnder();
+    for (const id of ambrosianDioceses) {
+        expect(roman).not.toContain(id);
     }
 
-    // Roman dioceses (the large majority) keep exactly the label they always had.
-    for (const diocese of romanDioceses.slice(0, 5)) {
-        const option = page.locator(`#APICalendarSelect option[value="${diocese.calendar_id}"]`);
-        await expect(option).toHaveAttribute('data-rite', 'roman');
-        await expect(option).toHaveText(diocese.diocese);
+    await selectRite(page, 'ambrosian');
+    const ambrosian = await valuesUnder();
+    for (const id of ambrosianDioceses) {
+        expect(ambrosian).toContain(id);
     }
+    // The Ambrosian rite has no national tier, so no two-letter nation codes survive.
+    expect(ambrosian.filter((v) => /^[A-Z]{2}$/.test(v))).toEqual([]);
 });
 
-test('selecting the Ambrosian rite calendar rebuilds the scaffold for that rite', async ({ page, request }) => {
-    const { litcal_tests: tests } = await (await request.get(`${apiBase}/tests`)).json();
-    const ambrosianTests = tests.filter((t: { applies_to?: { rite?: string } }) => t.applies_to?.rite === 'ambrosian');
-    const romanOnlyTests = tests.filter(
-        (t: { applies_to?: Record<string, unknown> }) =>
-            t.applies_to?.rite === 'roman' && Object.keys(t.applies_to ?? {}).length === 1
-    );
-    expect(ambrosianTests.length).toBeGreaterThan(0);
-    expect(romanOnlyTests.length).toBeGreaterThan(0);
-
+test('the empty option names the rite-level calendar under each rite', async ({ page }) => {
     await page.goto('/');
     await waitForLiveScaffold(page);
 
-    // General Roman: the rite-only Ambrosian tests must NOT be offered (before rite awareness they
-    // were, because a rite-only `applies_to` matched no calendar-scope key and so was never filtered).
-    for (const t of ambrosianTests) {
-        await expect(page.locator(`#${slugify(t.name)}Header`)).toHaveCount(0);
-    }
-    for (const t of romanOnlyTests) {
-        await expect(page.locator(`#${slugify(t.name)}Header`)).toHaveCount(1);
-    }
-    // The Roman universal corpus is six source-data checks.
-    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(6);
+    const emptyLabel = () =>
+        page.locator('#APICalendarSelect option[value=""]').first().textContent();
 
-    // Switch to the Ambrosian rite calendar.
-    await page.selectOption('#APICalendarSelect', 'ambrosian');
+    const romanLabel = await emptyLabel();
+    expect(romanLabel).not.toBe('---');
+    expect(romanLabel).not.toBe('');
+
+    await selectRite(page, 'ambrosian');
+    const ambrosianLabel = await emptyLabel();
+    expect(ambrosianLabel).not.toBe('---');
+    expect(ambrosianLabel).not.toBe(romanLabel);
+});
+
+test('the rite-level calendar is named by its rite, not by VA', async ({ page }) => {
+    await page.goto('/');
     await waitForLiveScaffold(page);
 
-    for (const t of ambrosianTests) {
-        await expect(page.locator(`#${slugify(t.name)}Header`)).toHaveCount(1);
-    }
-    for (const t of romanOnlyTests) {
-        await expect(page.locator(`#${slugify(t.name)}Header`)).toHaveCount(0);
-    }
-    // Ambrosian universal corpus: metadata + temporale + the 2024 sanctorale. No decrees check —
-    // the decrees source data is Roman-only.
-    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(3);
+    // Card classes are built from the calendar id we send; General Roman is now `roman`.
+    await expect(page.locator('.calendar-roman').first()).toHaveCount(1);
+    await expect(page.locator('.calendar-va')).toHaveCount(0);
+
+    await selectRite(page, 'ambrosian');
+    await expect(page.locator('.calendar-ambrosian').first()).toHaveCount(1);
 });

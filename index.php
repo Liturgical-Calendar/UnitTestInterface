@@ -66,6 +66,14 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-white bg-danger border-0 p-3 shadow" aria-live="assertive" role="alert" id="controls-load-failed">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Could not load the calendar controls."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -74,12 +82,11 @@ include_once('layout/head.php');
 
         <div id="testsContainer">
             <div class="row mb-3 text-center g-2 litcaltests-header align-items-end">
-                <div class="col-6 col-md-4 col-lg-2">
-                    <label for="APICalendarSelect"><?php echo _("Liturgical Calendar"); ?></label>
-                    <select id="APICalendarSelect" class="form-select form-select-sm">
-                        <option data-calendartype="nationalcalendar" data-rite="roman" value="VA"><?php echo _("General Roman"); ?></option>
-                    </select>
-                </div>
+                <!-- Both selects are rendered by liturgy-components-js and linked to one another
+                     (issue #48); index.js mounts them into these wrappers. Empty on purpose —
+                     server-rendered options would be discarded on mount. -->
+                <div class="col-6 col-md-4 col-lg-2" id="riteSelectMount"></div>
+                <div class="col-6 col-md-4 col-lg-2" id="calendarSelectMount"></div>
                 <div class="col-6 col-md-4 col-lg-2">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
