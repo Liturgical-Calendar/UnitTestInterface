@@ -137,19 +137,23 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
             (els) => els.map((e) => e.className)
         );
 
+    // The four i18n-folder checks send category: 'sourceDataCheck' (not 'universalcalendar')
+    // with hyphenated validate slugs — see wsProtocol.js's UNIVERSAL_CHECKS docblock for why:
+    // Health::executeValidation() only recognises sourceFolder under sourceDataCheck, and sending
+    // it under universalcalendar closes the connection instead of returning a result.
     const roman = (await cardClasses()).join(' ');
     expect(roman).toContain('propriumdetempore');
-    expect(roman).toContain('propriumdetemporei18n');
+    expect(roman).toContain('proprium-de-tempore-i18n');
     expect(roman).toContain('memorialsfromdecrees');
-    expect(roman).toContain('memorialsfromdecreesi18n');
+    expect(roman).toContain('memorials-from-decrees-i18n');
     expect(roman).not.toContain('ambrosianpropriumdetempore');
 
     await selectRite(page, 'ambrosian');
     const ambrosian = (await cardClasses()).join(' ');
     expect(ambrosian).toContain('ambrosianpropriumdetempore');
-    expect(ambrosian).toContain('ambrosianpropriumdetemporei18n');
+    expect(ambrosian).toContain('ambrosian-proprium-de-tempore-i18n');
     expect(ambrosian).toContain('ambrosianpropriumdesanctis');
-    expect(ambrosian).toContain('ambrosianpropriumdesanctisi18n');
+    expect(ambrosian).toContain('ambrosian-proprium-de-sanctis-i18n');
     // The Roman corpus is gone, not merely joined.
     expect(ambrosian).not.toContain('memorialsfromdecrees');
 });

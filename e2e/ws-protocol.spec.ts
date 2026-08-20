@@ -20,9 +20,15 @@ test('UNIVERSAL_CHECKS covers both rites, temporale and decrees, files and i18n 
     });
 
     expect(checks).toHaveLength(8);
-    expect(checks.every((c: any) => c.category === 'universalcalendar')).toBe(true);
     // Every entry names exactly one of sourceFile / sourceFolder.
     expect(checks.every((c: any) => ('sourceFile' in c) !== ('sourceFolder' in c))).toBe(true);
+    // Category tracks that same split, not a single constant: Health::executeValidation() only
+    // recognises `sourceFolder` under `category: 'sourceDataCheck'` (Health.php:609-660) — every
+    // other category, `universalcalendar` included, requires `sourceFile` and throws (which closes
+    // the connection) when only `sourceFolder` is present. So files stay `universalcalendar`,
+    // resolved from the path via CheckableInventory::byPath(); folders are `sourceDataCheck`.
+    expect(checks.every((c: any) => ('sourceFile' in c) === (c.category === 'universalcalendar'))).toBe(true);
+    expect(checks.every((c: any) => ('sourceFolder' in c) === (c.category === 'sourceDataCheck'))).toBe(true);
     // Four per rite, half of them i18n folders.
     expect(checks.filter((c: any) => c.rite === 'roman')).toHaveLength(4);
     expect(checks.filter((c: any) => c.rite === 'ambrosian')).toHaveLength(4);

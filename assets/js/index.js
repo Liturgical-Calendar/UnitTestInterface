@@ -430,8 +430,15 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     const escapedSourceFile = escapeHtmlAttr(item.sourceFile ?? item.sourceFolder ?? '');
     const escapedValidate = escapeHtmlAttr(item.validate);
     const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(categoryStr)}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
+    // The truncation width tracks whether this is a folder check, not category: since #48 moved
+    // the four i18n-folder checks to category 'sourceDataCheck' (see wsProtocol.js's
+    // UNIVERSAL_CHECKS docblock for why), they would otherwise fall into the 14-char bucket meant
+    // for short slugs like `national-calendar-IT`. At 14 chars, "AmbrosianProprium..." and its
+    // sibling both truncate to the identical "ambrosian-pro*", which is genuinely ambiguous on the
+    // card grid. Folder checks get the wider budget regardless of category.
+    const validateLabelWidth = ( 'sourceFolder' in item ) ? 30 : ( item.category !== 'universalcalendar' ? 14 : 22 );
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mb-0 bg-secondary text-white"><span title="${escapedSourceFile}">${item.category !== 'universalcalendar' ? truncate( escapedValidate, 14 ) : truncate( escapedValidate, 22 )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
+    <p class="text-center mb-0 bg-secondary text-white"><span title="${escapedSourceFile}">${truncate( escapedValidate, validateLabelWidth )}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>

@@ -40,10 +40,23 @@ export const sendCancelRun = ( conn, runToken ) => {
  * `proprium-de-tempore` under `sourceDataCheck` there (see #42). Neither listed the Ambrosian
  * corpus, and neither listed any i18n folder (#48).
  *
- * `category: 'universalcalendar'` for every entry, folders included. The server resolves that
- * category's schema from the path, through `CheckableInventory::byPath()`, which knows all eight
- * of these; and its `sourceFolder` handling branches on the property being present, not on the
- * category. One category therefore covers file and folder, Roman and Ambrosian alike.
+ * Category is NOT uniform across the list, and that split is load-bearing, not cosmetic.
+ * `Health::executeValidation()` only recognises a `sourceFolder` property inside its
+ * `category === 'sourceDataCheck'` branch (`Health.php:609-660`); every other category — including
+ * `universalcalendar` — falls into the branch that requires `sourceFile` and throws when only
+ * `sourceFolder` is present, and that exception closes the WebSocket connection instead of
+ * returning a result. So:
+ *
+ * - the four **file** entries use `category: 'universalcalendar'`, resolved from the path via
+ *   `CheckableInventory::byPath()`;
+ * - the four **folder** (i18n) entries use `category: 'sourceDataCheck'`, with hyphenated
+ *   `validate` slugs `Health::retrieveSchemaForCategory()`'s `sourceDataCheck` arm already
+ *   resolves: the two Roman slugs through its `legacySlugToId` table (which is also what
+ *   `resources.js` already sends — these two entries now agree with it), and the two Ambrosian
+ *   slugs through its trailing `/-i18n$/` regex fallback. For `sourceDataCheck`, the data path is
+ *   `sourceFolder` exactly as supplied — the slug-based path *reconstruction* in `Health.php`
+ *   applies only to the wider-region / national-calendar / diocesan-calendar / proprium-de-sanctis
+ *   slug families, which these are not.
  *
  * `validate` values are card CSS class names once slugified, and the server echoes them back in
  * its `classes` selector — so they are effectively part of the wire contract and must stay
@@ -63,9 +76,9 @@ export const UNIVERSAL_CHECKS = Object.freeze([
     },
     {
         rite: 'roman',
-        validate: 'PropriumDeTemporeI18n',
+        validate: 'proprium-de-tempore-i18n',
         sourceFolder: 'jsondata/sourcedata/rite/roman/missals/propriumdetempore/i18n',
-        category: 'universalcalendar'
+        category: 'sourceDataCheck'
     },
     {
         rite: 'roman',
@@ -75,9 +88,9 @@ export const UNIVERSAL_CHECKS = Object.freeze([
     },
     {
         rite: 'roman',
-        validate: 'MemorialsFromDecreesI18n',
+        validate: 'memorials-from-decrees-i18n',
         sourceFolder: 'jsondata/sourcedata/rite/roman/decrees/i18n',
-        category: 'universalcalendar'
+        category: 'sourceDataCheck'
     },
     {
         rite: 'ambrosian',
@@ -87,9 +100,9 @@ export const UNIVERSAL_CHECKS = Object.freeze([
     },
     {
         rite: 'ambrosian',
-        validate: 'AmbrosianPropriumDeTemporeI18n',
+        validate: 'ambrosian-proprium-de-tempore-i18n',
         sourceFolder: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdetempore/i18n',
-        category: 'universalcalendar'
+        category: 'sourceDataCheck'
     },
     {
         rite: 'ambrosian',
@@ -99,9 +112,9 @@ export const UNIVERSAL_CHECKS = Object.freeze([
     },
     {
         rite: 'ambrosian',
-        validate: 'AmbrosianPropriumDeSanctisI18n',
+        validate: 'ambrosian-proprium-de-sanctis-i18n',
         sourceFolder: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdesanctis_2024/i18n',
-        category: 'universalcalendar'
+        category: 'sourceDataCheck'
     }
 ]);
 
