@@ -30,11 +30,17 @@ const runToCompletion = async (page: Page): Promise<void> => {
     await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 30000 });
 };
 
-/** Every `executeValidation` the page sent, parsed. */
+/**
+ * Every check request the page sent, parsed — **both** phases.
+ *
+ * The two use different actions since the source half moved to opaque ids: routes still go out as
+ * `executeValidation`, source data as `validateSource`. Filtering on the first alone would have left
+ * every assertion below covering only the resource phase, which is the half that did *not* change.
+ */
 const validationRequests = async (page: Page): Promise<Array<Record<string, unknown>>> =>
     (await sentFrames(page))
         .map((raw) => JSON.parse(raw) as Record<string, unknown>)
-        .filter((message) => message.action === 'executeValidation');
+        .filter((message) => message.action === 'executeValidation' || message.action === 'validateSource');
 
 test('every request carries a distinct requestId', async ({ page }) => {
     await installReplyingWebSocketStub(page);
@@ -43,6 +49,9 @@ test('every request carries a distinct requestId', async ({ page }) => {
 
     const requests = await validationRequests(page);
     expect(requests.length).toBeGreaterThan(0);
+    // Both phases are represented, so the assertions below are not silently about one of them.
+    expect(requests.some((message) => message.action === 'executeValidation')).toBe(true);
+    expect(requests.some((message) => message.action === 'validateSource')).toBe(true);
 
     const ids = requests.map((message) => message.requestId);
     expect(ids.every((id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id))).toBe(true);
@@ -140,37 +149,65 @@ test('the silence watchdog fires only after a real silence, and a frame resets i
         };
         const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+        // 250ms window against 25ms between frames — a 10x margin, so a CI scheduling hiccup
+        // between two frames cannot look like silence. A 3x margin flakes; this is not the place to
+        // discover that, since a spurious firing here would read as the watchdog being wrong.
+        const WINDOW = 250;
+        const BETWEEN_FRAMES = 25;
+        const SILENCE = WINDOW * 2;
+
         let firedOnSilence = 0;
-        const silent = createSilenceWatchdog(60, () => { firedOnSilence += 1; });
+        const silent = createSilenceWatchdog(WINDOW, () => { firedOnSilence += 1; });
         silent.restart();
-        await sleep(150);
+        await sleep(SILENCE);
 
         // A frame arriving inside the window must postpone it, not be ignored.
         let firedOnChatter = 0;
-        const chatty = createSilenceWatchdog(60, () => { firedOnChatter += 1; });
+        const chatty = createSilenceWatchdog(WINDOW, () => { firedOnChatter += 1; });
         chatty.restart();
         for (let i = 0; i < 6; i += 1) {
-            await sleep(20);
+            await sleep(BETWEEN_FRAMES);
             chatty.restart();
         }
         const runningWhileChattering = chatty.isRunning();
-        await sleep(150);
+        await sleep(SILENCE);
 
         // And a cleared watchdog stays quiet.
         let firedAfterClear = 0;
-        const cleared = createSilenceWatchdog(60, () => { firedAfterClear += 1; });
+        const cleared = createSilenceWatchdog(WINDOW, () => { firedAfterClear += 1; });
         cleared.restart();
         cleared.clear();
-        await sleep(150);
+        await sleep(SILENCE);
 
         return { firedOnSilence, firedOnChatter, runningWhileChattering, firedAfterClear, chattyStillRunning: chatty.isRunning() };
     });
 
     expect(result.firedOnSilence).toBe(1);
-    // 120ms of frames 20ms apart, then 150ms of silence: it fires once, for the silence at the end,
-    // and never during the chatter.
+    // Frames 25ms apart inside a 250ms window, then a real silence: it fires once, for the silence
+    // at the end, and never during the chatter.
     expect(result.firedOnChatter).toBe(1);
     expect(result.runningWhileChattering).toBe(true);
     expect(result.chattyStillRunning).toBe(false);
     expect(result.firedAfterClear).toBe(0);
+});
+
+test('a run whose source phase has nothing to check still finishes', async ({ page }) => {
+    // A phase ends on the terminal frames of the requests it started, so a phase that starts none
+    // would wait for frames that are never coming — and the silence watchdog cannot rescue it,
+    // because it only runs while something is outstanding. The run would sit on "Tests Running..."
+    // for ever with no diagnostic.
+    //
+    // Reachable for real: the source list is whatever /validations advertised for the selected rite.
+    await page.route('**/validations', (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ litcal_validations: [] }) }));
+    await installReplyingWebSocketStub(page);
+    await page.goto('/resources.php');
+
+    await runToCompletion(page);
+
+    // The resource phase still ran; only the source phase was empty.
+    const requests = await validationRequests(page);
+    expect(requests.some((message) => message.action === 'executeValidation')).toBe(true);
+    expect(requests.some((message) => message.action === 'validateSource')).toBe(false);
+    await expect(page.locator('.sourcedata-tests .card')).toHaveCount(0);
 });

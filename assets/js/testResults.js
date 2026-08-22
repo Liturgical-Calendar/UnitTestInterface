@@ -57,10 +57,16 @@ export const applyResultToDom = (responseData) => {
  *
  * @param {Element} el - The card to paint.
  * @param {boolean} isSuccess - Whether the step passed.
- * @param {string} text - The server's message, shown in the failure tooltip.
+ * @param {*} text - The server's message, shown in the failure tooltip. Coerced rather than
+ *        assumed: `text` is whatever arrived on the wire, and `escapeHtmlAttr()` calls string
+ *        methods on it — so a frame carrying a number or an object would throw here, inside the
+ *        handler the whole run is driven from (#43).
  * @returns {void}
  */
 export const paintCard = (el, isSuccess, text) => {
+    // Absent stays absent — an empty tooltip is the existing behaviour for a failure with no
+    // message — but anything else present becomes a string before it reaches escapeHtmlAttr().
+    const tooltip = (undefined === text || null === text) ? '' : String(text);
     el.classList.remove('bg-info');
     el.classList.add(isSuccess ? 'bg-success' : 'bg-danger');
     const questionIcon = el.querySelector('.fa-circle-question');
@@ -73,7 +79,7 @@ export const paintCard = (el, isSuccess, text) => {
         if (cardText && !cardText.querySelector('.error-tooltip')) {
             cardText.insertAdjacentHTML(
                 'beforeend',
-                `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(text)}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`
+                `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(tooltip)}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`
             );
         }
     }

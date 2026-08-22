@@ -869,6 +869,27 @@ const beginPhase = ( checks, containerSelector ) => {
 };
 
 /**
+ * Move on immediately when a phase has nothing to wait for.
+ *
+ * A phase now ends on the terminal frames of the requests it started, so a phase that starts *no*
+ * requests would otherwise wait for frames that are never coming — and the silence watchdog cannot
+ * rescue it either, since it only runs while something is outstanding. The run would sit on
+ * "Tests Running..." for ever with no diagnostic, which is the wedge #43 is about, reached by a
+ * door the frame counting this replaces did not have.
+ *
+ * Reachable: `sourceDataChecks` is whatever `/validations` advertised for the selected rite, so a
+ * rite with no advertised source data — or an inventory that came back empty — is an empty phase.
+ *
+ * @returns {void}
+ */
+const advanceIfPhaseIsEmpty = () => {
+    if ( 0 === phaseOutstanding.size ) {
+        console.log( 'This phase has no requests to wait for; moving on.' );
+        runTests();
+    }
+};
+
+/**
  * Start a phase's silence clock once its outstanding set has been installed.
  *
  * Separate from {@link beginPhase} because the clock reads `phaseOutstanding`, which the caller
@@ -1051,7 +1072,6 @@ let failedResourceDataTests     = 0;
  */
 const requestRegistry = createRequestRegistry();
 
-/** Track expected and received responses for parallel Source Data tests */
 /**
  * The request ids of the phase currently running, emptied as their terminal frames arrive.
  * @type {Set<string>}
@@ -1109,7 +1129,7 @@ const methodAndHeaders = Object.freeze({
  * The API's base URL, without a trailing slash and without an endpoint.
  * @returns {string}
  */
-const getApiBaseUrl = () => ENDPOINTS.CALENDARS.replace(/\/calendars$/, '');
+const getApiBaseUrl = () => ENDPOINTS.ROOT;
 
 /** @type {?import('@liturgical-calendar/components-js').RiteSelect} */
 let riteSelect = null;
@@ -1358,6 +1378,22 @@ const loadAsyncData = () => {
         // were pushed into sourceDataChecks but never rendered, and the Time badge totals
         // under-counted until something re-ran setupPage().
         setupPage();
+    }).catch( error => {
+        // Without this the chain rejects unhandled: `setupPage()` never runs, the start button stays
+        // disabled — safe, but silent — and the page sits looking like it is still loading with
+        // nothing to say why. The same toast the rite-select mount failure uses, because to a user
+        // it is the same event: the controls could not be built from what the API returned.
+        //
+        // Left disabled deliberately. Every dataset here decides what a run would check, so a run
+        // started without them would check a subset and report success for it — the class of untruth
+        // this interface exists to detect, produced by the interface itself.
+        if ( myGeneration !== loadAsyncDataGeneration ) {
+            return;
+        }
+        console.error( 'Could not load the data this page builds its checks from', error );
+        safeToastShow( '#controls-load-failed' );
+        document.querySelectorAll( '.fa-spin' ).forEach( el => el.classList.remove( 'fa-spin' ) );
+        ReadyToRunTests.tryEnableBtn();
     });
 }
 
@@ -1393,6 +1429,7 @@ const runTests = () => {
                     ...check
                 });
             });
+            advanceIfPhaseIsEmpty();
             break;
         }
         case TestState.ExecutingResourceValidations:
@@ -1432,6 +1469,7 @@ const runTests = () => {
                         requestId: check.requestId
                     });
                 });
+                advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.ExecutingSourceValidations:

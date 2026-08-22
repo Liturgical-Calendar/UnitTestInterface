@@ -364,6 +364,12 @@ export const negotiatedProtocol = () => ( serverProtocol === PROTOCOL_VERSION ? 
 export const capabilities = () => helloCapabilities;
 
 /**
+ * Counter behind the {@link newRequestId} fallback, for contexts without `crypto.randomUUID`.
+ * @type {number}
+ */
+let requestSequence = 0;
+
+/**
  * Mint a correlation id for one request.
  *
  * The alphabet is not free: the server accepts `^[A-Za-z0-9_-]{1,64}$` for `requestId` and
@@ -373,7 +379,6 @@ export const capabilities = () => helloCapabilities;
  *
  * @returns {string}
  */
-let requestSequence = 0;
 export const newRequestId = () => {
     if ( typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ) {
         return crypto.randomUUID();
