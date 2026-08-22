@@ -141,49 +141,48 @@ export const UNIVERSAL_CHECKS = Object.freeze([
 export const inRiteScope = ( item, rite ) => ( item?.rite ?? 'roman' ) === rite;
 
 /**
- * The earliest year the API will calculate a calendar for, per rite.
+ * The bound used when the library's `RiteProperties` is unavailable.
  *
- * **A duplicated constant, and knowingly so.** The source of truth is the API's
- * `CalendarParams::YEAR_LOWER_LIMIT` (1970) and `CalendarParams::AMBROSIAN_YEAR_LOWER_LIMIT`
- * (1976); nothing announces either over the wire yet, so this map is a stopgap until
- * LiturgicalCalendarAPI#867 puts the bound in `/calendars` metadata, at which point this whole
- * block is deleted rather than extended.
+ * Reached only when `@liturgical-calendar/components-js` failed to load — a CDN or network failure,
+ * which `mountCalendarControls()` already reports through the `#controls-load-failed` toast. In that
+ * state there is no rite select to change either, so the rite is still the default Roman and 1970 is
+ * the right answer rather than a guess. It is not a second copy of the per-rite table: there is no
+ * table here to drift.
  *
- * Getting it wrong is not merely six red cards. `/calendar/ambrosian/1975` answers `400`, which
- * is not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through
- * `Health::validateCalendar()` as if it were a calendar: a wrong-green `file-exists`, a
- * misleading `json-valid` failure, and — the serious part — **no `schema-valid` frame at all**.
- * The calendar-data phase counts on exactly 3 frames per year, so each out-of-range year leaves
- * the phase one frame short of its target and the run never advances to the unit tests (#52,
- * the same wedge class as #43 by a different route).
- *
- * @type {Readonly<Object<string, number>>}
+ * @type {number}
  */
-export const RITE_YEAR_LOWER_BOUND = Object.freeze( {
-    roman: 1970,
-    ambrosian: 1976
-} );
+const FALLBACK_YEAR_LOWER_BOUND = 1970;
 
 /**
- * The lower bound for a rite, erring high for a rite this map has never heard of.
+ * The earliest year the API will calculate a calendar for, under a given rite.
  *
- * The tempting fallback is Roman's 1970, since everything here was Roman by construction — but
- * that is the fail-open choice, and it fails into exactly the wedge described above. A rite whose
- * bound we do not know is far likelier to resemble the newer, later-bounded Ambrosian than the
- * 1970 floor, so falling back to the highest bound we do know costs at worst a handful of
- * skipped-but-valid years, while the other direction costs the run. The warning is what actually
- * gets this fixed, so it is not silent.
+ * Read from `RiteProperties` in `@liturgical-calendar/components-js`, which already mirrors the API's
+ * `CalendarParams::YEAR_LOWER_LIMIT` (1970) and `AMBROSIAN_YEAR_LOWER_LIMIT` (1976), is covered by
+ * that package's own tests, and is the same table the rite select is built from — so any rite the
+ * user can select is a rite this can answer for. Taking it from there rather than restating it here
+ * keeps one copy per repository instead of two, and means a new rite arrives with its bound already
+ * attached. (LiturgicalCalendarAPI#867 would let the library itself stop hardcoding it, at which
+ * point this call site does not change.)
+ *
+ * Getting it wrong is not merely six red cards. `/calendar/ambrosian/1975` answers `400`, which is
+ * not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through
+ * `Health::validateCalendar()` as if it were a calendar: a wrong-green `file-exists`, a misleading
+ * `json-valid` failure, and — the serious part — **no `schema-valid` frame at all**. The
+ * calendar-data phase counts on exactly 3 frames per year, so each out-of-range year leaves the
+ * phase one frame short of its target and the run never advances to the unit tests (#52, the same
+ * wedge class as #43 by a different route).
  *
  * @param {string} rite - The selected rite.
+ * @param {?Object<string, {minYear: number}>} riteProperties - The library's `RiteProperties`, or null before it loads.
  * @returns {number} The earliest year to request for that rite.
  */
-export const yearLowerBoundForRite = ( rite ) => {
-    if ( Object.hasOwn( RITE_YEAR_LOWER_BOUND, rite ) ) {
-        return RITE_YEAR_LOWER_BOUND[ rite ];
+export const yearLowerBoundForRite = ( rite, riteProperties ) => {
+    const minYear = riteProperties?.[ rite ]?.minYear;
+    if ( Number.isInteger( minYear ) ) {
+        return minYear;
     }
-    const fallback = Math.max( ...Object.values( RITE_YEAR_LOWER_BOUND ) );
-    console.warn( `No year lower bound known for rite '${rite}'; falling back to ${fallback}. Add it to RITE_YEAR_LOWER_BOUND in wsProtocol.js.` );
-    return fallback;
+    console.warn( `No RiteProperties entry for rite '${rite}'; falling back to ${FALLBACK_YEAR_LOWER_BOUND}. Expected only when components-js failed to load.` );
+    return FALLBACK_YEAR_LOWER_BOUND;
 };
 
 /**
@@ -191,11 +190,12 @@ export const yearLowerBoundForRite = ( rite ) => {
  *
  * @param {string} rite - The selected rite.
  * @param {number} upperBound - The last year to request, inclusive.
+ * @param {?Object<string, {minYear: number}>} riteProperties - The library's `RiteProperties`, or null before it loads.
  * @returns {Array<number>} A fresh array; empty when the bound excludes every year.
  */
-export const yearsForRite = ( rite, upperBound ) => {
+export const yearsForRite = ( rite, upperBound, riteProperties ) => {
     const years = [];
-    for ( let year = yearLowerBoundForRite( rite ); year <= upperBound; year++ ) {
+    for ( let year = yearLowerBoundForRite( rite, riteProperties ); year <= upperBound; year++ ) {
         years.push( year );
     }
     return years;

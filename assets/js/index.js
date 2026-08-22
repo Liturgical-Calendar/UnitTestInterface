@@ -67,15 +67,27 @@ const thisYear = new Date().getFullYear();
 const twentyFiveYearsFromNow = thisYear + 25;
 
 /**
+ * The library's per-rite properties table, captured once `mountCalendarControls()` has imported it.
+ *
+ * `null` until then, and if the import fails. `yearLowerBoundForRite()` treats that as "assume the
+ * Roman floor", which is right in exactly that case: with no library there is no rite select either,
+ * so the rite is still the default.
+ *
+ * @type {?Object<string, {minYear: number}>}
+ */
+let riteProperties = null;
+
+/**
  * The years the calendar-data phase requests, for the currently selected rite.
  *
  * Rebuilt by `setupPage()` rather than fixed at module load: the lower bound is rite-dependent
  * (see `yearsForRite()`), and requesting a year the rite cannot serve wedges the phase counter
- * rather than merely reddening a card (#52).
+ * rather than merely reddening a card (#52). The value here is only the pre-mount placeholder — the
+ * library has not loaded yet, so it resolves to the Roman floor, which is what the page starts on.
  *
  * @type {Array<number>}
  */
-let Years = yearsForRite( 'roman', twentyFiveYearsFromNow );
+let Years = yearsForRite( 'roman', twentyFiveYearsFromNow, riteProperties );
 
 /**
  * An object that holds the different API endpoint URLs used in the application.
@@ -201,7 +213,10 @@ const mountCalendarControls = async () => {
         safeToastShow( '#controls-load-failed' );
         return;
     }
-    const { ApiBase, CalendarSelect, RiteSelect, CalendarSelectFilter } = componentsJs;
+    const { ApiBase, CalendarSelect, RiteSelect, CalendarSelectFilter, RiteProperties } = componentsJs;
+    // The library's own copy of the API's per-rite year floors, and the same table its rite select
+    // is built from — so every rite the user can pick has an entry. See `yearLowerBoundForRite()`.
+    riteProperties = RiteProperties ?? null;
     apiBase = ApiBase.resolve( baseUrl );
 
     riteSelect = new RiteSelect( locale )
@@ -1515,7 +1530,7 @@ const setupPage = () => {
     // Not the rite select's own `change` listener either: `linkToRiteSelect()` registers first and
     // dispatches `change` on the calendar select, so `handleCalendarSelectChange()` has already run
     // by the time that listener fires.
-    Years = yearsForRite( currentRite, twentyFiveYearsFromNow );
+    Years = yearsForRite( currentRite, twentyFiveYearsFromNow, riteProperties );
 
     // A scaffold rebuild invalidates every result the counters describe, so zero them here rather
     // than only in the start-run handler: otherwise the badges keep the previous run's totals

@@ -322,11 +322,19 @@ routed the diocesan path sites through `JsonData::diocesanCalendarFileFor($rite)
 before `getPathToSchemaFile()`'s exact-match lookup so the bare rite-qualified collection form resolves to the bare form's schema.
 
 The **calendar-data year range is rite-dependent too**: `CalendarParams::YEAR_LOWER_LIMIT` is 1970, but
-`AMBROSIAN_YEAR_LOWER_LIMIT` is 1976. Nothing announces either over the wire yet, so `RITE_YEAR_LOWER_BOUND` in
-`assets/js/wsProtocol.js` duplicates them as a stopgap (LiturgicalCalendarAPI#867 will put the bound in `/calendars`
-metadata; delete the map then rather than extending it). `index.js` seeds its `Years` array at module load with
-`yearsForRite( 'roman', twentyFiveYearsFromNow )` — the Roman default spelled out literally, because `currentRite` is
-not assigned yet at that point — and then **rebuilds** it from the selected rite inside `setupPage()`, the one funnel
+`AMBROSIAN_YEAR_LOWER_LIMIT` is 1976. Do **not** restate those numbers here — `yearLowerBoundForRite()` in
+`assets/js/wsProtocol.js` reads them from `RiteProperties` in `@liturgical-calendar/components-js`, which already
+mirrors both constants, is covered by that package's tests, and is the same table the `RiteSelect` is built from, so
+every rite the user can select has an entry. `index.js` captures `RiteProperties` in `mountCalendarControls()`, where
+the library is dynamically imported. The single literal `FALLBACK_YEAR_LOWER_BOUND = 1970` applies only when that
+import failed, and is correct there by construction: with no library there is no rite select either, so the rite is
+still the default Roman. (LiturgicalCalendarAPI#867 would let the *library* stop hardcoding it; this repository's call
+sites would not change.)
+
+`index.js` seeds its `Years` array at module load with
+`yearsForRite( 'roman', twentyFiveYearsFromNow, riteProperties )` — the Roman default spelled out literally, because
+`currentRite` is not assigned yet at that point and the library has not loaded either — and then **rebuilds** it from
+the selected rite inside `setupPage()`, the one funnel
 every scaffold rebuild passes through. The rebuild lives below `setupPage()`'s early `return`, so a path that bails on
 missing metadata cannot narrow the range without rebuilding the cards to match; and it is deliberately not in the rite
 select's own `change` listener, because `linkToRiteSelect()` registers first and dispatches `change` on the calendar

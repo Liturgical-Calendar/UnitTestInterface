@@ -259,24 +259,37 @@ test('the calendar-data year range starts at the rite\'s lower bound', async ({ 
 
     const thisYear = new Date().getFullYear();
 
+    // Expectations come from the library's own `RiteProperties`, not from literals repeated here.
+    // The bound is sourced from that table at runtime, so restating 1970/1976 in the spec would make
+    // this a third copy of the API's constants and would fail the day the library legitimately moves
+    // one. What is under test is the wiring: that the scaffold's first year *is* the library's
+    // `minYear` for the selected rite.
+    const minYears = await page.evaluate(async () => {
+        const mod = await import('@liturgical-calendar/components-js');
+        return { roman: mod.RiteProperties.roman.minYear, ambrosian: mod.RiteProperties.ambrosian.minYear };
+    });
+    // Guard the guard: a table that returned undefined would make every assertion below vacuous.
+    expect(Number.isInteger(minYears.roman)).toBe(true);
+    expect(minYears.ambrosian).toBeGreaterThan(minYears.roman);
+
     const roman = await scaffoldYears(page);
-    expect(roman[0]).toBe(1970);
+    expect(roman[0]).toBe(minYears.roman);
     expect(roman[roman.length - 1]).toBe(thisYear + 25);
 
     await selectRite(page, 'ambrosian');
 
     const ambrosian = await scaffoldYears(page);
-    expect(ambrosian[0]).toBe(1976);
+    expect(ambrosian[0]).toBe(minYears.ambrosian);
     expect(ambrosian[ambrosian.length - 1]).toBe(thisYear + 25);
-    // The six years the API rejects outright are the whole point.
-    for (const year of [1970, 1971, 1972, 1973, 1974, 1975]) {
+    // The years between the two floors are the ones the API rejects outright, and the whole point.
+    for (let year = minYears.roman; year < minYears.ambrosian; year++) {
         expect(ambrosian).not.toContain(year);
     }
-    expect(ambrosian.length).toBe(roman.length - 6);
+    expect(ambrosian.length).toBe(roman.length - (minYears.ambrosian - minYears.roman));
 
     // And back, so the range is derived on every rebuild rather than narrowed once.
     await selectRite(page, 'roman');
-    expect((await scaffoldYears(page))[0]).toBe(1970);
+    expect((await scaffoldYears(page))[0]).toBe(minYears.roman);
 });
 
 test('the accordion header names both bounds, and both follow the rite', async ({ page }) => {
@@ -288,12 +301,17 @@ test('the accordion header names both bounds, and both follow the rite', async (
 
     // The lower bound used to be baked into the msgid as a literal 1970, so there was nothing to
     // update and the header contradicted the cards under it.
+    const minYears = await page.evaluate(async () => {
+        const mod = await import('@liturgical-calendar/components-js');
+        return { roman: mod.RiteProperties.roman.minYear, ambrosian: mod.RiteProperties.ambrosian.minYear };
+    });
+
     await expect(yearMin).toHaveCount(1);
-    await expect(yearMin).toHaveText('1970');
+    await expect(yearMin).toHaveText(String(minYears.roman));
     await expect(yearMax).toHaveText(String(new Date().getFullYear() + 25));
 
     await selectRite(page, 'ambrosian');
-    await expect(yearMin).toHaveText('1976');
+    await expect(yearMin).toHaveText(String(minYears.ambrosian));
     await expect(yearMax).toHaveText(String(new Date().getFullYear() + 25));
 });
 
