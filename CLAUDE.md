@@ -321,6 +321,20 @@ This requires two LiturgicalCalendarAPI changes: **#813**, which taught the `res
 routed the diocesan path sites through `JsonData::diocesanCalendarFileFor($rite)`; and **#816**, which strips a trailing rite segment
 before `getPathToSchemaFile()`'s exact-match lookup so the bare rite-qualified collection form resolves to the bare form's schema.
 
+The **calendar-data year range is rite-dependent too**: `CalendarParams::YEAR_LOWER_LIMIT` is 1970, but
+`AMBROSIAN_YEAR_LOWER_LIMIT` is 1976. Nothing announces either over the wire yet, so `RITE_YEAR_LOWER_BOUND` in
+`assets/js/wsProtocol.js` duplicates them as a stopgap (LiturgicalCalendarAPI#867 will put the bound in `/calendars`
+metadata; delete the map then rather than extending it). `index.js` derives its `Years` array inside `setupPage()` —
+the one funnel every scaffold rebuild passes through — never at module load, and never from the rite select's own
+`change` listener, because `linkToRiteSelect()` registers first and dispatches `change` on the calendar select, so
+`handleCalendarSelectChange()` has already run by the time that listener fires.
+
+Requesting a year the rite cannot serve is worse than a red card. `/calendar/ambrosian/1975` answers `400`, which is
+not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through `Health::validateCalendar()` as if
+it were a calendar: a wrong-green `file-exists`, a misleading `json-valid` failure, and **no `schema-valid` frame at
+all**. The phase counts on exactly 3 frames per year, so each bad year leaves it one frame short of its target and the
+run never advances to the unit tests (#52 — the same wedge class as #43, by a different route).
+
 On `index.php`, the calendar select is the library's, linked to the rite select. Its options carry `data-calendartype="national"|"diocesan"`
 and no `data-rite`, and the rite-level calendar is its empty option — `toWireTarget()` in `wsProtocol.js` maps all three onto the protocol's
 `nationalcalendar` / `diocesancalendar` / `ritecalendar` vocabulary. The General Roman Calendar is sent as

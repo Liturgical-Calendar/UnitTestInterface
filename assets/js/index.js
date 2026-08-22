@@ -29,6 +29,7 @@ import {
     universalChecksForRite,
     testAppliesToRite,
     CALENDAR_SCOPE_KEYS,
+    yearsForRite,
 } from './wsProtocol.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
@@ -62,13 +63,19 @@ const {
     calendarSelectLabel: calendarSelectLabelText = 'Liturgical Calendar',
 } = window.LitCalConfig;
 
-const Years = [];
 const thisYear = new Date().getFullYear();
 const twentyFiveYearsFromNow = thisYear + 25;
-let baseYear = 1970;
-while ( baseYear <= twentyFiveYearsFromNow ) {
-    Years.push( baseYear++ );
-}
+
+/**
+ * The years the calendar-data phase requests, for the currently selected rite.
+ *
+ * Rebuilt by `setupPage()` rather than fixed at module load: the lower bound is rite-dependent
+ * (see `yearsForRite()`), and requesting a year the rite cannot serve wedges the phase counter
+ * rather than merely reddening a card (#52).
+ *
+ * @type {Array<number>}
+ */
+let Years = yearsForRite( 'roman', twentyFiveYearsFromNow );
 
 /**
  * An object that holds the different API endpoint URLs used in the application.
@@ -759,6 +766,7 @@ const runTests = () => {
             console.log( 'All jobs finished!' );
             safeToastShow('#tests-complete');
             currentRunToken = null;
+            setScaffoldControlsDisabledForRun( false );
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
@@ -1085,7 +1093,13 @@ const resetTestUI = () => {
         }
     });
 
-    // Reset internal counter variables
+    // Reset internal counter variables.
+    // The grand totals belong here with the per-phase ones. They used to be zeroed separately by
+    // the start-run handler, which made this function a *partial* reset — every other caller left
+    // `successfulTests` / `failedTests` holding the previous run's values, so the DOM read 0 while
+    // the next increment jumped straight back to the stale number (#53).
+    successfulTests = 0;
+    failedTests = 0;
     successfulSourceDataTests = 0;
     successfulCalendarDataTests = 0;
     successfulUnitTests = 0;
@@ -1404,7 +1418,13 @@ const buildScaffolding = ( cfg ) => {
     const calendarDataTests = document.querySelector('.calendardata-tests');
     if ( calendarDataTests ) {
         calendarDataTests.innerHTML = '';
-        document.querySelectorAll('.yearMax').forEach(el => el.textContent = twentyFiveYearsFromNow);
+        // Both bounds come from `cfg.years`, never from the live globals: a replayed run carries
+        // its own range in `scaffold.years`, and writing today's bounds over it would caption a
+        // stored Ambrosian run with the Roman range it never used (#52).
+        if ( cfg.years.length > 0 ) {
+            document.querySelectorAll('.yearMin').forEach(el => el.textContent = cfg.years[ 0 ]);
+            document.querySelectorAll('.yearMax').forEach(el => el.textContent = cfg.years[ cfg.years.length - 1 ]);
+        }
         for ( let i = cfg.years.length; i > 0; i-- ) {
             const idx = cfg.years.length - i;
             calendarDataTests.insertAdjacentHTML('beforeend', calDataTestTemplate( i, cfg.years ));
@@ -1486,6 +1506,24 @@ const setupPage = () => {
         SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
     } );
 
+    // Below the early `return` above, deliberately. `setupPage()` is the one funnel every scaffold
+    // rebuild passes through — initial load, rite change, calendar change, response-type change and
+    // `resyncLiveStateFromDom()` alike — but only the paths that reach *here* actually rebuild it,
+    // and narrowing the year range or zeroing the counters on a path that then bails would leave
+    // the page describing one rite with a scaffold still showing another's.
+    //
+    // Not the rite select's own `change` listener either: `linkToRiteSelect()` registers first and
+    // dispatches `change` on the calendar select, so `handleCalendarSelectChange()` has already run
+    // by the time that listener fires.
+    Years = yearsForRite( currentRite, twentyFiveYearsFromNow );
+
+    // A scaffold rebuild invalidates every result the counters describe, so zero them here rather
+    // than only in the start-run handler: otherwise the badges keep the previous run's totals
+    // beside a set of freshly pending cards, and can even claim more successes than the new
+    // scaffold has checks (#53). This replaces an ad-hoc partial reset that used to sit at the end
+    // of this function and cover the per-phase counters but neither the grand totals nor the timers.
+    resetTestUI();
+
     buildScaffolding({
         calendar: currentSelectedCalendar,
         category: currentCalendarCategory,
@@ -1501,13 +1539,10 @@ const setupPage = () => {
     updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
     updateText('totalCalendarDataTestsCount', totalCalendarDataTestsCount);
     updateText('totalUnitTestsCount', totalUnitTestsCount);
-    successfulSourceDataTests = 0;
-    successfulCalendarDataTests = 0;
-    successfulUnitTests = 0;
-    failedSourceDataTests = 0;
-    failedCalendarDataTests = 0;
-    failedUnitTests = 0;
-    document.querySelectorAll('.successfulCount,.failedCount').forEach(el => el.textContent = '0');
+    // The per-phase counters and the `.successfulCount` / `.failedCount` spans used to be zeroed
+    // here, a few lines below where `resetTestUI()` now does it — a second, partial reset that
+    // covered neither the grand totals nor the timers, which is how those two came to be stale on
+    // this page at all (#53). One reset function, called once, above.
     const testCells = document.querySelector('.calendardata-tests');
     testCells.querySelectorAll('.bg-success,.bg-danger').forEach(el => {
         el.classList.remove('bg-success', 'bg-danger');
@@ -1586,6 +1621,39 @@ const resolveCalendarTargetFromControls = () => {
 };
 
 /**
+ * Disables (or re-enables) the controls that rebuild the scaffold, for a run's duration.
+ *
+ * The counterpart of `resources.js`'s `setRiteSelectDisabledForRun()`, and added for the same
+ * reason (final review of #48, finding 3) — this page simply had no equivalent, which is why #53
+ * describes the Calendars runner as the easier of the two to hit: any calendar change triggers it,
+ * not only a rite change.
+ *
+ * All three of these controls funnel into `setupPage()`, which rebuilds the scaffold, renarrows
+ * `Years` and zeroes the counters. Mid-run that produces a stored run that contradicts itself:
+ * `buildCalendarsPayload()` takes `counts` from the module counters but its results from
+ * `resultCollector`, which no reset clears, so the run would be persisted claiming fewer successes
+ * than it carries — and `scaffold.years` would record the *new* rite's range beside result
+ * descriptors addressed at the old one's years, which replay then silently drops.
+ *
+ * Disabling for the run's duration prevents the scenario outright rather than teaching every
+ * counter, the year range and the run token to survive a mid-run swap.
+ *
+ * @param {boolean} disabled
+ * @returns {void}
+ */
+const setScaffoldControlsDisabledForRun = ( disabled ) => {
+    [
+        riteSelect?._domElement,
+        calendarSelect?._domElement,
+        document.querySelector('#APIResponseSelect'),
+    ].forEach( ( el ) => {
+        if ( el ) {
+            el.disabled = disabled;
+        }
+    } );
+};
+
+/**
  * Reacts to a calendar or rite change.
  *
  * Attached after `mountCalendarControls()` rather than at module scope: the element does not
@@ -1643,8 +1711,6 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         index = 0;
         yearIndex = 0;
         messageCounter = 0;
-        successfulTests = 0;
-        failedTests = 0;
         resultCollector.reset();
         calendarDataReceivedResponses = 0;
         calendarDataExpectedResponses = 0;
@@ -1655,6 +1721,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
             console.warn( 'WebSocket readyState:', conn.readyState );
         } else {
             currentRunToken = crypto.randomUUID();
+            setScaffoldControlsDisabledForRun( true );
             performance.mark( 'litcalTestRunnerStart' );
             const startBtnEl = document.querySelector('#startTestRunnerBtn');
             if (startBtnEl) {
@@ -1679,6 +1746,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         sendCancelRun( conn, currentRunToken );
         currentState = TestState.Stopped;
         currentRunToken = null;
+        setScaffoldControlsDisabledForRun( false );
         const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
         if (spinIcon) {
             spinIcon.classList.remove('fa-spin');

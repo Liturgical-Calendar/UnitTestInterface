@@ -141,6 +141,67 @@ export const UNIVERSAL_CHECKS = Object.freeze([
 export const inRiteScope = ( item, rite ) => ( item?.rite ?? 'roman' ) === rite;
 
 /**
+ * The earliest year the API will calculate a calendar for, per rite.
+ *
+ * **A duplicated constant, and knowingly so.** The source of truth is the API's
+ * `CalendarParams::YEAR_LOWER_LIMIT` (1970) and `CalendarParams::AMBROSIAN_YEAR_LOWER_LIMIT`
+ * (1976); nothing announces either over the wire yet, so this map is a stopgap until
+ * LiturgicalCalendarAPI#867 puts the bound in `/calendars` metadata, at which point this whole
+ * block is deleted rather than extended.
+ *
+ * Getting it wrong is not merely six red cards. `/calendar/ambrosian/1975` answers `400`, which
+ * is not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through
+ * `Health::validateCalendar()` as if it were a calendar: a wrong-green `file-exists`, a
+ * misleading `json-valid` failure, and — the serious part — **no `schema-valid` frame at all**.
+ * The calendar-data phase counts on exactly 3 frames per year, so each out-of-range year leaves
+ * the phase one frame short of its target and the run never advances to the unit tests (#52,
+ * the same wedge class as #43 by a different route).
+ *
+ * @type {Readonly<Object<string, number>>}
+ */
+export const RITE_YEAR_LOWER_BOUND = Object.freeze( {
+    roman: 1970,
+    ambrosian: 1976
+} );
+
+/**
+ * The lower bound for a rite, erring high for a rite this map has never heard of.
+ *
+ * The tempting fallback is Roman's 1970, since everything here was Roman by construction — but
+ * that is the fail-open choice, and it fails into exactly the wedge described above. A rite whose
+ * bound we do not know is far likelier to resemble the newer, later-bounded Ambrosian than the
+ * 1970 floor, so falling back to the highest bound we do know costs at worst a handful of
+ * skipped-but-valid years, while the other direction costs the run. The warning is what actually
+ * gets this fixed, so it is not silent.
+ *
+ * @param {string} rite - The selected rite.
+ * @returns {number} The earliest year to request for that rite.
+ */
+export const yearLowerBoundForRite = ( rite ) => {
+    if ( Object.hasOwn( RITE_YEAR_LOWER_BOUND, rite ) ) {
+        return RITE_YEAR_LOWER_BOUND[ rite ];
+    }
+    const fallback = Math.max( ...Object.values( RITE_YEAR_LOWER_BOUND ) );
+    console.warn( `No year lower bound known for rite '${rite}'; falling back to ${fallback}. Add it to RITE_YEAR_LOWER_BOUND in wsProtocol.js.` );
+    return fallback;
+};
+
+/**
+ * The years to request calendar data for under a given rite, ascending.
+ *
+ * @param {string} rite - The selected rite.
+ * @param {number} upperBound - The last year to request, inclusive.
+ * @returns {Array<number>} A fresh array; empty when the bound excludes every year.
+ */
+export const yearsForRite = ( rite, upperBound ) => {
+    const years = [];
+    for ( let year = yearLowerBoundForRite( rite ); year <= upperBound; year++ ) {
+        years.push( year );
+    }
+    return years;
+};
+
+/**
  * The universal source checks belonging to one rite. **`index.js` only** — see
  * {@link UNIVERSAL_CHECKS}, and {@link validationChecksForRite} for what replaces it.
  *

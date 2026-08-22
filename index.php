@@ -163,8 +163,9 @@ include_once('layout/head.php');
                             <div class="col-12 col-md-4 mb-2 mb-md-0">
                                 <i class="fas fa-file-export fa-fw"></i>&nbsp;<?php
                                     echo sprintf(
-                                        /* translators: %s: <span class="yearMax"></span> */
-                                        _("VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"),
+                                        /* translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite. */
+                                        _("VALIDATE CALENDAR DATA FOR YEARS FROM %1\$s UNTIL %2\$s"),
+                                        "&nbsp;<span class=\"yearMin\"></span>",
                                         "&nbsp;<span class=\"yearMax\"></span>"
                                     );
                                     ?>
