@@ -1,0 +1,83 @@
+name: Linting
+
+# Separate from "Update POTs", which commits back to the repository and therefore runs with a
+# write-scoped token after a merge. These jobs only read the tree, and they need to run *before* a
+# merge — nothing checked a pull request in this repository until this workflow existed.
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+    # The workflow's own inputs are in this list on purpose: a change to the ruleset or to the lint
+    # script must be able to turn the build red by itself, without waiting for the next .php edit.
+    paths:
+      - '**/*.php'
+      - '**/*.md'
+      - 'phpcs.xml'
+      - '.markdownlint.yml'
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/lint.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: neither job writes anything, calls the API, or needs the artifact scope.
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.4'
+
+jobs:
+  codesniffer:
+    name: PHP CodeSniffer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Neither job pushes, tags or calls the API, so the token has no reason to stay behind in
+          # .git/config as an extraheader. It matters here specifically because both jobs then
+          # execute third-party code — `composer install` may run package scripts, and `npx` fetches
+          # and runs a package from the registry — and anything running in the job can read that
+          # file. `permissions: contents: read` bounds what the token could do; this removes the
+          # opportunity to read it at all.
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
+
+      # phpcs is a dev dependency, so the dev half of the lock file is what this job needs.
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # `composer lint`, not a bare phpcs invocation with its own flags: CI and a developer's
+      # terminal must be able to disagree about the *result*, never about what was run.
+      - name: PHP Code Sniffer
+        run: composer lint
+
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # As in the codesniffer job above.
+          persist-credentials: false
+
+      # Deliberately not `composer lint:md`: that would pull in PHP and the whole vendor tree to run
+      # a Node tool. The globs are the ones that script uses, and the two are kept in step by hand —
+      # a divergence shows up as a file linted in one place and not the other.
+      #
+      # The version is pinned, and the same pin is in both `lint:md` and `lint:md:fix`. Unpinned,
+      # `npx --yes` resolves to whatever the registry serves at run time: a release that adds or
+      # tightens a rule turns the build red with nothing in the repository having changed, and a
+      # developer's local run and CI can be linting to different rules on the same day. Bump it
+      # deliberately, in all three places at once.
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2@0.23.2 "**/*.md" "#node_modules" "#vendor" "#.superpowers" "#.serena.local.bak" "#test-results" "#playwright-report"
