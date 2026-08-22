@@ -412,7 +412,44 @@ export const createRequestRegistry = () => {
          * @param {Record<string, Element>} cards - Step name -> card element.
          */
         register( requestId, cards ) {
-            entries.set( requestId, { cards, done: false } );
+            entries.set( requestId, { cards, done: false, received: new Set() } );
+        },
+
+        /**
+         * Record that a step's result arrived and its card was painted.
+         *
+         * Tracked because "this request never finished" and "this request never answered" are
+         * different failures with different arithmetic. See {@link missingSteps}.
+         *
+         * @param {string} requestId
+         * @param {string} step
+         * @returns {void}
+         */
+        markReceived( requestId, step ) {
+            entries.get( requestId )?.received.add( step );
+        },
+
+        /**
+         * The registered steps of a request whose results never arrived.
+         *
+         * This is the number of cards left grey, which is what makes it the right thing to count
+         * when a phase is abandoned: the totals badge and the rendered cards have to agree, and a
+         * request that answered nothing left three cards unpainted, not one.
+         *
+         * An **empty** array from a request that never reported completion is the other case
+         * entirely — every step arrived and every card is painted, and only the terminal frame is
+         * missing (LiturgicalCalendarAPI#823). Counting a failure for that would inflate the totals
+         * past the cards, which is the same drift in the other direction.
+         *
+         * @param {string} requestId
+         * @returns {Array<string>}
+         */
+        missingSteps( requestId ) {
+            const entry = entries.get( requestId );
+            if ( undefined === entry ) {
+                return [];
+            }
+            return Object.keys( entry.cards ).filter( step => !entry.received.has( step ) );
         },
 
         /**
@@ -529,4 +566,42 @@ export const createSilenceWatchdog = ( timeoutMs, onSilence ) => {
         /** @returns {boolean} Whether a silence is currently being timed. */
         isRunning: () => null !== timer
     };
+};
+
+/**
+ * Split abandoned requests into the two things going wrong, which need different arithmetic.
+ *
+ * When a phase is given up on, each outstanding request is in one of two states, and treating them
+ * alike gets the totals wrong in opposite directions:
+ *
+ * - **Steps missing.** Its cards are still grey. Each unpainted card must be counted as a failure,
+ *   or the totals badge reads lower than the number of cards on the page — the drift #42 exists to
+ *   remove, arrived at from the results side.
+ * - **Only the terminal frame missing.** Every step arrived and every card is painted; the counters
+ *   are already correct. This is a *transport* failure, not a check failure — precisely the shape of
+ *   LiturgicalCalendarAPI#823, where a throw inside a promise's fulfil handler skips `sendComplete()`
+ *   after the work itself succeeded. Counting it would inflate the totals past the cards.
+ *
+ * @param {{missingSteps: Function}} registry - The request registry.
+ * @param {Iterable<string>} requestIds - The requests still outstanding.
+ * @returns {{unpaintedSteps: number, incomplete: Array<string>, silent: Array<string>}}
+ *          `unpaintedSteps` is how many failures to count; `incomplete` are the requests that
+ *          answered nothing or only partly; `silent` are those that answered fully but never ended.
+ */
+export const summariseAbandoned = ( registry, requestIds ) => {
+    const incomplete = [];
+    const silent = [];
+    let unpaintedSteps = 0;
+
+    for ( const requestId of requestIds ) {
+        const missing = registry.missingSteps( requestId );
+        if ( 0 === missing.length ) {
+            silent.push( requestId );
+            continue;
+        }
+        incomplete.push( requestId );
+        unpaintedSteps += missing.length;
+    }
+
+    return { unpaintedSteps, incomplete, silent };
 };

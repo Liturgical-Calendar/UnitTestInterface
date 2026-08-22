@@ -32,6 +32,7 @@ import {
     inRiteScope,
     createRequestRegistry,
     createSilenceWatchdog,
+    summariseAbandoned,
     negotiatedProtocol,
     newRequestId,
     readHello,
@@ -546,18 +547,6 @@ const connectWebSocket = () => {
      * the global one would leave the header count and the per-phase counts disagreeing, which is
      * the same silent drift #43 flags for unmatched selectors.
      */
-    const countUnattributableFailure = () => {
-        updateText( 'failedCount', ++failedTests );
-        switch ( currentState ) {
-            case TestState.ExecutingResourceValidations:
-                updateText( 'failedResourceDataTestsCount', ++failedResourceDataTests );
-                break;
-            case TestState.ExecutingSourceValidations:
-                updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
-                break;
-        }
-    };
-
     conn.onmessage = ( e ) => {
         // Parsed once, before the run guards, because one frame is not about a run: the server's
         // `hello` arrives on connect and carries no run token — which is exactly what makes it
@@ -929,6 +918,7 @@ const paintResult = ( responseData ) => {
         return;
     }
     paintCard( card, responseData.type === 'success', responseData.text ?? '' );
+    requestRegistry.markReceived( requestId, step );
 };
 
 /**
@@ -1058,6 +1048,29 @@ let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
 
+/**
+ * Count a failure that belongs to no card.
+ *
+ * **Module scope, not inside `connectWebSocket()`, and that is a fix rather than a tidy.** The phase
+ * watchdog is defined at module level and calls this; while it lived in the connection closure, the
+ * watchdog firing raised a ReferenceError instead of rescuing the run — so the one safety net
+ * standing between a missing terminal frame and a permanently hung phase was itself broken. Nothing
+ * caught it because no test reached the sixty-second timeout.
+ *
+ * @returns {void}
+ */
+const countUnattributableFailure = () => {
+    updateText( 'failedCount', ++failedTests );
+    switch ( currentState ) {
+        case TestState.ExecutingResourceValidations:
+            updateText( 'failedResourceDataTestsCount', ++failedResourceDataTests );
+            break;
+        case TestState.ExecutingSourceValidations:
+            updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
+            break;
+    }
+};
+
 /** Track expected and received responses for parallel Resource Data tests */
 /**
  * Which cards each in-flight request addresses, and which requests are still running.
@@ -1100,23 +1113,58 @@ const PHASE_SILENCE_TIMEOUT_MS = 60000;
  * The clock itself. Its callback gives up on whatever the current phase is still waiting for.
  * @type {{restart: Function, clear: Function, isRunning: Function}}
  */
-const phaseWatchdog = createSilenceWatchdog( PHASE_SILENCE_TIMEOUT_MS, () => {
+const phaseWatchdog = createSilenceWatchdog( PHASE_SILENCE_TIMEOUT_MS, () => giveUpOnOutstandingRequests() );
+
+/**
+ * Give up on whatever the current phase is still waiting for, and move the run on.
+ *
+ * The two ways a request can be outstanding are counted differently, because they are different
+ * failures — see {@link summariseAbandoned}. A request whose steps never arrived left that many
+ * cards grey, and each one is counted, or the totals badge reads lower than the cards on the page. A
+ * request whose steps all arrived but whose terminal frame never did left nothing grey: its counters
+ * are already right, and adding a failure would inflate them past the cards. That second case is not
+ * hypothetical — it is exactly LiturgicalCalendarAPI#823, a throw inside a promise's fulfil handler
+ * skipping `sendComplete()` after the work itself succeeded — so it is reported as the transport
+ * failure it is, and left out of the arithmetic.
+ *
+ * Exported so a test can invoke it against a real run rather than waiting out the sixty-second
+ * clock. Nothing else imports this module; the export exists for that reason and is not a seam
+ * anything else is meant to use.
+ *
+ * @returns {void}
+ */
+export const giveUpOnOutstandingRequests = () => {
     const abandoned = [ ...phaseOutstanding ];
     if ( 0 === abandoned.length ) {
         return;
     }
-    console.error(
-        `No frame has arrived for ${PHASE_SILENCE_TIMEOUT_MS / 1000}s and ${abandoned.length} request(s) never reported completion; giving up on them.`,
-        abandoned
-    );
-    // Counted, not silently dropped: these requests rendered cards that will stay unpainted, and a
-    // run whose totals matched while cards sat grey would be the drift #42 is about.
-    abandoned.forEach( () => countUnattributableFailure() );
+
+    const { unpaintedSteps, incomplete, silent } = summariseAbandoned( requestRegistry, abandoned );
+
+    if ( 0 < incomplete.length ) {
+        console.error(
+            `No frame has arrived for ${PHASE_SILENCE_TIMEOUT_MS / 1000}s; ${incomplete.length} request(s) never answered in full, leaving ${unpaintedSteps} check(s) unreported.`,
+            incomplete
+        );
+    }
+    if ( 0 < silent.length ) {
+        // A run-level transport fault, not a check that failed: every card of these requests is
+        // painted and every counter already agrees with them.
+        console.error(
+            `${silent.length} request(s) reported every check but never reported completion — the server ended the request without saying so (LiturgicalCalendarAPI#823).`,
+            silent
+        );
+    }
+
+    for ( let i = 0; i < unpaintedSteps; i++ ) {
+        countUnattributableFailure();
+    }
+
     phaseOutstanding.clear();
     if ( currentState !== TestState.JobsFinished && currentState !== TestState.Stopped ) {
         runTests();
     }
-} );
+};
 
 const methodAndHeaders = Object.freeze({
     method: "GET",

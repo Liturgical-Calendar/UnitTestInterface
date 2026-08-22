@@ -211,3 +211,90 @@ test('a run whose source phase has nothing to check still finishes', async ({ pa
     expect(requests.some((message) => message.action === 'validateSource')).toBe(false);
     await expect(page.locator('.sourcedata-tests .card')).toHaveCount(0);
 });
+
+/** Trigger what the silence watchdog triggers, without waiting out its sixty-second clock. */
+const giveUpNow = (page: Page): Promise<void> =>
+    page.evaluate(async () => {
+        const specifier = '/assets/js/resources.js';
+        const { giveUpOnOutstandingRequests } = (await import(specifier)) as { giveUpOnOutstandingRequests: () => void };
+        giveUpOnOutstandingRequests();
+    });
+
+const counterValue = async (page: Page, id: string): Promise<number> =>
+    Number(await page.locator(`#${id}`).textContent());
+
+test('giving up counts one failure per card left grey', async ({ page }) => {
+    // A request that died partway. Its remaining cards stay unpainted, and each one must be counted
+    // or the totals badge reads lower than the number of cards on the page — the drift #42 exists to
+    // remove, reached from the results side.
+    await installReplyingWebSocketStub(page, { stopAfterStep: 'exists' });
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    // Wait until the one step the stub does answer has painted everywhere it is going to.
+    await expect.poll(async () => page.locator('.resourcedata-tests .card.bg-success').count(), { timeout: 20000 })
+        .toBeGreaterThan(0);
+    await page.waitForTimeout(200);
+
+    const greyBefore = await page.locator('.resourcedata-tests .card.bg-info').count();
+    const failedBefore = await counterValue(page, 'failedCount');
+    expect(greyBefore).toBeGreaterThan(0);
+
+    await giveUpNow(page);
+
+    expect(await counterValue(page, 'failedCount')).toBe(failedBefore + greyBefore);
+});
+
+test('giving up counts nothing when only the ending is missing', async ({ page }) => {
+    // LiturgicalCalendarAPI#823 exactly: every check ran and reported, and the terminal frame was
+    // skipped by a throw inside the fulfil handler. Nothing is grey and every counter already agrees
+    // with the cards, so counting a failure here would inflate the totals past them.
+    await installReplyingWebSocketStub(page, { omitComplete: true });
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    await expect.poll(async () => page.locator('.resourcedata-tests .card.bg-info').count(), { timeout: 20000 })
+        .toBe(0);
+
+    const failedBefore = await counterValue(page, 'failedCount');
+    expect(await page.locator('.resourcedata-tests .card.bg-info').count()).toBe(0);
+
+    await giveUpNow(page);
+
+    // Failures only. `successfulCount` deliberately goes untested here: giving up *advances* the
+    // run, so the next phase starts and legitimately paints more successes — asserting it unchanged
+    // would be asserting that the rescue does not work.
+    expect(await counterValue(page, 'failedCount')).toBe(failedBefore);
+});
+
+test('giving up moves the run on rather than throwing', async ({ page }) => {
+    // The callback runs at module scope and reaches state that used to live inside the connection
+    // closure — where a ReferenceError meant the one safety net between a missing terminal frame and
+    // a hung phase was itself broken, silently, because no test reached the timeout.
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+
+    await installReplyingWebSocketStub(page, { omitComplete: true });
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+    await expect.poll(async () => page.locator('.resourcedata-tests .card.bg-info').count(), { timeout: 20000 })
+        .toBe(0);
+
+    // Resource phase, then source phase: each stalls the same way, so two give-ups end the run.
+    await giveUpNow(page);
+    await expect.poll(async () => page.locator('.sourcedata-tests .card.bg-info').count(), { timeout: 20000 })
+        .toBe(0);
+    await giveUpNow(page);
+
+    await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 20000 });
+    expect(pageErrors).toEqual([]);
+});

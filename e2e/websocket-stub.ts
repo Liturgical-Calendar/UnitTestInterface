@@ -81,17 +81,22 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  * @param options.protocol - The protocol version the `hello` frame advertises, or null to send no
  *   hello at all, standing in for a server that predates the handshake.
  * @param options.omitComplete - Answer without the terminal frame, standing in for the server hole
- *   at LiturgicalCalendarAPI#823.
+ *   at LiturgicalCalendarAPI#823: the work succeeded, every card is painted, and only the ending is
+ *   missing.
+ * @param options.stopAfterStep - Answer only up to this step, and send no terminal frame — a request
+ *   that died partway, leaving its remaining cards grey. The other way a request goes outstanding,
+ *   and the one that has to be counted.
  */
 export const installReplyingWebSocketStub = async (
     page: Page,
-    options: { protocol?: number | null; omitComplete?: boolean } = {}
+    options: { protocol?: number | null; omitComplete?: boolean; stopAfterStep?: string | null } = {}
 ): Promise<void> => {
     const protocol = options.protocol === undefined ? 1 : options.protocol;
     const omitComplete = options.omitComplete ?? false;
+    const stopAfterStep = options.stopAfterStep ?? null;
 
     await page.addInitScript(
-        ({ protocol, omitComplete }) => {
+        ({ protocol, omitComplete, stopAfterStep }) => {
             const sent: string[] = [];
             (window as unknown as { __wsSent: string[] }).__wsSent = sent;
 
@@ -157,7 +162,12 @@ export const installReplyingWebSocketStub = async (
                     const requestId = message.requestId;
                     const target = message.target ?? { id: String(message.validate ?? 'unknown') };
 
-                    (['exists', 'parses', 'validates'] as const).forEach((step) => {
+                    const allSteps = ['exists', 'parses', 'validates'] as const;
+                    const upTo = null === stopAfterStep
+                        ? allSteps.length
+                        : allSteps.indexOf(stopAfterStep as 'exists') + 1;
+
+                    allSteps.slice(0, upTo).forEach((step) => {
                         this.deliver({
                             type: 'success',
                             text: `stub ${step}`,
@@ -171,7 +181,7 @@ export const installReplyingWebSocketStub = async (
                         });
                     });
 
-                    if (false === omitComplete) {
+                    if (false === omitComplete && null === stopAfterStep) {
                         this.deliver({
                             type: 'success',
                             text: 'All checks for this request are complete',
@@ -195,6 +205,6 @@ export const installReplyingWebSocketStub = async (
 
             (window as unknown as { WebSocket: unknown }).WebSocket = ReplyingWebSocket;
         },
-        { protocol, omitComplete }
+        { protocol, omitComplete, stopAfterStep }
     );
 };
