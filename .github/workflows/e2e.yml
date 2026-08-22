@@ -98,6 +98,13 @@ jobs:
       #
       # The API's own APP_ENV below stays `development`; the two are unrelated settings in unrelated
       # files, and the API needs development to accept the default admin password.
+      #
+      # LITCAL_FRONTEND_URL is deliberately absent rather than set. It is read in exactly one place —
+      # the "LitCal Project" link in layout/topnavbar.php — and nothing here runs the main site, so
+      # `http://localhost:3000` would render a link pointing at nothing. Left unset, topnavbar.php's
+      # own `?? 'https://litcal.johnromanodorazio.com'` supplies the real address, and head.php's
+      # `ifPresent(...)->notEmpty()` is satisfied by absence. Naming the URL here instead would put a
+      # second copy of it in a second repository file to keep in step.
       - name: Write the environment both sides read
         run: |
           set -euo pipefail
@@ -112,7 +119,6 @@ jobs:
           API_HOST=localhost
           API_PORT=8000
           API_BASE_PATH=
-          LITCAL_FRONTEND_URL=http://localhost:3000
           JWT_SECRET=${JWT_SECRET}
           JWT_ALGORITHM=HS256
           TEST_USERNAME=admin
