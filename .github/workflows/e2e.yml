@@ -132,6 +132,8 @@ jobs:
           JWT_SECRET=${JWT_SECRET}
           JWT_ALGORITHM=HS256
           ADMIN_USERNAME=admin
+          WS_HOST=127.0.0.1
+          WS_PORT=8082
           EOF
 
           # Untracked at rest, and the pages fatal without it: Monolog opens its handler eagerly.

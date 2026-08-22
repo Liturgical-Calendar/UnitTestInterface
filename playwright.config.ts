@@ -95,6 +95,30 @@ export default defineConfig({
             stderr: 'pipe',
         },
         {
+            // The Health WebSocket server, from the same API checkout.
+            //
+            // Not optional scenery: the runner pages enable their start button only once the socket
+            // is open (`ReadyToRunTests.SocketReady`), so without one, any spec that waits for that
+            // button waits for ever. It was easy to miss because a developer usually has one running
+            // already — which is also why `reuseExistingServer` matters here as much as for the
+            // other two.
+            //
+            // `port` rather than `url`: this speaks WebSocket, so an HTTP readiness probe would
+            // never succeed. Playwright waits for the TCP port to accept instead.
+            command: 'php bin/LitCalTestServer.php',
+            cwd: (() => {
+                if (process.env.API_REPO_PATH) {
+                    return process.env.API_REPO_PATH;
+                }
+                return path.resolve(__dirname, '../LiturgicalCalendarAPI');
+            })(),
+            port: Number(process.env.WS_PORT || 8082),
+            reuseExistingServer: !process.env.CI,
+            timeout: 60 * 1000,
+            stdout: 'pipe',
+            stderr: 'pipe',
+        },
+        {
             // Start UnitTestInterface server
             command: `php -S ${new URL(process.env.FRONTEND_URL || 'http://localhost:3003').host}`,
             url: process.env.FRONTEND_URL || 'http://localhost:3003',
