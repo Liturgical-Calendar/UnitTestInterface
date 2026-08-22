@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-20 08:00+0000\n"
+"POT-Creation-Date: 2026-08-22 23:32+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -358,17 +358,17 @@ msgstr ""
 msgid "Run Tests"
 msgstr ""
 
-#: index.php:115 index.php:139 index.php:175 index.php:205 resources.php:110
+#: index.php:115 index.php:139 index.php:176 index.php:206 resources.php:110
 #: resources.php:136 resources.php:164
 msgid "Successful:"
 msgstr ""
 
-#: index.php:118 index.php:142 index.php:178 index.php:208 resources.php:113
+#: index.php:118 index.php:142 index.php:179 index.php:209 resources.php:113
 #: resources.php:139 resources.php:167
 msgid "Failed:"
 msgstr ""
 
-#: index.php:122 index.php:146 index.php:182 index.php:212 resources.php:117
+#: index.php:122 index.php:146 index.php:183 index.php:213 resources.php:117
 #: resources.php:143 resources.php:171
 #, php-format
 msgid "Time (%s):"
@@ -378,18 +378,17 @@ msgstr ""
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
-#. translators: %1$s: first year of the range; %2$s: last year of the range. Both are
-#. filled in by JavaScript and depend on the selected liturgical rite.
+#. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
 #: index.php:167
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
 msgstr ""
 
-#: index.php:200
+#: index.php:201
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:233 resources.php:191
+#: index.php:234 resources.php:191
 msgid "Loading…"
 msgstr ""
 
