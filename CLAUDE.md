@@ -324,10 +324,13 @@ before `getPathToSchemaFile()`'s exact-match lookup so the bare rite-qualified c
 The **calendar-data year range is rite-dependent too**: `CalendarParams::YEAR_LOWER_LIMIT` is 1970, but
 `AMBROSIAN_YEAR_LOWER_LIMIT` is 1976. Nothing announces either over the wire yet, so `RITE_YEAR_LOWER_BOUND` in
 `assets/js/wsProtocol.js` duplicates them as a stopgap (LiturgicalCalendarAPI#867 will put the bound in `/calendars`
-metadata; delete the map then rather than extending it). `index.js` derives its `Years` array inside `setupPage()` —
-the one funnel every scaffold rebuild passes through — never at module load, and never from the rite select's own
-`change` listener, because `linkToRiteSelect()` registers first and dispatches `change` on the calendar select, so
-`handleCalendarSelectChange()` has already run by the time that listener fires.
+metadata; delete the map then rather than extending it). `index.js` seeds its `Years` array at module load with
+`yearsForRite( 'roman', twentyFiveYearsFromNow )` — the Roman default spelled out literally, because `currentRite` is
+not assigned yet at that point — and then **rebuilds** it from the selected rite inside `setupPage()`, the one funnel
+every scaffold rebuild passes through. The rebuild lives below `setupPage()`'s early `return`, so a path that bails on
+missing metadata cannot narrow the range without rebuilding the cards to match; and it is deliberately not in the rite
+select's own `change` listener, because `linkToRiteSelect()` registers first and dispatches `change` on the calendar
+select, so `handleCalendarSelectChange()` has already run by the time that listener fires.
 
 Requesting a year the rite cannot serve is worse than a red card. `/calendar/ambrosian/1975` answers `400`, which is
 not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through `Health::validateCalendar()` as if
