@@ -164,13 +164,18 @@ const FALLBACK_YEAR_LOWER_BOUND = 1970;
  * attached. (LiturgicalCalendarAPI#867 would let the library itself stop hardcoding it, at which
  * point this call site does not change.)
  *
- * Getting it wrong is not merely six red cards. `/calendar/ambrosian/1975` answers `400`, which is
- * not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through
- * `Health::validateCalendar()` as if it were a calendar: a wrong-green `file-exists`, a misleading
- * `json-valid` failure, and — the serious part — **no `schema-valid` frame at all**. The
- * calendar-data phase counts on exactly 3 frames per year, so each out-of-range year leaves the
- * phase one frame short of its target and the run never advances to the unit tests (#52, the same
- * wedge class as #43 by a different route).
+ * What getting it wrong costs, stated against the *current* API. `/calendar/ambrosian/1975` answers
+ * `400`, and `Health::validateCalendar()` now checks the status and reports all three steps failed
+ * with the problem document's `detail` (API commit 9d3fae2c, "a URL check must not report exists for
+ * a 4xx or 5xx"). The frame count per year is therefore still three — `sendComplete()` returns early
+ * without a `requestId`, and this page sends none — so the phase completes and the run advances.
+ *
+ * So the cost is six red cards, six requests the rite can never satisfy, and six charges against the
+ * API's rate-limit budget, per Ambrosian run. Worth avoiding, but not fatal.
+ *
+ * #52 described something worse — a wrong-green `exists`, a misleading "perhaps truncated?" and a
+ * missing third frame that left the phase permanently one frame short of its target. That was true
+ * when the issue was written and is fixed upstream now. Do not reintroduce it as live justification.
  *
  * @param {string} rite - The selected rite.
  * @param {?Object<string, {minYear: number}>} riteProperties - The library's `RiteProperties`, or null before it loads.

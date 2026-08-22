@@ -340,11 +340,15 @@ missing metadata cannot narrow the range without rebuilding the cards to match; 
 select's own `change` listener, because `linkToRiteSelect()` registers first and dispatches `change` on the calendar
 select, so `handleCalendarSelectChange()` has already run by the time that listener fires.
 
-Requesting a year the rite cannot serve is worse than a red card. `/calendar/ambrosian/1975` answers `400`, which is
-not in `Health::isUpstreamFailureStatus()`, so the problem+json body flows through `Health::validateCalendar()` as if
-it were a calendar: a wrong-green `file-exists`, a misleading `json-valid` failure, and **no `schema-valid` frame at
-all**. The phase counts on exactly 3 frames per year, so each bad year leaves it one frame short of its target and the
-run never advances to the unit tests (#52 — the same wedge class as #43, by a different route).
+Requesting a year the rite cannot serve costs six red cards, six requests the rite can never satisfy, and six charges
+against the API's rate-limit budget, per Ambrosian run. `/calendar/ambrosian/1975` answers `400`, and
+`Health::validateCalendar()` checks the status and reports all three steps failed with the problem document's `detail`
+(API commit `9d3fae2c`). The frame count stays three per year — `sendComplete()` returns early without a `requestId`,
+and `index.js` sends none — so the phase completes and the run advances.
+
+Issue #52 described something worse: a wrong-green `exists`, a misleading *"perhaps truncated?"* and a missing third
+frame that left the phase permanently short of its target. That was accurate when the issue was written and is **fixed
+upstream**; do not cite it as live behaviour.
 
 On `index.php`, the calendar select is the library's, linked to the rite select. Its options carry `data-calendartype="national"|"diocesan"`
 and no `data-rite`, and the rite-level calendar is its empty option — `toWireTarget()` in `wsProtocol.js` maps all three onto the protocol's
