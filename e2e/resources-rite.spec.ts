@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { installWebSocketStub } from './websocket-stub';
+import { installReplyingWebSocketStub, installWebSocketStub } from './websocket-stub';
 
 /**
  * Rite scoping on the Resources runner (issue #48).
@@ -252,4 +252,79 @@ test('a rite change is blocked for the duration of a run', async ({ page }) => {
     // page is genuinely idle afterwards rather than stuck with an un-selectable rite.
     await startBtn.click();
     await expect(page.locator('#riteSelect')).toBeEnabled();
+});
+
+test('a rite change between runs clears the previous rite\'s counters and timers', async ({ page }) => {
+    // #53: the rite change wiped and rebuilt the scaffold but left every Successful/Failed badge
+    // and every timer holding the previous rite's values, so the page asserted results for a card
+    // set that was entirely pending. Worse than merely stale: buildScaffolding() *does* refresh the
+    // denominators from the new cards, so a Roman → Ambrosian switch could show more successes than
+    // the new rite has checks at all.
+    await installReplyingWebSocketStub(page);
+    // Two runs to completion, and a completed run POSTs itself to results.php, which retains only
+    // the 50 most recent per type. Persisting from here would evict the fixture that
+    // results-replay-resources.spec.ts seeds with an older timestamp. Nothing below reads a stored
+    // run, so swallow the write.
+    await page.route('**/results.php', (route) => route.fulfill({ status: 200, body: '{}' }));
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+    await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 30000 });
+
+    const romanSuccesses = Number(await page.locator('#successfulCount').textContent());
+    expect(romanSuccesses).toBeGreaterThan(0);
+    await expect(page.locator('#total-time')).not.toHaveText('0');
+
+    // Deliberately not `selectRite()`: its `waitForScaffold()` waits for a *visible* scaffold, and a
+    // finished run leaves `#sourceDataTests` collapsed (the phases share a `data-bs-parent`, so
+    // opening the last one closes this). The cards are there and simply not shown — CI caught this
+    // as "44 × locator resolved to 13 elements" while waiting for visibility.
+    //
+    // Wait for the rebuild itself instead. `resetCheckListsForRite()` empties the scaffold
+    // synchronously and `loadAsyncData()` repopulates it only once its fetches resolve, so the count
+    // passes through 0; requiring a non-zero count below the Roman one lands on the settled
+    // Ambrosian scaffold rather than on that transient.
+    const romanCards = await page.locator('.sourcedata-tests').first().locator('> div').count();
+    expect(romanCards).toBeGreaterThan(0);
+    await page.selectOption('#riteSelect', 'ambrosian');
+    await expect
+        .poll(async () => {
+            const cards = await page.locator('.sourcedata-tests').first().locator('> div').count();
+            return cards > 0 && cards < romanCards;
+        }, { timeout: 20000 })
+        .toBe(true);
+
+    for (const id of [
+        'successfulCount', 'failedCount',
+        'successfulResourceDataTestsCount', 'failedResourceDataTestsCount',
+        'successfulSourceDataTestsCount', 'failedSourceDataTestsCount',
+        'total-time', 'totalResourceDataTestsTime', 'totalSourceDataTestsTime',
+    ]) {
+        await expect(page.locator(`#${id}`)).toHaveText('0');
+    }
+
+    // The DOM reading 0 is only half of it. resetTestUI() used to leave `successfulTests` and
+    // `failedTests` untouched — the start-run handler zeroed those two separately — so wiring it up
+    // as-is would have shown 0 while the variables still held the old totals, and the next run's
+    // first increment would jump straight back to the stale number. Run again and check the total
+    // is the Ambrosian run's own, not the Roman one's plus it.
+    await expect(startBtn).toBeEnabled();
+    await startBtn.click();
+    await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 30000 });
+
+    const ambrosianSuccesses = Number(await page.locator('#successfulCount').textContent());
+    expect(ambrosianSuccesses).toBeGreaterThan(0);
+    expect(ambrosianSuccesses).toBeLessThan(romanSuccesses + ambrosianSuccesses);
+    // The grand total is exactly the sum of the two phase badges it summarises — impossible if
+    // either counter had resumed from a stale value.
+    const phases = await page.evaluate(() => ({
+        resource: Number(document.getElementById('successfulResourceDataTestsCount')?.textContent),
+        source: Number(document.getElementById('successfulSourceDataTestsCount')?.textContent),
+    }));
+    expect(ambrosianSuccesses).toBe(phases.resource + phases.source);
+    // And it cannot claim more checks than the rebuilt scaffold contains.
+    const totalChecks = Number(await page.locator('#total-tests-count').textContent());
+    expect(ambrosianSuccesses).toBeLessThanOrEqual(totalChecks);
 });

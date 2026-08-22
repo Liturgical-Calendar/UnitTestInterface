@@ -321,6 +321,35 @@ This requires two LiturgicalCalendarAPI changes: **#813**, which taught the `res
 routed the diocesan path sites through `JsonData::diocesanCalendarFileFor($rite)`; and **#816**, which strips a trailing rite segment
 before `getPathToSchemaFile()`'s exact-match lookup so the bare rite-qualified collection form resolves to the bare form's schema.
 
+The **calendar-data year range is rite-dependent too**: `CalendarParams::YEAR_LOWER_LIMIT` is 1970, but
+`AMBROSIAN_YEAR_LOWER_LIMIT` is 1976. Do **not** restate those numbers here — `yearLowerBoundForRite()` in
+`assets/js/wsProtocol.js` reads them from `RiteProperties` in `@liturgical-calendar/components-js`, which already
+mirrors both constants, is covered by that package's tests, and is the same table the `RiteSelect` is built from, so
+every rite the user can select has an entry. `index.js` captures `RiteProperties` in `mountCalendarControls()`, where
+the library is dynamically imported. The single literal `FALLBACK_YEAR_LOWER_BOUND = 1970` applies only when that
+import failed, and is correct there by construction: with no library there is no rite select either, so the rite is
+still the default Roman. (LiturgicalCalendarAPI#867 would let the *library* stop hardcoding it; this repository's call
+sites would not change.)
+
+`index.js` seeds its `Years` array at module load with
+`yearsForRite( 'roman', twentyFiveYearsFromNow, riteProperties )` — the Roman default spelled out literally, because
+`currentRite` is not assigned yet at that point and the library has not loaded either — and then **rebuilds** it from
+the selected rite inside `setupPage()`, the one funnel
+every scaffold rebuild passes through. The rebuild lives below `setupPage()`'s early `return`, so a path that bails on
+missing metadata cannot narrow the range without rebuilding the cards to match; and it is deliberately not in the rite
+select's own `change` listener, because `linkToRiteSelect()` registers first and dispatches `change` on the calendar
+select, so `handleCalendarSelectChange()` has already run by the time that listener fires.
+
+Requesting a year the rite cannot serve costs six red cards, six requests the rite can never satisfy, and six charges
+against the API's rate-limit budget, per Ambrosian run. `/calendar/ambrosian/1975` answers `400`, and
+`Health::validateCalendar()` checks the status and reports all three steps failed with the problem document's `detail`
+(API commit `9d3fae2c`). The frame count stays three per year — `sendComplete()` returns early without a `requestId`,
+and `index.js` sends none — so the phase completes and the run advances.
+
+Issue #52 described something worse: a wrong-green `exists`, a misleading *"perhaps truncated?"* and a missing third
+frame that left the phase permanently short of its target. That was accurate when the issue was written and is **fixed
+upstream**; do not cite it as live behaviour.
+
 On `index.php`, the calendar select is the library's, linked to the rite select. Its options carry `data-calendartype="national"|"diocesan"`
 and no `data-rite`, and the rite-level calendar is its empty option — `toWireTarget()` in `wsProtocol.js` maps all three onto the protocol's
 `nationalcalendar` / `diocesancalendar` / `ritecalendar` vocabulary. The General Roman Calendar is sent as

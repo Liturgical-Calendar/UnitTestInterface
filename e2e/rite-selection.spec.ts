@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { installReplyingWebSocketStub, installWebSocketStub } from './websocket-stub';
 
 /**
  * Rite awareness on the Calendars runner (issues #39, #48).
@@ -226,5 +227,182 @@ test('accuracy tests are filtered by rite', async ({ page, request }) => {
     const underAmbrosian = (await names()).join(' ');
     for (const t of ambrosianOnly) {
         expect(underAmbrosian).toContain(t.name.toLowerCase());
+    }
+});
+
+/**
+ * The calendar-data year range follows the rite (#52).
+ *
+ * The API's lower bound is rite-dependent — `CalendarParams::YEAR_LOWER_LIMIT` is 1970, but
+ * `AMBROSIAN_YEAR_LOWER_LIMIT` is 1976 — and the runner used to build its year list once, at module
+ * load, from a hardcoded 1970. Under the Ambrosian rite that requested six years the API answers
+ * `400` for, and a `400` costs more than six red cards: `Health::validateCalendar()` emits only two
+ * of the three frames the calendar-data phase counts on, so the phase never reached its target and
+ * the run never advanced to the unit tests.
+ *
+ * These specs assert the scaffold's range rather than the wire traffic, because the scaffold is what
+ * sizes the phase: the request count is derived from the same array the cards are.
+ */
+
+/** The years the calendar-data scaffold currently shows, ascending. */
+const scaffoldYears = (page: Page): Promise<number[]> =>
+    page.locator('.calendardata-tests p[class*="year-"]').evaluateAll(
+        (els) => els
+            .map((e) => Number(/\byear-(\d{4})\b/.exec(e.className)?.[1]))
+            .filter((y) => !Number.isNaN(y))
+            .sort((a, b) => a - b)
+    );
+
+test('the calendar-data year range starts at the rite\'s lower bound', async ({ page }) => {
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+
+    const thisYear = new Date().getFullYear();
+
+    // Expectations come from the library's own `RiteProperties`, not from literals repeated here.
+    // The bound is sourced from that table at runtime, so restating 1970/1976 in the spec would make
+    // this a third copy of the API's constants and would fail the day the library legitimately moves
+    // one. What is under test is the wiring: that the scaffold's first year *is* the library's
+    // `minYear` for the selected rite.
+    const minYears = await page.evaluate(async () => {
+        const mod = await import('@liturgical-calendar/components-js');
+        return { roman: mod.RiteProperties.roman.minYear, ambrosian: mod.RiteProperties.ambrosian.minYear };
+    });
+    // Guard the guard: a table that returned undefined would make every assertion below vacuous.
+    expect(Number.isInteger(minYears.roman)).toBe(true);
+    expect(minYears.ambrosian).toBeGreaterThan(minYears.roman);
+
+    const roman = await scaffoldYears(page);
+    expect(roman[0]).toBe(minYears.roman);
+    expect(roman[roman.length - 1]).toBe(thisYear + 25);
+
+    await selectRite(page, 'ambrosian');
+
+    const ambrosian = await scaffoldYears(page);
+    expect(ambrosian[0]).toBe(minYears.ambrosian);
+    expect(ambrosian[ambrosian.length - 1]).toBe(thisYear + 25);
+    // The years between the two floors are the ones the API rejects outright, and the whole point.
+    for (let year = minYears.roman; year < minYears.ambrosian; year++) {
+        expect(ambrosian).not.toContain(year);
+    }
+    expect(ambrosian.length).toBe(roman.length - (minYears.ambrosian - minYears.roman));
+
+    // And back, so the range is derived on every rebuild rather than narrowed once.
+    await selectRite(page, 'roman');
+    expect((await scaffoldYears(page))[0]).toBe(minYears.roman);
+});
+
+test('the accordion header names both bounds, and both follow the rite', async ({ page }) => {
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+
+    const yearMin = page.locator('#calendarDataHeader .yearMin');
+    const yearMax = page.locator('#calendarDataHeader .yearMax');
+
+    // The lower bound used to be baked into the msgid as a literal 1970, so there was nothing to
+    // update and the header contradicted the cards under it.
+    const minYears = await page.evaluate(async () => {
+        const mod = await import('@liturgical-calendar/components-js');
+        return { roman: mod.RiteProperties.roman.minYear, ambrosian: mod.RiteProperties.ambrosian.minYear };
+    });
+
+    await expect(yearMin).toHaveCount(1);
+    await expect(yearMin).toHaveText(String(minYears.roman));
+    await expect(yearMax).toHaveText(String(new Date().getFullYear() + 25));
+
+    await selectRite(page, 'ambrosian');
+    await expect(yearMin).toHaveText(String(minYears.ambrosian));
+    await expect(yearMax).toHaveText(String(new Date().getFullYear() + 25));
+});
+
+test('a rite change between runs clears the previous run\'s counters and timers', async ({ page }) => {
+    // #53, the Calendars-runner half. `handleCalendarSelectChange()` rebuilt the whole scaffold and
+    // never called `resetTestUI()`, so the badges kept asserting the previous run's totals over a
+    // card set that was entirely pending. Easier to hit here than on resources.php: it triggers on
+    // any calendar change, not only a rite change.
+    await installReplyingWebSocketStub(page);
+    // See the note in resources-rite.spec.ts: a completed run POSTs itself to results.php, whose
+    // 50-per-type retention would evict the older-timestamped fixtures the replay specs seed.
+    await page.route('**/results.php', (route) => route.fulfill({ status: 200, body: '{}' }));
+    await page.goto('/');
+
+    // No `waitForLiveScaffold()` here: the run button is the stronger gate — it needs the scaffold
+    // *and* an open socket — and its 20s budget survives a cold single-worker `php -S`, which the
+    // helper's 15s did not.
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    // The stub answers the source-data phase only, so the run parks in the calendar-data phase with
+    // the source-data badges populated — which is all this needs, and is reached without a server.
+    await expect.poll(
+        async () => Number(await page.locator('#successfulCount').textContent()),
+        { timeout: 20000 }
+    ).toBeGreaterThan(0);
+
+    await startBtn.click(); // same button, now in its stop role
+    await expect(startBtn).toBeEnabled();
+
+    // Deliberately not `selectRite()`: its wait is for a *visible* scaffold, and a run expands the
+    // calendar-data accordion, which collapses the source-data one under it. Wait for the rebuild
+    // itself instead — the Ambrosian corpus is smaller than the Roman one — so what follows is
+    // asserted against a scaffold that has provably been replaced.
+    const romanCards = await page.locator('.sourcedata-tests').first().locator('> div').count();
+    await page.selectOption('#riteSelect', 'ambrosian');
+    await expect
+        .poll(async () => page.locator('.sourcedata-tests').first().locator('> div').count(), { timeout: 20000 })
+        .toBeLessThan(romanCards);
+
+    for (const id of [
+        'successfulCount', 'failedCount',
+        'successfulSourceDataTestsCount', 'failedSourceDataTestsCount',
+        'successfulCalendarDataTestsCount', 'failedCalendarDataTestsCount',
+        'successfulUnitTestsCount', 'failedUnitTestsCount',
+        'total-time', 'totalSourceDataTestsTime', 'totalCalendarDataTestsTime', 'totalUnitTestsTime',
+    ]) {
+        await expect(page.locator(`#${id}`)).toHaveText('0');
+    }
+
+    // Not just the DOM: `resetTestUI()` used to leave `successfulTests` / `failedTests` untouched,
+    // so the next increment would jump straight back past the stale total. The second run's first
+    // painted frame must read 1.
+    await startBtn.click();
+    await expect.poll(
+        async () => Number(await page.locator('#successfulCount').textContent()),
+        { timeout: 20000 }
+    ).toBeGreaterThan(0);
+    const afterFirstFrames = Number(await page.locator('#successfulCount').textContent());
+    expect(afterFirstFrames).toBeLessThanOrEqual(
+        Number(await page.locator('#total-tests-count').textContent())
+    );
+    await startBtn.click();
+});
+
+test('the scaffold-rebuilding controls are blocked for the duration of a run', async ({ page }) => {
+    // resources.php has had this guard since #48 (setRiteSelectDisabledForRun); this page had no
+    // equivalent, which is why #53 calls the Calendars runner the easier of the two to hit. It
+    // matters more now that setupPage() also renarrows `Years` and zeroes the counters: mid-run,
+    // buildCalendarsPayload() would persist `counts` from the zeroed counters beside results from
+    // resultCollector, which no reset clears, and a `scaffold.years` naming the new rite's range
+    // beside descriptors addressed at the old one's years.
+    await installWebSocketStub(page);
+    await page.goto('/');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    for (const sel of ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect']) {
+        await expect(page.locator(sel)).toBeEnabled();
+    }
+
+    // The stub never replies, so the run parks after its first request, still owning the page.
+    await startBtn.click();
+    for (const sel of ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect']) {
+        await expect(page.locator(sel)).toBeDisabled();
+    }
+
+    // Stopping releases them again, so the page is genuinely idle rather than stuck.
+    await startBtn.click();
+    for (const sel of ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect']) {
+        await expect(page.locator(sel)).toBeEnabled();
     }
 });

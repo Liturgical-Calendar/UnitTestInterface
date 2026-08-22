@@ -141,6 +141,72 @@ export const UNIVERSAL_CHECKS = Object.freeze([
 export const inRiteScope = ( item, rite ) => ( item?.rite ?? 'roman' ) === rite;
 
 /**
+ * The bound used when the library's `RiteProperties` is unavailable.
+ *
+ * Reached only when `@liturgical-calendar/components-js` failed to load — a CDN or network failure,
+ * which `mountCalendarControls()` already reports through the `#controls-load-failed` toast. In that
+ * state there is no rite select to change either, so the rite is still the default Roman and 1970 is
+ * the right answer rather than a guess. It is not a second copy of the per-rite table: there is no
+ * table here to drift.
+ *
+ * @type {number}
+ */
+const FALLBACK_YEAR_LOWER_BOUND = 1970;
+
+/**
+ * The earliest year the API will calculate a calendar for, under a given rite.
+ *
+ * Read from `RiteProperties` in `@liturgical-calendar/components-js`, which already mirrors the API's
+ * `CalendarParams::YEAR_LOWER_LIMIT` (1970) and `AMBROSIAN_YEAR_LOWER_LIMIT` (1976), is covered by
+ * that package's own tests, and is the same table the rite select is built from — so any rite the
+ * user can select is a rite this can answer for. Taking it from there rather than restating it here
+ * keeps one copy per repository instead of two, and means a new rite arrives with its bound already
+ * attached. (LiturgicalCalendarAPI#867 would let the library itself stop hardcoding it, at which
+ * point this call site does not change.)
+ *
+ * What getting it wrong costs, stated against the *current* API. `/calendar/ambrosian/1975` answers
+ * `400`, and `Health::validateCalendar()` now checks the status and reports all three steps failed
+ * with the problem document's `detail` (API commit 9d3fae2c, "a URL check must not report exists for
+ * a 4xx or 5xx"). The frame count per year is therefore still three — `sendComplete()` returns early
+ * without a `requestId`, and this page sends none — so the phase completes and the run advances.
+ *
+ * So the cost is six red cards, six requests the rite can never satisfy, and six charges against the
+ * API's rate-limit budget, per Ambrosian run. Worth avoiding, but not fatal.
+ *
+ * #52 described something worse — a wrong-green `exists`, a misleading "perhaps truncated?" and a
+ * missing third frame that left the phase permanently one frame short of its target. That was true
+ * when the issue was written and is fixed upstream now. Do not reintroduce it as live justification.
+ *
+ * @param {string} rite - The selected rite.
+ * @param {?Object<string, {minYear: number}>} riteProperties - The library's `RiteProperties`, or null before it loads.
+ * @returns {number} The earliest year to request for that rite.
+ */
+export const yearLowerBoundForRite = ( rite, riteProperties ) => {
+    const minYear = riteProperties?.[ rite ]?.minYear;
+    if ( Number.isInteger( minYear ) ) {
+        return minYear;
+    }
+    console.warn( `No RiteProperties entry for rite '${rite}'; falling back to ${FALLBACK_YEAR_LOWER_BOUND}. Expected only when components-js failed to load.` );
+    return FALLBACK_YEAR_LOWER_BOUND;
+};
+
+/**
+ * The years to request calendar data for under a given rite, ascending.
+ *
+ * @param {string} rite - The selected rite.
+ * @param {number} upperBound - The last year to request, inclusive.
+ * @param {?Object<string, {minYear: number}>} riteProperties - The library's `RiteProperties`, or null before it loads.
+ * @returns {Array<number>} A fresh array; empty when the bound excludes every year.
+ */
+export const yearsForRite = ( rite, upperBound, riteProperties ) => {
+    const years = [];
+    for ( let year = yearLowerBoundForRite( rite, riteProperties ); year <= upperBound; year++ ) {
+        years.push( year );
+    }
+    return years;
+};
+
+/**
  * The universal source checks belonging to one rite. **`index.js` only** — see
  * {@link UNIVERSAL_CHECKS}, and {@link validationChecksForRite} for what replaces it.
  *

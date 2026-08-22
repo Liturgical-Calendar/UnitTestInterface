@@ -936,7 +936,13 @@ const resetTestUI = () => {
     updateText('totalResourceDataTestsTime', '0');
     updateText('totalSourceDataTestsTime', '0');
 
-    // Reset internal counter variables
+    // Reset internal counter variables.
+    // The grand totals belong here with the per-phase ones. They used to be zeroed separately by
+    // the start-run handler, which made this function a *partial* reset — every other caller left
+    // `successfulTests` / `failedTests` holding the previous run's values, so the DOM read 0 while
+    // the next increment jumped straight back to the stale number (#53).
+    successfulTests = 0;
+    failedTests = 0;
     successfulResourceDataTests = 0;
     successfulSourceDataTests = 0;
     failedResourceDataTests = 0;
@@ -1204,11 +1210,11 @@ const mountRiteSelect = async () => {
  * Disables (or re-enables) the rite select for the duration of a test run.
  *
  * A rite change during an active run is unsafe: `resetCheckListsForRite()` wipes the rendered
- * cards and swaps both check lists, but touches none of `currentState`, the response counters or
- * `currentRunToken`, and sends no `cancelRun`. In-flight frames would keep arriving with a
- * matching `runToken`, paint nothing (their cards are gone), still increment the received
- * counter, and could trip the `>=` phase gate early — advancing to `JobsFinished` and storing a
- * run of all-blue cards (final review of #48, finding 3).
+ * cards, swaps both check lists and zeroes the result counters, but touches none of
+ * `currentState`, the *response* counters or `currentRunToken`, and sends no `cancelRun`.
+ * In-flight frames would keep arriving with a matching `runToken`, paint nothing (their cards are
+ * gone), still increment the received counter, and could trip the `>=` phase gate early —
+ * advancing to `JobsFinished` and storing a run of all-blue cards (final review of #48, finding 3).
  *
  * Disabling the control for the run's duration is simpler than teaching every counter and the run
  * token to survive a mid-run rite swap, and it prevents the scenario outright rather than merely
@@ -1236,9 +1242,18 @@ const setRiteSelectDisabledForRun = ( disabled ) => {
  * national-calendar checks under Ambrosian — until the fetch completes and `buildScaffolding()`
  * finally clears and repopulates them itself.
  *
+ * Clears the result counters too, via `resetTestUI()`. Emptying the scaffold without them left the
+ * badges asserting the previous rite's totals over a card set that was entirely pending, and
+ * `buildScaffolding()` then refreshed the *denominators* from the new cards — so a Roman → Ambrosian
+ * switch could show more successes than the new rite has checks (#53).
+ *
+ * Only ever reached between runs: `setRiteSelectDisabledForRun()` owns the control while a run is
+ * in flight, so this adds nothing to the mid-run path.
+ *
  * @returns {void}
  */
 const resetCheckListsForRite = () => {
+    resetTestUI();
     const STATIC_RESOURCE_CHECK_COUNT = 7;
     resourceDataChecks.length = STATIC_RESOURCE_CHECK_COUNT;
     // Two of those seven address a rite; the truncation keeps the entries but not their aim.
@@ -1628,13 +1643,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         return;
     }
     if ( currentState === TestState.Ready || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
-        successfulTests = 0;
-        failedTests = 0;
         resultCollector.reset();
-        successfulResourceDataTests = 0;
-        failedResourceDataTests = 0;
-        successfulSourceDataTests = 0;
-        failedSourceDataTests = 0;
         requestRegistry.reset();
         phaseOutstanding = new Set();
         resetTestUI();
