@@ -460,30 +460,6 @@ const sourceTemplate = (sourceItem, idx) => {
 }
 
 /**
- * HTMLEncode function
- * kudos to https://stackoverflow.com/a/784765/394921
- * @param {string} str
- * @returns {string} The processed string.
- */
-const HTMLEncode = (str) => {
-    // avoid a double encoding!
-    str = str.replaceAll('&#039;', '"');
-    str = [...str];
-    //    ^ es20XX spread to Array: keeps surrogate pairs
-    let i = str.length, aRet = [];
-
-    while (i--) {
-        var iC = str[i].codePointAt(0);
-        if (iC < 65 || iC > 127 || (iC>90 && iC<97)) {
-            aRet[i] = '&#'+iC+';';
-        } else {
-            aRet[i] = str[i];
-        }
-    }
-    return aRet.join('');
-}
-
-/**
  * Establishes a websocket connection to the test server.
  * If the connection is successful, it sets the state to ReadyState and tries
  * to enable the test runner button. If the connection is closed, it sets the
@@ -505,9 +481,8 @@ const connectWebSocket = () => {
      * Event handler for the onopen event. Called when the websocket connection to the test server is established.
      * Logs a message to the console, shows a toast to indicate the connection is established, and updates the state to ReadyState.
      * Additionally, it stops the connection attempt timer, sets ReadyToRunTests.SocketReady to true, and tries to enable the test runner button.
-     * @param {Event} e - The onopen event object.
      */
-    conn.onopen = ( e ) => {
+    conn.onopen = () => {
         console.log( "Websocket connection established!" );
         safeToastShow('#websocket-connected');
         const wsStatus = document.querySelector('#websocket-status');
@@ -681,9 +656,8 @@ const connectWebSocket = () => {
      * and updates the state to JobsFinished.
      * Additionally, it stops the connection attempt timer, sets ReadyToRunTests.SocketReady to false,
      * and tries to enable the test runner button.
-     * @param {Event} e - The onclose event object.
      */
-    conn.onclose = ( e ) => {
+    conn.onclose = () => {
         console.log( 'Connection closed on remote end' );
         // Forget what this connection advertised. The reconnection below may reach a server of a
         // different vintage — a deploy is exactly when a socket drops — and answering it with the
@@ -1035,7 +1009,6 @@ let currentState                = TestState.NotReady;
 let MetaData                    = null;
 let Missals                     = null;
 let startTestRunnerBtnLbl       = '';
-let countryNames                = new Intl.DisplayNames( [ 'en' ], { type: 'region' } );
 let connectionAttempt           = null;
 let conn;
 let currentRunToken             = null;

@@ -495,7 +495,6 @@ let UnitTests = null;
 let RomanMissals = null;
 let currentState;
 let index;
-let calendarIndex;
 let yearIndex;
 let messageCounter;
 
@@ -674,7 +673,6 @@ const runTests = () => {
                     console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
                     currentState = TestState.ValidatingCalendarData;
                     index = 0;
-                    calendarIndex = 0;
                     performance.mark( 'calendarDataTestsStart' );
                     safeCollapseShow('#calendarDataTests');
 
@@ -796,7 +794,7 @@ const connectWebSocket = () => {
     const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[ 443, 80 ].includes( WS_PORT ) ? '' : `:${WS_PORT}`}`;
     conn = new WebSocket( websocketURL );
 
-    conn.onopen = ( e ) => {
+    conn.onopen = () => {
         console.log( "Websocket connection established!" );
         safeToastShow('#websocket-connected');
         const wsStatus = document.querySelector('#websocket-status');
@@ -975,9 +973,8 @@ const connectWebSocket = () => {
      * Handles the websocket connection being closed by the server.
      * If the connection was closed by the server, it tries to reconnect
      * after 3 seconds.
-     * @param {CloseEvent} e - The close event.
      */
-    conn.onclose = ( e ) => {
+    conn.onclose = () => {
         console.log( 'Connection closed on remote end' );
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
@@ -1644,7 +1641,6 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     }
     if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         index = 0;
-        calendarIndex = 0;
         yearIndex = 0;
         messageCounter = 0;
         successfulTests = 0;
