@@ -25,7 +25,7 @@ export const escapeHtmlAttr = (str) => {
  */
 export const escapeQuotesAndLinkifyUrls = (str) => {
     // First, find all URLs and their positions
-    const urlRegex = /(?<prefix>["'({\[])?(https?:\/\/[^\s"'<>(){}\[\]]+)(?<suffix>[)"'\]}.,;:]?)/g;
+    const urlRegex = /(?<prefix>["'({[])?(https?:\/\/[^\s"'<>(){}[\]]+)(?<suffix>[)"'\]}.,;:]?)/g;
     const parts = [];
     let lastIndex = 0;
     let match;
