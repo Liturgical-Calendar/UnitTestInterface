@@ -26,7 +26,9 @@ import {
 
 import {
     sendCancelRun,
-    universalChecksForRite,
+    validationChecksForRite,
+    fetchValidations,
+    idToCardClass,
     inRiteScope,
     createRequestRegistry,
     createSilenceWatchdog,
@@ -71,7 +73,7 @@ class ReadyToRunTests {
     static SocketReady      = false;
     static MetaDataReady    = false;
     static MissalsReady     = false;
-    static TestsReady       = false;
+    static ValidationsReady       = false;
 
     /**
      * Check if all conditions are met to run tests.
@@ -88,7 +90,7 @@ class ReadyToRunTests {
             && ReadyToRunTests.SocketReady === true
             && ReadyToRunTests.MetaDataReady === true
             && ReadyToRunTests.MissalsReady === true
-            && ReadyToRunTests.TestsReady === true
+            && ReadyToRunTests.ValidationsReady === true
         );
     }
 
@@ -107,7 +109,7 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.MetaDataReady = '      + ReadyToRunTests.MetaDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
-        console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
+        console.log( 'ReadyToRunTests.ValidationsReady = '        + ReadyToRunTests.ValidationsReady );
         const testsReady = ReadyToRunTests.check();
         const startBtn = document.querySelector('#startTestRunnerBtn');
         if (!startBtn) {
@@ -200,7 +202,8 @@ const ENDPOINTS = {
     MISSALS: "",
     EASTER: "",
     DATA: "",
-    SCHEMAS: ""
+    SCHEMAS: "",
+    ROOT: ""
 }
 
 /**
@@ -277,13 +280,17 @@ let loadAsyncDataGeneration = 0;
 /**
  * The source data checks for the current run, rebuilt on every rite change.
  *
- * Starts as the universal corpus of the selected rite — shared with index.js via wsProtocol.js,
- * so both pages check the same files under the same names — and is then extended by
- * `loadAsyncData()` with the wider-region, national, missal, diocesan and test entries.
+ * Comes wholly from the API's advertised inventory (`GET /validations`), filtered to the selected
+ * rite — every tier of it: temporale, sanctorale, decrees, wider regions, nations, dioceses and
+ * tests. It used to be assembled here instead, from a hardcoded list of repo-relative paths plus
+ * entries derived from `/calendars`, `/missals` and `/tests`; see {@link validationChecksForRite}
+ * for why that had to go.
  *
- * @type {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
+ * Empty until `loadAsyncData()` has fetched the inventory.
+ *
+ * @type {Array<{id: string, label: string, steps: Array<string>, rite: string}>}
  */
-let sourceDataChecks = universalChecksForRite( currentRite );
+let sourceDataChecks = [];
 
 
 
@@ -313,6 +320,8 @@ const setEndpoints = () => {
     ENDPOINTS.SCHEMAS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/schemas`;
     ENDPOINTS.MISSALS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
     ENDPOINTS.DATA      = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/data`;
+    // The API root itself, for endpoints reached as a whole rather than as a named check.
+    ENDPOINTS.ROOT      = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}`;
     console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
     resourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     resourceDataChecks[1].sourceFile = ENDPOINTS.DECREES;
@@ -414,10 +423,23 @@ const resourceTemplate = (resource, idx) => {
  * @returns {string} A string containing the HTML for the source item.
  */
 const sourceTemplate = (sourceItem, idx) => {
-    const validateSlug = slugify(sourceItem.validate);
-    const sourceLabel = sourceItem.sourceFile ?? sourceItem.sourceFolder ?? '';
+    // Two shapes reach this, and both have to render.
+    //
+    // A live run supplies an advertised inventory item — `{id, label, steps}` — whose caption is the
+    // server's own label and whose tooltip is the id the request actually carries. That is the
+    // shape #42 moves this page to.
+    //
+    // A **stored** run supplies whatever its scaffold was saved with, and runs saved before that
+    // move carry the old `{validate, sourceFile|sourceFolder}`: a name this page invented and the
+    // repo-relative path it invented it from. Those files are on disk and replayable from the Past
+    // Runs dropdown, so rendering them is not optional — a replay that showed a row of `undefined`
+    // captions would be a silent regression in a feature nobody was touching.
+    const fromInventory = undefined !== sourceItem.id;
+    const validateSlug = fromInventory ? idToCardClass(sourceItem.id) : slugify(sourceItem.validate);
+    const caption = fromInventory ? sourceItem.label : sourceItem.validate;
+    const tooltip = fromInventory ? sourceItem.id : (sourceItem.sourceFile ?? sourceItem.sourceFolder ?? '');
     return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
-<div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(sourceLabel)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(sourceItem.validate)}</span></div>
+<div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(tooltip)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(caption)}</span></div>
 <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
     <div class="card-body">
         <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> data exists</span></p>
@@ -763,6 +785,20 @@ const sendMessage = ( data ) => {
 };
 
 /**
+ * The card class a check's cards were rendered with.
+ *
+ * The two families name themselves differently and always did: a resource check is a route, known
+ * by the `validate` key it shares with `resourcePaths`; a source check is an inventory item, known
+ * by the opaque `id` the server minted. Neither is derived from anything the server sends at *run*
+ * time — that was the coupling #42 removes — so this is only about which of our own two vocabularies
+ * a check belongs to.
+ *
+ * @param {{id?: string, validate?: string}} check
+ * @returns {string}
+ */
+const cardSlugFor = ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) );
+
+/**
  * Restart the silence clock, unless the phase has nothing left to wait for.
  * @returns {void}
  */
@@ -802,15 +838,26 @@ const beginPhase = ( checks, containerSelector ) => {
     checks.forEach( check => {
         const requestId = newRequestId();
         check.requestId = requestId;
-        const slug = slugify( check.validate );
+        const slug = cardSlugFor( check );
         const cards = {};
-        Object.entries( STEP_CARD_CLASS ).forEach( ( [ step, cardClass ] ) => {
+        // The steps the server advertised for this item, where it advertised any — the count is
+        // exact since LiturgicalCalendarAPI#825, so it can be trusted rather than assumed. A
+        // resource check carries none, and falls back to the three every check has always had.
+        const steps = Array.isArray( check.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+        steps.forEach( step => {
+            const cardClass = STEP_CARD_CLASS[ step ];
+            if ( undefined === cardClass ) {
+                // A step this page has no card for. Said out loud rather than skipped silently:
+                // the server has added a step to its vocabulary and the templates have not caught up.
+                console.warn( `The server advertises a step "${step}" for "${check.id ?? check.validate}" that this page renders no card for.` );
+                return;
+            }
             const card = document.querySelector( `${containerSelector} .${slug}.${cardClass}` );
             if ( null === card ) {
                 // Loud, and specific about which check and which step. The selector-based
                 // addressing this replaces could only produce an empty NodeList, which said
                 // nothing about what was missing and did not stop the counters advancing.
-                console.warn( `No "${cardClass}" card rendered for check "${check.validate}"; its ${step} result will have nowhere to go.` );
+                console.warn( `No "${cardClass}" card rendered for check "${check.id ?? check.validate}"; its ${step} result will have nowhere to go.` );
                 return;
             }
             cards[ step ] = card;
@@ -1158,10 +1205,10 @@ const resetCheckListsForRite = () => {
     Object.keys( resourcePaths )
         .filter( key => /^(data-path|events-path|missals-path)-/.test( key ) )
         .forEach( key => delete resourcePaths[ key ] );
-    sourceDataChecks = universalChecksForRite( currentRite );
-    ReadyToRunTests.MetaDataReady = false;
-    ReadyToRunTests.MissalsReady  = false;
-    ReadyToRunTests.TestsReady    = false;
+    sourceDataChecks = [];
+    ReadyToRunTests.MetaDataReady    = false;
+    ReadyToRunTests.MissalsReady     = false;
+    ReadyToRunTests.ValidationsReady = false;
     document.querySelectorAll( '#resourceDataTests .resourcedata-tests, #sourceDataTests .sourcedata-tests' )
         .forEach( el => { el.innerHTML = ''; } );
 };
@@ -1184,7 +1231,11 @@ const loadAsyncData = () => {
     Promise.all([
         fetch( ENDPOINTS.CALENDARS, methodAndHeaders).then(response => response.json()),
         fetch( ENDPOINTS.MISSALS, methodAndHeaders).then(response => response.json()),
-        fetch( ENDPOINTS.TESTS, methodAndHeaders).then(response => response.json())
+        // `/validations` in place of `/tests`: the inventory carries the test corpus as items of
+        // its own (`test:{rite}:{name}`), so fetching the tests list to build source checks from it
+        // would be deriving a second time what the server already advertises. `/tests` is still
+        // health-checked as a resource path, so nothing stops being covered.
+        fetchValidations( ENDPOINTS.ROOT ).then( items => ( { litcal_validations: items } ) )
     ]).then(dataArr => {
         if ( myGeneration !== loadAsyncDataGeneration ) {
             // A newer rite change started another loadAsyncData() call before this one's fetches
@@ -1204,16 +1255,6 @@ const loadAsyncData = () => {
                 if ( currentRite === 'roman' ) {
                     wider_regions.forEach(region => {
                     const widerRegion = region.name;
-                    sourceDataChecks.push({
-                        "validate": `wider-region-${widerRegion}`,
-                        "sourceFile": widerRegion,
-                        "category": "sourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `wider-region-${widerRegion}-i18n`,
-                        "sourceFolder": widerRegion,
-                        "category": "sourceDataCheck"
-                    });
 
                     // we need to request a locale for widerRegion on the data path
                     // so let's retrieve the first available locale from the metadata
@@ -1235,16 +1276,6 @@ const loadAsyncData = () => {
                 if ( currentRite === 'roman' ) {
                     national_calendars.slice(1).forEach(nationalCalendar => {
                     const nation = nationalCalendar.calendar_id;
-                    sourceDataChecks.push({
-                        "validate": `national-calendar-${nation}`,
-                        "sourceFile": nation,
-                        "category": "sourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `national-calendar-${nation}-i18n`,
-                        "sourceFolder": nation,
-                        "category": "sourceDataCheck"
-                    });
 
                     nationalCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/roman/nation/${nation}?locale=${locale}`;
@@ -1268,17 +1299,6 @@ const loadAsyncData = () => {
                     .filter( diocesanCalendar => inRiteScope( diocesanCalendar, currentRite ) )
                     .forEach(diocesanCalendar => {
                     const diocese = diocesanCalendar.calendar_id;
-                    sourceDataChecks.push({
-                        "validate": `diocesan-calendar-${diocese}`,
-                        "sourceFile": diocese,
-                        "category": "sourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `diocesan-calendar-${diocese}-i18n`,
-                        "sourceFolder": diocese,
-                        "category": "sourceDataCheck"
-                    });
-
 
                     diocesanCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-diocese-${diocese}-${locale}`] = `/data/${currentRite}/diocese/${diocese}?locale=${locale}`;
@@ -1318,44 +1338,18 @@ const loadAsyncData = () => {
                             "sourceFile": ENDPOINTS.MISSALS + `/${missal.missal_id}`,
                             "category": "resourceDataCheck"
                         });
-                        sourceDataChecks.push({
-                            "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}`,
-                            "sourceFile": missal.missal_id,
-                            "category": "sourceDataCheck"
-                        });
-                        if (missal.hasOwnProperty('locales')) {
-                            sourceDataChecks.push({
-                                "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}-i18n`,
-                                "sourceFolder": missal.missal_id,
-                                "category": "sourceDataCheck"
-                            });
-                        }
                     });
                 }
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
             }
-            else if(data.hasOwnProperty('litcal_tests')) {
-                data.litcal_tests.forEach(test => {
-                    // Since API #787 the test corpus is rite-partitioned on disk:
-                    // jsondata/tests/{rite}/{name}.json. `rite` is a required property of
-                    // `applies_to` since API #785 (falling back to the legacy `appliesTo`
-                    // property, mirroring the handling in index.js's handleAppliesToOrFilter()).
-                    const rite = test.applies_to?.rite ?? test.appliesTo?.rite;
-                    if (!rite) {
-                        console.warn(`Test ${test.name} has no applies_to.rite; skipping its source-data check`);
-                        return;
-                    }
-                    if ( rite !== currentRite ) {
-                        return;
-                    }
-                    sourceDataChecks.push({
-                        "validate": `tests-${test.name}`,
-                        "sourceFile": `jsondata/tests/${rite}/${test.name}.json`,
-                        "category": "sourceDataCheck"
-                    });
-                })
-                ReadyToRunTests.TestsReady = true;
+            else if(data.hasOwnProperty('litcal_validations')) {
+                // The whole source-data list, in one statement, from the one place that knows it.
+                // Rite filtering is the inventory's own `rite` property rather than a rule
+                // reimplemented here — which is what the wider-region and national tiers above
+                // still need, since those build *URL* checks the inventory does not cover.
+                sourceDataChecks = validationChecksForRite( data.litcal_validations, currentRite );
+                ReadyToRunTests.ValidationsReady = true;
             }
         });
         // Render once, after ALL datasets in this Promise.all pass have been processed.
@@ -1429,9 +1423,13 @@ const runTests = () => {
                 armPhaseWatchdog();
                 console.log( `Sending ${sourceDataChecks.length} source data requests in parallel...` );
                 sourceDataChecks.forEach( check => {
+                    // The opaque id, and nothing else. No `category` to pick a schema-resolution
+                    // strategy, no `validate` doing three jobs at once, and above all no path: the
+                    // server resolves all of that from the id it advertised.
                     sendMessage({
-                        action: 'executeValidation',
-                        ...check
+                        action: 'validateSource',
+                        target: { id: check.id },
+                        requestId: check.requestId
                     });
                 });
             }

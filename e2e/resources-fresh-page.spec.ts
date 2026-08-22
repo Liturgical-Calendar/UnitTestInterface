@@ -8,18 +8,20 @@ test('fresh Resources page renders source checks for all async datasets', async 
     // rendered (and the Time badge totals under-counted) until something re-ran
     // setupPage() (e.g. changing the response format). A fresh page must render them.
     const apiBase = `${process.env.API_PROTOCOL || 'http'}://${process.env.API_HOST || 'localhost'}:${process.env.API_PORT || '8000'}`;
-    const res = await request.get(`${apiBase}/tests`);
-    const { litcal_tests } = await res.json();
-    expect(litcal_tests.length).toBeGreaterThan(0);
-    // Mirror common.js slugify(): lowercase, whitespace → '-', strip other punctuation —
-    // sourceTemplate() derives the card class via slugify(validate).
-    const testSlug = `tests-${litcal_tests[0].name}`
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-_]/g, '');
+    // Since #42 the source-data list is the API's advertised inventory rather than three metadata
+    // endpoints this page derived paths from, so the card to look for is an inventory item — and
+    // the test corpus reaches it as items of its own (`test:{rite}:{name}`).
+    const res = await request.get(`${apiBase}/validations`);
+    const { litcal_validations } = await res.json();
+    const romanTest = litcal_validations.find((item: { id: string }) => item.id.startsWith('test:roman:'));
+    expect(romanTest).toBeTruthy();
+    // Mirror wsProtocol.js idToCardClass(): every character outside [A-Za-z0-9_-] becomes '-',
+    // then lowercased. NOT common.js slugify(), which would strip the colons rather than replace
+    // them and collapse the id into an unreadable run.
+    const testSlug = romanTest.id.replace(/[^A-Za-z0-9_-]/g, '-').toLowerCase();
 
     await page.goto('/resources.php');
-    // The run button enables only once ALL async datasets (metadata, missals, tests)
+    // The run button enables only once ALL async datasets (metadata, missals, validations)
     // are loaded and the page is set up.
     await expect(page.locator('#startTestRunnerBtn')).toBeEnabled({ timeout: 15000 });
 

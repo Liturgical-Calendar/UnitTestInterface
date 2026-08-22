@@ -33,7 +33,15 @@ export const sendCancelRun = ( conn, runToken ) => {
 };
 
 /**
- * The rite-level universal source corpus, as one list for both runner pages.
+ * The rite-level universal source corpus, hardcoded — **`index.js` only, and on its way out.**
+ *
+ * `resources.php` no longer reads this: it takes its whole source-data list from the API's
+ * advertised inventory instead (see {@link validationChecksForRite}), which is what #42 replaces
+ * this with. `index.js` has not been migrated yet and still needs it, so it stays until that
+ * happens — and then goes, along with the last copy of the API's on-disk layout in this repository.
+ *
+ * Everything below this line describes why the list looks the way it does, and stays accurate for
+ * as long as anything sends it.
  *
  * `index.js` and `resources.js` each carried their own version of this, with two different
  * vocabularies for the same file on disk — `PropriumDeTempore` under `universalcalendar` here,
@@ -133,13 +141,56 @@ export const UNIVERSAL_CHECKS = Object.freeze([
 export const inRiteScope = ( item, rite ) => ( item?.rite ?? 'roman' ) === rite;
 
 /**
- * The universal source checks belonging to one rite.
+ * The universal source checks belonging to one rite. **`index.js` only** — see
+ * {@link UNIVERSAL_CHECKS}, and {@link validationChecksForRite} for what replaces it.
  *
  * @param {string} rite - The selected rite.
  * @returns {Array<object>} A fresh array; callers push calendar-specific checks onto it.
  */
 export const universalChecksForRite = ( rite ) =>
     UNIVERSAL_CHECKS.filter( check => inRiteScope( check, rite ) ).map( check => ( { ...check } ) );
+
+/**
+ * The CSS class a checkable's cards carry, derived from its inventory id.
+ *
+ * **Not `slugify()`.** That helper strips every character outside `[a-z0-9-_]` rather than replacing
+ * it, so an inventory id — which is colon-separated — collapses into an unreadable run:
+ * `nation:roman:IT` becomes `nationromanit`, and `test:roman:StIgnatiusOfLoyolaTest` loses every
+ * boundary it had. The rule here is the API's own, published in its section B design and
+ * implemented server-side in `Health::cssClassFragmentForId()`: replace every character outside
+ * `[A-Za-z0-9_-]` with `-`, and nothing else.
+ *
+ * Lowercased on top of that, because these are CSS class names and this repository writes them
+ * lowercase; the server's own fragment keeps its case. That divergence costs nothing while the two
+ * addressing schemes are independent — this page attributes frames by `requestId`, never by the
+ * class the server composes — and it is written down here so it is not mistaken for a bug later.
+ *
+ * @param {string} id - An inventory id, e.g. `sanctorale:ambrosian:2024`.
+ * @returns {string}
+ */
+export const idToCardClass = ( id ) => id.replace( /[^A-Za-z0-9_-]/g, '-' ).toLowerCase();
+
+/**
+ * The advertised checkables belonging to one rite, as this page's check objects.
+ *
+ * Replaces `UNIVERSAL_CHECKS`, a hand-written list of repo-relative paths into the API — the last
+ * copy of the API's on-disk layout in this repository, and the one #38 (paths moved under
+ * `rite/roman/`), API#795 (a third copy in `.vscode` matching nothing) and API#800 (Ambrosian data
+ * no client listed) all came from. The server now advertises what it can check and the client sends
+ * back an opaque id, so no filesystem path crosses the wire and there is nothing left to keep in
+ * lockstep.
+ *
+ * The inventory carries every tier — temporale, sanctorale, decrees, wider regions, nations,
+ * dioceses and tests — so this is the whole source-data list, not merely the universal head of it.
+ *
+ * @param {Array<{id: string, rite: string, label: string, steps: Array<string>}>} inventory - As served by `/validations`.
+ * @param {string} rite - The selected rite.
+ * @returns {Array<object>} A fresh array of check objects.
+ */
+export const validationChecksForRite = ( inventory, rite ) =>
+    inventory
+        .filter( item => inRiteScope( item, rite ) )
+        .map( item => ( { id: item.id, label: item.label, steps: item.steps, rite: item.rite } ) );
 
 /**
  * Translate a `CalendarSelect` selection into the protocol's calendar/category vocabulary.
