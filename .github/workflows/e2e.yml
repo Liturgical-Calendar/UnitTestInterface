@@ -83,13 +83,28 @@ jobs:
       # values are the documented development defaults from .env.example; the only generated value
       # is the secret, which has to be *the same string* on both sides: the API signs its tokens
       # with it and the test interface verifies them server-side.
+      #
+      # **APP_ENV is `production` here, in a file called `.env.development`, and that is deliberate.**
+      # `layout/footer.php` builds the import map for `@liturgical-calendar/components-js` from it:
+      # `development` points at `assets/components-js`, an untracked symlink into a sibling checkout
+      # of the components repository, which no runner has. Measured: with `development` set, 19 specs
+      # fail here — the import map resolves to nothing, no RiteSelect mounts, and every rite-scoped
+      # spec times out waiting for controls that will never appear.
+      #
+      # `production` resolves the same bare specifier to the pinned jsDelivr build, which is what
+      # deployed pages load, and the version lives in footer.php so nothing is duplicated. The only
+      # other thing APP_ENV changes in this repository is how `setEndpoints()` derives API_PATH, and
+      # with API_BASE_PATH empty both branches produce the same empty string.
+      #
+      # The API's own APP_ENV below stays `development`; the two are unrelated settings in unrelated
+      # files, and the API needs development to accept the default admin password.
       - name: Write the environment both sides read
         run: |
           set -euo pipefail
           JWT_SECRET="$(openssl rand -hex 32)"
 
           cat > .env.development <<EOF
-          APP_ENV=development
+          APP_ENV=production
           WS_PROTOCOL=ws
           WS_HOST=127.0.0.1
           WS_PORT=8082
