@@ -15,6 +15,7 @@ import {
 
 import {
     applyResultToDom,
+    paintCard,
     countByStatus,
     createResultCollector,
     nowIsoStamp,
@@ -27,6 +28,13 @@ import {
     sendCancelRun,
     universalChecksForRite,
     inRiteScope,
+    createRequestRegistry,
+    createSilenceWatchdog,
+    negotiatedProtocol,
+    newRequestId,
+    readHello,
+    resetHello,
+    STEP_CARD_CLASS,
 } from './wsProtocol.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
@@ -529,16 +537,34 @@ const connectWebSocket = () => {
     };
 
     conn.onmessage = ( e ) => {
+        // Parsed once, before the run guards, because one frame is not about a run: the server's
+        // `hello` arrives on connect and carries no run token — which is exactly what makes it
+        // invisible to a client that predates it, and exactly why the guards below would discard
+        // it. See readHello().
+        let responseData;
+        let parseError = null;
+        try {
+            responseData = JSON.parse( e.data );
+        } catch ( error ) {
+            parseError = error;
+        }
+
+        if ( null === parseError && readHello( responseData ) ) {
+            return;
+        }
+
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
         }
-        let responseData;
-        try {
-            responseData = JSON.parse( e.data );
-        } catch ( parseError ) {
+
+        if ( null !== parseError ) {
             // The state machine is driven from this handler: an exception escaping here means
             // runTests() is never called again and the run wedges with the spinner still going
             // and nothing in the UI to say why (#43). Count it and keep the run moving.
+            //
+            // Reached only inside a run, as before: an unparseable frame arriving before one is
+            // nothing to attribute a failure to, and pumping the state machine for it would be
+            // acting on a run that has not started.
             console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
             countUnattributableFailure();
             if ( currentState !== TestState.JobsFinished ) {
@@ -558,9 +584,26 @@ const connectWebSocket = () => {
             return;
         }
         console.log( responseData );
+
+        // Any frame of this run is proof the server is still answering.
+        restartPhaseWatchdog();
+
+        // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
+        // recorded or counted. Counting it would inflate the totals badge past the number of
+        // rendered cards — the drift #42 describes, arrived at from the other direction.
+        if ( responseData.step === 'complete' ) {
+            if ( requestRegistry.complete( responseData.requestId ) ) {
+                phaseOutstanding.delete( responseData.requestId );
+            }
+            if ( currentState !== TestState.JobsFinished ) {
+                runTests();
+            }
+            return;
+        }
+
         try {
             if ( responseData.type === "success" ) {
-                applyResultToDom( responseData );
+                paintResult( responseData );
                 resultCollector.record( phaseForState(), responseData );
                 updateText('successfulCount', ++successfulTests);
                 switch( currentState ) {
@@ -573,7 +616,7 @@ const connectWebSocket = () => {
                 }
             }
             else if ( responseData.type === "error" ) {
-                applyResultToDom( responseData );
+                paintResult( responseData );
                 resultCollector.record( phaseForState(), responseData );
                 updateText('failedCount', ++failedTests);
                 switch( currentState ) {
@@ -631,6 +674,10 @@ const connectWebSocket = () => {
      */
     conn.onclose = ( e ) => {
         console.log( 'Connection closed on remote end' );
+        // Forget what this connection advertised. The reconnection below may reach a server of a
+        // different vintage — a deploy is exactly when a socket drops — and answering it with the
+        // previous one's capabilities would declare a protocol it never claimed to read.
+        resetHello();
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
@@ -694,13 +741,126 @@ const setTestRunnerBtnLblTxt = (txt) => {
 /**
  * Sends a message over the WebSocket connection, automatically
  * attaching the current run token for response correlation.
+ *
+ * Also declares the protocol version, but only when the server advertised one it reads. Against a
+ * server that predates the handshake (LiturgicalCalendarAPI#806 section F) `negotiatedProtocol()`
+ * returns null and the property is omitted — which is not merely tidy: such a server's message
+ * schema does not declare `protocol`, and its unknown-property gate is armed by the `requestId`
+ * every message now carries, so declaring a version it never advertised would get the whole run
+ * refused message by message.
+ *
  * @param {Object} data - The message payload to send.
  */
 const sendMessage = ( data ) => {
     if ( currentRunToken !== null ) {
         data.runToken = currentRunToken;
     }
+    const protocol = negotiatedProtocol();
+    if ( null !== protocol ) {
+        data.protocol = protocol;
+    }
     conn.send( JSON.stringify( data ) );
+};
+
+/**
+ * Restart the silence clock, unless the phase has nothing left to wait for.
+ * @returns {void}
+ */
+const restartPhaseWatchdog = () => {
+    if ( 0 === phaseOutstanding.size ) {
+        phaseWatchdog.clear();
+        return;
+    }
+    phaseWatchdog.restart();
+};
+
+/**
+ * Stop the silence clock.
+ * @returns {void}
+ */
+const clearPhaseWatchdog = () => phaseWatchdog.clear();
+
+/**
+ * Bind a phase's checks to their cards and start the phase.
+ *
+ * Each check is given a freshly minted `requestId`, the three cards it will paint are looked up
+ * once, here, and the pair is recorded in the registry. The ids are minted per *run* rather than
+ * per page: reusing them would leave a previous run's frames able to paint the current run's cards,
+ * and the run token alone would not stop it, since a rerun of the same page checks the same things.
+ *
+ * The cards are found by the same slug the templates were rendered with — this page's own
+ * `slugify(check.validate)` — not by a selector from the server. That is the coupling #42 exists to
+ * remove: our markup was part of the API's contract, and a selector matching nothing failed
+ * silently while the counters advanced anyway.
+ *
+ * @param {Array<object>} checks - The checks about to be sent; each is given a `requestId`.
+ * @param {string} containerSelector - The phase's card container.
+ * @returns {Set<string>} The request ids the phase is waiting on.
+ */
+const beginPhase = ( checks, containerSelector ) => {
+    const outstanding = new Set();
+    checks.forEach( check => {
+        const requestId = newRequestId();
+        check.requestId = requestId;
+        const slug = slugify( check.validate );
+        const cards = {};
+        Object.entries( STEP_CARD_CLASS ).forEach( ( [ step, cardClass ] ) => {
+            const card = document.querySelector( `${containerSelector} .${slug}.${cardClass}` );
+            if ( null === card ) {
+                // Loud, and specific about which check and which step. The selector-based
+                // addressing this replaces could only produce an empty NodeList, which said
+                // nothing about what was missing and did not stop the counters advancing.
+                console.warn( `No "${cardClass}" card rendered for check "${check.validate}"; its ${step} result will have nowhere to go.` );
+                return;
+            }
+            cards[ step ] = card;
+        } );
+        requestRegistry.register( requestId, cards );
+        outstanding.add( requestId );
+    } );
+    return outstanding;
+};
+
+/**
+ * Start a phase's silence clock once its outstanding set has been installed.
+ *
+ * Separate from {@link beginPhase} because the clock reads `phaseOutstanding`, which the caller
+ * assigns from beginPhase's return value — starting it inside beginPhase would read the *previous*
+ * phase's set.
+ *
+ * @returns {void}
+ */
+const armPhaseWatchdog = () => restartPhaseWatchdog();
+
+/**
+ * Paint one step result onto the card its request registered.
+ *
+ * Addressed by `(requestId, step)`, which the server has stamped on every frame — including the
+ * frames answering the legacy `executeValidation` messages this page still sends — since
+ * LiturgicalCalendarAPI#806 section C. The `classes` selector is still on the frame and is
+ * deliberately not read: it is the coupling #42 exists to remove, and it remains only so that
+ * `index.js`, not yet migrated, keeps working.
+ *
+ * Falls back to the selector for a frame that carries no usable correlation, which is not dead code:
+ * a server that predates section C sends no `requestId`, and this page should degrade to the old
+ * behaviour rather than paint nothing at all.
+ *
+ * @param {object} responseData - A step-result frame.
+ * @returns {void}
+ */
+const paintResult = ( responseData ) => {
+    const { requestId, step } = responseData;
+    if ( 'string' !== typeof requestId || 'string' !== typeof step ) {
+        applyResultToDom( responseData );
+        return;
+    }
+    const card = requestRegistry.cardFor( requestId, step );
+    if ( null === card ) {
+        // Specific about what could not be attributed, unlike the empty NodeList this replaces.
+        console.warn( `No card is registered for request ${requestId} step "${step}" — the run totals will drift from the rendered cards.`, responseData );
+        return;
+    }
+    paintCard( card, responseData.type === 'success', responseData.text ?? '' );
 };
 
 /**
@@ -831,12 +991,65 @@ let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
 
 /** Track expected and received responses for parallel Resource Data tests */
-let resourceDataExpectedResponses = 0;
-let resourceDataReceivedResponses = 0;
+/**
+ * Which cards each in-flight request addresses, and which requests are still running.
+ *
+ * Replaces both of the things this page used to do instead: painting by the CSS selector the server
+ * composed, and sizing a phase as `checks * 3`. See {@link createRequestRegistry} for why the first
+ * had to go, and `runTests()` for the second.
+ *
+ * One registry for both phases. They never overlap — the source phase is only entered once every
+ * resource request has reported completion — and a single registry means a frame arriving late,
+ * after its phase has moved on, still finds its card instead of being reported as unattributable.
+ */
+const requestRegistry = createRequestRegistry();
 
 /** Track expected and received responses for parallel Source Data tests */
-let sourceDataExpectedResponses = 0;
-let sourceDataReceivedResponses = 0;
+/**
+ * The request ids of the phase currently running, emptied as their terminal frames arrive.
+ * @type {Set<string>}
+ */
+let phaseOutstanding = new Set();
+
+/**
+ * How long a run may go without a single frame before the current phase is given up on.
+ *
+ * Stopping on the terminal frame is what removes the hardcoded step count, but it trades one
+ * failure mode for another: a request that never reports completion now hangs the phase for ever,
+ * where counting frames would eventually have overshot its way past it. The server has a known hole
+ * of exactly that shape — a throw inside a promise's fulfil handler skips the terminal frame
+ * (LiturgicalCalendarAPI#823) — and the published contract says in as many words to pair stopping
+ * on `complete` with a timeout.
+ *
+ * The clock measures *silence*, not phase duration, and is restarted by every frame of the run.
+ * Requests run in parallel and a slow one is covered by its neighbours' frames, so this only fires
+ * when the server has genuinely stopped answering — never merely because a check was slow.
+ *
+ * @type {number}
+ */
+const PHASE_SILENCE_TIMEOUT_MS = 60000;
+
+/**
+ * The clock itself. Its callback gives up on whatever the current phase is still waiting for.
+ * @type {{restart: Function, clear: Function, isRunning: Function}}
+ */
+const phaseWatchdog = createSilenceWatchdog( PHASE_SILENCE_TIMEOUT_MS, () => {
+    const abandoned = [ ...phaseOutstanding ];
+    if ( 0 === abandoned.length ) {
+        return;
+    }
+    console.error(
+        `No frame has arrived for ${PHASE_SILENCE_TIMEOUT_MS / 1000}s and ${abandoned.length} request(s) never reported completion; giving up on them.`,
+        abandoned
+    );
+    // Counted, not silently dropped: these requests rendered cards that will stay unpainted, and a
+    // run whose totals matched while cards sat grey would be the drift #42 is about.
+    abandoned.forEach( () => countUnattributableFailure() );
+    phaseOutstanding.clear();
+    if ( currentState !== TestState.JobsFinished && currentState !== TestState.Stopped ) {
+        runTests();
+    }
+} );
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
@@ -1176,9 +1389,9 @@ const runTests = () => {
             safeCollapseShow('#resourceDataTests');
 
             // Send ALL resource data requests at once - server handles concurrency
-            resourceDataExpectedResponses = resourceDataChecks.length * 3; // 3 responses per check
-            resourceDataReceivedResponses = 0;
-            console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel (expecting ${resourceDataExpectedResponses} responses)...` );
+            phaseOutstanding = beginPhase( resourceDataChecks, '#resourceDataTests .resourcedata-tests' );
+            armPhaseWatchdog();
+            console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel...` );
             resourceDataChecks.forEach( check => {
                 sendMessage({
                     action: 'executeValidation',
@@ -1189,33 +1402,32 @@ const runTests = () => {
             break;
         }
         case TestState.ExecutingResourceValidations:
-            // Count responses from parallel requests (all requests already sent)
-            resourceDataReceivedResponses++;
-            // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
-            // and the phase would never complete (#43). The comment on the wider-region push
-            // below records a real occurrence — a double-sent validation inflated the success
-            // counter (162) past the rendered-card total (159).
+            // A phase ends when every request it started has reported its terminal `complete`
+            // frame — not when some number of frames have arrived.
             //
-            // `sourceDataChecks.length * 3` is now exact: LiturgicalCalendarAPI#809 made a
-            // `sourceFolder` check emit one frame per step like every other check, where it
-            // previously emitted one per failing i18n file and overshot this estimate.
+            // This page used to size each phase as `checks * 3` and compare with `>=`. Three was
+            // the undocumented step count, shared by both sides and written down in four places
+            // across the two runners (#42); `>=` was there because counting frames cannot tell a
+            // duplicate from a legitimate one, so an extra frame had to be tolerated rather than
+            // hang the phase. Tolerating it had its own cost: an extra frame satisfied the
+            // threshold early and the *following* phase then inherited the overshoot. A real
+            // occurrence is recorded on the wider-region push below — a double-sent validation
+            // inflated the success counter to 162 against 159 rendered cards.
             //
-            // `>=` remains the right comparison all the same. Counting frames cannot tell a
-            // duplicate from a legitimate one, so it tolerates an unexpected extra rather than
-            // hanging the phase on it. The principled fix is per-request correlation — count
-            // each expected request id once — which needs a per-request id the protocol does
-            // not carry (only a per-*run* `runToken`). See #42 and LiturgicalCalendarAPI#806.
-            if ( resourceDataReceivedResponses >= resourceDataExpectedResponses ) {
-                console.log( `All ${resourceDataExpectedResponses} resource data responses received!` );
+            // Neither problem survives per-request completion. The step count comes from the
+            // server, a duplicate terminal frame is idempotent in the registry, and a request
+            // that stops early still ends the phase, because the server sends `complete` for a
+            // request whose steps failed exactly as for one whose steps passed.
+            if ( 0 === phaseOutstanding.size ) {
                 console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
                 currentState = TestState.ExecutingSourceValidations;
                 performance.mark( 'sourceDataTestsStart' );
                 safeCollapseShow('#sourceDataTests');
 
                 // Send ALL source data requests at once - server handles concurrency
-                sourceDataExpectedResponses = sourceDataChecks.length * 3; // 3 responses per check
-                sourceDataReceivedResponses = 0;
-                console.log( `Sending ${sourceDataChecks.length} source data requests in parallel (expecting ${sourceDataExpectedResponses} responses)...` );
+                phaseOutstanding = beginPhase( sourceDataChecks, '#sourceDataTests .sourcedata-tests' );
+                armPhaseWatchdog();
+                console.log( `Sending ${sourceDataChecks.length} source data requests in parallel...` );
                 sourceDataChecks.forEach( check => {
                     sendMessage({
                         action: 'executeValidation',
@@ -1225,17 +1437,16 @@ const runTests = () => {
             }
             break;
         case TestState.ExecutingSourceValidations:
-            // Count responses from parallel requests (all requests already sent)
-            sourceDataReceivedResponses++;
-            // `>=`, not `===` — see the note on the resource-data counter above.
-            if ( sourceDataReceivedResponses >= sourceDataExpectedResponses ) {
-                console.log( `All ${sourceDataExpectedResponses} source data responses received!` );
+            // See the note on the resource phase above.
+            if ( 0 === phaseOutstanding.size ) {
+                console.log( 'All source data requests have reported completion!' );
                 currentState = TestState.JobsFinished;
                 runTests();
             }
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
+            clearPhaseWatchdog();
             safeToastShow('#tests-complete');
             currentRunToken = null;
             setRiteSelectDisabledForRun( false );
@@ -1367,10 +1578,8 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         failedResourceDataTests = 0;
         successfulSourceDataTests = 0;
         failedSourceDataTests = 0;
-        resourceDataExpectedResponses = 0;
-        resourceDataReceivedResponses = 0;
-        sourceDataExpectedResponses = 0;
-        sourceDataReceivedResponses = 0;
+        requestRegistry.reset();
+        phaseOutstanding = new Set();
         resetTestUI();
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
@@ -1401,6 +1610,8 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
+        clearPhaseWatchdog();
+        phaseOutstanding.clear();
         currentState = TestState.Stopped;
         currentRunToken = null;
         setRiteSelectDisabledForRun( false );

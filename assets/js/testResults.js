@@ -41,26 +41,42 @@ export const applyResultToDom = (responseData) => {
         console.warn(`No card matched \`classes\` selector "${selector}" — the run totals will drift from the rendered cards.`, responseData);
     }
 
-    targets.forEach((el) => {
-        el.classList.remove('bg-info');
-        el.classList.add(isSuccess ? 'bg-success' : 'bg-danger');
-        const questionIcon = el.querySelector('.fa-circle-question');
-        if (questionIcon) {
-            questionIcon.classList.remove('fa-circle-question');
-            questionIcon.classList.add(isSuccess ? 'fa-circle-check' : 'fa-circle-xmark');
-        }
-        if (!isSuccess) {
-            const cardText = el.querySelector('.card-text');
-            if (cardText && !cardText.querySelector('.error-tooltip')) {
-                cardText.insertAdjacentHTML(
-                    'beforeend',
-                    `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(responseData.text ?? '')}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`
-                );
-            }
-        }
-    });
+    targets.forEach((el) => paintCard(el, isSuccess, responseData.text ?? ''));
 
     return targets.length;
+};
+
+/**
+ * Paint one card with one outcome.
+ *
+ * Extracted so the two ways a card is addressed share the painting itself. `applyResultToDom()`
+ * finds cards with the server-supplied `classes` selector, which is how a v1 frame — and a stored
+ * run replayed from disk, whose descriptors record that selector — arrives; `resources.js` finds
+ * them through its own `requestId` registry (#42). What they do to a card once found must not
+ * differ, or a replayed run would look different from the run it replays.
+ *
+ * @param {Element} el - The card to paint.
+ * @param {boolean} isSuccess - Whether the step passed.
+ * @param {string} text - The server's message, shown in the failure tooltip.
+ * @returns {void}
+ */
+export const paintCard = (el, isSuccess, text) => {
+    el.classList.remove('bg-info');
+    el.classList.add(isSuccess ? 'bg-success' : 'bg-danger');
+    const questionIcon = el.querySelector('.fa-circle-question');
+    if (questionIcon) {
+        questionIcon.classList.remove('fa-circle-question');
+        questionIcon.classList.add(isSuccess ? 'fa-circle-check' : 'fa-circle-xmark');
+    }
+    if (!isSuccess) {
+        const cardText = el.querySelector('.card-text');
+        if (cardText && !cardText.querySelector('.error-tooltip')) {
+            cardText.insertAdjacentHTML(
+                'beforeend',
+                `<span role="button" class="float-end error-tooltip" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(text)}"><i class="fas fa-bug fa-beat-fade" aria-hidden="true"></i></span>`
+            );
+        }
+    }
 };
 
 /**
