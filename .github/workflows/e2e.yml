@@ -1,0 +1,182 @@
+name: E2E
+
+# The Playwright suite, which until now ran only on developers' machines.
+#
+# It needs the API as well as this repository: `playwright.config.ts` starts both servers itself
+# (`php -S`), and `reuseExistingServer` is off under CI, so the job's only responsibility is to put
+# the two checkouts, PHP, Node and the browsers in place and then stand back.
+#
+# The API is taken from `development`, the branch this repository is expected to work against and
+# the one the API's own PRs merge into. That means an API change can turn this red without anything
+# here having changed — which is the point: the coupling between the two repositories is exactly
+# what the suite exists to catch (see #38, and LiturgicalCalendarAPI#795 / #800).
+on:
+  # Deliberately unfiltered. A path filter here would make this indistinguishable from "still
+  # pending" if it ever became a required check, and every file in this repository can affect the
+  # suite anyway — the specs exercise the PHP pages, the JS modules and the protocol together.
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.4'
+  # The API branch to test against. `development` is where the API's own work lands.
+  API_REF: development
+
+jobs:
+  playwright:
+    name: Playwright (chromium)
+    runs-on: ubuntu-latest
+    # The suite takes about a minute locally; this is a stop, not a budget.
+    timeout-minutes: 20
+    steps:
+      - name: Check out the test interface
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes; see the note in lint.yml.
+          persist-credentials: false
+
+      - name: Check out the API it tests against
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Liturgical-Calendar/LiturgicalCalendarAPI
+          ref: ${{ env.API_REF }}
+          path: .api
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          # The API's own require list, plus yaml, which it uses for content negotiation. The test
+          # interface needs a subset; installing the union once is simpler than splitting them.
+          extensions: calendar, ctype, curl, dom, gettext, intl, json, libxml, mbstring, pdo, pdo_pgsql, simplexml, xml, zip, yaml
+          coverage: none
+
+      - name: Install API dependencies
+        working-directory: .api
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Install test interface dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # `.env.development` is not committed — it holds a JWT secret — so the job writes one. The
+      # values are the documented development defaults from .env.example; the only generated value
+      # is the secret, which has to be *the same string* on both sides: the API signs its tokens
+      # with it and the test interface verifies them server-side.
+      #
+      # **APP_ENV is `production` here, in a file called `.env.development`, and that is deliberate.**
+      # `layout/footer.php` builds the import map for `@liturgical-calendar/components-js` from it:
+      # `development` points at `assets/components-js`, an untracked symlink into a sibling checkout
+      # of the components repository, which no runner has. Measured: with `development` set, 19 specs
+      # fail here — the import map resolves to nothing, no RiteSelect mounts, and every rite-scoped
+      # spec times out waiting for controls that will never appear.
+      #
+      # `production` resolves the same bare specifier to the pinned jsDelivr build, which is what
+      # deployed pages load, and the version lives in footer.php so nothing is duplicated. The only
+      # other thing APP_ENV changes in this repository is how `setEndpoints()` derives API_PATH, and
+      # with API_BASE_PATH empty both branches produce the same empty string.
+      #
+      # The API's own APP_ENV below stays `development`; the two are unrelated settings in unrelated
+      # files, and the API needs development to accept the default admin password.
+      - name: Write the environment both sides read
+        run: |
+          set -euo pipefail
+          JWT_SECRET="$(openssl rand -hex 32)"
+
+          cat > .env.development <<EOF
+          APP_ENV=production
+          WS_PROTOCOL=ws
+          WS_HOST=127.0.0.1
+          WS_PORT=8082
+          API_PROTOCOL=http
+          API_HOST=localhost
+          API_PORT=8000
+          API_BASE_PATH=
+          LITCAL_FRONTEND_URL=http://localhost:3000
+          JWT_SECRET=${JWT_SECRET}
+          JWT_ALGORITHM=HS256
+          TEST_USERNAME=admin
+          TEST_PASSWORD=password
+          FRONTEND_URL=http://localhost:3003
+          EOF
+
+          # ADMIN_PASSWORD_HASH is deliberately absent: under APP_ENV=development the API accepts
+          # the documented default password, which is what TEST_PASSWORD above is. Staging and
+          # production refuse to start without a hash, which is why this is safe to omit only here.
+          cat > .api/.env.local <<EOF
+          APP_ENV=development
+          API_PROTOCOL=http
+          API_HOST=localhost
+          API_PORT=8000
+          API_BASE_PATH=
+          JWT_SECRET=${JWT_SECRET}
+          JWT_ALGORITHM=HS256
+          ADMIN_USERNAME=admin
+          WS_HOST=127.0.0.1
+          WS_PORT=8082
+          EOF
+
+          # Untracked at rest, and the pages fatal without it: Monolog opens its handler eagerly.
+          mkdir -p logs .api/logs
+
+      - name: Type-check the specs
+        run: npm run typecheck
+
+      # One exclusion, and it is evidence rather than a guess. Rehearsed against a stack configured
+      # exactly as this job configures one — both servers from the checkouts, a matching JWT secret
+      # on each side — 62 specs pass and 9 fail, all of them in `admin.spec.ts`.
+      #
+      # They fail because the chromium project runs with authenticated `storageState`, while that
+      # file's "Unauthenticated State" describes assume a browser that has never logged in. The
+      # suite contradicts the project it runs under. `admin.php` is proposed for removal in #51 as
+      # superseded by admin-tests.php in LiturgicalCalendarFrontend, so the specs are excluded here
+      # rather than repaired in a CI change.
+      #
+      # Two other things that fail on a developer's machine are NOT excluded, because a fresh runner
+      # does not have them: the same admin specs additionally fatal against a containerised server
+      # whose log directory is read-only, and `results-replay-resources.spec.ts` fails once fifty
+      # stored runs have filled the retention window, which prunes away the fixture it seeds.
+      #
+      # The pattern matches the FILE, not a describe title: Playwright greps a string that includes
+      # the spec's path, so `admin\.spec\.ts` can only ever exclude that one file. A title pattern
+      # such as "Admin Page" happens to select the same 13 tests today, but would silently swallow
+      # any future spec that reused the words. Anything failing beyond this file is a finding to act
+      # on, not a line to add below.
+      - name: Run the suite
+        env:
+          # playwright.config.ts reads both: CI turns off `reuseExistingServer` so the job's own
+          # servers are the ones under test, and API_REPO_PATH is where it starts the API from.
+          CI: 'true'
+          API_REPO_PATH: ${{ github.workspace }}/.api
+        run: npx playwright test --project=chromium --grep-invert 'admin\.spec\.ts'
+
+      - name: Upload the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
