@@ -86,37 +86,43 @@ test('national, wider-region and per-missal checks are Roman-only', async ({ pag
     await page.goto('/resources.php');
     await waitForScaffold(page);
 
-    // Per-missal Roman entries are named `proprium-de-sanctis-{region}-{year}` (or, for the editio
-    // typica, `proprium-de-sanctis-{year}` with no region). The rite's own universal corpus also
-    // contributes an entry ending `-proprium-de-sanctis-i18n` (`ambrosian-` under the Ambrosian
-    // rite) — present under both rites by design (see wsProtocol.js UNIVERSAL_CHECKS) — so the
-    // Roman-only check must not mistake that shared corpus entry for a per-missal one.
-    const perMissalPattern = /(?<!ambrosian-)proprium-de-sanctis-/;
-
+    // Source cards are named by the inventory id the server advertised (#42) — `nation:roman:IT`,
+    // `widerregion:roman:Europe`, `sanctorale:roman:EDITIO_TYPICA_2002` — slugified into the card
+    // class, so a colon becomes a hyphen. They used to be named by a `validate` string this page
+    // invented from the API's on-disk layout, which is what made every layout change a lockstep
+    // edit here.
+    //
+    // The Ambrosian sanctorale is an inventory item of its own (`sanctorale:ambrosian:2024`), so
+    // the rite prefix in the id is what separates it from the Roman missals rather than a negative
+    // lookbehind on a hand-built name.
     const roman = await cardMarkup(page);
-    expect(roman).toContain('national-calendar-');
-    expect(roman).toContain('wider-region-');
-    expect(roman).toMatch(perMissalPattern);
+    expect(roman).toContain('nation-roman-');
+    expect(roman).toContain('widerregion-roman-');
+    expect(roman).toContain('sanctorale-roman-');
 
     await selectRite(page, 'ambrosian');
     const ambrosian = await cardMarkup(page);
-    expect(ambrosian).not.toContain('national-calendar-');
-    expect(ambrosian).not.toContain('wider-region-');
-    expect(ambrosian).not.toMatch(perMissalPattern);
+    expect(ambrosian).not.toContain('nation-roman-');
+    expect(ambrosian).not.toContain('widerregion-roman-');
+    expect(ambrosian).not.toContain('sanctorale-roman-');
 });
 
 test('the universal corpus and test corpus follow the rite', async ({ page }) => {
     await page.goto('/resources.php');
     await waitForScaffold(page);
 
+    // Every tier is now addressed by its inventory id, so the rite is a segment of the id itself
+    // rather than a prefix baked into a name this page composed.
     const roman = await cardMarkup(page);
-    expect(roman.toLowerCase()).toContain('propriumdetempore');
-    expect(roman.toLowerCase()).not.toContain('ambrosianpropriumdetempore');
+    expect(roman).toContain('temporale-roman');
+    expect(roman).toContain('test-roman-');
+    expect(roman).not.toContain('temporale-ambrosian');
 
     await selectRite(page, 'ambrosian');
     const ambrosian = await cardMarkup(page);
-    expect(ambrosian.toLowerCase()).toContain('ambrosianpropriumdetempore');
-    expect(ambrosian.toLowerCase()).toContain('ambrosianpropriumdesanctis');
+    expect(ambrosian).toContain('temporale-ambrosian');
+    expect(ambrosian).toContain('sanctorale-ambrosian-');
+    expect(ambrosian).not.toContain('temporale-roman');
 });
 
 test('every per-nation and per-diocese URL names its rite explicitly', async ({ page }) => {

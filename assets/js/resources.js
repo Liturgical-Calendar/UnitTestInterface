@@ -15,6 +15,7 @@ import {
 
 import {
     applyResultToDom,
+    paintCard,
     countByStatus,
     createResultCollector,
     nowIsoStamp,
@@ -25,8 +26,18 @@ import {
 
 import {
     sendCancelRun,
-    universalChecksForRite,
+    validationChecksForRite,
+    fetchValidations,
+    idToCardClass,
     inRiteScope,
+    createRequestRegistry,
+    createSilenceWatchdog,
+    summariseAbandoned,
+    negotiatedProtocol,
+    newRequestId,
+    readHello,
+    resetHello,
+    STEP_CARD_CLASS,
 } from './wsProtocol.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
@@ -63,7 +74,7 @@ class ReadyToRunTests {
     static SocketReady      = false;
     static MetaDataReady    = false;
     static MissalsReady     = false;
-    static TestsReady       = false;
+    static ValidationsReady       = false;
 
     /**
      * Check if all conditions are met to run tests.
@@ -80,7 +91,7 @@ class ReadyToRunTests {
             && ReadyToRunTests.SocketReady === true
             && ReadyToRunTests.MetaDataReady === true
             && ReadyToRunTests.MissalsReady === true
-            && ReadyToRunTests.TestsReady === true
+            && ReadyToRunTests.ValidationsReady === true
         );
     }
 
@@ -99,7 +110,7 @@ class ReadyToRunTests {
         console.log( 'ReadyToRunTests.MetaDataReady = '      + ReadyToRunTests.MetaDataReady );
         console.log( 'ReadyToRunTests.PageReady = '         + ReadyToRunTests.PageReady );
         console.log( 'ReadyToRunTests.MissalsReady = '      + ReadyToRunTests.MissalsReady );
-        console.log( 'ReadyToRunTests.TestsReady = '        + ReadyToRunTests.TestsReady );
+        console.log( 'ReadyToRunTests.ValidationsReady = '        + ReadyToRunTests.ValidationsReady );
         const testsReady = ReadyToRunTests.check();
         const startBtn = document.querySelector('#startTestRunnerBtn');
         if (!startBtn) {
@@ -192,7 +203,8 @@ const ENDPOINTS = {
     MISSALS: "",
     EASTER: "",
     DATA: "",
-    SCHEMAS: ""
+    SCHEMAS: "",
+    ROOT: ""
 }
 
 /**
@@ -269,13 +281,17 @@ let loadAsyncDataGeneration = 0;
 /**
  * The source data checks for the current run, rebuilt on every rite change.
  *
- * Starts as the universal corpus of the selected rite — shared with index.js via wsProtocol.js,
- * so both pages check the same files under the same names — and is then extended by
- * `loadAsyncData()` with the wider-region, national, missal, diocesan and test entries.
+ * Comes wholly from the API's advertised inventory (`GET /validations`), filtered to the selected
+ * rite — every tier of it: temporale, sanctorale, decrees, wider regions, nations, dioceses and
+ * tests. It used to be assembled here instead, from a hardcoded list of repo-relative paths plus
+ * entries derived from `/calendars`, `/missals` and `/tests`; see {@link validationChecksForRite}
+ * for why that had to go.
  *
- * @type {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
+ * Empty until `loadAsyncData()` has fetched the inventory.
+ *
+ * @type {Array<{id: string, label: string, steps: Array<string>, rite: string}>}
  */
-let sourceDataChecks = universalChecksForRite( currentRite );
+let sourceDataChecks = [];
 
 
 
@@ -305,6 +321,8 @@ const setEndpoints = () => {
     ENDPOINTS.SCHEMAS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/schemas`;
     ENDPOINTS.MISSALS   = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/missals`;
     ENDPOINTS.DATA      = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}/data`;
+    // The API root itself, for endpoints reached as a whole rather than as a named check.
+    ENDPOINTS.ROOT      = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}`;
     console.info(`setEndpoints: APP_ENV=${APP_ENV}, API_PATH=${API_PATH}`);
     resourceDataChecks[0].sourceFile = ENDPOINTS.CALENDARS;
     resourceDataChecks[1].sourceFile = ENDPOINTS.DECREES;
@@ -406,10 +424,23 @@ const resourceTemplate = (resource, idx) => {
  * @returns {string} A string containing the HTML for the source item.
  */
 const sourceTemplate = (sourceItem, idx) => {
-    const validateSlug = slugify(sourceItem.validate);
-    const sourceLabel = sourceItem.sourceFile ?? sourceItem.sourceFolder ?? '';
+    // Two shapes reach this, and both have to render.
+    //
+    // A live run supplies an advertised inventory item — `{id, label, steps}` — whose caption is the
+    // server's own label and whose tooltip is the id the request actually carries. That is the
+    // shape #42 moves this page to.
+    //
+    // A **stored** run supplies whatever its scaffold was saved with, and runs saved before that
+    // move carry the old `{validate, sourceFile|sourceFolder}`: a name this page invented and the
+    // repo-relative path it invented it from. Those files are on disk and replayable from the Past
+    // Runs dropdown, so rendering them is not optional — a replay that showed a row of `undefined`
+    // captions would be a silent regression in a feature nobody was touching.
+    const fromInventory = undefined !== sourceItem.id;
+    const validateSlug = fromInventory ? idToCardClass(sourceItem.id) : slugify(sourceItem.validate);
+    const caption = fromInventory ? sourceItem.label : sourceItem.validate;
+    const tooltip = fromInventory ? sourceItem.id : (sourceItem.sourceFile ?? sourceItem.sourceFolder ?? '');
     return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
-<div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(sourceLabel)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(sourceItem.validate)}</span></div>
+<div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(tooltip)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(caption)}</span></div>
 <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
     <div class="card-body">
         <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> data exists</span></p>
@@ -516,29 +547,35 @@ const connectWebSocket = () => {
      * the global one would leave the header count and the per-phase counts disagreeing, which is
      * the same silent drift #43 flags for unmatched selectors.
      */
-    const countUnattributableFailure = () => {
-        updateText( 'failedCount', ++failedTests );
-        switch ( currentState ) {
-            case TestState.ExecutingResourceValidations:
-                updateText( 'failedResourceDataTestsCount', ++failedResourceDataTests );
-                break;
-            case TestState.ExecutingSourceValidations:
-                updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
-                break;
-        }
-    };
-
     conn.onmessage = ( e ) => {
+        // Parsed once, before the run guards, because one frame is not about a run: the server's
+        // `hello` arrives on connect and carries no run token — which is exactly what makes it
+        // invisible to a client that predates it, and exactly why the guards below would discard
+        // it. See readHello().
+        let responseData;
+        let parseError = null;
+        try {
+            responseData = JSON.parse( e.data );
+        } catch ( error ) {
+            parseError = error;
+        }
+
+        if ( null === parseError && readHello( responseData ) ) {
+            return;
+        }
+
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
         }
-        let responseData;
-        try {
-            responseData = JSON.parse( e.data );
-        } catch ( parseError ) {
+
+        if ( null !== parseError ) {
             // The state machine is driven from this handler: an exception escaping here means
             // runTests() is never called again and the run wedges with the spinner still going
             // and nothing in the UI to say why (#43). Count it and keep the run moving.
+            //
+            // Reached only inside a run, as before: an unparseable frame arriving before one is
+            // nothing to attribute a failure to, and pumping the state machine for it would be
+            // acting on a run that has not started.
             console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
             countUnattributableFailure();
             if ( currentState !== TestState.JobsFinished ) {
@@ -558,9 +595,26 @@ const connectWebSocket = () => {
             return;
         }
         console.log( responseData );
+
+        // Any frame of this run is proof the server is still answering.
+        restartPhaseWatchdog();
+
+        // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
+        // recorded or counted. Counting it would inflate the totals badge past the number of
+        // rendered cards — the drift #42 describes, arrived at from the other direction.
+        if ( responseData.step === 'complete' ) {
+            if ( requestRegistry.complete( responseData.requestId ) ) {
+                phaseOutstanding.delete( responseData.requestId );
+            }
+            if ( currentState !== TestState.JobsFinished ) {
+                runTests();
+            }
+            return;
+        }
+
         try {
             if ( responseData.type === "success" ) {
-                applyResultToDom( responseData );
+                paintResult( responseData );
                 resultCollector.record( phaseForState(), responseData );
                 updateText('successfulCount', ++successfulTests);
                 switch( currentState ) {
@@ -573,7 +627,7 @@ const connectWebSocket = () => {
                 }
             }
             else if ( responseData.type === "error" ) {
-                applyResultToDom( responseData );
+                paintResult( responseData );
                 resultCollector.record( phaseForState(), responseData );
                 updateText('failedCount', ++failedTests);
                 switch( currentState ) {
@@ -631,6 +685,10 @@ const connectWebSocket = () => {
      */
     conn.onclose = ( e ) => {
         console.log( 'Connection closed on remote end' );
+        // Forget what this connection advertised. The reconnection below may reach a server of a
+        // different vintage — a deploy is exactly when a socket drops — and answering it with the
+        // previous one's capabilities would declare a protocol it never claimed to read.
+        resetHello();
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
@@ -694,13 +752,173 @@ const setTestRunnerBtnLblTxt = (txt) => {
 /**
  * Sends a message over the WebSocket connection, automatically
  * attaching the current run token for response correlation.
+ *
+ * Also declares the protocol version, but only when the server advertised one it reads. Against a
+ * server that predates the handshake (LiturgicalCalendarAPI#806 section F) `negotiatedProtocol()`
+ * returns null and the property is omitted — which is not merely tidy: such a server's message
+ * schema does not declare `protocol`, and its unknown-property gate is armed by the `requestId`
+ * every message now carries, so declaring a version it never advertised would get the whole run
+ * refused message by message.
+ *
  * @param {Object} data - The message payload to send.
  */
 const sendMessage = ( data ) => {
     if ( currentRunToken !== null ) {
         data.runToken = currentRunToken;
     }
+    const protocol = negotiatedProtocol();
+    if ( null !== protocol ) {
+        data.protocol = protocol;
+    }
     conn.send( JSON.stringify( data ) );
+};
+
+/**
+ * The card class a check's cards were rendered with.
+ *
+ * The two families name themselves differently and always did: a resource check is a route, known
+ * by the `validate` key it shares with `resourcePaths`; a source check is an inventory item, known
+ * by the opaque `id` the server minted. Neither is derived from anything the server sends at *run*
+ * time — that was the coupling #42 removes — so this is only about which of our own two vocabularies
+ * a check belongs to.
+ *
+ * @param {{id?: string, validate?: string}} check
+ * @returns {string}
+ */
+const cardSlugFor = ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) );
+
+/**
+ * Restart the silence clock, unless the phase has nothing left to wait for.
+ * @returns {void}
+ */
+const restartPhaseWatchdog = () => {
+    if ( 0 === phaseOutstanding.size ) {
+        phaseWatchdog.clear();
+        return;
+    }
+    phaseWatchdog.restart();
+};
+
+/**
+ * Stop the silence clock.
+ * @returns {void}
+ */
+const clearPhaseWatchdog = () => phaseWatchdog.clear();
+
+/**
+ * Bind a phase's checks to their cards and start the phase.
+ *
+ * Each check is given a freshly minted `requestId`, the three cards it will paint are looked up
+ * once, here, and the pair is recorded in the registry. The ids are minted per *run* rather than
+ * per page: reusing them would leave a previous run's frames able to paint the current run's cards,
+ * and the run token alone would not stop it, since a rerun of the same page checks the same things.
+ *
+ * The cards are found by the same slug the templates were rendered with — this page's own
+ * `slugify(check.validate)` — not by a selector from the server. That is the coupling #42 exists to
+ * remove: our markup was part of the API's contract, and a selector matching nothing failed
+ * silently while the counters advanced anyway.
+ *
+ * @param {Array<object>} checks - The checks about to be sent; each is given a `requestId`.
+ * @param {string} containerSelector - The phase's card container.
+ * @returns {Set<string>} The request ids the phase is waiting on.
+ */
+const beginPhase = ( checks, containerSelector ) => {
+    const outstanding = new Set();
+    checks.forEach( check => {
+        const requestId = newRequestId();
+        check.requestId = requestId;
+        const slug = cardSlugFor( check );
+        const cards = {};
+        // The steps the server advertised for this item, where it advertised any — the count is
+        // exact since LiturgicalCalendarAPI#825, so it can be trusted rather than assumed. A
+        // resource check carries none, and falls back to the three every check has always had.
+        const steps = Array.isArray( check.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+        steps.forEach( step => {
+            const cardClass = STEP_CARD_CLASS[ step ];
+            if ( undefined === cardClass ) {
+                // A step this page has no card for. Said out loud rather than skipped silently:
+                // the server has added a step to its vocabulary and the templates have not caught up.
+                console.warn( `The server advertises a step "${step}" for "${check.id ?? check.validate}" that this page renders no card for.` );
+                return;
+            }
+            const card = document.querySelector( `${containerSelector} .${slug}.${cardClass}` );
+            if ( null === card ) {
+                // Loud, and specific about which check and which step. The selector-based
+                // addressing this replaces could only produce an empty NodeList, which said
+                // nothing about what was missing and did not stop the counters advancing.
+                console.warn( `No "${cardClass}" card rendered for check "${check.id ?? check.validate}"; its ${step} result will have nowhere to go.` );
+                return;
+            }
+            cards[ step ] = card;
+        } );
+        requestRegistry.register( requestId, cards );
+        outstanding.add( requestId );
+    } );
+    return outstanding;
+};
+
+/**
+ * Move on immediately when a phase has nothing to wait for.
+ *
+ * A phase now ends on the terminal frames of the requests it started, so a phase that starts *no*
+ * requests would otherwise wait for frames that are never coming — and the silence watchdog cannot
+ * rescue it either, since it only runs while something is outstanding. The run would sit on
+ * "Tests Running..." for ever with no diagnostic, which is the wedge #43 is about, reached by a
+ * door the frame counting this replaces did not have.
+ *
+ * Reachable: `sourceDataChecks` is whatever `/validations` advertised for the selected rite, so a
+ * rite with no advertised source data — or an inventory that came back empty — is an empty phase.
+ *
+ * @returns {void}
+ */
+const advanceIfPhaseIsEmpty = () => {
+    if ( 0 === phaseOutstanding.size ) {
+        console.log( 'This phase has no requests to wait for; moving on.' );
+        runTests();
+    }
+};
+
+/**
+ * Start a phase's silence clock once its outstanding set has been installed.
+ *
+ * Separate from {@link beginPhase} because the clock reads `phaseOutstanding`, which the caller
+ * assigns from beginPhase's return value — starting it inside beginPhase would read the *previous*
+ * phase's set.
+ *
+ * @returns {void}
+ */
+const armPhaseWatchdog = () => restartPhaseWatchdog();
+
+/**
+ * Paint one step result onto the card its request registered.
+ *
+ * Addressed by `(requestId, step)`, which the server has stamped on every frame — including the
+ * frames answering the legacy `executeValidation` messages this page still sends — since
+ * LiturgicalCalendarAPI#806 section C. The `classes` selector is still on the frame and is
+ * deliberately not read: it is the coupling #42 exists to remove, and it remains only so that
+ * `index.js`, not yet migrated, keeps working.
+ *
+ * Falls back to the selector for a frame that carries no usable correlation, which is not dead code:
+ * a server that predates section C sends no `requestId`, and this page should degrade to the old
+ * behaviour rather than paint nothing at all.
+ *
+ * @param {object} responseData - A step-result frame.
+ * @returns {void}
+ */
+const paintResult = ( responseData ) => {
+    const { requestId, step } = responseData;
+    if ( 'string' !== typeof requestId || 'string' !== typeof step ) {
+        applyResultToDom( responseData );
+        return;
+    }
+    const card = requestRegistry.cardFor( requestId, step );
+    if ( null === card ) {
+        // Specific about what could not be attributed, unlike the empty NodeList this replaces.
+        console.warn( `No card is registered for request ${requestId} step "${step}" — the run totals will drift from the rendered cards.`, responseData );
+        return;
+    }
+    paintCard( card, responseData.type === 'success', responseData.text ?? '' );
+    requestRegistry.markReceived( requestId, step );
 };
 
 /**
@@ -830,13 +1048,123 @@ let failedSourceDataTests       = 0;
 let successfulResourceDataTests = 0;
 let failedResourceDataTests     = 0;
 
-/** Track expected and received responses for parallel Resource Data tests */
-let resourceDataExpectedResponses = 0;
-let resourceDataReceivedResponses = 0;
+/**
+ * Count a failure that belongs to no card.
+ *
+ * **Module scope, not inside `connectWebSocket()`, and that is a fix rather than a tidy.** The phase
+ * watchdog is defined at module level and calls this; while it lived in the connection closure, the
+ * watchdog firing raised a ReferenceError instead of rescuing the run — so the one safety net
+ * standing between a missing terminal frame and a permanently hung phase was itself broken. Nothing
+ * caught it because no test reached the sixty-second timeout.
+ *
+ * @returns {void}
+ */
+const countUnattributableFailure = () => {
+    updateText( 'failedCount', ++failedTests );
+    switch ( currentState ) {
+        case TestState.ExecutingResourceValidations:
+            updateText( 'failedResourceDataTestsCount', ++failedResourceDataTests );
+            break;
+        case TestState.ExecutingSourceValidations:
+            updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
+            break;
+    }
+};
 
-/** Track expected and received responses for parallel Source Data tests */
-let sourceDataExpectedResponses = 0;
-let sourceDataReceivedResponses = 0;
+/** Track expected and received responses for parallel Resource Data tests */
+/**
+ * Which cards each in-flight request addresses, and which requests are still running.
+ *
+ * Replaces both of the things this page used to do instead: painting by the CSS selector the server
+ * composed, and sizing a phase as `checks * 3`. See {@link createRequestRegistry} for why the first
+ * had to go, and `runTests()` for the second.
+ *
+ * One registry for both phases. They never overlap — the source phase is only entered once every
+ * resource request has reported completion — and a single registry means a frame arriving late,
+ * after its phase has moved on, still finds its card instead of being reported as unattributable.
+ */
+const requestRegistry = createRequestRegistry();
+
+/**
+ * The request ids of the phase currently running, emptied as their terminal frames arrive.
+ * @type {Set<string>}
+ */
+let phaseOutstanding = new Set();
+
+/**
+ * How long a run may go without a single frame before the current phase is given up on.
+ *
+ * Stopping on the terminal frame is what removes the hardcoded step count, but it trades one
+ * failure mode for another: a request that never reports completion now hangs the phase for ever,
+ * where counting frames would eventually have overshot its way past it. The server has a known hole
+ * of exactly that shape — a throw inside a promise's fulfil handler skips the terminal frame
+ * (LiturgicalCalendarAPI#823) — and the published contract says in as many words to pair stopping
+ * on `complete` with a timeout.
+ *
+ * The clock measures *silence*, not phase duration, and is restarted by every frame of the run.
+ * Requests run in parallel and a slow one is covered by its neighbours' frames, so this only fires
+ * when the server has genuinely stopped answering — never merely because a check was slow.
+ *
+ * @type {number}
+ */
+const PHASE_SILENCE_TIMEOUT_MS = 60000;
+
+/**
+ * The clock itself. Its callback gives up on whatever the current phase is still waiting for.
+ * @type {{restart: Function, clear: Function, isRunning: Function}}
+ */
+const phaseWatchdog = createSilenceWatchdog( PHASE_SILENCE_TIMEOUT_MS, () => giveUpOnOutstandingRequests() );
+
+/**
+ * Give up on whatever the current phase is still waiting for, and move the run on.
+ *
+ * The two ways a request can be outstanding are counted differently, because they are different
+ * failures — see {@link summariseAbandoned}. A request whose steps never arrived left that many
+ * cards grey, and each one is counted, or the totals badge reads lower than the cards on the page. A
+ * request whose steps all arrived but whose terminal frame never did left nothing grey: its counters
+ * are already right, and adding a failure would inflate them past the cards. That second case is not
+ * hypothetical — it is exactly LiturgicalCalendarAPI#823, a throw inside a promise's fulfil handler
+ * skipping `sendComplete()` after the work itself succeeded — so it is reported as the transport
+ * failure it is, and left out of the arithmetic.
+ *
+ * Exported so a test can invoke it against a real run rather than waiting out the sixty-second
+ * clock. Nothing else imports this module; the export exists for that reason and is not a seam
+ * anything else is meant to use.
+ *
+ * @returns {void}
+ */
+export const giveUpOnOutstandingRequests = () => {
+    const abandoned = [ ...phaseOutstanding ];
+    if ( 0 === abandoned.length ) {
+        return;
+    }
+
+    const { unpaintedSteps, incomplete, silent } = summariseAbandoned( requestRegistry, abandoned );
+
+    if ( 0 < incomplete.length ) {
+        console.error(
+            `No frame has arrived for ${PHASE_SILENCE_TIMEOUT_MS / 1000}s; ${incomplete.length} request(s) never answered in full, leaving ${unpaintedSteps} check(s) unreported.`,
+            incomplete
+        );
+    }
+    if ( 0 < silent.length ) {
+        // A run-level transport fault, not a check that failed: every card of these requests is
+        // painted and every counter already agrees with them.
+        console.error(
+            `${silent.length} request(s) reported every check but never reported completion — the server ended the request without saying so (LiturgicalCalendarAPI#823).`,
+            silent
+        );
+    }
+
+    for ( let i = 0; i < unpaintedSteps; i++ ) {
+        countUnattributableFailure();
+    }
+
+    phaseOutstanding.clear();
+    if ( currentState !== TestState.JobsFinished && currentState !== TestState.Stopped ) {
+        runTests();
+    }
+};
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
@@ -849,7 +1177,7 @@ const methodAndHeaders = Object.freeze({
  * The API's base URL, without a trailing slash and without an endpoint.
  * @returns {string}
  */
-const getApiBaseUrl = () => ENDPOINTS.CALENDARS.replace(/\/calendars$/, '');
+const getApiBaseUrl = () => ENDPOINTS.ROOT;
 
 /** @type {?import('@liturgical-calendar/components-js').RiteSelect} */
 let riteSelect = null;
@@ -945,10 +1273,10 @@ const resetCheckListsForRite = () => {
     Object.keys( resourcePaths )
         .filter( key => /^(data-path|events-path|missals-path)-/.test( key ) )
         .forEach( key => delete resourcePaths[ key ] );
-    sourceDataChecks = universalChecksForRite( currentRite );
-    ReadyToRunTests.MetaDataReady = false;
-    ReadyToRunTests.MissalsReady  = false;
-    ReadyToRunTests.TestsReady    = false;
+    sourceDataChecks = [];
+    ReadyToRunTests.MetaDataReady    = false;
+    ReadyToRunTests.MissalsReady     = false;
+    ReadyToRunTests.ValidationsReady = false;
     document.querySelectorAll( '#resourceDataTests .resourcedata-tests, #sourceDataTests .sourcedata-tests' )
         .forEach( el => { el.innerHTML = ''; } );
 };
@@ -971,7 +1299,11 @@ const loadAsyncData = () => {
     Promise.all([
         fetch( ENDPOINTS.CALENDARS, methodAndHeaders).then(response => response.json()),
         fetch( ENDPOINTS.MISSALS, methodAndHeaders).then(response => response.json()),
-        fetch( ENDPOINTS.TESTS, methodAndHeaders).then(response => response.json())
+        // `/validations` in place of `/tests`: the inventory carries the test corpus as items of
+        // its own (`test:{rite}:{name}`), so fetching the tests list to build source checks from it
+        // would be deriving a second time what the server already advertises. `/tests` is still
+        // health-checked as a resource path, so nothing stops being covered.
+        fetchValidations( ENDPOINTS.ROOT ).then( items => ( { litcal_validations: items } ) )
     ]).then(dataArr => {
         if ( myGeneration !== loadAsyncDataGeneration ) {
             // A newer rite change started another loadAsyncData() call before this one's fetches
@@ -991,16 +1323,6 @@ const loadAsyncData = () => {
                 if ( currentRite === 'roman' ) {
                     wider_regions.forEach(region => {
                     const widerRegion = region.name;
-                    sourceDataChecks.push({
-                        "validate": `wider-region-${widerRegion}`,
-                        "sourceFile": widerRegion,
-                        "category": "sourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `wider-region-${widerRegion}-i18n`,
-                        "sourceFolder": widerRegion,
-                        "category": "sourceDataCheck"
-                    });
 
                     // we need to request a locale for widerRegion on the data path
                     // so let's retrieve the first available locale from the metadata
@@ -1022,16 +1344,6 @@ const loadAsyncData = () => {
                 if ( currentRite === 'roman' ) {
                     national_calendars.slice(1).forEach(nationalCalendar => {
                     const nation = nationalCalendar.calendar_id;
-                    sourceDataChecks.push({
-                        "validate": `national-calendar-${nation}`,
-                        "sourceFile": nation,
-                        "category": "sourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `national-calendar-${nation}-i18n`,
-                        "sourceFolder": nation,
-                        "category": "sourceDataCheck"
-                    });
 
                     nationalCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-nation-${nation}-${locale}`] = `/data/roman/nation/${nation}?locale=${locale}`;
@@ -1055,17 +1367,6 @@ const loadAsyncData = () => {
                     .filter( diocesanCalendar => inRiteScope( diocesanCalendar, currentRite ) )
                     .forEach(diocesanCalendar => {
                     const diocese = diocesanCalendar.calendar_id;
-                    sourceDataChecks.push({
-                        "validate": `diocesan-calendar-${diocese}`,
-                        "sourceFile": diocese,
-                        "category": "sourceDataCheck"
-                    });
-                    sourceDataChecks.push({
-                        "validate": `diocesan-calendar-${diocese}-i18n`,
-                        "sourceFolder": diocese,
-                        "category": "sourceDataCheck"
-                    });
-
 
                     diocesanCalendar.locales.forEach(locale => {
                         resourcePaths[`data-path-diocese-${diocese}-${locale}`] = `/data/${currentRite}/diocese/${diocese}?locale=${locale}`;
@@ -1105,44 +1406,18 @@ const loadAsyncData = () => {
                             "sourceFile": ENDPOINTS.MISSALS + `/${missal.missal_id}`,
                             "category": "resourceDataCheck"
                         });
-                        sourceDataChecks.push({
-                            "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}`,
-                            "sourceFile": missal.missal_id,
-                            "category": "sourceDataCheck"
-                        });
-                        if (missal.hasOwnProperty('locales')) {
-                            sourceDataChecks.push({
-                                "validate": `proprium-de-sanctis${missal.region === 'VA' ? '' : `-${missal.region}`}-${missal.year_published}-i18n`,
-                                "sourceFolder": missal.missal_id,
-                                "category": "sourceDataCheck"
-                            });
-                        }
                     });
                 }
                 ReadyToRunTests.MissalsReady = true;
                 console.log( 'Missals is ready');
             }
-            else if(data.hasOwnProperty('litcal_tests')) {
-                data.litcal_tests.forEach(test => {
-                    // Since API #787 the test corpus is rite-partitioned on disk:
-                    // jsondata/tests/{rite}/{name}.json. `rite` is a required property of
-                    // `applies_to` since API #785 (falling back to the legacy `appliesTo`
-                    // property, mirroring the handling in index.js's handleAppliesToOrFilter()).
-                    const rite = test.applies_to?.rite ?? test.appliesTo?.rite;
-                    if (!rite) {
-                        console.warn(`Test ${test.name} has no applies_to.rite; skipping its source-data check`);
-                        return;
-                    }
-                    if ( rite !== currentRite ) {
-                        return;
-                    }
-                    sourceDataChecks.push({
-                        "validate": `tests-${test.name}`,
-                        "sourceFile": `jsondata/tests/${rite}/${test.name}.json`,
-                        "category": "sourceDataCheck"
-                    });
-                })
-                ReadyToRunTests.TestsReady = true;
+            else if(data.hasOwnProperty('litcal_validations')) {
+                // The whole source-data list, in one statement, from the one place that knows it.
+                // Rite filtering is the inventory's own `rite` property rather than a rule
+                // reimplemented here — which is what the wider-region and national tiers above
+                // still need, since those build *URL* checks the inventory does not cover.
+                sourceDataChecks = validationChecksForRite( data.litcal_validations, currentRite );
+                ReadyToRunTests.ValidationsReady = true;
             }
         });
         // Render once, after ALL datasets in this Promise.all pass have been processed.
@@ -1151,6 +1426,22 @@ const loadAsyncData = () => {
         // were pushed into sourceDataChecks but never rendered, and the Time badge totals
         // under-counted until something re-ran setupPage().
         setupPage();
+    }).catch( error => {
+        // Without this the chain rejects unhandled: `setupPage()` never runs, the start button stays
+        // disabled — safe, but silent — and the page sits looking like it is still loading with
+        // nothing to say why. The same toast the rite-select mount failure uses, because to a user
+        // it is the same event: the controls could not be built from what the API returned.
+        //
+        // Left disabled deliberately. Every dataset here decides what a run would check, so a run
+        // started without them would check a subset and report success for it — the class of untruth
+        // this interface exists to detect, produced by the interface itself.
+        if ( myGeneration !== loadAsyncDataGeneration ) {
+            return;
+        }
+        console.error( 'Could not load the data this page builds its checks from', error );
+        safeToastShow( '#controls-load-failed' );
+        document.querySelectorAll( '.fa-spin' ).forEach( el => el.classList.remove( 'fa-spin' ) );
+        ReadyToRunTests.tryEnableBtn();
     });
 }
 
@@ -1176,9 +1467,9 @@ const runTests = () => {
             safeCollapseShow('#resourceDataTests');
 
             // Send ALL resource data requests at once - server handles concurrency
-            resourceDataExpectedResponses = resourceDataChecks.length * 3; // 3 responses per check
-            resourceDataReceivedResponses = 0;
-            console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel (expecting ${resourceDataExpectedResponses} responses)...` );
+            phaseOutstanding = beginPhase( resourceDataChecks, '#resourceDataTests .resourcedata-tests' );
+            armPhaseWatchdog();
+            console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel...` );
             resourceDataChecks.forEach( check => {
                 sendMessage({
                     action: 'executeValidation',
@@ -1186,56 +1477,60 @@ const runTests = () => {
                     ...check
                 });
             });
+            advanceIfPhaseIsEmpty();
             break;
         }
         case TestState.ExecutingResourceValidations:
-            // Count responses from parallel requests (all requests already sent)
-            resourceDataReceivedResponses++;
-            // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
-            // and the phase would never complete (#43). The comment on the wider-region push
-            // below records a real occurrence — a double-sent validation inflated the success
-            // counter (162) past the rendered-card total (159).
+            // A phase ends when every request it started has reported its terminal `complete`
+            // frame — not when some number of frames have arrived.
             //
-            // `sourceDataChecks.length * 3` is now exact: LiturgicalCalendarAPI#809 made a
-            // `sourceFolder` check emit one frame per step like every other check, where it
-            // previously emitted one per failing i18n file and overshot this estimate.
+            // This page used to size each phase as `checks * 3` and compare with `>=`. Three was
+            // the undocumented step count, shared by both sides and written down in four places
+            // across the two runners (#42); `>=` was there because counting frames cannot tell a
+            // duplicate from a legitimate one, so an extra frame had to be tolerated rather than
+            // hang the phase. Tolerating it had its own cost: an extra frame satisfied the
+            // threshold early and the *following* phase then inherited the overshoot. A real
+            // occurrence is recorded on the wider-region push below — a double-sent validation
+            // inflated the success counter to 162 against 159 rendered cards.
             //
-            // `>=` remains the right comparison all the same. Counting frames cannot tell a
-            // duplicate from a legitimate one, so it tolerates an unexpected extra rather than
-            // hanging the phase on it. The principled fix is per-request correlation — count
-            // each expected request id once — which needs a per-request id the protocol does
-            // not carry (only a per-*run* `runToken`). See #42 and LiturgicalCalendarAPI#806.
-            if ( resourceDataReceivedResponses >= resourceDataExpectedResponses ) {
-                console.log( `All ${resourceDataExpectedResponses} resource data responses received!` );
+            // Neither problem survives per-request completion. The step count comes from the
+            // server, a duplicate terminal frame is idempotent in the registry, and a request
+            // that stops early still ends the phase, because the server sends `complete` for a
+            // request whose steps failed exactly as for one whose steps passed.
+            if ( 0 === phaseOutstanding.size ) {
                 console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
                 currentState = TestState.ExecutingSourceValidations;
                 performance.mark( 'sourceDataTestsStart' );
                 safeCollapseShow('#sourceDataTests');
 
                 // Send ALL source data requests at once - server handles concurrency
-                sourceDataExpectedResponses = sourceDataChecks.length * 3; // 3 responses per check
-                sourceDataReceivedResponses = 0;
-                console.log( `Sending ${sourceDataChecks.length} source data requests in parallel (expecting ${sourceDataExpectedResponses} responses)...` );
+                phaseOutstanding = beginPhase( sourceDataChecks, '#sourceDataTests .sourcedata-tests' );
+                armPhaseWatchdog();
+                console.log( `Sending ${sourceDataChecks.length} source data requests in parallel...` );
                 sourceDataChecks.forEach( check => {
+                    // The opaque id, and nothing else. No `category` to pick a schema-resolution
+                    // strategy, no `validate` doing three jobs at once, and above all no path: the
+                    // server resolves all of that from the id it advertised.
                     sendMessage({
-                        action: 'executeValidation',
-                        ...check
+                        action: 'validateSource',
+                        target: { id: check.id },
+                        requestId: check.requestId
                     });
                 });
+                advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.ExecutingSourceValidations:
-            // Count responses from parallel requests (all requests already sent)
-            sourceDataReceivedResponses++;
-            // `>=`, not `===` — see the note on the resource-data counter above.
-            if ( sourceDataReceivedResponses >= sourceDataExpectedResponses ) {
-                console.log( `All ${sourceDataExpectedResponses} source data responses received!` );
+            // See the note on the resource phase above.
+            if ( 0 === phaseOutstanding.size ) {
+                console.log( 'All source data requests have reported completion!' );
                 currentState = TestState.JobsFinished;
                 runTests();
             }
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
+            clearPhaseWatchdog();
             safeToastShow('#tests-complete');
             currentRunToken = null;
             setRiteSelectDisabledForRun( false );
@@ -1367,10 +1662,8 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         failedResourceDataTests = 0;
         successfulSourceDataTests = 0;
         failedSourceDataTests = 0;
-        resourceDataExpectedResponses = 0;
-        resourceDataReceivedResponses = 0;
-        sourceDataExpectedResponses = 0;
-        sourceDataReceivedResponses = 0;
+        requestRegistry.reset();
+        phaseOutstanding = new Set();
         resetTestUI();
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
@@ -1401,6 +1694,8 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
+        clearPhaseWatchdog();
+        phaseOutstanding.clear();
         currentState = TestState.Stopped;
         currentRunToken = null;
         setRiteSelectDisabledForRun( false );
