@@ -21,8 +21,8 @@
     "scripts": {
         "lint": "phpcs --runtime-set ignore_warnings_on_exit 1",
         "lint:fix": "phpcbf || echo 'Lint fixing failed. Please check the linting failures and fix them manually.'",
-        "lint:md": "npx --yes markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#vendor\" \"#.superpowers\" \"#.serena.local.bak\" \"#test-results\" \"#playwright-report\"",
-        "lint:md:fix": "npx --yes markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#vendor\" \"#.superpowers\" \"#.serena.local.bak\" \"#test-results\" \"#playwright-report\""
+        "lint:md": "npx --yes markdownlint-cli2@0.23.2 \"**/*.md\" \"#node_modules\" \"#vendor\" \"#.superpowers\" \"#.serena.local.bak\" \"#test-results\" \"#playwright-report\"",
+        "lint:md:fix": "npx --yes markdownlint-cli2@0.23.2 --fix \"**/*.md\" \"#node_modules\" \"#vendor\" \"#.superpowers\" \"#.serena.local.bak\" \"#test-results\" \"#playwright-report\""
     },
     "license": "Apache-2.0",
     "authors": [
