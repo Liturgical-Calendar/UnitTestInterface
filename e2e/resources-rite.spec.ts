@@ -277,7 +277,24 @@ test('a rite change between runs clears the previous rite\'s counters and timers
     expect(romanSuccesses).toBeGreaterThan(0);
     await expect(page.locator('#total-time')).not.toHaveText('0');
 
-    await selectRite(page, 'ambrosian');
+    // Deliberately not `selectRite()`: its `waitForScaffold()` waits for a *visible* scaffold, and a
+    // finished run leaves `#sourceDataTests` collapsed (the phases share a `data-bs-parent`, so
+    // opening the last one closes this). The cards are there and simply not shown — CI caught this
+    // as "44 × locator resolved to 13 elements" while waiting for visibility.
+    //
+    // Wait for the rebuild itself instead. `resetCheckListsForRite()` empties the scaffold
+    // synchronously and `loadAsyncData()` repopulates it only once its fetches resolve, so the count
+    // passes through 0; requiring a non-zero count below the Roman one lands on the settled
+    // Ambrosian scaffold rather than on that transient.
+    const romanCards = await page.locator('.sourcedata-tests').first().locator('> div').count();
+    expect(romanCards).toBeGreaterThan(0);
+    await page.selectOption('#riteSelect', 'ambrosian');
+    await expect
+        .poll(async () => {
+            const cards = await page.locator('.sourcedata-tests').first().locator('> div').count();
+            return cards > 0 && cards < romanCards;
+        }, { timeout: 20000 })
+        .toBe(true);
 
     for (const id of [
         'successfulCount', 'failedCount',
