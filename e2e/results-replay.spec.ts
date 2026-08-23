@@ -74,13 +74,16 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
 });
 
 test('restores live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
-    // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live
-    // General Roman scaffold has 11 sourceDataChecks: metadata, temporale + i18n, decrees + i18n,
-    // and the 3 editio typica missals from /missals, each with its own i18n folder (#61 added the
-    // calendar-specific i18n tier; all three editio typica missals have translations).
-    // After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold shows only 1
-    // check. Returning to "— Live —" must re-sync state from the DOM controls and rebuild the
-    // scaffold via setupPage(), restoring the 11-check General Roman layout.
+    // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live General Roman
+    // scaffold, which is larger. After replay, currentSelectedCalendar is clobbered to 'IT' and the
+    // scaffold shows only that 1 check. Returning to "— Live —" must re-sync state from the DOM
+    // controls and rebuild the scaffold via setupPage(), restoring the live layout.
+    //
+    // The live count is *measured* before the replay rather than written down. It was hardcoded to
+    // 11 — metadata, temporale + i18n, decrees + i18n, and the three editio typica missals with
+    // their i18n folders — and #61 part 2 moved it to 22 by adding the rite's lectionary corpus.
+    // What this test is about is that returning to Live restores whatever the live scaffold was, so
+    // pinning the number here only bought a second place to edit whenever coverage changes.
     // As above, the timestamp is supplied by seedStoredRun() rather than hardcoded.
     const run = {
         schemaVersion: 1,
@@ -107,15 +110,18 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
     // Wait for live scaffold to be built before replaying (avoids a race where setupPage()
     // fires after selectOption and clobbers the replayed state before we can check it).
     await page.waitForSelector('.sourcedata-tests > div');
+    const liveCheckCount = await page.locator('.sourcedata-tests > div').count();
+    // Guard the guard: a live scaffold of 1 would make the assertions below indistinguishable from
+    // the replayed state, and the test would pass without restoring anything.
+    expect(liveCheckCount).toBeGreaterThan(1);
 
     // Replay the IT run — scaffold should now show 1 source-data check
     await page.selectOption('#pastRunsSelect', file);
     await expect(page.locator('.sourcedata-tests > div')).toHaveCount(1);
 
-    // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the General Roman scaffold
-    // (11 checks)
+    // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the live scaffold
     await page.selectOption('#pastRunsSelect', '');
-    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(11);
+    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(liveCheckCount);
     // .currentSelectedCalendar cells must reflect the live dropdown value ('roman'), not 'IT'
     await expect(page.locator('.currentSelectedCalendar').first()).toContainText('roman');
 });

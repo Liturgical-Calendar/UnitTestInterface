@@ -270,8 +270,24 @@ export const PROTOCOL_VERSION = 1;
 export const STEP_CARD_CLASS = Object.freeze({
     exists: 'step-exists',
     parses: 'step-parses',
-    validates: 'step-validates'
+    validates: 'step-validates',
+    covers: 'step-covers'
 });
+
+/**
+ * The steps a check falls back to when it advertises none.
+ *
+ * Pinned, where it used to be `Object.keys( STEP_CARD_CLASS )`. The checks that carry no `steps` are
+ * precisely the ones that never came from the inventory — the bare-URL `executeValidation` checks
+ * (`LitCalMetadata` on `index.js`, `resourceDataChecks` on `resources.js`), the calendar-data years,
+ * and runs stored before the #42 migration — and every one of those is a three-step check by
+ * construction. Deriving the fallback from the card table meant that the first card class added to
+ * that table would silently give all of them a fourth card no frame would ever paint, and a totals
+ * badge counting it.
+ *
+ * @type {ReadonlyArray<string>}
+ */
+export const DEFAULT_CHECK_STEPS = Object.freeze([ 'exists', 'parses', 'validates' ]);
 
 /**
  * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
@@ -301,17 +317,19 @@ export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
  * The first two-step item would have left a permanently blue card no frame paints and a totals badge
  * reading high; the first four-step item, a `console.warn` per check and a result with nowhere to go.
  *
- * A check that advertises nothing falls back to every step {@link STEP_CARD_CLASS} has. That is not
- * a guess about the API: the checks carrying no `steps` are precisely the ones that never came from
- * the inventory — the bare-URL `executeValidation` checks (`LitCalMetadata` on `index.js`,
- * `resourceDataChecks` on `resources.js`), the calendar-data years, and runs stored before the #42
- * migration — and every one of those is a three-step check by construction.
+ * A check that advertises nothing falls back to {@link DEFAULT_CHECK_STEPS}. That is not a guess about
+ * the API: the checks carrying no `steps` are precisely the ones that never came from the inventory —
+ * the bare-URL `executeValidation` checks (`LitCalMetadata` on `index.js`, `resourceDataChecks` on
+ * `resources.js`), the calendar-data years, and runs stored before the #42 migration — and every one of
+ * those is a three-step check by construction. It is deliberately *not* derived from
+ * {@link STEP_CARD_CLASS}: that table gained a fourth entry when `covers` arrived, and a derived
+ * fallback would have handed every one of those legacy checks a card no frame paints.
  *
  * @param {?{steps?: Array<string>}} [check] - An inventory item, or anything that carries no `steps`.
  * @returns {Array<string>}
  */
 export const stepsForCheck = ( check ) =>
-    Array.isArray( check?.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+    Array.isArray( check?.steps ) ? check.steps : [ ...DEFAULT_CHECK_STEPS ];
 
 /**
  * What one scaffold card says, keyed by step.
@@ -330,7 +348,8 @@ export const stepsForCheck = ( check ) =>
 export const STEP_CARD_BODY = Object.freeze({
     exists: () => 'data exists',
     parses: ( responseType ) => `<span class="response-type">${responseType}</span> valid`,
-    validates: () => 'schema valid'
+    validates: () => 'schema valid',
+    covers: () => 'locales covered'
 });
 
 /**
@@ -796,19 +815,32 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
         ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
         : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
     if ( widerRegion ) {
-        ids.push( `widerregion:roman:${widerRegion}`, `widerregion:roman:${widerRegion}:i18n` );
+        ids.push(
+            `widerregion:roman:${widerRegion}`,
+            `widerregion:roman:${widerRegion}:i18n`,
+            `widerregion:roman:${widerRegion}:lectionary`
+        );
     }
     if ( nation ) {
-        ids.push( `nation:roman:${nation}`, `nation:roman:${nation}:i18n` );
+        ids.push(
+            `nation:roman:${nation}`,
+            `nation:roman:${nation}:i18n`,
+            `nation:roman:${nation}:lectionary`
+        );
     }
     ( missals ?? [] ).forEach( missalId => ids.push(
         `sanctorale:roman:${missalId}`,
         // Conditional on the server side, unlike every other id composed here; see
         // `isConditionalInventoryId()` for why it is still composed unconditionally.
-        `sanctorale:roman:${missalId}:i18n`
+        `sanctorale:roman:${missalId}:i18n`,
+        `sanctorale:roman:${missalId}:lectionary`
     ) );
     if ( dioceseId ) {
-        ids.push( `diocese:${dioceseRite}:${dioceseId}`, `diocese:${dioceseRite}:${dioceseId}:i18n` );
+        ids.push(
+            `diocese:${dioceseRite}:${dioceseId}`,
+            `diocese:${dioceseRite}:${dioceseId}:i18n`,
+            `diocese:${dioceseRite}:${dioceseId}:lectionary`
+        );
     }
     return ids;
 };
@@ -821,6 +853,23 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
  * matched here.
  */
 const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
+
+/**
+ * The shape of a calendar-owned lectionary folder id, e.g. `nation:roman:US:lectionary`.
+ *
+ * Four segments, which is what separates it from the rite's own decrees lectionary
+ * (`decrees:roman:lectionary`, three segments) and from the rite-level corpus
+ * (`lectionary:roman:{section}`, which does not end in `:lectionary` at all). Both of those are on
+ * disk unconditionally and must keep warning if the server ever stops advertising them — exactly the
+ * segment-count split that already separates a missal's conditional `:i18n` from a rite's
+ * unconditional one, which is why the id scheme was chosen to make it fall out.
+ *
+ * Absence is the ordinary case here rather than the exception: three of ten nations, one wider region,
+ * two of five missals and nine dioceses have a lectionary folder, and the rest never will unless
+ * someone writes one. A warning per composed id per page load would drown the warnings that mean
+ * something.
+ */
+const CONDITIONAL_LECTIONARY_ID = /^(?:nation|widerregion|sanctorale|diocese):[^:]+:[^:]+:lectionary$/;
 
 /**
  * Whether the API is entitled to advertise no inventory item for this composed id.
@@ -843,7 +892,10 @@ const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
  *   advertise is an upstream data gap, never a composition mistake — nothing this page can act on, and
  *   a warning per page load would train the reader to ignore the warnings that mean something.
  *
- * Absence is therefore the contract for this family, not a disagreement. (Composing conditionally
+ * The lectionary family is the third, and the largest: a `:lectionary` sibling is composed beside every
+ * calendar-tier id, and most calendars have no such folder — see {@link CONDITIONAL_LECTIONARY_ID}.
+ *
+ * Absence is therefore the contract for these families, not a disagreement. (Composing conditionally
  * instead is not open to this function: knowing which missals have files means reading the inventory,
  * which is precisely what this function does not do.)
  *
@@ -854,4 +906,5 @@ const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
  * @param {string} id - A composed inventory id.
  * @returns {boolean} True when the server may legitimately publish no such item.
  */
-export const isConditionalInventoryId = id => CONDITIONAL_INVENTORY_ID.test( id );
+export const isConditionalInventoryId = id =>
+    CONDITIONAL_INVENTORY_ID.test( id ) || CONDITIONAL_LECTIONARY_ID.test( id );

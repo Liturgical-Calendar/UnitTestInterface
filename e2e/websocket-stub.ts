@@ -97,6 +97,41 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  *   Defaults to every action the `hello` frame advertises, i.e. current behaviour, so existing callers
  *   are unaffected.
  */
+/**
+ * Serve an inventory in which every item advertises exactly the three steps this stub answers with.
+ *
+ * The stub plays the server's side of the WebSocket, but the page still fetches `/validations` over
+ * HTTP, and those two have to agree: the scaffold renders one card per advertised step and the runner
+ * waits for one frame per card. Once the real inventory began advertising a fourth step (`covers`) for
+ * folder items, a stub that always answered three left those cards unpainted — a failure about the
+ * stub's fidelity, not about the behaviour under test.
+ *
+ * Normalising rather than teaching the stub to answer `covers` keeps it honest in the other direction
+ * too: a stub that always sent four frames would over-deliver for the file items that legitimately
+ * have three.
+ *
+ * Installed by {@link installReplyingWebSocketStub} for every stub test, because almost all of them
+ * assert on painted cards or on totals and so need the frames and the scaffold to agree.
+ *
+ * **Ordering matters.** Playwright gives the *last* registered route handler precedence, so a test that
+ * serves its own `/validations` — an empty inventory, or an item doctored to two steps — must register
+ * it **after** calling {@link installReplyingWebSocketStub}, or this one silently overrides it.
+ */
+export const serveThreeStepInventory = async (page: Page): Promise<void> => {
+    await page.route('**/validations', async (route) => {
+        const response = await route.fetch();
+        const body = await response.json() as { litcal_validations?: { steps: string[] }[] };
+        const items = (body.litcal_validations ?? []).map(
+            (item) => ({ ...item, steps: ['exists', 'parses', 'validates'] })
+        );
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ ...body, litcal_validations: items }),
+        });
+    });
+};
+
 export const installReplyingWebSocketStub = async (
     page: Page,
     options: {
@@ -107,6 +142,7 @@ export const installReplyingWebSocketStub = async (
         rejectActions?: string[] | null;
     } = {}
 ): Promise<void> => {
+    await serveThreeStepInventory(page);
     const protocol = options.protocol === undefined ? 1 : options.protocol;
     const omitComplete = options.omitComplete ?? false;
     const stopAfterStep = options.stopAfterStep ?? null;

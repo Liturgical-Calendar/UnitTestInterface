@@ -76,8 +76,11 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
     });
 
     // Every tier carries its i18n folder: the universal corpus since #48, the calendar-specific
-    // tier (wider region, nation, missals, diocese) since #61. Each id is immediately followed by
-    // its own ':i18n' partner, which is the ordering the scaffold renders the cards in.
+    // tier (wider region, nation, missals, diocese) since #61 part 1. Each calendar-tier id is
+    // followed by its ':i18n' and ':lectionary' partners, which is the ordering the scaffold renders
+    // the cards in. The universal corpus has no ':lectionary' sibling composed here — the rite-level
+    // lectionary sections are discovered from the inventory by prefix instead, because their names
+    // are not derivable from /calendars metadata.
     expect(ids.national).toEqual([
         'temporale:roman',
         'temporale:roman:i18n',
@@ -85,12 +88,16 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
         'decrees:roman:i18n',
         'widerregion:roman:Europe',
         'widerregion:roman:Europe:i18n',
+        'widerregion:roman:Europe:lectionary',
         'nation:roman:IT',
         'nation:roman:IT:i18n',
+        'nation:roman:IT:lectionary',
         'sanctorale:roman:EDITIO_TYPICA_1970',
         'sanctorale:roman:EDITIO_TYPICA_1970:i18n',
+        'sanctorale:roman:EDITIO_TYPICA_1970:lectionary',
         'sanctorale:roman:IT_1983',
         'sanctorale:roman:IT_1983:i18n',
+        'sanctorale:roman:IT_1983:lectionary',
     ]);
     // toEqual, not toContain: the diocese is qualified by its own rite while everything it inherits
     // stays Roman-qualified — a wrong rite on either half, or an extra/missing id, must fail this.
@@ -102,10 +109,13 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
         'decrees:roman:i18n',
         'widerregion:roman:Europe',
         'widerregion:roman:Europe:i18n',
+        'widerregion:roman:Europe:lectionary',
         'nation:roman:IT',
         'nation:roman:IT:i18n',
+        'nation:roman:IT:lectionary',
         'diocese:ambrosian:milano_it',
         'diocese:ambrosian:milano_it:i18n',
+        'diocese:ambrosian:milano_it:lectionary',
     ]);
     expect(ids.ambrosianRiteLevel).toEqual([
         'temporale:ambrosian',
@@ -168,11 +178,55 @@ test('every composed id is one the API really advertises', async ({ page, reques
     expect(mustExist.length).toBeGreaterThanOrEqual(8);
     expect(mustExist.filter((id) => !advertised.includes(id))).toEqual([]);
 
-    // The tolerated set is exactly what is absent — nothing more, and nothing less. This is what
-    // restores the coverage `optional` removes: it asserts that every *other* missal id (IT_1983 and
-    // both its forms) really is advertised, and it fails if the upstream gap is ever filled, so the
-    // tolerance cannot outlive the reason for it.
-    expect(composed.filter((id) => !advertised.includes(id)).sort()).toEqual([...TOLERATED_ABSENT].sort());
+    // The tolerated set is exactly what is absent, once the lectionary family is set aside — nothing
+    // more, and nothing less. This is what restores the coverage `optional` removes: it asserts that
+    // every *other* missal id (IT_1983 and both its forms) really is advertised, and it fails if the
+    // upstream gap is ever filled, so the tolerance cannot outlive the reason for it.
+    //
+    // The lectionary family is excluded rather than enumerated because absence is its *ordinary*
+    // state, not a gap: a `:lectionary` sibling is composed beside every calendar-tier id, and most
+    // calendars have no such folder. Listing today's absentees here would pin the contents of
+    // jsondata/sourcedata rather than the composition, and would fail the day anyone writes one.
+    // The positive assertion below is what keeps this family honest instead.
+    const absentNonLectionary = composed
+        .filter((id) => !advertised.includes(id) && !id.endsWith(':lectionary'))
+        .sort();
+    expect(absentNonLectionary).toEqual([...TOLERATED_ABSENT].sort());
+
+    // The lectionary folders that do exist upstream are genuinely advertised, not merely "not
+    // disagreed with": excluding the family above would otherwise pass just as well if the API
+    // published none of them. Italy has a wider-region and a missal lectionary; its nation tier does
+    // not, which is exactly why the composed id for it is allowed to go unadvertised.
+    //
+    // Gated on the API knowing about lectionary items at all. This repository's client half can be
+    // reviewed before LiturgicalCalendarAPI#881 merges, and against that API the whole family is
+    // absent — not a disagreement, just a server that predates the feature, the same question the
+    // `hello` handshake's capabilities answer for actions and steps. The moment #881 lands the
+    // gate opens on its own and the assertions below go live; what it must never do is stay shut
+    // once the server does advertise the family, which is why it keys on the family's presence
+    // rather than on a flag or an env var.
+    const lectionaryIds = [
+        `widerregion:roman:${nation.wider_region}:lectionary`,
+        'sanctorale:roman:IT_1983:lectionary',
+    ];
+
+    // Composition is this repository's own code and holds whatever the API knows about, so it is
+    // asserted unconditionally — gating it would weaken the test for a reason that has nothing to
+    // do with it.
+    for (const id of lectionaryIds) {
+        expect(composed).toContain(id);
+    }
+
+    const apiPublishesLectionaryItems = advertised.some((id) => id.startsWith('lectionary:'));
+    if (apiPublishesLectionaryItems) {
+        for (const id of lectionaryIds) {
+            expect(advertised).toContain(id);
+        }
+    } else {
+        // Say so rather than passing silently: a green run here means strictly less was checked.
+        // eslint-disable-next-line no-console
+        console.warn('API advertises no lectionary items (pre-#881); skipped the upstream presence assertions.');
+    }
 
     // And the calendar-specific i18n ids #61 added are genuinely present upstream, not merely
     // "not disagreed with" — the assertion above would pass just as well if the API published none.
@@ -255,4 +309,100 @@ test('toCalendarIdentity throws on an unknown calendartype rather than sending a
         }
     });
     expect(threw).toBe(true);
+});
+
+test('the covers step has a card class and a card body', async ({ page }) => {
+    await load(page);
+    const result = await page.evaluate(async () => {
+        const { STEP_CARD_CLASS, STEP_CARD_BODY } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            cardClass: STEP_CARD_CLASS.covers,
+            hasBody: 'function' === typeof STEP_CARD_BODY.covers,
+        };
+    });
+    expect(result.cardClass).toBe('step-covers');
+    expect(result.hasBody).toBe(true);
+});
+
+/**
+ * The fallback is for checks that never came from the inventory — the bare-URL `executeValidation`
+ * checks, the calendar-data years, and runs stored before the #42 migration — and every one of those
+ * is a three-step check by construction. It used to be derived from `STEP_CARD_CLASS`, so adding a
+ * fourth card class would silently have given all of them a fourth card no frame ever paints.
+ */
+test('a check advertising no steps still falls back to exactly the three', async ({ page }) => {
+    await load(page);
+    const result = await page.evaluate(async () => {
+        const { stepsForCheck } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            undef: stepsForCheck(undefined),
+            empty: stepsForCheck({}),
+            advertised: stepsForCheck({ steps: ['exists', 'parses', 'validates', 'covers'] }),
+        };
+    });
+    expect(result.undef).toEqual(['exists', 'parses', 'validates']);
+    expect(result.empty).toEqual(['exists', 'parses', 'validates']);
+    expect(result.advertised).toEqual(['exists', 'parses', 'validates', 'covers']);
+});
+
+test('a four-step item renders four cards', async ({ page }) => {
+    await load(page);
+    const html = await page.evaluate(async () => {
+        const { stepCardsHtml } = await import('/assets/js/wsProtocol.js' as any);
+        return stepCardsHtml({
+            steps: ['exists', 'parses', 'validates', 'covers'],
+            classesFor: (c: string) => c,
+            icon: '?',
+        });
+    });
+    expect((html.match(/class="card /g) ?? []).length).toBe(4);
+    expect(html).toContain('step-covers');
+});
+
+test('a lectionary sibling is composed beside every calendar-tier id', async ({ page }) => {
+    await load(page);
+    const ids = await page.evaluate(async () => {
+        const { inventoryIdsForCalendar } = await import('/assets/js/wsProtocol.js' as any);
+        return inventoryIdsForCalendar({
+            rite: 'roman',
+            dioceseRite: 'roman',
+            nation: 'IT',
+            widerRegion: 'Europe',
+            missals: ['IT_1983'],
+            dioceseId: 'romamo_it',
+        });
+    });
+    expect(ids).toContain('nation:roman:IT:lectionary');
+    expect(ids).toContain('widerregion:roman:Europe:lectionary');
+    expect(ids).toContain('sanctorale:roman:IT_1983:lectionary');
+    expect(ids).toContain('diocese:roman:romamo_it:lectionary');
+});
+
+/**
+ * Most calendars have no lectionary folder, so absence is the ordinary case for the four-segment form
+ * and warning about it every page load would train the reader to ignore the warnings that mean
+ * something. The three-segment `decrees:roman:lectionary` is on disk unconditionally and must keep
+ * warning, exactly as `sanctorale:{rite}:i18n` does beside the conditional missal form.
+ */
+test('the four-segment lectionary form is conditional, the three-segment one is not', async ({ page }) => {
+    await load(page);
+    const result = await page.evaluate(async () => {
+        const { isConditionalInventoryId } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            nation: isConditionalInventoryId('nation:roman:IT:lectionary'),
+            diocese: isConditionalInventoryId('diocese:roman:romamo_it:lectionary'),
+            widerRegion: isConditionalInventoryId('widerregion:roman:Europe:lectionary'),
+            missal: isConditionalInventoryId('sanctorale:roman:IT_1983:lectionary'),
+            decrees: isConditionalInventoryId('decrees:roman:lectionary'),
+            corpus: isConditionalInventoryId('lectionary:roman:sanctorum'),
+            riteI18n: isConditionalInventoryId('sanctorale:ambrosian:i18n'),
+        };
+    });
+    expect(result.nation).toBe(true);
+    expect(result.diocese).toBe(true);
+    expect(result.widerRegion).toBe(true);
+    expect(result.missal).toBe(true);
+    expect(result.decrees).toBe(false);
+    expect(result.corpus).toBe(false);
+    expect(result.riteI18n).toBe(false);
 });
