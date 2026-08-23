@@ -1,16 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { seedStoredRun, removeSeededRuns } from './storedRuns';
 
 // Seeded run files are stored in the real results/ directory, which real users
 // browse via the "Past Runs" dropdown — clean them up so e2e fixtures don't
 // pollute the UI (they look like broken partial runs when replayed).
-const seededFiles: string[] = [];
-test.afterAll(async () => {
-    for (const file of seededFiles) {
-        await unlink(path.join(__dirname, '..', 'results', file)).catch(() => { /* already removed by a parallel project */ });
-    }
-});
+test.afterAll(removeSeededRuns);
 
 test('replays a stored calendars run onto the dashboard', async ({ page, request }) => {
     // Seed a small run with mixed statuses across all three phases.
@@ -19,9 +13,10 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
     // Years.length (≈80) instead of cfg.years.length (1) to compute the year index, so the
     // rendered class was .year-<maxYear> while buildScaffolding queried .year-1970 → null →
     // TypeError crash. The calendar-data assertion below directly exercises that cross-year path.
+    // No `timestamp` here: seedStoredRun() writes the fixture straight into results/, so the
+    // 50-per-type retention cap in results.php never sees it (issue #65).
     const run = {
         schemaVersion: 1,
-        timestamp: '2026-07-03T09:00:00Z',
         runType: 'calendars',
         calendar: 'VA',
         calendarCategory: 'nationalcalendar',
@@ -46,9 +41,7 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
         calendarDataResults: [{ id: '.file-exists.calendar-va.year-1970', selector: '.file-exists.calendar-va.year-1970', status: 'success', message: null, test: null }],
         unitTestResults: [{ id: '.testseedreplay.year-1970.test-valid', selector: '.TestSeedReplay.year-1970.test-valid', status: 'success', message: null, test: 'TestSeedReplay' }],
     };
-    const save = await request.post('results.php', { data: run });
-    const { file } = await save.json();
-    seededFiles.push(file);
+    const file = await seedStoredRun(request, run);
 
     await page.goto('/');
     await page.waitForSelector('#pastRunsSelect');
@@ -88,9 +81,9 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
     // After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold shows only 1
     // check. Returning to "— Live —" must re-sync state from the DOM controls and rebuild the
     // scaffold via setupPage(), restoring the 11-check General Roman layout.
+    // As above, the timestamp is supplied by seedStoredRun() rather than hardcoded.
     const run = {
         schemaVersion: 1,
-        timestamp: '2026-07-03T11:00:00Z',
         runType: 'calendars',
         calendar: 'IT',
         calendarCategory: 'nationalcalendar',
@@ -107,9 +100,7 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
         calendarDataResults: [],
         unitTestResults: [],
     };
-    const save = await request.post('results.php', { data: run });
-    const { file } = await save.json();
-    seededFiles.push(file);
+    const file = await seedStoredRun(request, run);
 
     await page.goto('/');
     await page.waitForSelector('#pastRunsSelect');
