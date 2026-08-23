@@ -34,6 +34,8 @@ import {
     idToCardClass,
 } from './wsProtocol.js';
 
+import { createPhaseRunner } from './wsRunner.js';
+
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
 // top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
 // production, a stale symlink in development) fails the whole module's evaluation before any of
@@ -581,7 +583,6 @@ let RomanMissals = null;
 let currentState;
 let index;
 let yearIndex;
-let messageCounter;
 
 let startTestRunnerBtnLbl = '';
 
@@ -606,16 +607,68 @@ let conn;
 let currentRunToken = null;
 
 /**
- * Sends a message over the WebSocket connection, automatically
- * attaching the current run token for response correlation.
- * @param {Object} data - The message payload to send.
+ * Count a frame we could not attribute to a specific check.
+ *
+ * The frame is unusable, but the *phase* is still known from `currentState`, so the failure
+ * is booked against both the global total and the current phase's total. Incrementing only
+ * the global one would leave the header count and the per-phase counts disagreeing, which is
+ * the same silent drift #43 flags for unmatched selectors.
+ *
+ * Module scope, not inside `connectWebSocket()`: `phaseRunner`'s `onUnattributableFailure`
+ * callback is built at module load, and a `countUnattributableFailure` defined inside the
+ * connection closure would not exist yet when that callback is constructed (see resources.js,
+ * where the same move fixed a `ReferenceError` the watchdog's callback would otherwise raise).
+ *
+ * @returns {void}
  */
-const sendMessage = ( data ) => {
-    if ( currentRunToken !== null ) {
-        data.runToken = currentRunToken;
+const countUnattributableFailure = () => {
+    updateText( 'failedCount', ++failedTests );
+    switch ( currentState ) {
+        case TestState.ExecutingValidations:
+            updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
+            break;
+        case TestState.ValidatingCalendarData:
+            updateText( 'failedCalendarDataTestsCount', ++failedCalendarDataTests );
+            break;
+        case TestState.SpecificUnitTests:
+            // Only the phase total: without a usable `test` property there is no per-test
+            // accordion counter to attribute it to.
+            updateText( 'failedUnitTestsCount', ++failedUnitTests );
+            break;
     }
-    conn.send( JSON.stringify( data ) );
 };
+
+/**
+ * The one phase runner for this page's phases.
+ *
+ * Replaces what this page used to own directly: the registry-backed painter (painting by the CSS
+ * selector the server composed, replaced per the coupling #42 removes), the phase watchdog, the
+ * request-id minting and the send path. `resources.js` needs the same four, so they live in
+ * {@link createPhaseRunner} — shared rather than copied, which is what #42 exists to achieve.
+ *
+ * `canAdvance()` collapses the two advance guards this page used to keep separately —
+ * `currentState !== JobsFinished` for a terminal frame and
+ * `currentState !== JobsFinished && currentState !== Stopped` for giving up — into the single,
+ * stricter guard. Behaviour-preserving, not a widening: `conn.onmessage` already returns early
+ * once `currentState === Stopped`, so the terminal-frame path is unreachable in that state
+ * regardless. See {@link createPhaseRunner}'s `giveUpOnOutstandingRequests`.
+ */
+const phaseRunner = createPhaseRunner( {
+    // A resource-less URL check (`LitCalMetadata`) carries no `id` and is known by its own
+    // `validate` slug; every other check is an inventory item, known by the opaque `id` the
+    // server minted, turned into a class with `idToCardClass()`.
+    cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
+    onAdvance: () => runTests(),
+    onUnattributableFailure: () => countUnattributableFailure(),
+    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
+    socket: () => conn,
+    runToken: () => currentRunToken
+} );
+
+/**
+ * Exported only so a spec can trigger the watchdog without waiting out the clock. See wsRunner.js.
+ */
+export const giveUpOnOutstandingRequests = () => phaseRunner.giveUpOnOutstandingRequests();
 
 // The rite-level calendar of the default rite, which is what the calendar select's empty option
 // selects on mount. Not 'VA': `Health::buildCalendarRequestPath()` resolves both to /roman/{year},
@@ -723,59 +776,46 @@ const buildCalendarsPayload = () => {
 const runTests = () => {
     switch ( currentState ) {
         case TestState.ReadyState: {
-            index = 0;
-            messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
             safeCollapseShow('#sourceDataTests');
-            sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
+            phaseRunner.beginPhase( currentSourceDataChecks, { containerSelector: '#sourceDataTests .sourcedata-tests' } );
+            phaseRunner.armWatchdog();
+            currentSourceDataChecks.forEach( check => {
+                if ( undefined === check.id ) {
+                    // The one URL check in this phase: no inventory id, so it keeps the legacy shape.
+                    phaseRunner.sendMessage( { action: 'executeValidation', ...check } );
+                    return;
+                }
+                phaseRunner.sendMessage( { action: 'validateSource', target: { id: check.id }, requestId: check.requestId } );
+            } );
+            phaseRunner.advanceIfPhaseIsEmpty();
             break;
         }
         case TestState.ExecutingValidations:
-            // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
-            // and the phase would never complete (#43). The repo already has a recorded incident
-            // of a double-sent validation inflating the counters past the rendered-card total.
-            //
-            // This is a mitigation, not a cure. Counting frames cannot distinguish a duplicate
-            // from a legitimate one, so a duplicate still completes the phase one frame early.
-            // The cure is per-request correlation — deduplicate by request id and count each
-            // expected id once — which the protocol cannot express today: it carries only a
-            // per-*run* `runToken`, no per-request id. See #42 and LiturgicalCalendarAPI#806.
-            //
-            // Deduplicating on `classes` is not that cure either. It is a display selector, not
-            // an identity: the server chooses it to address a card, so two frames sharing one is
-            // a rendering decision rather than a statement that the second is redundant.
-            // (Until LiturgicalCalendarAPI#809 that was concretely unsafe — a `sourceFolder`
-            // check emitted one frame per failing i18n file, all with the same `classes`, so
-            // discarding "duplicates" would have dropped real failures. That specific hazard is
-            // gone; the reason not to rely on the selector for identity is not.)
-            if ( ++messageCounter >= 3 ) {
-                console.log( 'one cycle complete, passing to next test..' )
-                messageCounter = 0;
-                if ( index < currentSourceDataChecks.length ) {
-                    sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
-                } else {
-                    console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
-                    currentState = TestState.ValidatingCalendarData;
-                    index = 0;
-                    performance.mark( 'calendarDataTestsStart' );
-                    safeCollapseShow('#calendarDataTests');
+            if ( 0 === phaseRunner.outstandingCount() ) {
+                console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
+                // The body below is Task 8's; until that task lands, leave the existing
+                // ValidatingCalendarData transition here untouched.
+                currentState = TestState.ValidatingCalendarData;
+                index = 0;
+                performance.mark( 'calendarDataTestsStart' );
+                safeCollapseShow('#calendarDataTests');
 
-                    // Send ALL calendar data requests at once - server handles concurrency
-                    calendarDataExpectedResponses = Years.length * 3; // 3 responses per year
-                    calendarDataReceivedResponses = 0;
-                    console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
-                    Years.forEach( year => {
-                        sendMessage( {
-                            action: 'validateCalendar',
-                            year: year,
-                            calendar: currentSelectedCalendar,
-                            category: currentCalendarCategory,
-                            rite: currentRite,
-                            responsetype: currentResponseType
-                        } );
+                // Send ALL calendar data requests at once - server handles concurrency
+                calendarDataExpectedResponses = Years.length * 3; // 3 responses per year
+                calendarDataReceivedResponses = 0;
+                console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
+                Years.forEach( year => {
+                    phaseRunner.sendMessage( {
+                        action: 'validateCalendar',
+                        year: year,
+                        calendar: currentSelectedCalendar,
+                        category: currentCalendarCategory,
+                        rite: currentRite,
+                        responsetype: currentResponseType
                     } );
-                }
+                } );
             }
             break;
         case TestState.ValidatingCalendarData:
@@ -791,7 +831,7 @@ const runTests = () => {
                 console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 performance.mark( 'specificUnitTestsStart' );
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                sendMessage( {
+                phaseRunner.sendMessage( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
@@ -804,7 +844,7 @@ const runTests = () => {
             break;
         case TestState.SpecificUnitTests:
             if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, rite: currentRite } );
+                phaseRunner.sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, rite: currentRite } );
             }
             else if ( ++index < SpecificUnitTestCategories.length ) {
                 yearIndex = 0;
@@ -818,7 +858,7 @@ const runTests = () => {
                 );
                 updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
                 performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                sendMessage( {
+                phaseRunner.sendMessage( {
                     ...SpecificUnitTestCategories[ index ],
                     year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
                     calendar: currentSelectedCalendar,
@@ -913,31 +953,6 @@ const connectWebSocket = () => {
      * corresponding failed count and marks the test as failed. If the test is
      * finished, it updates the total test time and displays it.
      */
-    /**
-     * Count a frame we could not attribute to a specific check.
-     *
-     * The frame is unusable, but the *phase* is still known from `currentState`, so the failure
-     * is booked against both the global total and the current phase's total. Incrementing only
-     * the global one would leave the header count and the per-phase counts disagreeing, which is
-     * the same silent drift #43 flags for unmatched selectors.
-     */
-    const countUnattributableFailure = () => {
-        updateText( 'failedCount', ++failedTests );
-        switch ( currentState ) {
-            case TestState.ExecutingValidations:
-                updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
-                break;
-            case TestState.ValidatingCalendarData:
-                updateText( 'failedCalendarDataTestsCount', ++failedCalendarDataTests );
-                break;
-            case TestState.SpecificUnitTests:
-                // Only the phase total: without a usable `test` property there is no per-test
-                // accordion counter to attribute it to.
-                updateText( 'failedUnitTestsCount', ++failedUnitTests );
-                break;
-        }
-    };
-
     conn.onmessage = ( e ) => {
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
@@ -968,13 +983,21 @@ const connectWebSocket = () => {
             return;
         }
         console.log( responseData );
+
+        // Any frame of this run is proof the server is still answering.
+        phaseRunner.restartWatchdog();
+
+        // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
+        // recorded or counted. Counting it would inflate the totals badge past the number of
+        // rendered cards — the drift #42 describes, arrived at from the other direction.
+        if ( phaseRunner.noteTerminalFrame( responseData ) ) {
+            return;
+        }
+
         try {
             if ( responseData.type === "success" ) {
-                applyResultToDom( responseData );
-                // Transitional v1 form: this page still addresses cards via the server-sent `classes`
-                // selector, so that is what gets recorded. A later task migrates this page onto the
-                // registry selector, at which point this becomes `phaseRunner.selectorFor(...)` like resources.js.
-                resultCollector.record( phaseForState(), responseData, responseData.classes );
+                phaseRunner.paintResult( responseData );
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -995,11 +1018,8 @@ const connectWebSocket = () => {
                 }
             }
             else if ( responseData.type === "error" ) {
-                applyResultToDom( responseData );
-                // Transitional v1 form: this page still addresses cards via the server-sent `classes`
-                // selector, so that is what gets recorded. A later task migrates this page onto the
-                // registry selector, at which point this becomes `phaseRunner.selectorFor(...)` like resources.js.
-                resultCollector.record( phaseForState(), responseData, responseData.classes );
+                phaseRunner.paintResult( responseData );
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
                 updateText('failedCount', ++failedTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -1782,8 +1802,11 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
     if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         index = 0;
         yearIndex = 0;
-        messageCounter = 0;
         resultCollector.reset();
+        // Releases the previous run's registry entries, selectors and outstanding set — see
+        // `endRun()` in wsRunner.js for why a run must not simply be allowed to leak its state into
+        // the next one.
+        phaseRunner.endRun();
         calendarDataReceivedResponses = 0;
         calendarDataExpectedResponses = 0;
         resetTestUI();
@@ -1816,6 +1839,11 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
+        // Releases the stopped run's outstanding set, so a `giveUpOnOutstandingRequests()` call
+        // reaching this page after a Stop (its exported seam, or the watchdog's callback in a race)
+        // finds nothing outstanding to give up on — the same no-op it was before this state moved
+        // into the runner.
+        phaseRunner.endRun();
         currentState = TestState.Stopped;
         currentRunToken = null;
         setScaffoldControlsDisabledForRun( false );
