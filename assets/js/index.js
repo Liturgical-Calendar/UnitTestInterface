@@ -7,6 +7,7 @@
 import {
     escapeHtmlAttr,
     escapeQuotesAndLinkifyUrls,
+    fetchJson,
     hidePageLoader,
     safeCollapseShow,
     safeToastShow,
@@ -348,13 +349,7 @@ class ReadyToRunTests {
             // only try to set the #startTestRunnerBtnLbl with the stored value when the page is ready
             // to prevent if from being set to an empty value (before we have actually stored the original value)
             setTestRunnerBtnLblTxt( startTestRunnerBtnLbl );
-            const pageLoader = document.querySelector('.page-loader');
-            if (pageLoader) {
-                pageLoader.style.opacity = '0';
-                setTimeout(() => {
-                    pageLoader.style.display = 'none';
-                }, 500);
-            }
+            hidePageLoader();
         }
     }
 }
@@ -461,15 +456,18 @@ const CARD_ICON = '<i class="fas fa-circle-question fa-fw" aria-hidden="true"></
 const testTemplate = ( calendarName, year = null ) => {
     const calendarSlug = slugify(calendarName);
     const yearClass = year !== null ? ` year-${year}` : '';
-    // The `parses` card is captioned `JSON` regardless of the selected response format, exactly as
-    // it was before this template became step-driven. The `#APIResponseSelect` handler rewrites
-    // those `.response-type` spans itself.
+    // The `parses` card names the response format being validated, so it has to be rendered with the
+    // *currently selected* one. Rendering a literal `JSON` here made the `#APIResponseSelect` handler
+    // a no-op in effect: it rewrote every `.response-type` span, then called `setupPage()`, which
+    // rebuilt these very cards from this template and put `JSON` straight back. Choosing YAML, XML or
+    // ICS therefore left the cards claiming JSON while the run validated something else.
     return `
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
 ${stepCardsHtml({
     steps: stepsForCheck(),
     classesFor: cardClass => `${cardClass} calendar-${calendarSlug}${yearClass}`,
     icon: CARD_ICON,
+    responseType: currentResponseType,
     spread: false
 })}
 `;
@@ -1346,29 +1344,6 @@ const resetTestUI = () => {
 }
 
 /**
- * Reads a JSON body from a `fetch()` response, or rejects saying which endpoint failed and why.
- *
- * The version this replaced logged a non-ok response and resolved to `undefined`, which then threw
- * a TypeError two `.then`s later — so every HTTP failure reached the outer `.catch` describing the
- * wrong thing entirely. Rejecting here is also what lets `Promise.allSettled` below report *which*
- * dataset is missing rather than only that something was.
- *
- * @param {string} endpoint - The URL that was fetched, for the message.
- * @param {Response} response - The response to read.
- * @returns {Promise<object>}
- */
-const readJsonOrThrow = async ( endpoint, response ) => {
-    if ( response.ok ) {
-        return response.json();
-    }
-    if ( 'application/problem+json' === response.headers.get( 'Content-Type' ) ) {
-        const problem = await response.json();
-        throw new Error( `${endpoint}: ${problem.detail ?? problem.title ?? response.statusText}` );
-    }
-    throw new Error( `${endpoint}: ${response.status} ${response.statusText}` );
-};
-
-/**
  * Fetches the four datasets this page builds its scaffold and its checks from, and assigns
  * {@link MetaData}, {@link UnitTests}, {@link RomanMissals} and {@link ValidationsInventory}.
  *
@@ -1382,9 +1357,6 @@ const readJsonOrThrow = async ( endpoint, response ) => {
  * @returns {Promise<void>}
  */
 const fetchMetadataAndTests = () => {
-    const requestInit = { method: 'GET', headers: { Accept: 'application/json' } };
-    const fetchJson = ( endpoint ) => fetch( endpoint, requestInit ).then( response => readJsonOrThrow( endpoint, response ) );
-
     return Promise.allSettled( [
         fetchJson( ENDPOINTS.CALENDARS ),
         fetchJson( ENDPOINTS.TESTS ),
@@ -1809,13 +1781,7 @@ const setupPage = () => {
     initInfoTooltips();
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
-    const pageLoader = document.querySelector('.page-loader');
-    if (pageLoader) {
-        pageLoader.style.opacity = '0';
-        setTimeout(() => {
-            pageLoader.style.display = 'none';
-        }, 500);
-    }
+    hidePageLoader();
 }
 
 /**

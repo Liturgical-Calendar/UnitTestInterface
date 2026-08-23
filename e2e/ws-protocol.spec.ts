@@ -122,13 +122,20 @@ test('every composed id is one the API really advertises', async ({ page, reques
     // against /validations and *skips* one the server does not know, so a mistyped id degrades to
     // silently-missing coverage rather than to a visible error. Checking the composition against
     // the live inventory is what turns that back into a test failure.
-    const advertised: string[] = (await (await request.get(`${apiBase}/validations`)).json())
+    // Status-checked before parsing. This endpoint answers 429 routinely in local development, and a
+    // problem document parses perfectly well — so an unchecked `.json()` fails later, on a property
+    // access, reporting a shape error for what is really a rate limit.
+    const validationsResponse = await request.get(`${apiBase}/validations`);
+    expect(validationsResponse.ok(), `GET /validations: ${validationsResponse.status()} ${validationsResponse.statusText()}`).toBeTruthy();
+    const advertised: string[] = (await validationsResponse.json())
         .litcal_validations.map((item: { id: string }) => item.id);
     expect(advertised.length).toBeGreaterThan(0);
 
     // A real national calendar rather than a fixture, taken from the same metadata the runner uses,
     // so the wider region and missal ids are the ones a live run would actually compose.
-    const metadata = (await (await request.get(`${apiBase}/calendars`)).json()).litcal_metadata;
+    const calendarsResponse = await request.get(`${apiBase}/calendars`);
+    expect(calendarsResponse.ok(), `GET /calendars: ${calendarsResponse.status()} ${calendarsResponse.statusText()}`).toBeTruthy();
+    const metadata = (await calendarsResponse.json()).litcal_metadata;
     const nation = metadata.national_calendars.find(
         (n: { calendar_id: string }) => n.calendar_id === 'IT'
     );
@@ -149,20 +156,23 @@ test('every composed id is one the API really advertises', async ({ page, reques
         widerRegion: nation.wider_region, missals: nation.missals, dioceseId: diocese.calendar_id,
     });
 
-    // Everything except the two families the server is entitled to omit: a missal's translation
-    // folder (isConditionalInventoryId), and a missal whose sanctorale file does not exist at all
-    // (IT_2020 is declared by IT.json but has no source file, so neither of its ids is published).
-    const optional = new Set(conditional);
-    const publishedMissals = new Set(
-        advertised.filter((id) => id.startsWith('sanctorale:roman:'))
-    );
-    const mustExist = composed.filter((id) =>
-        !optional.has(id)
-        && !(id.startsWith('sanctorale:roman:') && !publishedMissals.has(id))
-    );
+    // The missal ids the API is entitled not to publish, named explicitly. Deriving this from
+    // `advertised` — "excuse any missal id that happens to be missing" — would excuse a genuine
+    // composition bug just as readily as this known gap, and the assertion would then be testing
+    // nothing about the missal family at all: `IT.json` declares IT_2020, for which the API has no
+    // sanctorale source file, so neither of its ids is published.
+    const TOLERATED_ABSENT = ['sanctorale:roman:IT_2020', 'sanctorale:roman:IT_2020:i18n'];
+    const optional = new Set([...conditional, ...TOLERATED_ABSENT]);
+    const mustExist = composed.filter((id) => !optional.has(id));
     // Guard the guard: a filter that removed everything would make the assertion below vacuous.
     expect(mustExist.length).toBeGreaterThanOrEqual(8);
     expect(mustExist.filter((id) => !advertised.includes(id))).toEqual([]);
+
+    // The tolerated set is exactly what is absent — nothing more, and nothing less. This is what
+    // restores the coverage `optional` removes: it asserts that every *other* missal id (IT_1983 and
+    // both its forms) really is advertised, and it fails if the upstream gap is ever filled, so the
+    // tolerance cannot outlive the reason for it.
+    expect(composed.filter((id) => !advertised.includes(id)).sort()).toEqual([...TOLERATED_ABSENT].sort());
 
     // And the calendar-specific i18n ids #61 added are genuinely present upstream, not merely
     // "not disagreed with" — the assertion above would pass just as well if the API published none.
@@ -176,16 +186,26 @@ test('every composed id is one the API really advertises', async ({ page, reques
     }
 });
 
-test('only a missal translation folder is treated as optionally absent', async ({ page }) => {
+test('only the missal family is treated as optionally absent', async ({ page }) => {
     await page.goto('/resources.php');
     const verdicts = await page.evaluate(async () => {
         const { isConditionalInventoryId } = await import('/assets/js/wsProtocol.js' as any);
         return {
+            // Both missal forms. The API emits the translation id only when the missal has an i18n
+            // folder, and the base id only when it has a sanctorale source file at all — IT.json
+            // declares IT_2020, for which it has neither. Missal ids are composed from /calendars
+            // metadata rather than typed, so an unadvertised one is an upstream data gap this page
+            // cannot act on, and warning per page load would only bury the warnings that matter.
             missalI18n: isConditionalInventoryId('sanctorale:roman:IT_1983:i18n'),
             missalFile: isConditionalInventoryId('sanctorale:roman:IT_1983'),
-            // Three segments, not four: the Ambrosian rite's own sanctorale translations are
-            // unconditional, and treating them as optional would silently drop universal coverage.
+            unpublishedMissalFile: isConditionalInventoryId('sanctorale:roman:IT_2020'),
+            unpublishedMissalI18n: isConditionalInventoryId('sanctorale:roman:IT_2020:i18n'),
+            // Three segments like a base missal id, and deliberately NOT optional: the Ambrosian
+            // rite's own sanctorale translations are unconditional, and treating them as optional
+            // would silently drop universal coverage. This is the case the predicate's negative
+            // lookahead exists for.
             riteSanctoraleI18n: isConditionalInventoryId('sanctorale:ambrosian:i18n'),
+            riteSanctorale: isConditionalInventoryId('sanctorale:ambrosian'),
             nationI18n: isConditionalInventoryId('nation:roman:IT:i18n'),
             widerRegionI18n: isConditionalInventoryId('widerregion:roman:Europe:i18n'),
             dioceseI18n: isConditionalInventoryId('diocese:ambrosian:milano_it:i18n'),
@@ -194,8 +214,11 @@ test('only a missal translation folder is treated as optionally absent', async (
 
     expect(verdicts).toEqual({
         missalI18n: true,
-        missalFile: false,
+        missalFile: true,
+        unpublishedMissalFile: true,
+        unpublishedMissalI18n: true,
         riteSanctoraleI18n: false,
+        riteSanctorale: false,
         nationI18n: false,
         widerRegionI18n: false,
         dioceseI18n: false,

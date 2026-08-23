@@ -820,7 +820,7 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
  * (`sanctorale:ambrosian:i18n`, three segments) — that one is unconditional and must not be
  * matched here.
  */
-const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:[^:]+:i18n$/;
+const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
 
 /**
  * Whether the API is entitled to advertise no inventory item for this composed id.
@@ -831,12 +831,25 @@ const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:[^:]+:i18n$/;
  * that resolution is total — an id the server does not advertise is a genuine disagreement worth
  * saying out loud, which is the whole point of the inventory replacing a hand-maintained list.
  *
- * The exception is a missal's translation folder. `CheckableInventory::missalItems()` emits
- * `sanctorale:roman:{missalId}:i18n` only when `RomanMissal::getSanctoraleI18nFilePath()` returns
- * a path, and it returns `false` for several missals. Its absence is therefore the contract, not a
- * disagreement, and warning about it would train the reader to ignore the warning that matters.
- * (Composing it conditionally instead is not open to this function: knowing which missals have
- * translations means reading the inventory, which is precisely what this function does not do.)
+ * The exception is the missal family, in **both** its forms:
+ *
+ * - `sanctorale:roman:{missalId}:i18n` — `CheckableInventory::missalItems()` emits it only when
+ *   `RomanMissal::getSanctoraleI18nFilePath()` returns a path, and it returns `false` for several
+ *   missals.
+ * - `sanctorale:roman:{missalId}` — emitted only when the missal has a sanctorale source file at all.
+ *   A nation's calendar data may declare a missal before that file exists: `IT.json` lists `IT_2020`,
+ *   for which the API publishes neither id. The missal ids composed here come from the `/calendars`
+ *   metadata rather than from anything typed by hand, so an id in this family that the server does not
+ *   advertise is an upstream data gap, never a composition mistake — nothing this page can act on, and
+ *   a warning per page load would train the reader to ignore the warnings that mean something.
+ *
+ * Absence is therefore the contract for this family, not a disagreement. (Composing conditionally
+ * instead is not open to this function: knowing which missals have files means reading the inventory,
+ * which is precisely what this function does not do.)
+ *
+ * The negative lookahead is load-bearing: `sanctorale:{rite}:i18n` is a *rite's* sanctorale
+ * translations, which is unconditional and must keep warning, and it has the same three-segment shape
+ * as `sanctorale:roman:{missalId}`.
  *
  * @param {string} id - A composed inventory id.
  * @returns {boolean} True when the server may legitimately publish no such item.
