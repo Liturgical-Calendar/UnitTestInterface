@@ -270,8 +270,24 @@ export const PROTOCOL_VERSION = 1;
 export const STEP_CARD_CLASS = Object.freeze({
     exists: 'step-exists',
     parses: 'step-parses',
-    validates: 'step-validates'
+    validates: 'step-validates',
+    covers: 'step-covers'
 });
+
+/**
+ * The steps a check falls back to when it advertises none.
+ *
+ * Pinned, where it used to be `Object.keys( STEP_CARD_CLASS )`. The checks that carry no `steps` are
+ * precisely the ones that never came from the inventory — the bare-URL `executeValidation` checks
+ * (`LitCalMetadata` on `index.js`, `resourceDataChecks` on `resources.js`), the calendar-data years,
+ * and runs stored before the #42 migration — and every one of those is a three-step check by
+ * construction. Deriving the fallback from the card table meant that the first card class added to
+ * that table would silently give all of them a fourth card no frame would ever paint, and a totals
+ * badge counting it.
+ *
+ * @type {ReadonlyArray<string>}
+ */
+export const DEFAULT_CHECK_STEPS = Object.freeze([ 'exists', 'parses', 'validates' ]);
 
 /**
  * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
@@ -301,17 +317,19 @@ export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
  * The first two-step item would have left a permanently blue card no frame paints and a totals badge
  * reading high; the first four-step item, a `console.warn` per check and a result with nowhere to go.
  *
- * A check that advertises nothing falls back to every step {@link STEP_CARD_CLASS} has. That is not
- * a guess about the API: the checks carrying no `steps` are precisely the ones that never came from
- * the inventory — the bare-URL `executeValidation` checks (`LitCalMetadata` on `index.js`,
- * `resourceDataChecks` on `resources.js`), the calendar-data years, and runs stored before the #42
- * migration — and every one of those is a three-step check by construction.
+ * A check that advertises nothing falls back to {@link DEFAULT_CHECK_STEPS}. That is not a guess about
+ * the API: the checks carrying no `steps` are precisely the ones that never came from the inventory —
+ * the bare-URL `executeValidation` checks (`LitCalMetadata` on `index.js`, `resourceDataChecks` on
+ * `resources.js`), the calendar-data years, and runs stored before the #42 migration — and every one of
+ * those is a three-step check by construction. It is deliberately *not* derived from
+ * {@link STEP_CARD_CLASS}: that table gained a fourth entry when `covers` arrived, and a derived
+ * fallback would have handed every one of those legacy checks a card no frame paints.
  *
  * @param {?{steps?: Array<string>}} [check] - An inventory item, or anything that carries no `steps`.
  * @returns {Array<string>}
  */
 export const stepsForCheck = ( check ) =>
-    Array.isArray( check?.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+    Array.isArray( check?.steps ) ? check.steps : [ ...DEFAULT_CHECK_STEPS ];
 
 /**
  * What one scaffold card says, keyed by step.
@@ -330,7 +348,8 @@ export const stepsForCheck = ( check ) =>
 export const STEP_CARD_BODY = Object.freeze({
     exists: () => 'data exists',
     parses: ( responseType ) => `<span class="response-type">${responseType}</span> valid`,
-    validates: () => 'schema valid'
+    validates: () => 'schema valid',
+    covers: () => 'locales covered'
 });
 
 /**

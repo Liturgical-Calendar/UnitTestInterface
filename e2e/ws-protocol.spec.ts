@@ -256,3 +256,51 @@ test('toCalendarIdentity throws on an unknown calendartype rather than sending a
     });
     expect(threw).toBe(true);
 });
+
+test('the covers step has a card class and a card body', async ({ page }) => {
+    await load(page);
+    const result = await page.evaluate(async () => {
+        const { STEP_CARD_CLASS, STEP_CARD_BODY } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            cardClass: STEP_CARD_CLASS.covers,
+            hasBody: 'function' === typeof STEP_CARD_BODY.covers,
+        };
+    });
+    expect(result.cardClass).toBe('step-covers');
+    expect(result.hasBody).toBe(true);
+});
+
+/**
+ * The fallback is for checks that never came from the inventory — the bare-URL `executeValidation`
+ * checks, the calendar-data years, and runs stored before the #42 migration — and every one of those
+ * is a three-step check by construction. It used to be derived from `STEP_CARD_CLASS`, so adding a
+ * fourth card class would silently have given all of them a fourth card no frame ever paints.
+ */
+test('a check advertising no steps still falls back to exactly the three', async ({ page }) => {
+    await load(page);
+    const result = await page.evaluate(async () => {
+        const { stepsForCheck } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            undef: stepsForCheck(undefined),
+            empty: stepsForCheck({}),
+            advertised: stepsForCheck({ steps: ['exists', 'parses', 'validates', 'covers'] }),
+        };
+    });
+    expect(result.undef).toEqual(['exists', 'parses', 'validates']);
+    expect(result.empty).toEqual(['exists', 'parses', 'validates']);
+    expect(result.advertised).toEqual(['exists', 'parses', 'validates', 'covers']);
+});
+
+test('a four-step item renders four cards', async ({ page }) => {
+    await load(page);
+    const html = await page.evaluate(async () => {
+        const { stepCardsHtml } = await import('/assets/js/wsProtocol.js' as any);
+        return stepCardsHtml({
+            steps: ['exists', 'parses', 'validates', 'covers'],
+            classesFor: (c: string) => c,
+            icon: '?',
+        });
+    });
+    expect((html.match(/class="card /g) ?? []).length).toBe(4);
+    expect(html).toContain('step-covers');
+});
