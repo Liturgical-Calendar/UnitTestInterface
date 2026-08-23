@@ -146,7 +146,17 @@ let ValidationsInventoryReady = false;
  *
  * `LitCalMetadata` is a *resource* check living in a source-data phase: it validates the `/calendars`
  * response, has no inventory id, and stays on `executeValidation`. Everything else is an id the API
- * advertised.
+ * advertised, reached one of two ways:
+ *
+ * - **composed**, by `inventoryIdsForCalendar()`, for everything calendar metadata implies — the
+ *   universal corpus, and the wider region / nation / missal / diocese tiers with their `:i18n` and
+ *   `:lectionary` siblings — then resolved against the fetched inventory;
+ * - **discovered**, by id prefix, for the rite's own lectionary corpus, whose section names nothing in
+ *   `/calendars` publishes and which therefore cannot be composed without hardcoding the API's layout.
+ *
+ * A composed id the server does not advertise is said out loud unless `isConditionalInventoryId()` says
+ * the absence is the contract; a discovered id cannot disagree by construction, since it came from the
+ * inventory in the first place.
  *
  * @param {object} scope
  * @param {string} scope.rite - The rite whose universal corpus is checked (see
@@ -182,6 +192,22 @@ const buildSourceDataChecks = ( { rite, dioceseRite, nation, widerRegion, missal
         }
         checks.push( { id: item.id, label: item.label, steps: item.steps } );
     } );
+
+    // The rite's own lectionary corpus is *discovered*, not composed.
+    //
+    // Its ten section names (`sanctorum`, `feriale_per_annum_I`, …) are not derivable from anything
+    // `/calendars` publishes, so composing them would mean writing a list of the API's on-disk layout
+    // into this repository again — the coupling the inventory replaced, and the one CLAUDE.md forbids
+    // resurrecting. A section added upstream would then go silently unchecked, which is the #38 / #795
+    // / #800 failure mode in miniature.
+    //
+    // The rule the two halves follow: compose what calendar metadata implies, discover from the
+    // inventory what it does not. `decrees:roman:lectionary` is discovered here too — it is part of the
+    // rite's corpus rather than of any calendar's.
+    ValidationsInventory
+        .filter( item => item.id.startsWith( `lectionary:${rite}:` ) || item.id === `decrees:${rite}:lectionary` )
+        .forEach( item => checks.push( { id: item.id, label: item.label, steps: item.steps } ) );
+
     return checks;
 };
 

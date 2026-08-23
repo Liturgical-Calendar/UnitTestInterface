@@ -49,8 +49,22 @@ const serveTwoStepInventory = async (page: Page, request: APIRequestContext): Pr
 };
 
 /** Every check card the source-data scaffold rendered, whichever step families it used. */
-const sourceCards = (page: Page) =>
-    page.locator('.sourcedata-tests .step-exists, .sourcedata-tests .step-parses, .sourcedata-tests .step-validates');
+/**
+ * Every check card in the source-data phase.
+ *
+ * Derived from `checkCardSelector()` rather than spelling the card classes out here. This listed
+ * `.step-exists, .step-parses, .step-validates` until `covers` arrived, at which point it counted
+ * fewer cards than the badge did and failed for a reason that had nothing to do with what the test is
+ * about — a hand-maintained duplicate of `STEP_CARD_CLASS`, which is the very drift the production
+ * code stopped spelling out at each counting site.
+ */
+const sourceCards = async (page: Page) => {
+    const selector = await page.evaluate(async () => {
+        const { checkCardSelector } = await import('/assets/js/wsProtocol.js' as any);
+        return checkCardSelector('.sourcedata-tests') as string;
+    });
+    return page.locator(selector);
+};
 
 const assertTwoStepScaffold = async (page: Page): Promise<void> => {
     await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.step-exists`)).toHaveCount(1);
@@ -61,7 +75,7 @@ const assertTwoStepScaffold = async (page: Page): Promise<void> => {
     await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}`)).toHaveCount(2);
 
     // The badge must describe the cards actually on the page, not a card-count-per-check constant.
-    const rendered = await sourceCards(page).count();
+    const rendered = await (await sourceCards(page)).count();
     await expect(page.locator('#totalSourceDataTestsCount')).toHaveText(String(rendered));
 };
 
