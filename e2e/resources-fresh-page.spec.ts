@@ -28,7 +28,16 @@ test('fresh Resources page renders source checks for all async datasets', async 
     // The per-test source-data card must be part of the fresh scaffold
     await expect(page.locator(`.sourcedata-tests .${testSlug}.step-exists`)).toHaveCount(1);
 
-    // And the Time badge totals must agree with the rendered cards
-    const sourceCards = await page.locator('.sourcedata-tests .step-exists, .sourcedata-tests .step-parses, .sourcedata-tests .step-validates').count();
+    // And the Time badge totals must agree with the rendered cards.
+    //
+    // The selector comes from `checkCardSelector()` rather than being spelled out here. It used to
+    // list `.step-exists, .step-parses, .step-validates`, which stopped counting every card the
+    // moment a fourth step (`covers`) joined `STEP_CARD_CLASS` — the badge counted 313 while this
+    // counted 270, a disagreement about the test's own locator rather than about the page.
+    const cardSelector = await page.evaluate(async () => {
+        const { checkCardSelector } = await import('/assets/js/wsProtocol.js' as any);
+        return checkCardSelector('.sourcedata-tests') as string;
+    });
+    const sourceCards = await page.locator(cardSelector).count();
     await expect(page.locator('#totalSourceDataTestsCount')).toHaveText(String(sourceCards));
 });
