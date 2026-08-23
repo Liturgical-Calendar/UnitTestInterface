@@ -606,12 +606,30 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  * nation and missal tiers stay hardcoded Roman regardless of either argument, for the same
  * inheritance reason.
  *
- * `:i18n` ids ARE included for the universal corpus, matching what this repository already checked
- * before this migration (`UNIVERSAL_CHECKS` in this file). They are NOT included for the
- * calendar-specific tier (wider region, nation, missals, diocese) — v1 never checked those either.
- * Coverage is held constant across the migration; a change in card counts is a migration bug, not
- * intended new coverage. See issue #61 for the follow-up that would add calendar-specific i18n
- * coverage as new scope, deliberately out of bounds here.
+ * **`:i18n` ids are included at every tier** — the universal corpus (temporale, decrees or the
+ * rite's own sanctorale) *and* the calendar-specific tier (wider region, nation, missals, diocese).
+ * The calendar-specific half is new in #61: the #42 migration deliberately held coverage constant
+ * so that any change in card counts during it would be a migration bug rather than intended new
+ * coverage, and this is that intended new coverage, landed separately. The API has advertised all
+ * four families all along (`CheckableInventory::nationalCalendarItems()`, `widerRegionItems()`,
+ * `diocesanCalendarItems()` and `missalItems()`); nothing here was checking them.
+ *
+ * **What it costs.** Each id is one `validateSource` request and three cards. Worked through for
+ * an Italian diocesan calendar (`romamo_it`: nation IT, wider region Europe, missals IT_1983 and
+ * IT_2020), the source-data phase goes from **9 checks / 27 cards** to **13 checks / 39 cards** —
+ * `widerregion:roman:Europe:i18n`, `nation:roman:IT:i18n`, `sanctorale:roman:IT_1983:i18n` and
+ * `diocese:roman:romamo_it:i18n` are added; the IT_2020 pair is composed but not advertised (that
+ * missal has no sanctorale file), so it never becomes a card. The General Roman rite-level
+ * scaffold goes from 8 checks / 24 cards to 11 / 33 (its three editio typica missals all have
+ * translations). Longer runs and more WebSocket traffic, therefore — but **not** more API
+ * rate-limit exposure: `Health::validateSource()` resolves an inventory id to a filesystem path
+ * and reads it locally, so unlike the calendar-data phase (which does spend HTTP requests, and is
+ * where this repository's history of 429s comes from) these checks cost the API nothing.
+ *
+ * Every id here is unconditional on the server side except the missal `:i18n` sibling, which
+ * `CheckableInventory::missalItems()` emits only when `RomanMissal::getSanctoraleI18nFilePath()`
+ * finds one — see {@link isConditionalInventoryId}, which is how the caller tells "the server does
+ * not publish this" from "the server and this page disagree".
  *
  * @param {object} scope
  * @param {string} scope.rite - The rite whose universal corpus (temporale/decrees or
@@ -630,14 +648,49 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
         ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
         : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
     if ( widerRegion ) {
-        ids.push( `widerregion:roman:${widerRegion}` );
+        ids.push( `widerregion:roman:${widerRegion}`, `widerregion:roman:${widerRegion}:i18n` );
     }
     if ( nation ) {
-        ids.push( `nation:roman:${nation}` );
+        ids.push( `nation:roman:${nation}`, `nation:roman:${nation}:i18n` );
     }
-    ( missals ?? [] ).forEach( missalId => ids.push( `sanctorale:roman:${missalId}` ) );
+    ( missals ?? [] ).forEach( missalId => ids.push(
+        `sanctorale:roman:${missalId}`,
+        // Conditional on the server side, unlike every other id composed here; see
+        // `isConditionalInventoryId()` for why it is still composed unconditionally.
+        `sanctorale:roman:${missalId}:i18n`
+    ) );
     if ( dioceseId ) {
-        ids.push( `diocese:${dioceseRite}:${dioceseId}` );
+        ids.push( `diocese:${dioceseRite}:${dioceseId}`, `diocese:${dioceseRite}:${dioceseId}:i18n` );
     }
     return ids;
 };
+
+/**
+ * The shape of a missal's translation-folder id, e.g. `sanctorale:roman:IT_1983:i18n`.
+ *
+ * Four segments, which is what separates it from the *rite's own* sanctorale i18n folder
+ * (`sanctorale:ambrosian:i18n`, three segments) — that one is unconditional and must not be
+ * matched here.
+ */
+const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:[^:]+:i18n$/;
+
+/**
+ * Whether the API is entitled to advertise no inventory item for this composed id.
+ *
+ * `inventoryIdsForCalendar()` composes ids from calendar metadata alone, without consulting
+ * `/validations`, and that is deliberate: it stays a pure function of the scope, and the caller
+ * resolves what it composed against what the server actually published. For all but one family
+ * that resolution is total — an id the server does not advertise is a genuine disagreement worth
+ * saying out loud, which is the whole point of the inventory replacing a hand-maintained list.
+ *
+ * The exception is a missal's translation folder. `CheckableInventory::missalItems()` emits
+ * `sanctorale:roman:{missalId}:i18n` only when `RomanMissal::getSanctoraleI18nFilePath()` returns
+ * a path, and it returns `false` for several missals. Its absence is therefore the contract, not a
+ * disagreement, and warning about it would train the reader to ignore the warning that matters.
+ * (Composing it conditionally instead is not open to this function: knowing which missals have
+ * translations means reading the inventory, which is precisely what this function does not do.)
+ *
+ * @param {string} id - A composed inventory id.
+ * @returns {boolean} True when the server may legitimately publish no such item.
+ */
+export const isConditionalInventoryId = id => CONDITIONAL_INVENTORY_ID.test( id );

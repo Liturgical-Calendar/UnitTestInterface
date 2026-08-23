@@ -372,6 +372,9 @@ calendar uses becomes an id of the form `sanctorale:roman:{missal_id}` (e.g. `sa
 the calendar's `/calendars` metadata, and sent as a `validateSource` message — `{action: "validateSource", target: {id: "sanctorale:roman:IT_1983"}}`.
 No `validate` slug, `sourceFile` or `category` is built or sent for a missal check any more.
 
+Each missal id is composed together with its translation folder, `sanctorale:roman:{missal_id}:i18n` — see Calendar-Tier `:i18n`
+Coverage below, and note that this is the one composed id the server is entitled not to advertise.
+
 The old `proprium-de-sanctis-{REGION}-{YEAR}` slug format (region omitted for the editio typica, `region === 'VA'`) still appears in this
 repository, but only as a *label*, recognised when rendering a stored run from before this migration
 (`sourceDataCheckTemplate()`'s `false === fromInventory` branch in `assets/js/index.js`) — it is read, never built. Replaying an old
@@ -389,6 +392,34 @@ An earlier version of this section documented a `missal_id.split('_')` parse; th
 
 **Note:** The `/missals` API endpoint returns `api_path` (URL), not a filesystem path. It is not used for source-data validation at all —
 missal source checks address the missal by its `/validations` inventory id, not by any URL or path the `/missals` endpoint returns.
+
+### Calendar-Tier `:i18n` Coverage
+
+`inventoryIdsForCalendar()` composes a `:i18n` id beside **every** id it composes, at every tier — the universal corpus (temporale,
+decrees, or a non-Roman rite's own sanctorale) and the calendar-specific tier alike:
+
+```text
+nation:roman:{id}:i18n              widerregion:roman:{name}:i18n
+diocese:{rite}:{calendar_id}:i18n   sanctorale:roman:{missalId}:i18n
+```
+
+The calendar-specific half is issue #61, landed after the #42 migration rather than during it: #42 deliberately held coverage constant so
+that a change in card counts would be a migration bug rather than intended new coverage. Do not reintroduce the omission, and do not read
+`inventoryIdsForCalendar()`'s old docblock (which described it as deliberate) from a stale checkout as current behaviour. `resources.js`
+never had the gap — it takes its whole list from `GET /validations`.
+
+**Cost.** One `validateSource` request and three cards per id. An Italian diocesan calendar's source-data phase goes from 9 checks /
+27 cards to 13 / 39; the General Roman rite-level scaffold from 8 / 24 to 11 / 33. This buys longer runs and more WebSocket traffic but
+**no** extra API rate-limit exposure: `Health::validateSource()` resolves an inventory id to a filesystem path and reads it locally,
+unlike the calendar-data phase, which is where this repository's history of 429s actually comes from.
+
+**One id is conditional.** `CheckableInventory::missalItems()` emits `sanctorale:roman:{missalId}:i18n` only when
+`RomanMissal::getSanctoraleI18nFilePath()` finds a folder, and it returns `false` for several missals; every other composed id is
+unconditional upstream. `buildSourceDataChecks()` in `index.js` resolves each composed id against the fetched inventory and warns about
+one the server does not advertise — a real disagreement, and the whole point of the inventory replacing a hand-maintained list — except
+where `isConditionalInventoryId()` in `wsProtocol.js` says the absence is the contract. That predicate matches the four-segment missal
+form only; the three-segment `sanctorale:{rite}:i18n` (a rite's own sanctorale translations) is unconditional and must keep warning.
+`inventoryIdsForCalendar()` deliberately stays a pure function of the calendar scope and does not read the inventory itself.
 
 ### CSS Class Slugification (deprecated fallback path)
 
