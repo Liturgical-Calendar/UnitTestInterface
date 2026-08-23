@@ -117,3 +117,34 @@ test('testAppliesToRite filters a rite-only scope and defaults an absent rite to
     expect(result.legacyUnderRoman).toBe(true);
     expect(result.legacyUnderAmbrosian).toBe(false);
 });
+
+test('inventoryIdsForCalendar composes the ids the API advertises', async ({ page }) => {
+    await page.goto('/resources.php');
+    const ids = await page.evaluate(async () => {
+        const { inventoryIdsForCalendar } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            national: inventoryIdsForCalendar({
+                rite: 'roman', nation: 'IT', widerRegion: 'Europe',
+                missals: ['EDITIO_TYPICA_1970', 'IT_1983'], dioceseId: null,
+            }),
+            diocesan: inventoryIdsForCalendar({
+                rite: 'ambrosian', nation: 'IT', widerRegion: 'Europe',
+                missals: [], dioceseId: 'milano_it',
+            }),
+        };
+    });
+
+    expect(ids.national).toEqual([
+        'temporale:roman',
+        'decrees:roman',
+        'widerregion:roman:Europe',
+        'nation:roman:IT',
+        'sanctorale:roman:EDITIO_TYPICA_1970',
+        'sanctorale:roman:IT_1983',
+    ]);
+    // The diocese is qualified by its own rite; everything it inherits stays Roman.
+    expect(ids.diocesan).toContain('diocese:ambrosian:milano_it');
+    expect(ids.diocesan).toContain('nation:roman:IT');
+    // Coverage is deliberately held constant: no i18n ids yet. See issue #61.
+    expect(ids.national.some((id: string) => id.endsWith(':i18n'))).toBe(false);
+});

@@ -671,3 +671,42 @@ export const summariseAbandoned = ( registry, requestIds ) => {
 
     return { unpaintedSteps, incomplete, silent };
 };
+
+/**
+ * The `/validations` inventory ids a calendar's source-data phase checks.
+ *
+ * Replaces the slug-and-path construction this repository used to do — `wider-region-Europe` with a
+ * bare `sourceFile`, `proprium-de-sanctis-IT-1983` derived from missal metadata, and repo-relative
+ * paths into the API for the universal corpus. The server advertises these ids; nothing here knows
+ * where any of it lives on disk, which is the whole of #42.
+ *
+ * The universal corpus is qualified by `rite`, but everything a calendar *inherits* is Roman: a
+ * national calendar is Roman by definition, and an Ambrosian diocese still inherits the Roman
+ * national calendar of its nation. That is pre-existing behaviour and a pre-existing open design
+ * question; it is preserved here deliberately and not resolved.
+ *
+ * No `:i18n` ids: coverage is held constant across the migration so a change in card counts is a
+ * migration bug rather than intended new coverage. See issue #61.
+ *
+ * @param {object} scope
+ * @param {string} scope.rite - The selected rite.
+ * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
+ * @param {?string} scope.widerRegion - The nation's wider region, or null.
+ * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
+ * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
+ * @returns {Array<string>}
+ */
+export const inventoryIdsForCalendar = ( { rite, nation, widerRegion, missals, dioceseId } ) => {
+    const ids = [ `temporale:${rite}`, 'decrees:roman' ];
+    if ( widerRegion ) {
+        ids.push( `widerregion:roman:${widerRegion}` );
+    }
+    if ( nation ) {
+        ids.push( `nation:roman:${nation}` );
+    }
+    ( missals ?? [] ).forEach( missalId => ids.push( `sanctorale:roman:${missalId}` ) );
+    if ( dioceseId ) {
+        ids.push( `diocese:${rite}:${dioceseId}` );
+    }
+    return ids;
+};
