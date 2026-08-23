@@ -582,6 +582,15 @@ const connectWebSocket = () => {
             return;
         }
 
+        // A rejection is an *ending* for the request it names (#70). Handled here rather than left
+        // to the `type` dispatch below, which had no branch for it: the frame fell through to the
+        // unattributable `else`, booked one failure for a request whose scaffold rendered three
+        // cards, and — carrying no `step: 'complete'` — never ended the request, so the phase sat
+        // out the full silence watchdog even though the server had answered instantly.
+        if ( phaseRunner.handleProtocolError( responseData ) ) {
+            return;
+        }
+
         try {
             if ( responseData.type === "success" ) {
                 phaseRunner.paintResult( responseData );
@@ -905,6 +914,16 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
+    // One card the runner painted red for a request the server rejected outright (#70). Recorded
+    // and counted exactly as an `error` step frame for that card would be — the arithmetic is the
+    // same as `countUnattributableFailure()`'s (one against the global total, one against the
+    // current phase's), and this page has no third, per-check counter to keep in step. The only
+    // difference from an unattributable failure is that this one *is* attributed: it has a card,
+    // painted with the rejection text, and a selector to record it under.
+    onAttributedFailure: ( frame, selector ) => {
+        resultCollector.record( phaseForState(), frame, selector );
+        countUnattributableFailure();
+    },
     // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
     // reconnect cannot land the watchdog in the `Ready` case and restart a phase. Adding
     // `currentRunToken !== null` here would be inert: the token stays set across exactly that

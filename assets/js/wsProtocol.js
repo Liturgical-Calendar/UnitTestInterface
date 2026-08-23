@@ -365,7 +365,7 @@ export const newRequestId = () => {
  * A registry inverts that: the client decides what a request's frames address, and a frame naming a
  * request nobody registered is a loud, specific failure rather than an empty NodeList.
  *
- * @returns {{register: Function, cardFor: Function, complete: Function, outstanding: Function, has: Function, reset: Function}}
+ * @returns {{register: Function, markReceived: Function, missingSteps: Function, cardFor: Function, complete: Function, outstanding: Function, has: Function, forget: Function, reset: Function}}
  */
 export const createRequestRegistry = () => {
     /** @type {Map<string, {cards: Record<string, Element>, done: boolean}>} */
@@ -452,6 +452,23 @@ export const createRequestRegistry = () => {
         /** @param {string} requestId @returns {boolean} */
         has( requestId ) {
             return entries.has( requestId );
+        },
+
+        /**
+         * Drop one request's binding, for a request nobody is waiting for any more.
+         *
+         * Called when a phase is given up on (#64). Clearing the outstanding set alone left the
+         * abandoned ids still bound to their cards, so a server that was merely quiet for longer
+         * than the watchdog's window and then recovered still painted the abandoned phase's cards —
+         * steps already counted as failures by `summariseAbandoned()`, now counted a second time
+         * against whichever phase is current by then. Forgetting the binding sends such a frame down
+         * the "no card is registered for this request" branch instead, which says so loudly.
+         *
+         * @param {string} requestId
+         * @returns {boolean} true when a binding was actually dropped.
+         */
+        forget( requestId ) {
+            return entries.delete( requestId );
         },
 
         /** Drop every binding, for a new run. */

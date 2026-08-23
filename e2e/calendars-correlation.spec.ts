@@ -189,3 +189,29 @@ test('per-test accordion counters resolve the test name from target.id, not the 
     const totalTestsRendered = await page.locator('#specificUnitTestsAccordion .accordion-item').count();
     expect(totalTestsRendered).toBeGreaterThan(0);
 });
+
+test('a rejected request paints its own cards and ends, instead of stalling the phase (#70)', async ({ page }) => {
+    // Every `validateCalendar` message is refused outright, the way production refused all 82 of a
+    // General Roman run's ("calendar.id is required for kind rite."). Each rejection names the
+    // request it refused and arrives instantly, so the phase has everything it needs to end at once.
+    await installReplyingWebSocketStub(page, { rejectActions: ['validateCalendar'] });
+    await page.goto('/index.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    // Well inside the sixty-second silence watchdog: before #70 the phase could only end by waiting
+    // it out, so a run that finishes this quickly is the fix itself, not merely its side effect.
+    await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 25000 });
+
+    // Not one card left grey: a rejection is an answer for every step the request registered, and
+    // the reason is carried onto each of them.
+    await expect(page.locator('.calendardata-tests .bg-info')).toHaveCount(0);
+    const rejected = await page.locator('.calendardata-tests .bg-danger').count();
+    expect(rejected).toBeGreaterThan(0);
+
+    // One failure per red card — not the single unattributable failure a rejection used to book for
+    // a request whose scaffold rendered three of them.
+    expect(Number(await page.locator('#failedCalendarDataTestsCount').textContent())).toBe(rejected);
+});

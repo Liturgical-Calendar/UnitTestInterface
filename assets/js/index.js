@@ -32,6 +32,8 @@ import {
     fetchValidations,
     inventoryIdsForCalendar,
     idToCardClass,
+    readHello,
+    resetHello,
     STEP_CARD_CLASS,
     TEST_RUN_STEP_CARD_CLASS,
 } from './wsProtocol.js';
@@ -635,6 +637,31 @@ const countUnattributableFailure = () => {
 };
 
 /**
+ * Re-read one unit test's failed-card tally from the DOM.
+ *
+ * The `error` step branch resolves the test a frame belongs to from `target.id`, but a
+ * `protocolError` frame carries no `target` at all — so an attributed rejection (#70) would leave
+ * this counter reading fewer failures than the accordion has red cards, which is exactly the drift
+ * between the totals and the rendered cards that #42 set out to remove.
+ *
+ * The card the runner painted is the attribution instead: it sits inside its own test's accordion
+ * panel, whose id (`specificUnitTest-{slug}`) names the test, and the per-test counter is a DOM
+ * tally of `.bg-danger` within that panel in the first place — the same query the `error` branch
+ * runs, reached from the card rather than from the frame.
+ *
+ * @param {?Element} card - The card just painted.
+ * @returns {void}
+ */
+const refreshUnitTestFailedCount = ( card ) => {
+    const panelId = card?.closest( '.accordion-collapse' )?.id ?? '';
+    if ( false === panelId.startsWith( 'specificUnitTest-' ) ) {
+        return;
+    }
+    const testSlug = panelId.slice( 'specificUnitTest-'.length );
+    updateText( `failed${testSlug}TestsCount`, document.querySelectorAll( `#${panelId} .bg-danger` ).length );
+};
+
+/**
  * The one phase runner for this page's phases.
  *
  * Replaces what this page used to own directly: the registry-backed painter (painting by the CSS
@@ -656,6 +683,18 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
+    // One card the runner painted red for a request the server rejected outright (#70). Recorded
+    // and counted exactly as an `error` step frame for that card would be: the global and phase
+    // totals through `countUnattributableFailure()` — same arithmetic, the difference being that
+    // this failure *is* attributed, to a card painted with the rejection text — plus, in the
+    // unit-test phase, the per-test accordion counter that only an attributed failure can reach.
+    onAttributedFailure: ( frame, selector, card ) => {
+        resultCollector.record( phaseForState(), frame, selector );
+        countUnattributableFailure();
+        if ( currentState === TestState.SpecificUnitTests ) {
+            refreshUnitTestFailedCount( card );
+        }
+    },
     // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
     // reconnect cannot land the watchdog in the `ReadyState` case and restart a phase. Note that
     // adding `currentRunToken !== null` here would be inert: the token stays set across exactly
@@ -990,16 +1029,37 @@ const connectWebSocket = () => {
      * finished, it updates the total test time and displays it.
      */
     conn.onmessage = ( e ) => {
+        // Parsed once, before the run guards, because one frame is not about a run: the server's
+        // `hello` arrives on connect and carries no run token — which is exactly what makes it
+        // invisible to a client that predates it, and exactly why the guards below would discard
+        // it. This page used to return early on `currentRunToken === null`, which is always true at
+        // connect time, so the handshake was thrown away before `readHello()` could be reached at
+        // all; reading it is #69 item 1, and the restructuring is the substance of it.
+        // See readHello(), and the matching shape in resources.js.
+        let responseData;
+        let parseError = null;
+        try {
+            responseData = JSON.parse( e.data );
+        } catch ( error ) {
+            parseError = error;
+        }
+
+        if ( null === parseError && readHello( responseData ) ) {
+            return;
+        }
+
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
         }
-        let responseData;
-        try {
-            responseData = JSON.parse( e.data );
-        } catch ( parseError ) {
+
+        if ( null !== parseError ) {
             // The state machine is driven from this handler: an exception escaping here means
             // runTests() is never called again and the run wedges with the spinner still going
             // and nothing in the UI to say why (#43). Count it and keep the run moving.
+            //
+            // Reached only inside a run, as before: an unparseable frame arriving before one is
+            // nothing to attribute a failure to, and pumping the state machine for it would be
+            // acting on a run that has not started.
             console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
             countUnattributableFailure();
             if ( currentState !== TestState.JobsFinished ) {
@@ -1027,6 +1087,15 @@ const connectWebSocket = () => {
         // recorded or counted. Counting it would inflate the totals badge past the number of
         // rendered cards — the drift #42 describes, arrived at from the other direction.
         if ( phaseRunner.noteTerminalFrame( responseData ) ) {
+            return;
+        }
+
+        // A rejection is an *ending* for the request it names (#70). Handled here rather than left
+        // to the `type` dispatch below, which had no branch for it: the frame fell through to the
+        // unattributable `else`, booked one failure for a request whose scaffold rendered three
+        // cards, and — carrying no `step: 'complete'` — never ended the request, so the phase sat
+        // out the full silence watchdog even though the server had answered instantly.
+        if ( phaseRunner.handleProtocolError( responseData ) ) {
             return;
         }
 
@@ -1141,6 +1210,10 @@ const connectWebSocket = () => {
      */
     conn.onclose = () => {
         console.log( 'Connection closed on remote end' );
+        // Forget what this connection advertised. The reconnection below may reach a server of a
+        // different vintage — a deploy is exactly when a socket drops — and answering it with the
+        // previous one's capabilities would declare a protocol it never claimed to read.
+        resetHello();
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
