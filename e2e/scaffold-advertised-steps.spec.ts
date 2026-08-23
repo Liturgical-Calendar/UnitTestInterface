@@ -80,9 +80,11 @@ const assertTwoStepScaffold = async (page: Page): Promise<void> => {
 };
 
 test('the Resources source scaffold renders only the steps the inventory advertises', async ({ page, request }) => {
-    await serveTwoStepInventory(page, request);
     // The run button is gated on a live connection; nothing here starts a run, so it never replies.
+    // The stub also serves a `/validations` of its own, normalising every item to three steps — so the
+    // doctored inventory is registered after it, Playwright's last handler winning.
     await installReplyingWebSocketStub(page);
+    await serveTwoStepInventory(page, request);
     await page.goto('/resources.php');
     await expect(page.locator('#startTestRunnerBtn')).toBeEnabled({ timeout: 20000 });
 
@@ -90,9 +92,9 @@ test('the Resources source scaffold renders only the steps the inventory adverti
 });
 
 test('the Calendars source scaffold renders only the steps the inventory advertises', async ({ page, request }) => {
-    await serveTwoStepInventory(page, request);
-    // The run button is gated on a live connection; nothing here starts a run, so it never replies.
+    // Registered after the stub, for the reason given in the Resources case above.
     await installReplyingWebSocketStub(page);
+    await serveTwoStepInventory(page, request);
     await page.goto('/index.php');
     await expect(page.locator('#startTestRunnerBtn')).toBeEnabled({ timeout: 20000 });
 

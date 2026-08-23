@@ -106,11 +106,18 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  * folder items, a stub that always answered three left those cards unpainted — a failure about the
  * stub's fidelity, not about the behaviour under test.
  *
- * Normalising here rather than teaching the stub to answer `covers` keeps it honest in the other
- * direction too: a stub that always sent four frames would over-deliver for the file items that
- * legitimately have three.
+ * Normalising rather than teaching the stub to answer `covers` keeps it honest in the other direction
+ * too: a stub that always sent four frames would over-deliver for the file items that legitimately
+ * have three.
+ *
+ * Installed by {@link installReplyingWebSocketStub} for every stub test, because almost all of them
+ * assert on painted cards or on totals and so need the frames and the scaffold to agree.
+ *
+ * **Ordering matters.** Playwright gives the *last* registered route handler precedence, so a test that
+ * serves its own `/validations` — an empty inventory, or an item doctored to two steps — must register
+ * it **after** calling {@link installReplyingWebSocketStub}, or this one silently overrides it.
  */
-const serveThreeStepInventory = async (page: Page): Promise<void> => {
+export const serveThreeStepInventory = async (page: Page): Promise<void> => {
     await page.route('**/validations', async (route) => {
         const response = await route.fetch();
         const body = await response.json() as { litcal_validations?: { steps: string[] }[] };
