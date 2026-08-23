@@ -24,7 +24,7 @@ import { installWebSocketStub } from './websocket-stub';
  * its responses are what enable the run button.
  */
 
-/** Every toast on both runner pages. `resources.php` carries the same eight ids as `index.php`. */
+/** Every toast on both runner pages. `resources.php` carries the same nine ids as `index.php`. */
 const TOAST_IDS = [
     'websocket-error',
     'websocket-connected',
@@ -34,6 +34,9 @@ const TOAST_IDS = [
     'results-save-failed',
     'results-load-failed',
     'controls-load-failed',
+    // Added by #63, for a /validations fetch that failed: the controls built fine, so the message the
+    // components-js mount failure shows would have been untrue here.
+    'validations-load-failed',
 ] as const;
 
 const RUNNER_PAGES = ['/', '/resources.php'] as const;

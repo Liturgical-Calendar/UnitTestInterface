@@ -8,6 +8,7 @@ import {
     escapeQuotesAndLinkifyUrls,
     hidePageLoader,
     safeCollapseShow,
+    fetchJson,
     safeToastShow,
     updateText,
     slugify,
@@ -128,13 +129,7 @@ class ReadyToRunTests {
         }
         setTestRunnerBtnLblTxt(startTestRunnerBtnLbl);
         if (testsReady) {
-            const pageLoader = document.querySelector('.page-loader');
-            if (pageLoader) {
-                pageLoader.style.opacity = '0';
-                setTimeout(() => {
-                    pageLoader.style.display = 'none';
-                }, 500);
-            }
+            hidePageLoader();
         }
     }
 }
@@ -947,31 +942,6 @@ const phaseRunner = createPhaseRunner( {
  */
 export const giveUpOnOutstandingRequests = () => phaseRunner.giveUpOnOutstandingRequests();
 
-const methodAndHeaders = Object.freeze({
-    method: "GET",
-    headers: {
-        Accept: "application/json"
-    }
-});
-
-/**
- * Fetches a JSON endpoint, rejecting on a non-ok response instead of parsing the error body.
- *
- * `loadAsyncData()` used a bare `.then(response => response.json())`, which on a 429 parsed the
- * problem document happily and handed on an object with none of the properties the dispatch below
- * looks for — so the dataset went missing in complete silence, its readiness flag stayed false, and
- * the page sat under `.page-loader` for ever (#63). A rejection is what makes that visible.
- *
- * @param {string} endpoint - The URL to fetch.
- * @returns {Promise<object>}
- */
-const fetchJson = async ( endpoint ) => {
-    const response = await fetch( endpoint, methodAndHeaders );
-    if ( false === response.ok ) {
-        throw new Error( `${endpoint}: ${response.status} ${response.statusText}` );
-    }
-    return response.json();
-};
 
 /**
  * The API's base URL, without a trailing slash and without an endpoint.

@@ -104,6 +104,50 @@ export const hidePageLoader = () => {
 };
 
 /**
+ * Fetch a JSON endpoint, rejecting on a non-ok response instead of parsing the error body as data.
+ *
+ * Both runners used to do this for themselves, and neither did it well. `resources.js` used a bare
+ * `.then(response => response.json())`, which on a 429 parsed the problem document happily and handed
+ * on an object carrying none of the properties its dispatch looks for — so the dataset went missing in
+ * complete silence and the page sat under `.page-loader` for ever (#63). `index.js` logged a non-ok
+ * response and resolved to `undefined`, which threw a TypeError two `.then`s later, so every HTTP
+ * failure reached the outer `.catch` describing the wrong thing entirely.
+ *
+ * The `Content-Type` test compares the **media type only**. A server is free to send
+ * `application/problem+json; charset=utf-8`, and an exact-string comparison silently fails to
+ * recognise it — falling back to the bare status line and discarding the `detail` the API went to the
+ * trouble of writing, in exactly the situation where that text is what a reader needs.
+ *
+ * @param {string} endpoint - The URL being fetched, named in the rejection so the caller knows which one failed.
+ * @param {Response} response - The response to read.
+ * @returns {Promise<object>}
+ * @throws {Error} On a non-ok response, carrying the problem document's `detail`/`title` when there is one.
+ */
+export const readJsonOrThrow = async (endpoint, response) => {
+    if (response.ok) {
+        return response.json();
+    }
+    const mediaType = (response.headers.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
+    if ('application/problem+json' === mediaType) {
+        const problem = await response.json();
+        throw new Error(`${endpoint}: ${problem.detail ?? problem.title ?? response.statusText}`);
+    }
+    throw new Error(`${endpoint}: ${response.status} ${response.statusText}`);
+};
+
+/**
+ * Fetch one JSON endpoint through {@link readJsonOrThrow}.
+ *
+ * @param {string} endpoint - The URL to fetch.
+ * @param {RequestInit} [init] - Overrides; `Accept: application/json` is sent unless replaced.
+ * @returns {Promise<object>}
+ */
+export const fetchJson = async (endpoint, init = { method: 'GET', headers: { Accept: 'application/json' } }) => {
+    const response = await fetch(endpoint, init);
+    return readJsonOrThrow(endpoint, response);
+};
+
+/**
  * Updates the text content of an element by ID.
  * @param {string} id - The element ID (without #).
  * @param {string|number} value - The value to set as textContent.
