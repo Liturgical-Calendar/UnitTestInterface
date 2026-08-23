@@ -150,9 +150,10 @@
  * handler on `runToken` matching the active run, and an untagged frame is dropped before reaching
  * that check unless read first; see `readHello()` in `wsProtocol.js`).
  *
- * `resources.js` reads this (`readHello()`) and stores what it advertises; `index.js` does not import
- * `readHello` at all and never declares `protocol` on its own messages. That split is current, not
- * a bug to fix here — describe it as the state of the repository, not as an oversight.
+ * **Both** runner pages read this (`readHello()`) and store what it advertises — #69 item 1, which
+ * closed a split where only `resources.js` did and `index.js` never declared `protocol` on its own
+ * messages. Each calls `readHello()` as the first thing its handler does, above the run guard, and
+ * `resetHello()` on close; the close half now lives once in `wsClient.js` (#69 item 2).
  * @typedef {Object} HelloFrame
  * @property {"hello"} type
  * @property {number} protocol - The highest protocol version this server reads.

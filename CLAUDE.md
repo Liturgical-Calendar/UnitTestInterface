@@ -285,8 +285,13 @@ which is why adopting it was never a one-line import. Against a server that send
 `sendMessage()` omits the `protocol` property, which is correct rather than lax: declaring a version the server never advertised would
 trip the same unknown-property gate that sending `requestId` arms.
 
-**Item 2 of #69 is still open**: each page owns its own `conn`, `onopen`, `onmessage` and reconnect handling, near-identical but still two
-copies. The runner half of that duplication is what `wsRunner.js` already removed; the connection half has not been done.
+**Item 2 of #69 is now done too**: the socket lifecycle lives once in `assets/js/wsClient.js` — URL composition, the duplicate-connection
+guard, the `#websocket-status` badge, the reconnect timer and the `resetHello()` on close. Each page calls `createWebSocketClient()` with
+its own `onMessage`, `onOpen` and `onClose`, so what stays per-page is only what genuinely differs: the frame handler (`handleWebSocketMessage()`,
+which is `wsRunner.js`'s whole reason to exist as a seam) and the page's own state machine — `TestState.ReadyState` on `index.js` versus
+`TestState.Ready` on `resources.js`, and its own `ReadyToRunTests` gate. The socket itself is handed out by `wsClient.socket()` rather than
+wrapped, because `wsRunner.js`'s send path and `sendCancelRun()` both already take a `WebSocket` and each page reads `readyState` directly to
+decide whether a run can start. Between this and `wsRunner.js`, #42's "a single `wsClient.js` used by both pages" is complete.
 
 ### Frames: `stepResult`, `complete`, `protocolError`
 
@@ -506,6 +511,8 @@ checked. Only the step component was ever phrased as a claim.
 | `assets/js/index.js`             | WebSocket communication, test logic |
 | `assets/js/AssertionsBuilder.js` | Test assertion builder              |
 | `assets/js/wsProtocol.js`        | Shared WebSocket protocol helpers   |
+| `assets/js/wsClient.js`          | Shared socket lifecycle + reconnect |
+| `assets/js/wsRunner.js`          | Shared phase runner and send path   |
 | `assets/js/resources.js`         | Resources runner logic              |
 | `includes/I18n.php`              | Locale detection, gettext setup     |
 

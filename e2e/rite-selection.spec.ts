@@ -122,7 +122,7 @@ test('degrades cleanly when the calendar controls fail to mount', async ({ page 
     // ...neither library control was mounted...
     await expect(page.locator('#riteSelect')).toHaveCount(0);
     await expect(page.locator('#APICalendarSelect')).toHaveCount(0);
-    // ...but module evaluation did not abort: fetchMetadataAndTests() and connectWebSocket()
+    // ...but module evaluation did not abort: fetchMetadataAndTests() and wsClient.connect()
     // still ran, and the live scaffold still builds from the second (successful) /calendars fetch.
     await waitForLiveScaffold(page);
 
@@ -156,7 +156,7 @@ test('degrades cleanly when the components-js library itself fails to load', asy
     await expect(page.locator('#riteSelect')).toHaveCount(0);
     await expect(page.locator('#APICalendarSelect')).toHaveCount(0);
     // ...but the rest of the page's initialisation still ran: fetchMetadataAndTests() and
-    // connectWebSocket() are not downstream of the failed dynamic import.
+    // wsClient.connect() are not downstream of the failed dynamic import.
     await waitForLiveScaffold(page);
 
     expect(pageErrors).toEqual([]);
