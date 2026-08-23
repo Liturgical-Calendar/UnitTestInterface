@@ -31,6 +31,9 @@ import {
     inRiteScope,
     readHello,
     resetHello,
+    stepsForCheck,
+    stepCardsHtml,
+    checkCardSelector,
 } from './wsProtocol.js';
 
 import { createPhaseRunner } from './wsRunner.js';
@@ -381,9 +384,24 @@ const resourcePaths = {
 
 
 /**
+ * The pending-state icon every card on this page is scaffolded with.
+ *
+ * Font Awesome's `circle-question`, inlined as SVG — this page pre-renders what `index.js` leaves
+ * to the Font Awesome runtime as an `<i>`. That difference between the two pages is why
+ * {@link stepCardsHtml} takes the icon as a parameter rather than owning one.
+ *
+ * @type {string}
+ */
+const CARD_ICON = '<svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com -->';
+
+/**
  * This function generates an HTML template for a specific resource based on the resource and index provided.
- * The template includes a card structure with different classes to represent the existence, JSON validity, and schema validity of the resource.
- * Each card has a specific icon and text to indicate the status of the resource.
+ * The template includes one card per step of the *check* frame family — existence, response-format
+ * validity, and schema validity — each with the pending icon and the step's own text.
+ *
+ * A resource check is a bare API URL, sent as `executeValidation`, so it carries no advertised
+ * `steps` and takes `stepsForCheck()`'s fallback — the same fallback `beginPhase()` registers it
+ * with, which is what keeps the cards drawn here and the cards bound there the same set (#62).
  *
  * @param {string} resource The name of the resource.
  * @param {number} idx The index of the resource.
@@ -394,26 +412,22 @@ const resourceTemplate = (resource, idx) => {
     const path = resourcePaths[resource];
     return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
     <div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(path)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(path)}</span></div>
-    <div class="card text-white bg-info rounded-0 ${resourceSlug} file-exists">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> data exists</span></p>
-        </div>
-    </div>
-    <div class="card text-white bg-info rounded-0 ${resourceSlug} json-valid">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> <span class="response-type">${currentResponseType}</span> valid</span></p>
-        </div>
-    </div>
-    <div class="card text-white bg-info rounded-0 ${resourceSlug} schema-valid">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> schema valid</span></p>
-        </div>
-    </div>
+${stepCardsHtml({
+    steps: stepsForCheck(),
+    classesFor: cardClass => `${resourceSlug} ${cardClass}`,
+    icon: CARD_ICON,
+    responseType: currentResponseType
+})}
 </div>`;
 }
 
 /**
  * Template for a source item in the resource list.
+ *
+ * One card per step, from `stepsForCheck()` — an inventory item's advertised `steps` where it has
+ * them, and otherwise the same fallback `beginPhase()` applies, so the cards drawn here and the
+ * cards bound there are always the same set (#62).
+ *
  * @param {object} sourceItem - An object containing the resource's source file or folder.
  * @param {number} idx - The index of the source item in the list.
  * @returns {string} A string containing the HTML for the source item.
@@ -436,21 +450,11 @@ const sourceTemplate = (sourceItem, idx) => {
     const tooltip = fromInventory ? sourceItem.id : (sourceItem.sourceFile ?? sourceItem.sourceFolder ?? '');
     return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
 <div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(tooltip)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(caption)}</span></div>
-<div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
-    <div class="card-body">
-        <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> data exists</span></p>
-    </div>
-</div>
-<div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
-    <div class="card-body">
-        <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> <span class="response-type">JSON</span> valid</span></p>
-    </div>
-</div>
-<div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
-    <div class="card-body">
-        <p class="card-text d-flex justify-content-between"><span><svg class="svg-inline--fa fa-circle-question fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-question" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg><!-- <i class="fas fa-circle-question fa-fw"></i> Font Awesome fontawesome.com --> schema valid</span></p>
-    </div>
-</div>
+${stepCardsHtml({
+    steps: stepsForCheck( sourceItem ),
+    classesFor: cardClass => `${validateSlug} ${cardClass}`,
+    icon: CARD_ICON
+})}
 </div>`;
 }
 
@@ -808,8 +812,12 @@ const buildScaffolding = ( cfg ) => {
     }
     // Check-card totals shown in the Time badge parentheses (overall + per section).
     // Computed here so both the live setup and stored-run replay paths populate them.
-    const totalResourceDataTestsCount = document.querySelectorAll('.resourcedata-tests .file-exists, .resourcedata-tests .json-valid, .resourcedata-tests .schema-valid').length;
-    const totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid').length;
+    //
+    // Counted through `checkCardSelector()` rather than by naming the card classes here: it
+    // enumerates the very table `stepCardsHtml()` renders from, so the badge can only ever describe
+    // cards the scaffold can actually produce (#62).
+    const totalResourceDataTestsCount = document.querySelectorAll(checkCardSelector('.resourcedata-tests')).length;
+    const totalSourceDataTestsCount = document.querySelectorAll(checkCardSelector('.sourcedata-tests')).length;
     updateText('totalResourceDataTestsCount', totalResourceDataTestsCount);
     updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
     updateText('total-tests-count', totalResourceDataTestsCount + totalSourceDataTestsCount);

@@ -262,6 +262,121 @@ export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
 });
 
 /**
+ * The steps one checkable's cards are rendered *and* registered for.
+ *
+ * One rule, read by both the scaffold that renders the cards and `beginPhase()` that binds them, so
+ * the two cannot answer differently about the same check. They used to: the scaffolds rendered an
+ * unconditional three cards while `beginPhase()` registered whatever the inventory item advertised,
+ * and the run totals were then derived by counting the rendered cards. #42 removed the hardcoded
+ * three from the frame *counting*; #62 is what was left — two independent constants that agree only
+ * because every `/validations` item currently advertises exactly `['exists','parses','validates']`.
+ * The first two-step item would have left a permanently blue card no frame paints and a totals badge
+ * reading high; the first four-step item, a `console.warn` per check and a result with nowhere to go.
+ *
+ * A check that advertises nothing falls back to every step {@link STEP_CARD_CLASS} has. That is not
+ * a guess about the API: the checks carrying no `steps` are precisely the ones that never came from
+ * the inventory — the bare-URL `executeValidation` checks (`LitCalMetadata` on `index.js`,
+ * `resourceDataChecks` on `resources.js`), the calendar-data years, and runs stored before the #42
+ * migration — and every one of those is a three-step check by construction.
+ *
+ * @param {?{steps?: Array<string>}} [check] - An inventory item, or anything that carries no `steps`.
+ * @returns {Array<string>}
+ */
+export const stepsForCheck = ( check ) =>
+    Array.isArray( check?.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+
+/**
+ * What one scaffold card says, keyed by step.
+ *
+ * Beside {@link STEP_CARD_CLASS} rather than inside either page, because it answers the same
+ * question about the same vocabulary: the class a step's card carries and the words that card shows
+ * are two halves of one table, and both runner pages need both halves. Kept as functions because
+ * `parses` names the response format, which `resources.js` renders from its own live selection.
+ *
+ * A step absent from here is a step neither page can draw a card for, so {@link stepCardsHtml} skips
+ * it — and `beginPhase()` then says so out loud when it looks for that card and finds nothing, which
+ * is the diagnostic worth having rather than a silently blank column.
+ *
+ * @type {Readonly<Record<string, function(string): string>>}
+ */
+export const STEP_CARD_BODY = Object.freeze({
+    exists: () => 'data exists',
+    parses: ( responseType ) => `<span class="response-type">${responseType}</span> valid`,
+    validates: () => 'schema valid'
+});
+
+/**
+ * Render one checkable's scaffold cards — one per advertised step, no more and no fewer.
+ *
+ * The two pages differ only in the question-mark icon they draw (`index.js` uses a Font Awesome
+ * `<i>`, `resources.js` an inlined SVG) and in whether the card text is laid out with the
+ * `d-flex justify-content-between` split, so those are parameters rather than a reason to keep two
+ * copies of the markup.
+ *
+ * `classesFor` receives the step's card class and returns the *whole* class list for that card, so
+ * each call site keeps its own address components — `calendar-{slug}`, `year-{n}`, the check's own
+ * slug — and their exact order. Everything a card is addressed by therefore still comes from one
+ * place per page, which is what #60 needs to find when it renames the step classes.
+ *
+ * @param {object} options
+ * @param {Array<string>} options.steps - From {@link stepsForCheck}.
+ * @param {function(string): string} options.classesFor - Step card class -> the card's full class list.
+ * @param {string} options.icon - The pending-state icon markup this page draws.
+ * @param {string} [options.responseType='JSON'] - Named on the `parses` card.
+ * @param {boolean} [options.spread=true] - Lay the card text out with `d-flex justify-content-between`.
+ * @returns {string}
+ */
+export const stepCardsHtml = ( { steps, classesFor, icon, responseType = 'JSON', spread = true } ) =>
+    steps
+        .filter( step => undefined !== STEP_CARD_BODY[ step ] )
+        .map( step => {
+            const body = `${icon} ${STEP_CARD_BODY[ step ]( responseType )}`;
+            const text = spread
+                ? `<p class="card-text d-flex justify-content-between"><span>${body}</span></p>`
+                : `<p class="card-text">${body}</p>`;
+            return `<div class="card text-white bg-info rounded-0 ${classesFor( STEP_CARD_CLASS[ step ] )}">
+    <div class="card-body">
+        ${text}
+    </div>
+</div>`;
+        } )
+        .join( '\n' );
+
+/**
+ * A selector matching every card of one step family, optionally scoped to a container.
+ *
+ * @param {Readonly<Record<string, string>>} stepClasses - A step -> card class table.
+ * @param {string} scope - A container selector, or '' for the whole document.
+ * @returns {string}
+ */
+const cardSelectorForFamily = ( stepClasses, scope ) => {
+    const prefix = '' === scope ? '' : `${scope} `;
+    return [ ...new Set( Object.values( stepClasses ) ) ].map( cardClass => `${prefix}.${cardClass}` ).join( ',' );
+};
+
+/**
+ * The selector both pages count their *check* cards with.
+ *
+ * Derived from {@link STEP_CARD_CLASS}, the same table {@link stepCardsHtml} renders from, so the
+ * totals badge counts exactly the card families the scaffold can produce. Spelling the three classes
+ * out at each counting site is what let the badge drift from the page, and would leave #60 a fresh
+ * set of literals to chase after it renames them.
+ *
+ * @param {string} [scope=''] - A container selector, e.g. `.sourcedata-tests`.
+ * @returns {string}
+ */
+export const checkCardSelector = ( scope = '' ) => cardSelectorForFamily( STEP_CARD_CLASS, scope );
+
+/**
+ * The selector `index.js` counts its *test run* cards with — {@link checkCardSelector}'s counterpart
+ * for the other frame family.
+ *
+ * @param {string} [scope=''] - A container selector, e.g. `.specificunittests`.
+ * @returns {string}
+ */
+export const testRunCardSelector = ( scope = '' ) => cardSelectorForFamily( TEST_RUN_STEP_CARD_CLASS, scope );
+
+/**
  * The capabilities the server advertised on connect, or null before a `hello` frame has arrived.
  *
  * Module state rather than a parameter threaded through every send, because it is a property of the

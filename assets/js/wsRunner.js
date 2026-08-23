@@ -15,6 +15,7 @@ import {
     summariseAbandoned,
     newRequestId,
     STEP_CARD_CLASS,
+    stepsForCheck,
     negotiatedProtocol,
 } from './wsProtocol.js';
 
@@ -171,9 +172,11 @@ export const createPhaseRunner = ( options ) => {
             const cards = {};
             const cardSelectors = {};
             // The steps the server advertised for this item, where it advertised any — the count is
-            // exact since LiturgicalCalendarAPI#825, so it can be trusted rather than assumed. A
-            // check that carries none falls back to every step the shared card-class table has.
-            const steps = Array.isArray( check.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+            // exact since LiturgicalCalendarAPI#825, so it can be trusted rather than assumed. The
+            // same `stepsForCheck()` the scaffolds render from, deliberately: the cards registered
+            // here and the cards drawn on the page have to be the same set, or the totals badge
+            // drifts from the page (#62).
+            const steps = stepsForCheck( check );
             steps.forEach( step => {
                 const suffix = cardSelectorFor( check, step );
                 if ( null === suffix ) {
