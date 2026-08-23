@@ -94,7 +94,19 @@ export const yearLowerBoundForRite = ( rite, riteProperties ) => {
     if ( Number.isInteger( minYear ) ) {
         return minYear;
     }
-    console.warn( `No RiteProperties entry for rite '${rite}'; falling back to ${FALLBACK_YEAR_LOWER_BOUND}. Expected only when components-js failed to load.` );
+    // A null table and a table missing this rite are different events, and only the second is worth
+    // a warning. `index.js` seeds its `Years` array at module load with no table at all — the
+    // library is imported dynamically and has not resolved yet — so warning on null fired this
+    // message on every single page load, in a console the reader is using to find real faults, and
+    // said "expected only when components-js failed to load" while the load was proceeding normally.
+    // A message that cries wolf on every load is worse than no message: it trains the reader to
+    // scroll past the one time it is true.
+    //
+    // The fallback is correct on the null path by construction: with no library there is no rite
+    // select either, so the rite is still the Roman default, whose floor this is.
+    if ( null !== riteProperties && undefined !== riteProperties ) {
+        console.warn( `No RiteProperties entry for rite '${rite}'; falling back to ${FALLBACK_YEAR_LOWER_BOUND}. The library loaded but advertises no bound for this rite.` );
+    }
     return FALLBACK_YEAR_LOWER_BOUND;
 };
 
