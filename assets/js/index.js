@@ -73,6 +73,7 @@ const {
     API_PORT,
     API_HOST,
     API_BASE_PATH,
+    API_PROXY_BASE,
     APP_ENV,
     riteSelectLabel: riteSelectLabelText = 'Liturgical Rite',
     calendarSelectLabel: calendarSelectLabelText = 'Liturgical Calendar',
@@ -227,6 +228,31 @@ const getApiBaseUrl = () => {
 };
 
 /**
+ * The base the *browser* fetches API metadata from.
+ *
+ * The same-origin proxy when one is configured, the API itself otherwise. Distinct from
+ * {@link ENDPOINTS}, which must keep naming the real API: those URLs are also sent to the WebSocket
+ * server as a check's `sourceFile`, and `Health` resolves a check's JSON schema by matching the
+ * resource URL against the API's configured host — so a proxied URL there would break schema
+ * resolution, silently, on checks that would still look like they ran.
+ *
+ * Why proxy at all: the API rate-limits unauthenticated callers by IP (100/hour live), and one load of
+ * this page spends five of them. The proxy attaches the project's first-party key server-side, where
+ * the browser cannot read it. See `api-proxy.php`.
+ *
+ * @returns {string}
+ */
+const apiFetchBase = () => API_PROXY_BASE ?? getApiBaseUrl();
+
+/**
+ * One metadata route, addressed through {@link apiFetchBase}.
+ *
+ * @param {string} route - `calendars`, `tests`, `missals` or `validations`; the proxy allowlists these.
+ * @returns {string}
+ */
+const apiFetchUrl = ( route ) => `${apiFetchBase()}/${route}`;
+
+/**
  * The loaded metadata base shared by the library's selects and by our own check builders.
  *
  * One instance, so `/calendars` is fetched once rather than once per consumer, and so the
@@ -257,7 +283,7 @@ let calendarSelect = null;
  * @returns {Promise<void>}
  */
 const mountCalendarControls = async () => {
-    const baseUrl = getApiBaseUrl();
+    const baseUrl = apiFetchBase();
     /** @type {typeof import('@liturgical-calendar/components-js')} */
     let componentsJs;
     try {
@@ -1358,12 +1384,12 @@ const resetTestUI = () => {
  */
 const fetchMetadataAndTests = () => {
     return Promise.allSettled( [
-        fetchJson( ENDPOINTS.CALENDARS ),
-        fetchJson( ENDPOINTS.TESTS ),
-        fetchJson( ENDPOINTS.MISSALS ),
+        fetchJson( apiFetchUrl( 'calendars' ) ),
+        fetchJson( apiFetchUrl( 'tests' ) ),
+        fetchJson( apiFetchUrl( 'missals' ) ),
         // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to the
         // inventory array — it is not a `Response`, so it must not go through `readJsonOrThrow()`.
-        fetchValidations( getApiBaseUrl() )
+        fetchValidations( apiFetchBase() )
     ] ).then( ( [ metadataResult, testsResult, missalsResult, validationsResult ] ) => {
         // Positional rather than shape-sniffed: with `allSettled` a dataset that failed has no shape
         // to sniff, and "which endpoint is missing" is exactly what the failure path has to say.

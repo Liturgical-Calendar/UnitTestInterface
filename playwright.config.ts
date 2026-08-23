@@ -119,8 +119,16 @@ export default defineConfig({
             stderr: 'pipe',
         },
         {
-            // Start UnitTestInterface server
-            command: `php -S ${new URL(process.env.FRONTEND_URL || 'http://localhost:3003').host}`,
+            // Start UnitTestInterface server.
+            //
+            // Multi-worker, like the API server above, and for a sharper reason than throughput:
+            // `api-proxy.php` makes a *blocking* outbound HTTP call to the API while it holds a
+            // worker. On a single-worker `php -S` every other request to this origin queues behind
+            // it — page assets, and the dynamic `import()` some specs run inside `page.evaluate` —
+            // which surfaces as an intermittent "Execution context was destroyed" rather than as
+            // anything that names the real cause. Anyone serving this app by hand wants the same
+            // (see README).
+            command: `PHP_CLI_SERVER_WORKERS=6 php -S ${new URL(process.env.FRONTEND_URL || 'http://localhost:3003').host}`,
             url: process.env.FRONTEND_URL || 'http://localhost:3003',
             reuseExistingServer: !process.env.CI,
             timeout: 60 * 1000,

@@ -57,7 +57,7 @@ so local changes to PHP / JS / assets are picked up live without rebuilding the 
 
    ```bash
    composer install
-   php -S localhost:3003
+   PHP_CLI_SERVER_WORKERS=6 php -S localhost:3003
    ```
 
 If either the Liturgical Calendar API or the Websocket Server are running on ports other than the defaults (`8000` and `8082`),

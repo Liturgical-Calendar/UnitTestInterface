@@ -69,7 +69,7 @@ composer ws:start           # WebSocket server on localhost:8082
 
 # In this repository: install dependencies and start the dev server
 composer install
-php -S localhost:3003
+PHP_CLI_SERVER_WORKERS=6 php -S localhost:3003   # multi-worker: api-proxy.php blocks a worker per request
 
 # VSCode: Use Ctrl+Shift+B and select "litcal-tests-webui"
 ```

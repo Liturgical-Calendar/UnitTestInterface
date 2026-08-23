@@ -55,7 +55,7 @@ const resultCollector = createResultCollector();
 
 // Access global config from window (set by PHP in footer.php)
 const {
-    locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, APP_ENV,
+    locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, API_PROXY_BASE, APP_ENV,
     riteSelectLabel: riteSelectLabelText = 'Liturgical Rite',
 } = window.LitCalConfig;
 
@@ -949,6 +949,31 @@ export const giveUpOnOutstandingRequests = () => phaseRunner.giveUpOnOutstanding
  */
 const getApiBaseUrl = () => ENDPOINTS.ROOT;
 
+/**
+ * The base the *browser* fetches API metadata from.
+ *
+ * The same-origin proxy when one is configured, the API itself otherwise. Distinct from
+ * {@link ENDPOINTS}, which must keep naming the real API: those URLs are also sent to the WebSocket
+ * server as a check's `sourceFile`, and `Health` resolves a check's JSON schema by matching the
+ * resource URL against the API's configured host — so a proxied URL there would break schema
+ * resolution, silently, on checks that would still look like they ran.
+ *
+ * Why proxy at all: the API rate-limits unauthenticated callers by IP (100/hour live), and one load of
+ * this page spends five of them. The proxy attaches the project's first-party key server-side, where
+ * the browser cannot read it. See `api-proxy.php`.
+ *
+ * @returns {string}
+ */
+const apiFetchBase = () => API_PROXY_BASE ?? getApiBaseUrl();
+
+/**
+ * One metadata route, addressed through {@link apiFetchBase}.
+ *
+ * @param {string} route - `calendars`, `tests`, `missals` or `validations`; the proxy allowlists these.
+ * @returns {string}
+ */
+const apiFetchUrl = ( route ) => `${apiFetchBase()}/${route}`;
+
 /** @type {?import('@liturgical-calendar/components-js').RiteSelect} */
 let riteSelect = null;
 
@@ -964,7 +989,7 @@ let riteSelect = null;
  * @returns {Promise<void>}
  */
 const mountRiteSelect = async () => {
-    const baseUrl = getApiBaseUrl();
+    const baseUrl = apiFetchBase();
     /** @type {typeof import('@liturgical-calendar/components-js')} */
     let componentsJs;
     try {
@@ -1079,13 +1104,13 @@ const loadAsyncData = () => {
     // never ran and `.page-loader` — rendered visible in the markup — was never lowered. The page
     // simply stayed greyed out, with a `console.error` as its only trace (#63).
     Promise.allSettled([
-        fetchJson( ENDPOINTS.CALENDARS ),
-        fetchJson( ENDPOINTS.MISSALS ),
+        fetchJson( apiFetchUrl( 'calendars' ) ),
+        fetchJson( apiFetchUrl( 'missals' ) ),
         // `/validations` in place of `/tests`: the inventory carries the test corpus as items of
         // its own (`test:{rite}:{name}`), so fetching the tests list to build source checks from it
         // would be deriving a second time what the server already advertises. `/tests` is still
         // health-checked as a resource path, so nothing stops being covered.
-        fetchValidations( ENDPOINTS.ROOT ).then( items => ( { litcal_validations: items } ) )
+        fetchValidations( apiFetchBase() ).then( items => ( { litcal_validations: items } ) )
     ]).then(results => {
         if ( myGeneration !== loadAsyncDataGeneration ) {
             // A newer rite change started another loadAsyncData() call before this one's fetches
