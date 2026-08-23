@@ -32,99 +32,6 @@ export const sendCancelRun = ( conn, runToken ) => {
     return true;
 };
 
-/**
- * The rite-level universal source corpus, hardcoded — **`index.js` only, and on its way out.**
- *
- * `resources.php` no longer reads this: it takes its whole source-data list from the API's
- * advertised inventory instead (see {@link validationChecksForRite}), which is what #42 replaces
- * this with. `index.js` has not been migrated yet and still needs it, so it stays until that
- * happens — and then goes, along with the last copy of the API's on-disk layout in this repository.
- *
- * Everything below this line describes why the list looks the way it does, and stays accurate for
- * as long as anything sends it.
- *
- * `index.js` and `resources.js` each carried their own version of this, with two different
- * vocabularies for the same file on disk — `PropriumDeTempore` under `universalcalendar` here,
- * `proprium-de-tempore` under `sourceDataCheck` there (see #42). Neither listed the Ambrosian
- * corpus, and neither listed any i18n folder (#48).
- *
- * Category is NOT uniform across the list, and that split is load-bearing, not cosmetic.
- * `Health::executeValidation()` only recognises a `sourceFolder` property inside its
- * `category === 'sourceDataCheck'` branch (`Health.php:609-660`); every other category — including
- * `universalcalendar` — falls into the branch that requires `sourceFile` and throws when only
- * `sourceFolder` is present, and that exception closes the WebSocket connection instead of
- * returning a result. So:
- *
- * - the four **file** entries use `category: 'universalcalendar'`, resolved from the path via
- *   `CheckableInventory::byPath()`;
- * - the four **folder** (i18n) entries use `category: 'sourceDataCheck'`, with hyphenated
- *   `validate` slugs `Health::retrieveSchemaForCategory()`'s `sourceDataCheck` arm already
- *   resolves: the two Roman slugs through its `legacySlugToId` table (which is also what
- *   `resources.js` already sends — these two entries now agree with it), and the two Ambrosian
- *   slugs through its trailing `/-i18n$/` regex fallback. For `sourceDataCheck`, the data path is
- *   `sourceFolder` exactly as supplied — the slug-based path *reconstruction* in `Health.php`
- *   applies only to the wider-region / national-calendar / diocesan-calendar / proprium-de-sanctis
- *   slug families, which these are not.
- *
- * `validate` values are card CSS class names once slugified, and the server echoes them back in
- * its `classes` selector — so they are effectively part of the wire contract and must stay
- * distinct. See CLAUDE.md, "Server Response Format".
- *
- * These paths are the last hardcoded copy of the API's on-disk layout; #42 replaces the whole
- * list with a fetch of the `/validations` inventory once the wire accepts opaque ids.
- *
- * @type {ReadonlyArray<{rite: string, validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
- */
-export const UNIVERSAL_CHECKS = Object.freeze([
-    {
-        rite: 'roman',
-        validate: 'PropriumDeTempore',
-        sourceFile: 'jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'roman',
-        validate: 'proprium-de-tempore-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/roman/missals/propriumdetempore/i18n',
-        category: 'sourceDataCheck'
-    },
-    {
-        rite: 'roman',
-        validate: 'MemorialsFromDecrees',
-        sourceFile: 'jsondata/sourcedata/rite/roman/decrees/decrees.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'roman',
-        validate: 'memorials-from-decrees-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/roman/decrees/i18n',
-        category: 'sourceDataCheck'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'AmbrosianPropriumDeTempore',
-        sourceFile: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdetempore/propriumdetempore.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'ambrosian-proprium-de-tempore-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdetempore/i18n',
-        category: 'sourceDataCheck'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'AmbrosianPropriumDeSanctis',
-        sourceFile: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdesanctis_2024/propriumdesanctis.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'ambrosian-proprium-de-sanctis-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdesanctis_2024/i18n',
-        category: 'sourceDataCheck'
-    }
-]);
 
 /**
  * Whether a rite-tagged item belongs to the selected rite.
@@ -205,16 +112,6 @@ export const yearsForRite = ( rite, upperBound, riteProperties ) => {
     }
     return years;
 };
-
-/**
- * The universal source checks belonging to one rite. **`index.js` only** — see
- * {@link UNIVERSAL_CHECKS}, and {@link validationChecksForRite} for what replaces it.
- *
- * @param {string} rite - The selected rite.
- * @returns {Array<object>} A fresh array; callers push calendar-specific checks onto it.
- */
-export const universalChecksForRite = ( rite ) =>
-    UNIVERSAL_CHECKS.filter( check => inRiteScope( check, rite ) ).map( check => ( { ...check } ) );
 
 /**
  * The CSS class a checkable's cards carry, derived from its inventory id.

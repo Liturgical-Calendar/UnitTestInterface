@@ -82,9 +82,7 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
 
 test('restores live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
     // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live
-    // General Roman scaffold which has 8 sourceDataChecks: buildUniversalSourceDataChecks('roman')
-    // in index.js now yields 5 (metadata + propriumdetempore/i18n + decrees/i18n, per #48's
-    // UNIVERSAL_CHECKS in wsProtocol.js) plus the 3 editio typica missals derived from /missals.
+    // General Roman scaffold has 8 sourceDataChecks: metadata, temporale + i18n, decrees + i18n, and 3 editio typica missals from /missals.
     // After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold shows only 1
     // check. Returning to "— Live —" must re-sync state from the DOM controls and rebuild the
     // scaffold via setupPage(), restoring the 8-check General Roman layout.

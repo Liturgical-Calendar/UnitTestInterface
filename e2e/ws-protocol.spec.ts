@@ -12,46 +12,6 @@ const load = async (page: import('@playwright/test').Page) => {
     return page;
 };
 
-test('UNIVERSAL_CHECKS covers both rites, temporale and decrees, files and i18n folders', async ({ page }) => {
-    await load(page);
-    const checks: any = await page.evaluate(async () => {
-        const { UNIVERSAL_CHECKS } = await import('/assets/js/wsProtocol.js' as any);
-        return UNIVERSAL_CHECKS;
-    });
-
-    expect(checks).toHaveLength(8);
-    // Every entry names exactly one of sourceFile / sourceFolder.
-    expect(checks.every((c: any) => ('sourceFile' in c) !== ('sourceFolder' in c))).toBe(true);
-    // Category tracks that same split, not a single constant: Health::executeValidation() only
-    // recognises `sourceFolder` under `category: 'sourceDataCheck'` (Health.php:609-660) — every
-    // other category, `universalcalendar` included, requires `sourceFile` and throws (which closes
-    // the connection) when only `sourceFolder` is present. So files stay `universalcalendar`,
-    // resolved from the path via CheckableInventory::byPath(); folders are `sourceDataCheck`.
-    expect(checks.every((c: any) => ('sourceFile' in c) === (c.category === 'universalcalendar'))).toBe(true);
-    expect(checks.every((c: any) => ('sourceFolder' in c) === (c.category === 'sourceDataCheck'))).toBe(true);
-    // Four per rite, half of them i18n folders.
-    expect(checks.filter((c: any) => c.rite === 'roman')).toHaveLength(4);
-    expect(checks.filter((c: any) => c.rite === 'ambrosian')).toHaveLength(4);
-    expect(checks.filter((c: any) => 'sourceFolder' in c)).toHaveLength(4);
-    // validate values are distinct — they become card CSS classes.
-    const validates = checks.map((c: any) => c.validate);
-    expect(new Set(validates).size).toBe(validates.length);
-    // The Ambrosian corpus is present at all, which is the gap issue #48 opens on.
-    expect(checks.some((c: any) => c.rite === 'ambrosian' && 'sourceFolder' in c)).toBe(true);
-});
-
-test('universalChecksForRite returns only that rite', async ({ page }) => {
-    await load(page);
-    const result = await page.evaluate(async () => {
-        const { universalChecksForRite } = await import('/assets/js/wsProtocol.js' as any);
-        return {
-            roman: universalChecksForRite('roman').map((c: any) => c.rite),
-            ambrosian: universalChecksForRite('ambrosian').map((c: any) => c.rite),
-        };
-    });
-    expect(result.roman).toEqual(['roman', 'roman', 'roman', 'roman']);
-    expect(result.ambrosian).toEqual(['ambrosian', 'ambrosian', 'ambrosian', 'ambrosian']);
-});
 
 test('inRiteScope treats a missing rite as roman, never as a wildcard', async ({ page }) => {
     await load(page);
@@ -143,8 +103,7 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
         };
     });
 
-    // The universal corpus carries its `:i18n` folder pair — this repository already checked those
-    // before #42 (see UNIVERSAL_CHECKS); only the calendar-specific tier below omits i18n (#61).
+    // The universal corpus (temporale + decrees) includes i18n folders (#48); only the calendar-specific tier omits i18n (#61).
     expect(ids.national).toEqual([
         'temporale:roman',
         'temporale:roman:i18n',
