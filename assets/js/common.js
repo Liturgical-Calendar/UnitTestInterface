@@ -81,6 +81,29 @@ export const safeToastShow = (selector) => {
 };
 
 /**
+ * Hides the full-page loading overlay.
+ *
+ * `.page-loader` is rendered *visible* in the markup, and is normally taken down by each runner's
+ * `ReadyToRunTests.tryEnableBtn()` — but only once every readiness flag is set. A page that has
+ * given up on ever becoming ready therefore has to lower it explicitly, or it stays greyed out for
+ * ever with nothing to say why (#63).
+ *
+ * Same two-step fade as those call sites, so a failure path and a success path look alike.
+ *
+ * @returns {void}
+ */
+export const hidePageLoader = () => {
+    const pageLoader = document.querySelector('.page-loader');
+    if (!pageLoader) {
+        return;
+    }
+    pageLoader.style.opacity = '0';
+    setTimeout(() => {
+        pageLoader.style.display = 'none';
+    }, 500);
+};
+
+/**
  * Updates the text content of an element by ID.
  * @param {string} id - The element ID (without #).
  * @param {string|number} value - The value to set as textContent.

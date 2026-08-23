@@ -186,6 +186,14 @@ exists in this repository; neither does the slug-and-path construction (`wider-r
 that used to build `executeValidation` messages by hand. Do not resurrect either — the code they describe is gone, and the inventory is
 what does that job now.
 
+**When the inventory fetch fails** (`/validations` answers 429 routinely in local development), each runner settles it independently of its
+other metadata fetches — `Promise.allSettled`, not `Promise.all` — so one rejection no longer discards the rest and leaves the page under a
+translucent `.page-loader` that is never lowered (#63). The degradation is deliberately asymmetric: the page **renders** what it can, lowers
+the loader (`hidePageLoader()` in `common.js`) and raises the `#validations-load-failed` toast, but the Start button stays **refused**. That
+is not an oversight to relax — the inventory *is* the list of things a run checks, so a run started without it would check a subset and
+report success for it, which is the class of untruth this interface exists to detect. `#validations-load-failed` is a distinct toast from
+`#controls-load-failed` because the two are distinct facts and can be true at once: when only the inventory failed, the controls did build.
+
 ### Message Actions
 
 Every outgoing message carries an `action`. This repository now sends five:

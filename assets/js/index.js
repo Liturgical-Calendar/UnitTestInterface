@@ -7,6 +7,7 @@
 import {
     escapeHtmlAttr,
     escapeQuotesAndLinkifyUrls,
+    hidePageLoader,
     safeCollapseShow,
     safeToastShow,
     updateText,
@@ -1266,105 +1267,131 @@ const resetTestUI = () => {
 }
 
 /**
- * Fetches metadata and tests data from the server.
- * If the promise resolves, it sets the MetaData and UnitTests variables.
- * If the promise rejects, it logs an error message.
+ * Reads a JSON body from a `fetch()` response, or rejects saying which endpoint failed and why.
+ *
+ * The version this replaced logged a non-ok response and resolved to `undefined`, which then threw
+ * a TypeError two `.then`s later — so every HTTP failure reached the outer `.catch` describing the
+ * wrong thing entirely. Rejecting here is also what lets `Promise.allSettled` below report *which*
+ * dataset is missing rather than only that something was.
+ *
+ * @param {string} endpoint - The URL that was fetched, for the message.
+ * @param {Response} response - The response to read.
+ * @returns {Promise<object>}
+ */
+const readJsonOrThrow = async ( endpoint, response ) => {
+    if ( response.ok ) {
+        return response.json();
+    }
+    if ( 'application/problem+json' === response.headers.get( 'Content-Type' ) ) {
+        const problem = await response.json();
+        throw new Error( `${endpoint}: ${problem.detail ?? problem.title ?? response.statusText}` );
+    }
+    throw new Error( `${endpoint}: ${response.status} ${response.statusText}` );
+};
+
+/**
+ * Fetches the four datasets this page builds its scaffold and its checks from, and assigns
+ * {@link MetaData}, {@link UnitTests}, {@link RomanMissals} and {@link ValidationsInventory}.
+ *
+ * **Settled independently, not as one `Promise.all`.** A single rejection there discarded all four
+ * results at once: none of the globals was assigned, `setupPage()` never ran, and `.page-loader` —
+ * rendered *visible* in the markup and lowered only by a `tryEnableBtn()` that finds every flag set
+ * — stayed up for ever over a page that was never going to resolve, with a `console.error` as its
+ * only trace. `/validations` answers 429 routinely in local development, which made that the most
+ * reachable user-visible failure on this page (#63).
+ *
  * @returns {Promise<void>}
  */
 const fetchMetadataAndTests = () => {
-    Promise.all( [
-        fetch( ENDPOINTS.CALENDARS, {
-            method: "GET",
-            //mode: "no-cors",
-            headers: {
-                Accept: "application/json"
+    const requestInit = { method: 'GET', headers: { Accept: 'application/json' } };
+    const fetchJson = ( endpoint ) => fetch( endpoint, requestInit ).then( response => readJsonOrThrow( endpoint, response ) );
+
+    return Promise.allSettled( [
+        fetchJson( ENDPOINTS.CALENDARS ),
+        fetchJson( ENDPOINTS.TESTS ),
+        fetchJson( ENDPOINTS.MISSALS ),
+        // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to the
+        // inventory array — it is not a `Response`, so it must not go through `readJsonOrThrow()`.
+        fetchValidations( getApiBaseUrl() )
+    ] ).then( ( [ metadataResult, testsResult, missalsResult, validationsResult ] ) => {
+        // Positional rather than shape-sniffed: with `allSettled` a dataset that failed has no shape
+        // to sniff, and "which endpoint is missing" is exactly what the failure path has to say.
+        if ( 'fulfilled' === metadataResult.status && metadataResult.value?.hasOwnProperty( 'litcal_metadata' ) ) {
+            MetaData = metadataResult.value.litcal_metadata;
+        } else {
+            console.error( 'Could not load the calendars metadata:', metadataResult.reason ?? metadataResult.value );
+        }
+
+        if ( 'fulfilled' === testsResult.status ) {
+            const testsData = testsResult.value;
+            if ( Array.isArray( testsData ) ) {
+                UnitTests = testsData;
+            } else if ( Array.isArray( testsData?.litcal_tests ) ) {
+                UnitTests = testsData.litcal_tests;
+            } else {
+                console.error( 'Could not decode tests data! Expected an array, or an object with a `litcal_tests` array; got:', testsData );
             }
-        } ),
-        fetch( ENDPOINTS.TESTS, {
-            method: "GET",
-            //mode: "no-cors",
-            headers: {
-                Accept: "application/json"
-            }
-        } ),
-        fetch( ENDPOINTS.MISSALS, {
-            method: "GET",
-            //mode: "no-cors",
-            headers: {
-                Accept: "application/json"
-            }
-        } ),
-        // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to
-        // the `{litcal_validations}` shape the branch below expects — it is not a `Response`, so
-        // the `.json()` step right after this array must not try to call `.json()` on it too.
-        fetchValidations( getApiBaseUrl() ).then( items => ( { litcal_validations: items } ) )
-    ] )
-        .then( ( responses ) => {
-            return Promise.all( responses.map( ( response ) => {
-                if ( typeof response.json !== 'function' ) {
-                    // Already-parsed data from `fetchValidations()`, not a `fetch()` Response.
-                    return response;
-                }
-                if ( response.ok ) { return response.json(); }
-                else {
-                    if (response.headers.get('Content-Type') === 'application/problem+json') {
-                        return response.json().then(errorData => {
-                            console.error('Error:', errorData);
-                            // Handle the error data here
-                        });
-                    } else {
-                        console.error('Error:', response.status, response.statusText);
-                    }
-                    //throw new Error( `response.status = ${response.status}, response.statusText = ${response.statusText}`);
-                }
-            } ) );
-        } )
-        .then( dataArr => {
-            dataArr.forEach( data => {
-                console.log( data );
-                if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
-                    MetaData = data.litcal_metadata;
-                    if ( UnitTests !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests, RomanMissals and the validations inventory were set first, now Metadata is also ready' );
-                        setupPage();
-                    }
-                } else if ( data.hasOwnProperty( 'litcal_missals' ) ) {
-                    RomanMissals = data.litcal_missals;
-                    if ( UnitTests !== null && MetaData !== null && ValidationsInventoryReady === true ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests, MetaData and the validations inventory were set first, now RomanMissals is also ready' );
-                        setupPage();
-                    }
-                } else if ( data.hasOwnProperty( 'litcal_validations' ) ) {
-                    ValidationsInventory = data.litcal_validations;
-                    ValidationsInventoryReady = true;
-                    if ( UnitTests !== null && MetaData !== null && RomanMissals !== null ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests, MetaData and RomanMissals were set first, now the validations inventory is also ready' );
-                        setupPage();
-                    }
-                } else {
-                    if ( data instanceof Array ) {
-                        UnitTests = data;
-                    } else if ( data.hasOwnProperty( 'litcal_tests' ) ) {
-                        UnitTests = data.litcal_tests;
-                    } else {
-                        let arrayStatus = data instanceof Array ? 'true' : 'false';
-                        let objStatus = data.hasOwnProperty( 'litcal_tests' ) ? 'true' : 'false';
-                        let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
-                        console.error( message );
-                    }
-                    if ( MetaData !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that Metadata, RomanMissals and the validations inventory were set first, now UnitTests is also ready' );
-                        setupPage();
-                    }
-                }
-            } );
-        } ).catch( ( error ) => {
-            console.error( 'Error fetching metadata and/or roman missals and/or tests data and/or the validations inventory:', error );
-        } );
+        } else {
+            console.error( 'Could not load the unit tests:', testsResult.reason );
+        }
+
+        if ( 'fulfilled' === missalsResult.status && missalsResult.value?.hasOwnProperty( 'litcal_missals' ) ) {
+            RomanMissals = missalsResult.value.litcal_missals;
+        } else {
+            console.error( 'Could not load the missals metadata:', missalsResult.reason ?? missalsResult.value );
+        }
+
+        if ( 'fulfilled' === validationsResult.status ) {
+            ValidationsInventory = validationsResult.value;
+            ValidationsInventoryReady = true;
+        } else {
+            console.error( 'Could not load the validations inventory:', validationsResult.reason );
+        }
+
+        // The three datasets `setupPage()` itself dereferences (`MetaData.diocesan_calendars`,
+        // `UnitTests.forEach`, `Object.values( RomanMissals )`). Without them there is no scaffold
+        // to render and calling it would throw; with them the page renders whatever it has.
+        const canRenderScaffold = null !== MetaData && null !== UnitTests && null !== RomanMissals;
+
+        // JUDGEMENT CALL (#63): the inventory gates the *run*, not the *render*.
+        //
+        // `ValidationsInventory` is the list of source-data items a run checks. Without it,
+        // `buildSourceDataChecks()` composes ids that match nothing advertised, warns about each in
+        // turn, and returns only the single `LitCalMetadata` URL check — so a run started in that
+        // state would check almost nothing and then report itself green. That is precisely the class
+        // of untruth this interface exists to detect, manufactured by the interface itself, and it
+        // is worse than no run at all. So the Start button stays refused: `AsyncDataReady` is set
+        // only once the inventory is actually in.
+        //
+        // What a failure must *not* do is what it used to do — leave the page under a translucent
+        // overlay with no explanation. So the scaffold still renders, the controls stay usable, the
+        // loader comes down, and a toast says why nothing can be run.
+        ReadyToRunTests.AsyncDataReady = canRenderScaffold && ValidationsInventoryReady;
+
+        if ( canRenderScaffold ) {
+            setupPage();
+        }
+
+        // Two distinct toasts because they are two distinct facts, and both can be true at once.
+        if ( false === ValidationsInventoryReady ) {
+            safeToastShow( '#validations-load-failed' );
+        }
+        if ( false === canRenderScaffold ) {
+            safeToastShow( '#controls-load-failed' );
+        }
+        if ( false === ReadyToRunTests.AsyncDataReady ) {
+            ReadyToRunTests.tryEnableBtn();
+            // After `tryEnableBtn()`, which lowers the loader only when every flag is set — and one
+            // of them never will be now.
+            hidePageLoader();
+        }
+    } ).catch( ( error ) => {
+        // Only an unexpected throw from the handler above can land here now: every fetch failure is
+        // a settled rejection, handled inline. Still not swallowed, and still not left greyed out.
+        console.error( 'Failed to set the page up from the fetched metadata:', error );
+        safeToastShow( '#controls-load-failed' );
+        hidePageLoader();
+    } );
 }
 
 /**
