@@ -36,6 +36,10 @@ import {
     idToCardClass,
     STEP_CARD_CLASS,
     TEST_RUN_STEP_CARD_CLASS,
+    stepsForCheck,
+    stepCardsHtml,
+    checkCardSelector,
+    testRunCardSelector,
 } from './wsProtocol.js';
 
 import { createPhaseRunner } from './wsRunner.js';
@@ -424,16 +428,30 @@ class TestState {
 
 
 /**
+ * The pending-state icon every card on this page is scaffolded with.
+ *
+ * `resources.js` inlines the same glyph as SVG instead; that difference is why {@link stepCardsHtml}
+ * takes the icon as a parameter rather than owning one.
+ *
+ * @type {string}
+ */
+const CARD_ICON = '<i class="fas fa-circle-question fa-fw" aria-hidden="true"></i>';
+
+/**
  * Returns a string that represents the HTML template for a specific calendar.
  * This template is used in the index page to represent the state of a calendar test.
  * The template has the following structure:
  * - A paragraph with the name of the calendar that is being tested.
- * - Three div elements, each with a class that represents the state of the calendar test.
- *   The classes are:
- *   - `file-exists`: indicates whether the calendar data exists.
- *   - `json-valid`: indicates whether the calendar data is valid JSON.
- *   - `schema-valid`: indicates whether the calendar data is valid according to the schema.
+ * - One card per step of the *check* frame family, from `STEP_CARD_CLASS` via `stepsForCheck()`.
  * The template is used by the `calendarTemplate` function in `index.js`.
+ *
+ * Calendar-data validation is not driven by a `/validations` item and so advertises no `steps` of
+ * its own — the `yearChecks` this scaffolds for are built locally in `runTests()`. It is rendered
+ * through `stepsForCheck()` all the same, with no argument, so it takes the *same* fallback
+ * `beginPhase()` applies to those same step-less checks. That is the whole point: the cards drawn
+ * here and the cards registered there come from one expression, not from two threes that happen to
+ * match (#62).
+ *
  * @param {string} calendarName The name of the calendar that is being tested.
  * @param {number|null} [year=null] Optional year to include as a class on card elements.
  * @return {string} The HTML template as a string.
@@ -441,23 +459,17 @@ class TestState {
 const testTemplate = ( calendarName, year = null ) => {
     const calendarSlug = slugify(calendarName);
     const yearClass = year !== null ? ` year-${year}` : '';
+    // The `parses` card is captioned `JSON` regardless of the selected response format, exactly as
+    // it was before this template became step-driven. The `#APIResponseSelect` handler rewrites
+    // those `.response-type` spans itself.
     return `
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
-<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarSlug}${yearClass}">
-    <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</p>
-    </div>
-</div>
-<div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}${yearClass}">
-    <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</p>
-    </div>
-</div>
-<div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}${yearClass}">
-    <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</p>
-    </div>
-</div>
+${stepCardsHtml({
+    steps: stepsForCheck(),
+    classesFor: cardClass => `${cardClass} calendar-${calendarSlug}${yearClass}`,
+    icon: CARD_ICON,
+    spread: false
+})}
 `;
 }
 
@@ -484,11 +496,9 @@ const calDataTestTemplate = ( idx, years ) => {
  * Returns a string that represents the HTML template for a specific source data check.
  * The template has the following structure:
  * - A paragraph with the name of the source data check.
- * - Three div elements, each with a class that represents the state of the source data check.
- *   The classes are:
- *   - `file-exists`: indicates whether the source data exists.
- *   - `json-valid`: indicates whether the source data is valid JSON.
- *   - `schema-valid`: indicates whether the source data is valid according to the schema.
+ * - One card per step the check advertised, from `stepsForCheck()` — `file-exists` for `exists`,
+ *   `json-valid` for `parses`, `schema-valid` for `validates`. A check that advertises no `steps`
+ *   (the `LitCalMetadata` URL check, and any run stored before the #42 migration) gets all three.
  * The template is used by the `index.js` script.
  *
  * Two shapes reach this template. A live run supplies an advertised inventory item —
@@ -545,21 +555,11 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     // the flex rule on `.sourcedata-tests > div`. Nothing here needs a height.
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
     <p class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapedTooltip}" class="text-break d-inline-block w-75">${escapedCaption}</span>${( false === fromInventory && item.category !== 'universalcalendar' ) ? infoIcon : ''}</p>
-    <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
-        </div>
-    </div>
-    <div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</span></p>
-        </div>
-    </div>
-    <div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</span></p>
-        </div>
-    </div>
+${stepCardsHtml({
+    steps: stepsForCheck( item ),
+    classesFor: cardClass => `${validateSlug} ${cardClass}`,
+    icon: CARD_ICON
+})}
 </div>
 `;
 }
@@ -1456,7 +1456,7 @@ const appendAccordionItem = ( obj ) => {
             </div>
         </div>
     `);
-    let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${nameSlug} .test-valid`).length;
+    let specificUnitTestTotalCount = document.querySelectorAll(testRunCardSelector(`#specificUnitTest-${nameSlug}`)).length;
     updateText(`total${nameSlug}TestsCount`, specificUnitTestTotalCount);
 }
 
@@ -1709,11 +1709,14 @@ const setupPage = () => {
         years: Years,
         unitTests: renderedUnitTests,
     });
-    let totalTestsCount = document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length;
+    // Counted through `checkCardSelector()` / `testRunCardSelector()` rather than by naming the card
+    // classes here: they enumerate the very tables `stepCardsHtml()` renders from, so the badge can
+    // only ever describe cards the scaffold can actually produce (#62).
+    let totalTestsCount = document.querySelectorAll(`${checkCardSelector()},${testRunCardSelector()}`).length;
     updateText('total-tests-count', totalTestsCount);
-    let totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
-    let totalCalendarDataTestsCount = document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length;
-    let totalUnitTestsCount = document.querySelectorAll('.specificunittests .test-valid').length;
+    let totalSourceDataTestsCount = document.querySelectorAll(checkCardSelector('.sourcedata-tests')).length;
+    let totalCalendarDataTestsCount = document.querySelectorAll(checkCardSelector('.calendardata-tests')).length;
+    let totalUnitTestsCount = document.querySelectorAll(testRunCardSelector('.specificunittests')).length;
     updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
     updateText('totalCalendarDataTestsCount', totalCalendarDataTestsCount);
     updateText('totalUnitTestsCount', totalUnitTestsCount);
@@ -2034,10 +2037,10 @@ const replayCalendarsRun = async ( file ) => {
         updateText(`failed${testSlug}TestsCount`, entry.failed);
     } );
     // Totals: same DOM-derived counts setupPage computes for a live run
-    updateText('total-tests-count', document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length);
-    updateText('totalSourceDataTestsCount', document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length);
-    updateText('totalCalendarDataTestsCount', document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length);
-    updateText('totalUnitTestsCount', document.querySelectorAll('.specificunittests .test-valid').length);
+    updateText('total-tests-count', document.querySelectorAll(`${checkCardSelector()},${testRunCardSelector()}`).length);
+    updateText('totalSourceDataTestsCount', document.querySelectorAll(checkCardSelector('.sourcedata-tests')).length);
+    updateText('totalCalendarDataTestsCount', document.querySelectorAll(checkCardSelector('.calendardata-tests')).length);
+    updateText('totalUnitTestsCount', document.querySelectorAll(testRunCardSelector('.specificunittests')).length);
     updateText('total-time', MsToTimeString( run.duration ));
     updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
     updateText('totalCalendarDataTestsTime', MsToTimeString( run.timings.calendarData ));

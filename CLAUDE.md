@@ -180,6 +180,14 @@ verbatim; no filesystem path crosses the wire. Both runners fetch it with `fetch
 it to the selected rite — `resources.js` with that same module's `validationChecksForRite()`, `index.js` with its own
 `inventoryIdsForCalendar()` (see Rite Scoping below).
 
+An item's `steps` array is the single source of truth for how many cards that check gets, on both pages. `stepsForCheck()` in
+`assets/js/wsProtocol.js` is read by both halves — the scaffold that draws the cards (`stepCardsHtml()`, with the per-step card body in
+`STEP_CARD_BODY` beside `STEP_CARD_CLASS`) and `beginPhase()` in `wsRunner.js` that binds them to a `requestId` — so a two-step or
+four-step item cannot leave the rendered page and the run totals disagreeing (#62). A check that advertises no `steps` at all — the
+bare-URL `executeValidation` checks, `index.php`'s calendar-data years, and runs stored before this migration — takes the same fallback
+in both halves: every step in `STEP_CARD_CLASS`. The totals badges are counted through `checkCardSelector()` / `testRunCardSelector()`,
+derived from those same two tables, rather than by naming the card classes at each counting site.
+
 This is what closed the class of lockstep breakage this repository used to have between a hand-maintained checklist and the API's actual
 layout — issues #38, API#795 and API#800 all trace back to that list going stale. The list it replaced, `UNIVERSAL_CHECKS`, no longer
 exists in this repository; neither does the slug-and-path construction (`wider-region-…`, `national-calendar-…`, `proprium-de-sanctis-…`)
@@ -287,7 +295,8 @@ shape, which names no id.
 
 - A **check** — source-data validation (`validateSource`/`executeValidation`) or calendar-data validation (`validateCalendar`) —
   reports `exists`, `parses`, then `validates`, on cards classed `file-exists`, `json-valid`, `schema-valid` respectively
-  (`STEP_CARD_CLASS` in `wsProtocol.js`, mirroring the server's `FrameFamily::CLASS_FOR_STEP`).
+  (`STEP_CARD_CLASS` in `wsProtocol.js`, mirroring the server's `FrameFamily::CLASS_FOR_STEP`) — or whichever subset of those three its
+  inventory item advertised, which is also the subset the scaffold drew (see The `/validations` Inventory above).
 - A **test run** (`runTest`) reports only `validates`, on a card classed `test-valid` instead (`TEST_RUN_STEP_CARD_CLASS`). The same step
   name addresses a different card family depending on which kind of request produced the frame, which is why `wsProtocol.js` keeps two
   maps rather than one.
