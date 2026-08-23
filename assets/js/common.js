@@ -138,12 +138,22 @@ export const readJsonOrThrow = async (endpoint, response) => {
 /**
  * Fetch one JSON endpoint through {@link readJsonOrThrow}.
  *
+ * `init` is **merged** with the defaults rather than replacing them, and `init.headers` is merged
+ * with the default `Accept` rather than replacing it — otherwise a caller adding one unrelated header
+ * would silently drop `Accept: application/json`, which is the header this whole helper exists to
+ * pair with. A caller that really does want a different `Accept` still wins, because its own headers
+ * are spread last.
+ *
  * @param {string} endpoint - The URL to fetch.
- * @param {RequestInit} [init] - Overrides; `Accept: application/json` is sent unless replaced.
+ * @param {RequestInit} [init] - Merged over `{ method: 'GET' }`; `Accept: application/json` is sent unless the caller supplies its own.
  * @returns {Promise<object>}
  */
-export const fetchJson = async (endpoint, init = { method: 'GET', headers: { Accept: 'application/json' } }) => {
-    const response = await fetch(endpoint, init);
+export const fetchJson = async (endpoint, init = {}) => {
+    const response = await fetch(endpoint, {
+        method: 'GET',
+        ...init,
+        headers: { Accept: 'application/json', ...(init.headers ?? {}) }
+    });
     return readJsonOrThrow(endpoint, response);
 };
 
