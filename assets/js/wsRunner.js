@@ -29,6 +29,11 @@ import { paintCard, applyResultToDom } from './testResults.js';
  * @param {function(object): string}   options.cardSlugFor      - check -> the card class fragment it was rendered with
  * @param {function(): void}           options.onAdvance        - the page's runTests(), called when the phase may move on
  * @param {function(): void}           options.onUnattributableFailure - count one failure that has no card
+ * @param {function(object, ?string, Element): void} options.onAttributedFailure - report one failure the
+ *   runner has already painted onto a card, for a request the server rejected outright rather than
+ *   answering step by step (#70). Called once per card painted, with a step-result-shaped frame
+ *   (`type: 'error'`, plus the `step` it stands for), the selector that card was found by, and the
+ *   card itself — everything a page needs to count it and record it as it would a real `error` frame.
  * @param {function(): boolean}        options.canAdvance       - false once the run is finished or stopped
  * @param {function(): ?WebSocket}     options.socket           - the live connection, read at send time
  * @param {function(): ?string}        options.runToken         - the current run token, or null outside a run
@@ -53,6 +58,7 @@ import { paintCard, applyResultToDom } from './testResults.js';
  *   restartWatchdog: function(): void,
  *   clearWatchdog: function(): void,
  *   noteTerminalFrame: function(object): boolean,
+ *   handleProtocolError: function(object): boolean,
  *   paintResult: function(object): void,
  *   selectorFor: function(string, string): ?string,
  *   giveUpOnOutstandingRequests: function(): void,
@@ -65,6 +71,7 @@ export const createPhaseRunner = ( options ) => {
         cardSlugFor,
         onAdvance,
         onUnattributableFailure,
+        onAttributedFailure,
         canAdvance,
         socket,
         runToken,
@@ -280,12 +287,90 @@ export const createPhaseRunner = ( options ) => {
         if ( responseData.step !== 'complete' ) {
             return false;
         }
-        if ( registry.complete( responseData.requestId ) ) {
-            phaseOutstanding.delete( responseData.requestId );
-            if ( canAdvance() ) {
-                onAdvance();
-            }
+        finishRequest( responseData.requestId );
+        return true;
+    };
+
+    /**
+     * End one request and move the run on if that emptied the phase.
+     *
+     * Shared by the two ways a request ends: the server's terminal `complete` frame, and a
+     * `protocolError` that rejected the request outright (#70). Idempotent through
+     * `registry.complete()`, which reports false for a duplicate or unregistered id — so a stray
+     * frame cannot pump the state machine one step early, ending whichever phase happened to be
+     * current on a frame that named no request in it at all.
+     *
+     * @param {string} requestId
+     * @returns {void}
+     */
+    const finishRequest = ( requestId ) => {
+        if ( false === registry.complete( requestId ) ) {
+            return;
         }
+        phaseOutstanding.delete( requestId );
+        if ( canAdvance() ) {
+            onAdvance();
+        }
+    };
+
+    /**
+     * Handle a `protocolError` frame that names a request this phase started.
+     *
+     * The server rejects a message it cannot act on — an unknown action, a retired property, a
+     * malformed `requestId` — with `{type: 'protocolError', errorCode, text, runToken?, requestId?}`,
+     * and `Health::rejectMessage()` echoes back the `requestId` of the message it rejected. Until
+     * #70 neither page read it: the frame fell through the `type` dispatch into the unattributable
+     * branch, was counted as *one* failure for a request whose scaffold rendered three cards, and —
+     * because it carries no `step: 'complete'` — never ended the request at all. The phase then had
+     * to wait out the full silence watchdog even though the server had answered instantly. Observed
+     * live: 82 rejections inside half a second, then a sixty-second stall.
+     *
+     * A rejection is final for the request it names, so it is treated as its ending: every step card
+     * still unpainted is painted red with the rejection text, each one is reported to the page's own
+     * failure counters, and the request is completed so the phase can advance.
+     *
+     * `registry.missingSteps()` is what decides which cards those are — the same question
+     * {@link summariseAbandoned} asks when a phase is given up on, asked the same way. A request all
+     * of whose steps already reported (the server rejecting something after the work was done) paints
+     * and counts nothing, exactly as an abandoned-but-fully-answered request does; only its ending
+     * is supplied.
+     *
+     * Returns false — leaving the frame to the caller's existing unattributable-failure branch —
+     * both for anything that is not a `protocolError` and for one this phase cannot attribute: a
+     * rejection provoked by a message that carried no `requestId`, or one naming a request no longer
+     * registered (a phase given up on, per #64). Those are genuinely unattributable and keep the
+     * behaviour they had.
+     *
+     * @param {object} responseData - A parsed inbound frame.
+     * @returns {boolean} true when the frame was an attributable rejection and has been consumed.
+     */
+    const handleProtocolError = ( responseData ) => {
+        if ( 'protocolError' !== responseData?.type ) {
+            return false;
+        }
+        const { requestId } = responseData;
+        if ( 'string' !== typeof requestId || false === registry.has( requestId ) ) {
+            return false;
+        }
+
+        const text = responseData.text ?? '';
+        console.error( `The server rejected request ${requestId} (${responseData.errorCode ?? 'no error code'}): ${text}`, responseData );
+
+        registry.missingSteps( requestId ).forEach( step => {
+            const card = registry.cardFor( requestId, step );
+            if ( null === card ) {
+                return;
+            }
+            paintCard( card, false, text );
+            registry.markReceived( requestId, step );
+            // Reported as the step-result frame the rejection stands in for, so the page can count
+            // it and record it exactly as it would an `error` frame for that step. `type: 'error'`
+            // is not cosmetic: `createResultCollector().record()` reads the message off an `error`
+            // frame only, so a stored run would otherwise keep the red card and lose the reason.
+            onAttributedFailure( { ...responseData, type: 'error', step }, selectorFor( requestId, step ), card );
+        } );
+
+        finishRequest( requestId );
         return true;
     };
 
@@ -337,6 +422,19 @@ export const createPhaseRunner = ( options ) => {
             onUnattributableFailure();
         }
 
+        // Unbind the abandoned requests, so a frame that arrives after the give-up is a diagnostic
+        // rather than a second helping (#64). The give-up has already counted every unpainted step
+        // of these requests as a failure; a server that was merely quiet for longer than the
+        // watchdog's window and then recovered would otherwise still find their cards through the
+        // registry, paint them, and have the page count them again — against whichever phase is
+        // current by then, which is no longer the one that rendered them. Forgetting the recorded
+        // selector alongside keeps the two in step, so a stored run does not claim a card address
+        // for a frame that painted nothing.
+        abandoned.forEach( requestId => {
+            registry.forget( requestId );
+            selectors.delete( requestId );
+        } );
+
         phaseOutstanding.clear();
         if ( canAdvance() ) {
             onAdvance();
@@ -367,7 +465,7 @@ export const createPhaseRunner = ( options ) => {
 
     return {
         beginPhase, outstandingCount: () => phaseOutstanding.size, advanceIfPhaseIsEmpty,
-        armWatchdog, restartWatchdog, clearWatchdog, noteTerminalFrame, paintResult,
-        selectorFor, giveUpOnOutstandingRequests, sendMessage, endRun
+        armWatchdog, restartWatchdog, clearWatchdog, noteTerminalFrame, handleProtocolError,
+        paintResult, selectorFor, giveUpOnOutstandingRequests, sendMessage, endRun
     };
 };

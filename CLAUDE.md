@@ -277,11 +277,16 @@ on, so an untagged frame would be discarded before reaching their `type` dispatc
 `capabilities` (`{rites, actions, responseFormats, steps, statuses}`), each list derived server-side from the same enums that define the
 behaviour it describes, so an advertisement cannot go stale against what the server actually does.
 
-**Adoption is uneven between the two runners, and that is the current state of this repository, not a bug to fix here.** `resources.js`
-imports and calls `readHello()`. `index.js` does not import it at all, and consequently never declares `protocol` on its own messages —
-`negotiatedProtocol()` in `wsProtocol.js` returns null until a `hello` has been read, and `sendMessage()` omits the `protocol` property
-whenever it does, which for `index.js` is always. This is silently correct rather than silently broken: declaring a version the server
-never advertised would trip the same unknown-property gate that sending `requestId` arms.
+**Both runners read it** (#69 item 1; `index.js` did not until then). Each calls `readHello()` as the first thing its `onmessage` does,
+above the `Stopped` / `currentRunToken === null` guard, and `resetHello()` in its `onclose` so a reconnection to a server of a different
+vintage is not answered with the previous one's capabilities. The ordering is the whole of it: `index.js` used to return early while
+`currentRunToken === null`, which is always true at connect time, so the handshake was discarded before `readHello()` could be reached —
+which is why adopting it was never a one-line import. Against a server that sends no `hello`, `negotiatedProtocol()` stays null and
+`sendMessage()` omits the `protocol` property, which is correct rather than lax: declaring a version the server never advertised would
+trip the same unknown-property gate that sending `requestId` arms.
+
+**Item 2 of #69 is still open**: each page owns its own `conn`, `onopen`, `onmessage` and reconnect handling, near-identical but still two
+copies. The runner half of that duplication is what `wsRunner.js` already removed; the connection half has not been done.
 
 ### Frames: `stepResult`, `complete`, `protocolError`
 
@@ -307,11 +312,24 @@ repository along with the frame-counting they supported: a phase now advances on
 (`noteTerminalFrame()` in `wsRunner.js`). That trades one failure mode for another — a request whose `complete` frame never arrives now
 hangs its phase forever, rather than a frame count eventually overshooting past it — so `createSilenceWatchdog()` pairs it with a
 timeout, restarted on every frame of the run and firing only once the server has genuinely gone quiet (LiturgicalCalendarAPI#823 is a
-known way for a `complete` frame to be skipped after the underlying work already succeeded).
+known way for a `complete` frame to be skipped after the underlying work already succeeded). Giving up on a phase **unregisters** the
+requests it abandons (`registry.forget()`, #64): their unpainted steps have already been counted as failures, so a late frame from a
+server that was merely quiet longer than the window and then recovered must reach the "no card is registered for this request" warning
+rather than paint an abandoned phase's card a second time.
 
 A `protocolError` frame (`{type: "protocolError", errorCode, text, runToken?, requestId?}`) reports a message that could not be acted
 on — an unknown action, a retired property, a malformed `requestId`, and so on. It is not gated on `requestId` the way `complete` is: a
 new frame type changes nothing for a client that was going to receive a frame anyway.
+
+**A rejection is an ending, and both runners treat it as one** (#70). `handleProtocolError()` in `wsRunner.js` — called from each page's
+`onmessage` immediately after `noteTerminalFrame()`, so both pages get it from one implementation — paints every *unpainted* step card of
+the named request red with the frame's `text` (the steps `registry.missingSteps()` reports, the same question `summariseAbandoned()` asks
+when a phase is given up on), reports each one to the page's own failure counters through the `onAttributedFailure` callback, and completes
+the request so the phase advances. A rejection carrying no `requestId`, or naming a request no longer registered, is left to the page's
+existing unattributable-failure branch. Before this, a `protocolError` fell through the `type` dispatch into that branch unconditionally:
+one failure booked for a request whose scaffold rendered three cards, and — carrying no `step: "complete"` — no ending at all, so the phase
+waited out the full silence watchdog even though the server had answered instantly (observed live: 82 rejections inside half a second, then
+a sixty-second stall).
 
 ### Rite Scoping
 
