@@ -1114,9 +1114,21 @@ const handleWebSocketMessage = ( e ) => {
                     // `responseData.test` is kept only as a fallback for a stub or server that
                     // predates the typed target.
                     const testName = responseData.target?.id ?? responseData.test;
-                    const testSlug = slugify(testName);
-                    const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
-                    updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
+                    // A frame naming no test cannot be attributed to a per-test panel, and this
+                    // phase is chosen by `currentState` rather than by the frame — so a late frame
+                    // from an earlier phase (the `executeValidation` shape, whose `target` is
+                    // `null`) can land here. `slugify(undefined)` throws, and an exception escaping
+                    // this handler is exactly the #43 wedge described above: `runTests()` is never
+                    // called again and the run hangs with its spinner still going. Skip the
+                    // per-test half and keep the phase and global counters, which are already
+                    // updated above. Matches the `if ( !d.test )` guard the replay path uses.
+                    if ( testName ) {
+                        const testSlug = slugify(testName);
+                        const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
+                        updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
+                    } else {
+                        console.warn( 'Unit-test frame names no test; counted in the phase total but not against any test panel.', responseData );
+                    }
                     break;
                 }
             }
@@ -1141,9 +1153,14 @@ const handleWebSocketMessage = ( e ) => {
                     // See the matching comment on the success branch above: `target.id`, not the
                     // never-sent `responseData.test`, is the real source for the test name.
                     const testName = responseData.target?.id ?? responseData.test;
-                    const testSlug = slugify(testName);
-                    const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
-                    updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
+                    // See the matching guard on the success branch above.
+                    if ( testName ) {
+                        const testSlug = slugify(testName);
+                        const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
+                        updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
+                    } else {
+                        console.warn( 'Unit-test frame names no test; counted in the phase total but not against any test panel.', responseData );
+                    }
                     break;
                 }
             }

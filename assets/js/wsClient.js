@@ -78,17 +78,27 @@ const stopSpinners = () => {
     document.querySelectorAll( '.fa-spin' ).forEach( el => el.classList.remove( 'fa-spin' ) );
 };
 
+/** The port each scheme reaches when a URL names none. */
+const DEFAULT_PORT_FOR_PROTOCOL = { ws: 80, wss: 443 };
+
 /**
  * Compose the WebSocket URL from the page config PHP published in `layout/footer.php`.
  *
- * The default ports are elided rather than spelled out, because `wss://host:443` and `ws://host:80`
+ * The default port is elided rather than spelled out, because `wss://host:443` and `ws://host:80`
  * are the same origin as the bare form to a server but not to every proxy in between.
+ *
+ * The default is read **per scheme**: `wss` elides 443 and `ws` elides 80, not either scheme
+ * eliding both. Testing membership of `[443, 80]` instead — which is what both pages did before
+ * this module existed — drops an explicitly configured port whenever it happens to be the *other*
+ * scheme's default, so `wss` on port 80 silently connected to 443 and `ws` on 443 to 80. That is a
+ * misconfiguration either way, but ignoring a port the operator spelled out is the wrong way to
+ * answer one. `WS_PORT` reaches us `(int)`-cast from PHP, so this is a numeric comparison.
  *
  * @param {{WS_PROTOCOL: string, WS_HOST: string, WS_PORT: number}} config
  * @returns {string}
  */
 const composeWebSocketUrl = ( { WS_PROTOCOL, WS_HOST, WS_PORT } ) =>
-    `${WS_PROTOCOL}://${WS_HOST}${[ 443, 80 ].includes( WS_PORT ) ? '' : `:${WS_PORT}`}`;
+    `${WS_PROTOCOL}://${WS_HOST}${DEFAULT_PORT_FOR_PROTOCOL[ WS_PROTOCOL ] === WS_PORT ? '' : `:${WS_PORT}`}`;
 
 /**
  * Build one page's WebSocket connection, with reconnection and status reporting.
