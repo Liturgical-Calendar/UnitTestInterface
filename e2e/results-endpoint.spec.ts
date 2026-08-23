@@ -1,18 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { postStoredRun, removeSeededRuns } from './storedRuns';
 
 // Clean up seeded run files so e2e fixtures don't pollute the real Past Runs dropdown.
-const seededFiles: string[] = [];
-test.afterAll(async () => {
-    for (const file of seededFiles) {
-        await unlink(path.join(__dirname, '..', 'results', file)).catch(() => { /* already removed by a parallel project */ });
-    }
-});
+test.afterAll(removeSeededRuns);
 
+// No `timestamp` here: this spec's subject is the POST route, so it cannot avoid triggering
+// retention; postStoredRun() stamps the run with the current UTC second so it sorts above every
+// stored run and survives its own prune (issue #65).
 const sampleRun = {
     schemaVersion: 1,
-    timestamp: '2026-07-03T14:30:00Z',
     runType: 'calendars',
     calendar: 'VA',
     calendarCategory: 'nationalcalendar',
@@ -49,11 +45,9 @@ test('rejects malformed body on save', async ({ request }) => {
 });
 
 test('saves, lists, and loads a run', async ({ request }) => {
-    const save = await request.post('results.php', { data: sampleRun });
-    expect(save.ok()).toBeTruthy();
-    const { ok, file } = await save.json();
-    seededFiles.push(file);
-    expect(ok).toBe(true);
+    // postStoredRun() does the POST and throws if the endpoint refused it or if the stored
+    // file could not be read back, so reaching this line already covers save + reload.
+    const file = await postStoredRun(request, sampleRun);
     expect(file).toMatch(/^(calendars|resources)-[0-9T-]+Z\.json$/);
 
     const list = await request.get('results.php');

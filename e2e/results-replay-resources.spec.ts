@@ -1,14 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { seedStoredRun, removeSeededRuns } from './storedRuns';
 
 // Clean up seeded run files so e2e fixtures don't pollute the real Past Runs dropdown.
-const seededFiles: string[] = [];
-test.afterAll(async () => {
-    for (const file of seededFiles) {
-        await unlink(path.join(__dirname, '..', 'results', file)).catch(() => { /* already removed by a parallel project */ });
-    }
-});
+test.afterAll(removeSeededRuns);
 
 test('replays a stored resources run onto the dashboard', async ({ page, request }) => {
     // Seed a minimal resources run.
@@ -18,9 +12,10 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
     // "memorials-from-decrees file-exists".
     // Both selectors are stored as-is; applyResultToDom runs them through slugifySelector, which
     // is a no-op for already-lowercase selectors.
+    // No `timestamp` here: seedStoredRun() writes the fixture straight into results/, so the
+    // 50-per-type retention cap in results.php never sees it (issue #65).
     const run = {
         schemaVersion: 1,
-        timestamp: '2026-07-03T10:00:00Z',
         runType: 'resources',
         duration: 1500,
         counts: { successful: 1, failed: 1 },
@@ -40,9 +35,7 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
             { id: '.memorials-from-decrees.json-valid', selector: '.memorials-from-decrees.json-valid', status: 'error', message: 'seeded failure', test: null }
         ],
     };
-    const save = await request.post('results.php', { data: run });
-    const { file } = await save.json();
-    seededFiles.push(file);
+    const file = await seedStoredRun(request, run);
 
     await page.goto('/resources.php');
     await page.waitForSelector('#pastRunsSelect');
