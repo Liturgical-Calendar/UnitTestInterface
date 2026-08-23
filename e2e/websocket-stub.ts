@@ -86,17 +86,28 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  * @param options.stopAfterStep - Answer only up to this step, and send no terminal frame — a request
  *   that died partway, leaving its remaining cards grey. The other way a request goes outstanding,
  *   and the one that has to be counted.
+ * @param options.answerOnly - Restrict the set of `action`s this stub replies to; any other action is
+ *   received (and recorded in `__wsSent`) but never gets a response, parking the run at that request —
+ *   the same "never replies" state `installWebSocketStub()` produces, but for only part of the protocol.
+ *   Defaults to every action the `hello` frame advertises, i.e. current behaviour, so existing callers
+ *   are unaffected.
  */
 export const installReplyingWebSocketStub = async (
     page: Page,
-    options: { protocol?: number | null; omitComplete?: boolean; stopAfterStep?: string | null } = {}
+    options: {
+        protocol?: number | null;
+        omitComplete?: boolean;
+        stopAfterStep?: string | null;
+        answerOnly?: string[] | null;
+    } = {}
 ): Promise<void> => {
     const protocol = options.protocol === undefined ? 1 : options.protocol;
     const omitComplete = options.omitComplete ?? false;
     const stopAfterStep = options.stopAfterStep ?? null;
+    const answerOnly = options.answerOnly ?? null;
 
     await page.addInitScript(
-        ({ protocol, omitComplete, stopAfterStep }) => {
+        ({ protocol, omitComplete, stopAfterStep, answerOnly }) => {
             const sent: string[] = [];
             (window as unknown as { __wsSent: string[] }).__wsSent = sent;
 
@@ -155,14 +166,31 @@ export const installReplyingWebSocketStub = async (
                     } catch {
                         return;
                     }
-                    if (message.action !== 'executeValidation' && message.action !== 'validateSource') {
+                    const CHECK_ACTIONS = ['executeValidation', 'validateSource', 'validateCalendar'];
+                    const TEST_ACTIONS = ['runTest', 'executeUnitTest'];
+                    if (!CHECK_ACTIONS.includes(message.action as string) && !TEST_ACTIONS.includes(message.action as string)) {
                         return;
                     }
+                    if (null !== answerOnly && !answerOnly.includes(message.action as string)) {
+                        return;
+                    }
+                    const isTestRun = TEST_ACTIONS.includes(message.action as string);
+                    const allSteps = (isTestRun ? ['validates'] : ['exists', 'parses', 'validates']) as string[];
+                    const stepClassFor = (step: string): string => (isTestRun ? 'test-valid' : STEP_CLASS[step]);
                     const runToken = message.runToken;
                     const requestId = message.requestId;
-                    const target = message.target ?? { id: String(message.validate ?? 'unknown') };
+                    // Mirrors `Health::frameTarget()`: the server never reads a client-sent `target`
+                    // for a check or a test run — it synthesizes one from the fields the message
+                    // already carries. A `runTest` message carries `test`/`calendar`/`year` at the top
+                    // level (never a `target`), and `Health::sendTestResult()` builds
+                    // `frameTarget($test, ['calendar' => ..., 'year' => ...])` from exactly those, so
+                    // `target.id` is the test name. `validateSource` is the one action that *does* send
+                    // its own `target` (`{ id: check.id }`), which is used as-is when present.
+                    const target = message.target
+                        ?? (isTestRun
+                            ? { id: String(message.test ?? 'unknown'), calendar: message.calendar, year: message.year }
+                            : { id: String(message.validate ?? 'unknown') });
 
-                    const allSteps = ['exists', 'parses', 'validates'] as const;
                     const upTo = null === stopAfterStep
                         ? allSteps.length
                         : allSteps.indexOf(stopAfterStep as 'exists') + 1;
@@ -171,7 +199,7 @@ export const installReplyingWebSocketStub = async (
                         this.deliver({
                             type: 'success',
                             text: `stub ${step}`,
-                            classes: `.stub-addresses-nothing.${STEP_CLASS[step]}`,
+                            classes: `.stub-addresses-nothing.${stepClassFor(step)}`,
                             target,
                             step,
                             status: 'pass',
@@ -205,6 +233,6 @@ export const installReplyingWebSocketStub = async (
 
             (window as unknown as { WebSocket: unknown }).WebSocket = ReplyingWebSocket;
         },
-        { protocol, omitComplete, stopAfterStep }
+        { protocol, omitComplete, stopAfterStep, answerOnly }
     );
 };

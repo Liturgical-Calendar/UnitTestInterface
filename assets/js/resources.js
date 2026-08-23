@@ -15,7 +15,6 @@ import {
 
 import {
     applyResultToDom,
-    paintCard,
     countByStatus,
     createResultCollector,
     nowIsoStamp,
@@ -30,15 +29,11 @@ import {
     fetchValidations,
     idToCardClass,
     inRiteScope,
-    createRequestRegistry,
-    createSilenceWatchdog,
-    summariseAbandoned,
-    negotiatedProtocol,
-    newRequestId,
     readHello,
     resetHello,
-    STEP_CARD_CLASS,
 } from './wsProtocol.js';
+
+import { createPhaseRunner } from './wsRunner.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
 // top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
@@ -499,7 +494,13 @@ const connectWebSocket = () => {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
         }
-        currentState = TestState.Ready;
+        // Only when no run is in flight (#66). See the matching guard in index.js: a mid-run socket
+        // drop that reconnects must not reset the state machine, or the silence watchdog would see
+        // `Ready`, `canAdvance()` would return true, and `runTests()` would re-send the phase on the
+        // new socket under the stale run token, doubling every counter against a painted scaffold.
+        if ( null === currentRunToken ) {
+            currentState = TestState.Ready;
+        }
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
     };
@@ -572,25 +573,19 @@ const connectWebSocket = () => {
         console.log( responseData );
 
         // Any frame of this run is proof the server is still answering.
-        restartPhaseWatchdog();
+        phaseRunner.restartWatchdog();
 
         // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
         // recorded or counted. Counting it would inflate the totals badge past the number of
         // rendered cards — the drift #42 describes, arrived at from the other direction.
-        if ( responseData.step === 'complete' ) {
-            if ( requestRegistry.complete( responseData.requestId ) ) {
-                phaseOutstanding.delete( responseData.requestId );
-            }
-            if ( currentState !== TestState.JobsFinished ) {
-                runTests();
-            }
+        if ( phaseRunner.noteTerminalFrame( responseData ) ) {
             return;
         }
 
         try {
             if ( responseData.type === "success" ) {
-                paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                phaseRunner.paintResult( responseData );
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
                 updateText('successfulCount', ++successfulTests);
                 switch( currentState ) {
                     case TestState.ExecutingResourceValidations:
@@ -602,8 +597,8 @@ const connectWebSocket = () => {
                 }
             }
             else if ( responseData.type === "error" ) {
-                paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                phaseRunner.paintResult( responseData );
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
                 updateText('failedCount', ++failedTests);
                 switch( currentState ) {
                     case TestState.ExecutingResourceValidations:
@@ -722,178 +717,6 @@ const connectWebSocket = () => {
 const setTestRunnerBtnLblTxt = (txt) => {
     updateText('startTestRunnerBtnLbl', txt);
 }
-
-/**
- * Sends a message over the WebSocket connection, automatically
- * attaching the current run token for response correlation.
- *
- * Also declares the protocol version, but only when the server advertised one it reads. Against a
- * server that predates the handshake (LiturgicalCalendarAPI#806 section F) `negotiatedProtocol()`
- * returns null and the property is omitted — which is not merely tidy: such a server's message
- * schema does not declare `protocol`, and its unknown-property gate is armed by the `requestId`
- * every message now carries, so declaring a version it never advertised would get the whole run
- * refused message by message.
- *
- * @param {Object} data - The message payload to send.
- */
-const sendMessage = ( data ) => {
-    if ( currentRunToken !== null ) {
-        data.runToken = currentRunToken;
-    }
-    const protocol = negotiatedProtocol();
-    if ( null !== protocol ) {
-        data.protocol = protocol;
-    }
-    conn.send( JSON.stringify( data ) );
-};
-
-/**
- * The card class a check's cards were rendered with.
- *
- * The two families name themselves differently and always did: a resource check is a route, known
- * by the `validate` key it shares with `resourcePaths`; a source check is an inventory item, known
- * by the opaque `id` the server minted. Neither is derived from anything the server sends at *run*
- * time — that was the coupling #42 removes — so this is only about which of our own two vocabularies
- * a check belongs to.
- *
- * @param {{id?: string, validate?: string}} check
- * @returns {string}
- */
-const cardSlugFor = ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) );
-
-/**
- * Restart the silence clock, unless the phase has nothing left to wait for.
- * @returns {void}
- */
-const restartPhaseWatchdog = () => {
-    if ( 0 === phaseOutstanding.size ) {
-        phaseWatchdog.clear();
-        return;
-    }
-    phaseWatchdog.restart();
-};
-
-/**
- * Stop the silence clock.
- * @returns {void}
- */
-const clearPhaseWatchdog = () => phaseWatchdog.clear();
-
-/**
- * Bind a phase's checks to their cards and start the phase.
- *
- * Each check is given a freshly minted `requestId`, the three cards it will paint are looked up
- * once, here, and the pair is recorded in the registry. The ids are minted per *run* rather than
- * per page: reusing them would leave a previous run's frames able to paint the current run's cards,
- * and the run token alone would not stop it, since a rerun of the same page checks the same things.
- *
- * The cards are found by the same slug the templates were rendered with — this page's own
- * `slugify(check.validate)` — not by a selector from the server. That is the coupling #42 exists to
- * remove: our markup was part of the API's contract, and a selector matching nothing failed
- * silently while the counters advanced anyway.
- *
- * @param {Array<object>} checks - The checks about to be sent; each is given a `requestId`.
- * @param {string} containerSelector - The phase's card container.
- * @returns {Set<string>} The request ids the phase is waiting on.
- */
-const beginPhase = ( checks, containerSelector ) => {
-    const outstanding = new Set();
-    checks.forEach( check => {
-        const requestId = newRequestId();
-        check.requestId = requestId;
-        const slug = cardSlugFor( check );
-        const cards = {};
-        // The steps the server advertised for this item, where it advertised any — the count is
-        // exact since LiturgicalCalendarAPI#825, so it can be trusted rather than assumed. A
-        // resource check carries none, and falls back to the three every check has always had.
-        const steps = Array.isArray( check.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
-        steps.forEach( step => {
-            const cardClass = STEP_CARD_CLASS[ step ];
-            if ( undefined === cardClass ) {
-                // A step this page has no card for. Said out loud rather than skipped silently:
-                // the server has added a step to its vocabulary and the templates have not caught up.
-                console.warn( `The server advertises a step "${step}" for "${check.id ?? check.validate}" that this page renders no card for.` );
-                return;
-            }
-            const card = document.querySelector( `${containerSelector} .${slug}.${cardClass}` );
-            if ( null === card ) {
-                // Loud, and specific about which check and which step. The selector-based
-                // addressing this replaces could only produce an empty NodeList, which said
-                // nothing about what was missing and did not stop the counters advancing.
-                console.warn( `No "${cardClass}" card rendered for check "${check.id ?? check.validate}"; its ${step} result will have nowhere to go.` );
-                return;
-            }
-            cards[ step ] = card;
-        } );
-        requestRegistry.register( requestId, cards );
-        outstanding.add( requestId );
-    } );
-    return outstanding;
-};
-
-/**
- * Move on immediately when a phase has nothing to wait for.
- *
- * A phase now ends on the terminal frames of the requests it started, so a phase that starts *no*
- * requests would otherwise wait for frames that are never coming — and the silence watchdog cannot
- * rescue it either, since it only runs while something is outstanding. The run would sit on
- * "Tests Running..." for ever with no diagnostic, which is the wedge #43 is about, reached by a
- * door the frame counting this replaces did not have.
- *
- * Reachable: `sourceDataChecks` is whatever `/validations` advertised for the selected rite, so a
- * rite with no advertised source data — or an inventory that came back empty — is an empty phase.
- *
- * @returns {void}
- */
-const advanceIfPhaseIsEmpty = () => {
-    if ( 0 === phaseOutstanding.size ) {
-        console.log( 'This phase has no requests to wait for; moving on.' );
-        runTests();
-    }
-};
-
-/**
- * Start a phase's silence clock once its outstanding set has been installed.
- *
- * Separate from {@link beginPhase} because the clock reads `phaseOutstanding`, which the caller
- * assigns from beginPhase's return value — starting it inside beginPhase would read the *previous*
- * phase's set.
- *
- * @returns {void}
- */
-const armPhaseWatchdog = () => restartPhaseWatchdog();
-
-/**
- * Paint one step result onto the card its request registered.
- *
- * Addressed by `(requestId, step)`, which the server has stamped on every frame — including the
- * frames answering the legacy `executeValidation` messages this page still sends — since
- * LiturgicalCalendarAPI#806 section C. The `classes` selector is still on the frame and is
- * deliberately not read: it is the coupling #42 exists to remove, and it remains only so that
- * `index.js`, not yet migrated, keeps working.
- *
- * Falls back to the selector for a frame that carries no usable correlation, which is not dead code:
- * a server that predates section C sends no `requestId`, and this page should degrade to the old
- * behaviour rather than paint nothing at all.
- *
- * @param {object} responseData - A step-result frame.
- * @returns {void}
- */
-const paintResult = ( responseData ) => {
-    const { requestId, step } = responseData;
-    if ( 'string' !== typeof requestId || 'string' !== typeof step ) {
-        applyResultToDom( responseData );
-        return;
-    }
-    const card = requestRegistry.cardFor( requestId, step );
-    if ( null === card ) {
-        // Specific about what could not be attributed, unlike the empty NodeList this replaces.
-        console.warn( `No card is registered for request ${requestId} step "${step}" — the run totals will drift from the rendered cards.`, responseData );
-        return;
-    }
-    paintCard( card, responseData.type === 'success', responseData.text ?? '' );
-    requestRegistry.markReceived( requestId, step );
-};
 
 /**
  * Resets all test UI elements back to their initial state.
@@ -1050,100 +873,51 @@ const countUnattributableFailure = () => {
     }
 };
 
-/** Track expected and received responses for parallel Resource Data tests */
 /**
- * Which cards each in-flight request addresses, and which requests are still running.
+ * The one phase runner for both phases of this page.
  *
- * Replaces both of the things this page used to do instead: painting by the CSS selector the server
- * composed, and sizing a phase as `checks * 3`. See {@link createRequestRegistry} for why the first
- * had to go, and `runTests()` for the second.
+ * Replaces what this page used to own directly: the registry-backed painter (painting by the CSS
+ * selector the server composed, replaced per the coupling #42 removes), the phase watchdog, the
+ * request-id minting and the send path. `index.js` needs the same four, so they now live in
+ * {@link createPhaseRunner} — shared rather than copied, which is what #42 exists to achieve.
  *
- * One registry for both phases. They never overlap — the source phase is only entered once every
- * resource request has reported completion — and a single registry means a frame arriving late,
- * after its phase has moved on, still finds its card instead of being reported as unattributable.
+ * One runner for both phases. They never overlap — the source phase is only entered once every
+ * resource request has reported completion — and a single runner means a frame arriving late, after
+ * its phase has moved on, still finds its card instead of being reported as unattributable.
+ *
+ * `canAdvance()` collapses the two advance guards this page used to keep separately —
+ * `currentState !== JobsFinished` for a terminal frame and
+ * `currentState !== JobsFinished && currentState !== Stopped` for giving up — into the single,
+ * stricter guard. See {@link createPhaseRunner}'s `giveUpOnOutstandingRequests` for why that is
+ * behaviour-preserving rather than a widening: `conn.onmessage` already returns early once
+ * `currentState === Stopped`, so the terminal-frame path is unreachable in that state regardless.
  */
-const requestRegistry = createRequestRegistry();
-
-/**
- * The request ids of the phase currently running, emptied as their terminal frames arrive.
- * @type {Set<string>}
- */
-let phaseOutstanding = new Set();
-
-/**
- * How long a run may go without a single frame before the current phase is given up on.
- *
- * Stopping on the terminal frame is what removes the hardcoded step count, but it trades one
- * failure mode for another: a request that never reports completion now hangs the phase for ever,
- * where counting frames would eventually have overshot its way past it. The server has a known hole
- * of exactly that shape — a throw inside a promise's fulfil handler skips the terminal frame
- * (LiturgicalCalendarAPI#823) — and the published contract says in as many words to pair stopping
- * on `complete` with a timeout.
- *
- * The clock measures *silence*, not phase duration, and is restarted by every frame of the run.
- * Requests run in parallel and a slow one is covered by its neighbours' frames, so this only fires
- * when the server has genuinely stopped answering — never merely because a check was slow.
- *
- * @type {number}
- */
-const PHASE_SILENCE_TIMEOUT_MS = 60000;
-
-/**
- * The clock itself. Its callback gives up on whatever the current phase is still waiting for.
- * @type {{restart: Function, clear: Function, isRunning: Function}}
- */
-const phaseWatchdog = createSilenceWatchdog( PHASE_SILENCE_TIMEOUT_MS, () => giveUpOnOutstandingRequests() );
+const phaseRunner = createPhaseRunner( {
+    // The card class a check's cards were rendered with.
+    //
+    // The two families name themselves differently and always did: a resource check is a route,
+    // known by the `validate` key it shares with `resourcePaths`, slugified with this page's own
+    // `slugify()`; a source check is an inventory item, known by the opaque `id` the server minted,
+    // turned into a class with `idToCardClass()`. Neither is derived from anything the server sends
+    // at *run* time — that was the coupling #42 removes — so this is only about which of our own two
+    // vocabularies a check belongs to, and the distinction must not be conflated: a resource check's
+    // `id` is always undefined, which is what selects between the two here.
+    cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
+    onAdvance: () => runTests(),
+    onUnattributableFailure: () => countUnattributableFailure(),
+    // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
+    // reconnect cannot land the watchdog in the `Ready` case and restart a phase. Adding
+    // `currentRunToken !== null` here would be inert: the token stays set across exactly that
+    // window, so the guard belongs in `onopen`, not in this predicate.
+    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
+    socket: () => conn,
+    runToken: () => currentRunToken
+} );
 
 /**
- * Give up on whatever the current phase is still waiting for, and move the run on.
- *
- * The two ways a request can be outstanding are counted differently, because they are different
- * failures — see {@link summariseAbandoned}. A request whose steps never arrived left that many
- * cards grey, and each one is counted, or the totals badge reads lower than the cards on the page. A
- * request whose steps all arrived but whose terminal frame never did left nothing grey: its counters
- * are already right, and adding a failure would inflate them past the cards. That second case is not
- * hypothetical — it is exactly LiturgicalCalendarAPI#823, a throw inside a promise's fulfil handler
- * skipping `sendComplete()` after the work itself succeeded — so it is reported as the transport
- * failure it is, and left out of the arithmetic.
- *
- * Exported so a test can invoke it against a real run rather than waiting out the sixty-second
- * clock. Nothing else imports this module; the export exists for that reason and is not a seam
- * anything else is meant to use.
- *
- * @returns {void}
+ * Exported only so a spec can trigger the watchdog without waiting out the clock. See wsRunner.js.
  */
-export const giveUpOnOutstandingRequests = () => {
-    const abandoned = [ ...phaseOutstanding ];
-    if ( 0 === abandoned.length ) {
-        return;
-    }
-
-    const { unpaintedSteps, incomplete, silent } = summariseAbandoned( requestRegistry, abandoned );
-
-    if ( 0 < incomplete.length ) {
-        console.error(
-            `No frame has arrived for ${PHASE_SILENCE_TIMEOUT_MS / 1000}s; ${incomplete.length} request(s) never answered in full, leaving ${unpaintedSteps} check(s) unreported.`,
-            incomplete
-        );
-    }
-    if ( 0 < silent.length ) {
-        // A run-level transport fault, not a check that failed: every card of these requests is
-        // painted and every counter already agrees with them.
-        console.error(
-            `${silent.length} request(s) reported every check but never reported completion — the server ended the request without saying so (LiturgicalCalendarAPI#823).`,
-            silent
-        );
-    }
-
-    for ( let i = 0; i < unpaintedSteps; i++ ) {
-        countUnattributableFailure();
-    }
-
-    phaseOutstanding.clear();
-    if ( currentState !== TestState.JobsFinished && currentState !== TestState.Stopped ) {
-        runTests();
-    }
-};
+export const giveUpOnOutstandingRequests = () => phaseRunner.giveUpOnOutstandingRequests();
 
 const methodAndHeaders = Object.freeze({
     method: "GET",
@@ -1455,17 +1229,17 @@ const runTests = () => {
             safeCollapseShow('#resourceDataTests');
 
             // Send ALL resource data requests at once - server handles concurrency
-            phaseOutstanding = beginPhase( resourceDataChecks, '#resourceDataTests .resourcedata-tests' );
-            armPhaseWatchdog();
+            phaseRunner.beginPhase( resourceDataChecks, { containerSelector: '#resourceDataTests .resourcedata-tests' } );
+            phaseRunner.armWatchdog();
             console.log( `Sending ${resourceDataChecks.length} resource data requests in parallel...` );
             resourceDataChecks.forEach( check => {
-                sendMessage({
+                phaseRunner.sendMessage({
                     action: 'executeValidation',
                     responsetype: currentResponseType,
                     ...check
                 });
             });
-            advanceIfPhaseIsEmpty();
+            phaseRunner.advanceIfPhaseIsEmpty();
             break;
         }
         case TestState.ExecutingResourceValidations:
@@ -1485,32 +1259,32 @@ const runTests = () => {
             // server, a duplicate terminal frame is idempotent in the registry, and a request
             // that stops early still ends the phase, because the server sends `complete` for a
             // request whose steps failed exactly as for one whose steps passed.
-            if ( 0 === phaseOutstanding.size ) {
+            if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'Resource file validation jobs are finished! Now continuing to check source data...' );
                 currentState = TestState.ExecutingSourceValidations;
                 performance.mark( 'sourceDataTestsStart' );
                 safeCollapseShow('#sourceDataTests');
 
                 // Send ALL source data requests at once - server handles concurrency
-                phaseOutstanding = beginPhase( sourceDataChecks, '#sourceDataTests .sourcedata-tests' );
-                armPhaseWatchdog();
+                phaseRunner.beginPhase( sourceDataChecks, { containerSelector: '#sourceDataTests .sourcedata-tests' } );
+                phaseRunner.armWatchdog();
                 console.log( `Sending ${sourceDataChecks.length} source data requests in parallel...` );
                 sourceDataChecks.forEach( check => {
                     // The opaque id, and nothing else. No `category` to pick a schema-resolution
                     // strategy, no `validate` doing three jobs at once, and above all no path: the
                     // server resolves all of that from the id it advertised.
-                    sendMessage({
+                    phaseRunner.sendMessage({
                         action: 'validateSource',
                         target: { id: check.id },
                         requestId: check.requestId
                     });
                 });
-                advanceIfPhaseIsEmpty();
+                phaseRunner.advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.ExecutingSourceValidations:
             // See the note on the resource phase above.
-            if ( 0 === phaseOutstanding.size ) {
+            if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'All source data requests have reported completion!' );
                 currentState = TestState.JobsFinished;
                 runTests();
@@ -1518,7 +1292,7 @@ const runTests = () => {
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
-            clearPhaseWatchdog();
+            phaseRunner.clearWatchdog();
             safeToastShow('#tests-complete');
             currentRunToken = null;
             setRiteSelectDisabledForRun( false );
@@ -1644,8 +1418,10 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     }
     if ( currentState === TestState.Ready || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         resultCollector.reset();
-        requestRegistry.reset();
-        phaseOutstanding = new Set();
+        // Releases the previous run's registry entries, selectors and outstanding set — see
+        // `endRun()` in wsRunner.js for why a run must not simply be allowed to leak its state into
+        // the next one.
+        phaseRunner.endRun();
         resetTestUI();
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
@@ -1676,8 +1452,12 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
-        clearPhaseWatchdog();
-        phaseOutstanding.clear();
+        phaseRunner.clearWatchdog();
+        // Releases the stopped run's outstanding set, so a `giveUpOnOutstandingRequests()` call
+        // reaching this page after a Stop (its exported seam, or the watchdog's callback in a race)
+        // finds nothing outstanding to give up on — the same no-op it was before this state moved
+        // into the runner.
+        phaseRunner.endRun();
         currentState = TestState.Stopped;
         currentRunToken = null;
         setRiteSelectDisabledForRun( false );

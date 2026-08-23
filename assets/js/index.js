@@ -25,12 +25,18 @@ import {
 
 import {
     sendCancelRun,
-    toWireTarget,
-    universalChecksForRite,
+    toCalendarIdentity,
     testAppliesToRite,
     CALENDAR_SCOPE_KEYS,
     yearsForRite,
+    fetchValidations,
+    inventoryIdsForCalendar,
+    idToCardClass,
+    STEP_CARD_CLASS,
+    TEST_RUN_STEP_CARD_CLASS,
 } from './wsProtocol.js';
+
+import { createPhaseRunner } from './wsRunner.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
 // top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
@@ -107,24 +113,65 @@ const ENDPOINTS = {
 }
 
 /**
- * The universal source-data checks for a rite, plus the two API-path checks this page renders
+ * The `/validations` inventory, as fetched by `fetchMetadataAndTests()`.
+ *
+ * Empty until that fetch resolves. `buildSourceDataChecks()` reads it to resolve the ids
+ * `inventoryIdsForCalendar()` composes into the advertised `{id, label, steps}` shape.
+ *
+ * @type {Array<{id: string, kind: string, rite: string, region: ?string, label: string, schema: string, steps: Array<string>}>}
+ */
+let ValidationsInventory = [];
+
+/**
+ * Whether {@link ValidationsInventory} has been populated.
+ *
+ * `fetchMetadataAndTests()` gates `ReadyToRunTests.AsyncDataReady` on four fetches now instead of
+ * three; a bare `ValidationsInventory.length > 0` would be indistinguishable from "not fetched yet"
+ * if the API ever legitimately advertised zero items, so readiness is tracked separately.
+ *
+ * @type {boolean}
+ */
+let ValidationsInventoryReady = false;
+
+/**
+ * The source-data checks for a calendar, as inventory items plus the one URL check this page renders
  * alongside them.
  *
- * The corpus itself comes from `wsProtocol.js` so that `resources.js` checks the same files under
- * the same names. The `/calendars` metadata check is rite-independent and belongs to no rite's
- * corpus, so it is added here rather than listed there.
+ * `LitCalMetadata` is a *resource* check living in a source-data phase: it validates the `/calendars`
+ * response, has no inventory id, and stays on `executeValidation`. Everything else is an id the API
+ * advertised.
  *
- * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
- * @returns {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
+ * @param {object} scope
+ * @param {string} scope.rite - The rite whose universal corpus is checked (see
+ *   `inventoryIdsForCalendar()`: Roman for a national/diocesan calendar regardless of the
+ *   calendar's own rite; the selected rite itself for a rite-level calendar).
+ * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`; equal to
+ *   `scope.rite` when there is no diocese.
+ * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
+ * @param {?string} scope.widerRegion - The nation's wider region, or null.
+ * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
+ * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
+ * @returns {Array<object>}
  */
-const buildUniversalSourceDataChecks = ( rite ) => [
-    {
-        "validate": "LitCalMetadata",
-        "sourceFile": ENDPOINTS.CALENDARS,
-        "category": "universalcalendar"
-    },
-    ...universalChecksForRite( rite )
-];
+const buildSourceDataChecks = ( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ) => {
+    const checks = [ {
+        validate: 'LitCalMetadata',
+        sourceFile: ENDPOINTS.CALENDARS,
+        category: 'universalcalendar'
+    } ];
+    const advertised = new Map( ValidationsInventory.map( item => [ item.id, item ] ) );
+    inventoryIdsForCalendar( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ).forEach( id => {
+        const item = advertised.get( id );
+        if ( undefined === item ) {
+            // Said out loud rather than skipped silently: the inventory is the contract now, so an id
+            // this page composed that the server does not advertise is a real disagreement.
+            console.warn( `The API advertises no checkable item "${id}"; it will not be checked.` );
+            return;
+        }
+        checks.push( { id: item.id, label: item.label, steps: item.steps } );
+    } );
+    return checks;
+};
 
 /**
  * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
@@ -436,28 +483,48 @@ const calDataTestTemplate = ( idx, years ) => {
  *   - `json-valid`: indicates whether the source data is valid JSON.
  *   - `schema-valid`: indicates whether the source data is valid according to the schema.
  * The template is used by the `index.js` script.
- * @param {object} item An object containing the validate, category and sourceFile properties of the source data check.
+ *
+ * Two shapes reach this template. A live run supplies an advertised inventory item —
+ * `{id, label, steps}` — whose caption is the server's own label and whose tooltip is the id the
+ * request actually carries; that is the shape #42 moves this page to. The URL check this page
+ * still renders directly (`LitCalMetadata`), and any run stored before this migration replayed
+ * from the Past Runs dropdown, carry the old `{validate, category, sourceFile|sourceFolder}`
+ * shape instead — a slug this page invented and the repo-relative path it invented it from.
+ * Replaying those stored runs is not optional, so both shapes must render.
+ *
+ * @param {object} item An inventory item (`{id, label, steps}`) or a `{validate, category, sourceFile}` URL/legacy check.
  * @param {number} idx The index of the source data check.
  * @return {string} The HTML template as a string.
  */
 const sourceDataCheckTemplate = ( item, idx ) => {
+    const fromInventory = undefined !== item.id;
+
     let categoryStr;
-    // Determine category description from validate field prefix (since category is now "sourceDataCheck")
-    if ( item.validate.startsWith('national-calendar-') ) {
-        categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
-    } else if ( item.validate.startsWith('wider-region-') ) {
-        categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
-    } else if ( item.validate.startsWith('diocesan-calendar-') ) {
-        categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
-    } else if ( item.validate.startsWith('proprium-de-sanctis-') ) {
-        categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
+    // Category descriptions keyed off a `validate` slug prefix only ever matched the legacy
+    // slug families (`national-calendar-`, `wider-region-`, `diocesan-calendar-`,
+    // `proprium-de-sanctis-`) this page composed before #42; an inventory item carries no
+    // `validate` at all, so this only runs for the URL check and for replayed pre-#42 runs.
+    if ( false === fromInventory ) {
+        if ( item.validate.startsWith('national-calendar-') ) {
+            categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
+        } else if ( item.validate.startsWith('wider-region-') ) {
+            categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
+        } else if ( item.validate.startsWith('diocesan-calendar-') ) {
+            categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
+        } else if ( item.validate.startsWith('proprium-de-sanctis-') ) {
+            categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
+        }
     }
-    const validateSlug = slugify(item.validate);
-    // A check names either a single file or a folder of i18n files, never both. Reading only
-    // `sourceFile` rendered `title="undefined"` for every folder check; index.js never sent one
-    // before #48 added the i18n folders to the universal corpus.
-    const escapedSourceFile = escapeHtmlAttr(item.sourceFile ?? item.sourceFolder ?? '');
-    const escapedValidate = escapeHtmlAttr(item.validate);
+    const validateSlug = fromInventory ? idToCardClass( item.id ) : slugify( item.validate );
+    // An inventory item with an absent/null label falls back to `validate` (which it doesn't
+    // have) and then to `id`, so a caption is never the literal string "undefined" -- exactly the
+    // defect the tooltip comment below already records having been fixed once.
+    const caption = item.label ?? item.validate ?? item.id;
+    // A legacy check names either a single file or a folder of i18n files, never both. Reading
+    // only `sourceFile` rendered `title="undefined"` for every folder check.
+    const tooltip = item.id ?? item.sourceFile ?? item.sourceFolder ?? '';
+    const escapedTooltip = escapeHtmlAttr(tooltip);
+    const escapedCaption = escapeHtmlAttr(caption);
     const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(categoryStr)}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
     // The label is not truncated to a character budget: it wraps, exactly as `resources.js`'s
     // `sourceTemplate()` renders these same slugs. A character count is only a proxy for pixel
@@ -470,7 +537,7 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     // grid line down together instead of misaligning its own column — are `common.css`'s job, via
     // the flex rule on `.sourcedata-tests > div`. Nothing here needs a height.
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapedSourceFile}" class="text-break d-inline-block w-75">${escapedValidate}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
+    <p class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapedTooltip}" class="text-break d-inline-block w-75">${escapedCaption}</span>${( false === fromInventory && item.category !== 'universalcalendar' ) ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
@@ -516,9 +583,6 @@ let MetaData = null;
 let UnitTests = null;
 let RomanMissals = null;
 let currentState;
-let index;
-let yearIndex;
-let messageCounter;
 
 let startTestRunnerBtnLbl = '';
 
@@ -534,25 +598,77 @@ let failedCalendarDataTests = 0;
 let successfulUnitTests = 0;
 let failedUnitTests = 0;
 
-/** Track expected and received responses for parallel Calendar Data tests */
-let calendarDataExpectedResponses = 0;
-let calendarDataReceivedResponses = 0;
-
 let connectionAttempt = null;
 let conn;
 let currentRunToken = null;
 
 /**
- * Sends a message over the WebSocket connection, automatically
- * attaching the current run token for response correlation.
- * @param {Object} data - The message payload to send.
+ * Count a frame we could not attribute to a specific check.
+ *
+ * The frame is unusable, but the *phase* is still known from `currentState`, so the failure
+ * is booked against both the global total and the current phase's total. Incrementing only
+ * the global one would leave the header count and the per-phase counts disagreeing, which is
+ * the same silent drift #43 flags for unmatched selectors.
+ *
+ * Module scope, not inside `connectWebSocket()`: `phaseRunner`'s `onUnattributableFailure`
+ * callback is built at module load, and a `countUnattributableFailure` defined inside the
+ * connection closure would not exist yet when that callback is constructed (see resources.js,
+ * where the same move fixed a `ReferenceError` the watchdog's callback would otherwise raise).
+ *
+ * @returns {void}
  */
-const sendMessage = ( data ) => {
-    if ( currentRunToken !== null ) {
-        data.runToken = currentRunToken;
+const countUnattributableFailure = () => {
+    updateText( 'failedCount', ++failedTests );
+    switch ( currentState ) {
+        case TestState.ExecutingValidations:
+            updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
+            break;
+        case TestState.ValidatingCalendarData:
+            updateText( 'failedCalendarDataTestsCount', ++failedCalendarDataTests );
+            break;
+        case TestState.SpecificUnitTests:
+            // Only the phase total: without a usable `test` property there is no per-test
+            // accordion counter to attribute it to.
+            updateText( 'failedUnitTestsCount', ++failedUnitTests );
+            break;
     }
-    conn.send( JSON.stringify( data ) );
 };
+
+/**
+ * The one phase runner for this page's phases.
+ *
+ * Replaces what this page used to own directly: the registry-backed painter (painting by the CSS
+ * selector the server composed, replaced per the coupling #42 removes), the phase watchdog, the
+ * request-id minting and the send path. `resources.js` needs the same four, so they live in
+ * {@link createPhaseRunner} — shared rather than copied, which is what #42 exists to achieve.
+ *
+ * `canAdvance()` collapses the two advance guards this page used to keep separately —
+ * `currentState !== JobsFinished` for a terminal frame and
+ * `currentState !== JobsFinished && currentState !== Stopped` for giving up — into the single,
+ * stricter guard. Behaviour-preserving, not a widening: `conn.onmessage` already returns early
+ * once `currentState === Stopped`, so the terminal-frame path is unreachable in that state
+ * regardless. See {@link createPhaseRunner}'s `giveUpOnOutstandingRequests`.
+ */
+const phaseRunner = createPhaseRunner( {
+    // A resource-less URL check (`LitCalMetadata`) carries no `id` and is known by its own
+    // `validate` slug; every other check is an inventory item, known by the opaque `id` the
+    // server minted, turned into a class with `idToCardClass()`.
+    cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
+    onAdvance: () => runTests(),
+    onUnattributableFailure: () => countUnattributableFailure(),
+    // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
+    // reconnect cannot land the watchdog in the `ReadyState` case and restart a phase. Note that
+    // adding `currentRunToken !== null` here would be inert: the token stays set across exactly
+    // that window, so the guard had to go in `onopen`, not in this predicate.
+    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
+    socket: () => conn,
+    runToken: () => currentRunToken
+} );
+
+/**
+ * Exported only so a spec can trigger the watchdog without waiting out the clock. See wsRunner.js.
+ */
+export const giveUpOnOutstandingRequests = () => phaseRunner.giveUpOnOutstandingRequests();
 
 // The rite-level calendar of the default rite, which is what the calendar select's empty option
 // selects on mount. Not 'VA': `Health::buildCalendarRequestPath()` resolves both to /roman/{year},
@@ -561,6 +677,15 @@ const sendMessage = ( data ) => {
 let currentSelectedCalendar = "roman";
 let currentNationalCalendar = null;
 let currentCalendarCategory = "ritecalendar";
+/**
+ * The typed calendar identity the v2 `validateCalendar` message carries — `{kind, id?, rite}`.
+ *
+ * Derived once, in `resolveCalendarTargetFromControls()`, from the same `data-calendartype` dataset
+ * read that already produces `currentCalendarCategory`, and kept in sync by that function's two
+ * callers (`handleCalendarSelectChange()` and `resyncLiveStateFromDom()`). Not re-derived at
+ * send-time: a second reader of that dataset attribute would invite the two drifting apart.
+ */
+let currentCalendarIdentity = { kind: 'rite', rite: 'roman' };
 /**
  * The liturgical rite of the currently selected calendar.
  * Derived from the rite select's own value (see `resolveCalendarTargetFromControls()`); 'roman' by default.
@@ -660,125 +785,131 @@ const buildCalendarsPayload = () => {
 const runTests = () => {
     switch ( currentState ) {
         case TestState.ReadyState: {
-            index = 0;
-            messageCounter = 0;
             currentState = TestState.ExecutingValidations;
             performance.mark( 'sourceDataTestsStart' );
             safeCollapseShow('#sourceDataTests');
-            sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
+            phaseRunner.beginPhase( currentSourceDataChecks, { containerSelector: '#sourceDataTests .sourcedata-tests' } );
+            phaseRunner.armWatchdog();
+            currentSourceDataChecks.forEach( check => {
+                if ( undefined === check.id ) {
+                    // The one URL check in this phase: no inventory id, so it keeps the legacy shape.
+                    phaseRunner.sendMessage( { action: 'executeValidation', ...check } );
+                    return;
+                }
+                phaseRunner.sendMessage( { action: 'validateSource', target: { id: check.id }, requestId: check.requestId } );
+            } );
+            phaseRunner.advanceIfPhaseIsEmpty();
             break;
         }
         case TestState.ExecutingValidations:
-            // `>=`, not `===`: a duplicated or extra frame would otherwise overshoot the target
-            // and the phase would never complete (#43). The repo already has a recorded incident
-            // of a double-sent validation inflating the counters past the rendered-card total.
-            //
-            // This is a mitigation, not a cure. Counting frames cannot distinguish a duplicate
-            // from a legitimate one, so a duplicate still completes the phase one frame early.
-            // The cure is per-request correlation — deduplicate by request id and count each
-            // expected id once — which the protocol cannot express today: it carries only a
-            // per-*run* `runToken`, no per-request id. See #42 and LiturgicalCalendarAPI#806.
-            //
-            // Deduplicating on `classes` is not that cure either. It is a display selector, not
-            // an identity: the server chooses it to address a card, so two frames sharing one is
-            // a rendering decision rather than a statement that the second is redundant.
-            // (Until LiturgicalCalendarAPI#809 that was concretely unsafe — a `sourceFolder`
-            // check emitted one frame per failing i18n file, all with the same `classes`, so
-            // discarding "duplicates" would have dropped real failures. That specific hazard is
-            // gone; the reason not to rely on the selector for identity is not.)
-            if ( ++messageCounter >= 3 ) {
-                console.log( 'one cycle complete, passing to next test..' )
-                messageCounter = 0;
-                if ( index < currentSourceDataChecks.length ) {
-                    sendMessage( { action: 'executeValidation', ...currentSourceDataChecks[ index++ ] } );
-                } else {
-                    console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
-                    currentState = TestState.ValidatingCalendarData;
-                    index = 0;
-                    performance.mark( 'calendarDataTestsStart' );
-                    safeCollapseShow('#calendarDataTests');
+            if ( 0 === phaseRunner.outstandingCount() ) {
+                console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
+                currentState = TestState.ValidatingCalendarData;
+                performance.mark( 'calendarDataTestsStart' );
+                safeCollapseShow('#calendarDataTests');
 
-                    // Send ALL calendar data requests at once - server handles concurrency
-                    calendarDataExpectedResponses = Years.length * 3; // 3 responses per year
-                    calendarDataReceivedResponses = 0;
-                    console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
-                    Years.forEach( year => {
-                        sendMessage( {
-                            action: 'validateCalendar',
-                            year: year,
-                            calendar: currentSelectedCalendar,
-                            category: currentCalendarCategory,
-                            rite: currentRite,
-                            responsetype: currentResponseType
-                        } );
+                // Calendar cards are addressed `.calendar-{slug}.{step-class}.year-{n}`, not the
+                // default `.{cardSlugFor(check)}.{step-class}` `beginPhase()` would otherwise use, so
+                // a custom `cardSelectorFor` is supplied.
+                const calendarSlug = slugify( currentSelectedCalendar );
+                // `id` is not read by `cardSelectorFor` above; it only names this check in
+                // `beginPhase()`'s own diagnostics (`check.id ?? check.validate`), so a missing card
+                // warns about a specific year instead of "undefined".
+                const yearChecks = Years.map( year => ( { id: `year-${year}`, year } ) );
+
+                phaseRunner.beginPhase( yearChecks, {
+                    containerSelector: '.calendardata-tests',
+                    cardSelectorFor: ( check, step ) => {
+                        const stepClass = STEP_CARD_CLASS[ step ];
+                        return undefined === stepClass ? null : `.calendar-${calendarSlug}.${stepClass}.year-${check.year}`;
+                    }
+                } );
+                phaseRunner.armWatchdog();
+                yearChecks.forEach( check => {
+                    phaseRunner.sendMessage( {
+                        action: 'validateCalendar',
+                        calendar: currentCalendarIdentity,
+                        year: check.year,
+                        responseFormat: currentResponseType,
+                        requestId: check.requestId
                     } );
-                }
+                } );
+                phaseRunner.advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.ValidatingCalendarData:
-            // Count responses from parallel requests (all requests already sent)
-            calendarDataReceivedResponses++;
-            // `>=`, not `===` — see the note on the source-data counter above.
-            if ( calendarDataReceivedResponses >= calendarDataExpectedResponses ) {
-                console.log( `All ${calendarDataExpectedResponses} calendar data responses received!` );
+            if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
                 currentState = TestState.SpecificUnitTests;
-                index = 0;
-                yearIndex = 0;
-                console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 performance.mark( 'specificUnitTestsStart' );
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                sendMessage( {
-                    ...SpecificUnitTestCategories[ index ],
-                    year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
-                    calendar: currentSelectedCalendar,
-                    category: currentCalendarCategory,
-                    rite: currentRite
-                } );
                 safeCollapseShow('#specificUnitTests');
-                safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
+
+                // One check per (test, year) pair, registered up front — the same move made for
+                // calendar-data in the `ExecutingValidations` case above (`yearChecks`) — so this
+                // phase, too, ends on the terminal frames of the requests it started rather than
+                // being walked one response at a time.
+                //
+                // `steps: ['validates']` is set explicitly rather than left to `beginPhase()`'s
+                // default (every step in `STEP_CARD_CLASS`, the *check* family's three): a test run
+                // reports exactly one step, and defaulting here would have `beginPhase()` probe for
+                // `exists`/`parses` cards that this phase never renders, logging a spurious warning
+                // for every single check.
+                //
+                // `id` is not read by `cardSelectorFor` below; it only names this check in
+                // `beginPhase()`'s own diagnostics (`check.id ?? check.validate`), so a missing card
+                // warns about a specific test and year instead of "undefined".
+                const testChecks = SpecificUnitTestCategories.flatMap( category =>
+                    SpecificUnitTestYears[ category.test ].map( year => ( {
+                        id: `${category.test}-year-${year}`,
+                        test: category.test,
+                        year,
+                        steps: [ 'validates' ]
+                    } ) )
+                );
+
+                phaseRunner.beginPhase( testChecks, {
+                    containerSelector: '#specificUnitTests',
+                    cardSelectorFor: ( check, step ) => {
+                        const stepClass = TEST_RUN_STEP_CARD_CLASS[ step ];
+                        return undefined === stepClass ? null : `.${slugify( check.test )}.year-${check.year}.${stepClass}`;
+                    }
+                } );
+                phaseRunner.armWatchdog();
+                testChecks.forEach( check => {
+                    safeCollapseShow( `#specificUnitTest-${slugify( check.test )}` );
+                    phaseRunner.sendMessage( {
+                        action: 'runTest',
+                        test: check.test,
+                        calendar: currentCalendarIdentity,
+                        year: check.year,
+                        requestId: check.requestId
+                    } );
+                } );
+                phaseRunner.advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.SpecificUnitTests:
-            if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, rite: currentRite } );
-            }
-            else if ( ++index < SpecificUnitTestCategories.length ) {
-                yearIndex = 0;
-                console.log( `Specific unit test ${SpecificUnitTestCategories[ index - 1 ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
-                console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
-                let totalUnitTestTime = performance.measure(
-                    'litcalUnitTestRunner',
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
-                );
-                updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                sendMessage( {
-                    ...SpecificUnitTestCategories[ index ],
-                    year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
-                    calendar: currentSelectedCalendar,
-                    category: currentCalendarCategory,
-                    rite: currentRite
-                } );
-                safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
-            }
-            else {
-                console.log( 'Specific unit test validation jobs are finished!' );
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
-                let totalUnitTestTime = performance.measure(
-                    'litcalUnitTestRunner',
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
-                );
-                updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
+            if ( 0 === phaseRunner.outstandingCount() ) {
                 currentState = TestState.JobsFinished;
                 runTests();
             }
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
+            phaseRunner.clearWatchdog();
+            // The unit-test phase's checks are now all sent up front and run in parallel, so there is
+            // no longer a sequential point between individual tests for a per-test mark to fire at —
+            // the per-test `specificUnitTest{Name}Start`/`End` marks and `total{Test}TestsTime`
+            // updates this phase used to make are gone along with the walk that drove them. The phase
+            // is marked as a whole instead: `specificUnitTestsStart` was set when this phase began,
+            // and this is the definite end of it, reached exactly once, on the terminal frame that
+            // empties the phase's outstanding set. The `total{Test}TestsTime` elements themselves are
+            // left at the "0" `appendAccordionItem()` renders them with — `resetTestUI()` already
+            // zeroes every `[id$="TestsTime"]` element at the start of a run and scaffold rebuild, so
+            // leaving them unwritten here shows a neutral default, never a stale value from a
+            // previous run.
+            performance.mark( 'specificUnitTestsEnd' );
+            performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
             safeToastShow('#tests-complete');
             currentRunToken = null;
             setScaffoldControlsDisabledForRun( false );
@@ -834,7 +965,15 @@ const connectWebSocket = () => {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
         }
-        currentState = TestState.ReadyState;
+        // Only when no run is in flight (#66). A mid-run socket drop that reconnects must not reset
+        // the state machine: the silence watchdog would then see `ReadyState`, `canAdvance()` would
+        // return true, and `onAdvance()` -> `runTests()` would re-enter the `ReadyState` case and
+        // re-send the entire source-data phase on the new socket under the stale run token,
+        // doubling every counter against an already-painted scaffold. Preserving the phase lets the
+        // watchdog give up on the outstanding requests and advance the run normally instead.
+        if ( null === currentRunToken ) {
+            currentState = TestState.ReadyState;
+        }
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
     };
@@ -850,31 +989,6 @@ const connectWebSocket = () => {
      * corresponding failed count and marks the test as failed. If the test is
      * finished, it updates the total test time and displays it.
      */
-    /**
-     * Count a frame we could not attribute to a specific check.
-     *
-     * The frame is unusable, but the *phase* is still known from `currentState`, so the failure
-     * is booked against both the global total and the current phase's total. Incrementing only
-     * the global one would leave the header count and the per-phase counts disagreeing, which is
-     * the same silent drift #43 flags for unmatched selectors.
-     */
-    const countUnattributableFailure = () => {
-        updateText( 'failedCount', ++failedTests );
-        switch ( currentState ) {
-            case TestState.ExecutingValidations:
-                updateText( 'failedSourceDataTestsCount', ++failedSourceDataTests );
-                break;
-            case TestState.ValidatingCalendarData:
-                updateText( 'failedCalendarDataTestsCount', ++failedCalendarDataTests );
-                break;
-            case TestState.SpecificUnitTests:
-                // Only the phase total: without a usable `test` property there is no per-test
-                // accordion counter to attribute it to.
-                updateText( 'failedUnitTestsCount', ++failedUnitTests );
-                break;
-        }
-    };
-
     conn.onmessage = ( e ) => {
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
@@ -905,10 +1019,26 @@ const connectWebSocket = () => {
             return;
         }
         console.log( responseData );
+
+        // Any frame of this run is proof the server is still answering.
+        phaseRunner.restartWatchdog();
+
+        // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
+        // recorded or counted. Counting it would inflate the totals badge past the number of
+        // rendered cards — the drift #42 describes, arrived at from the other direction.
+        if ( phaseRunner.noteTerminalFrame( responseData ) ) {
+            return;
+        }
+
         try {
             if ( responseData.type === "success" ) {
-                applyResultToDom( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                phaseRunner.paintResult( responseData );
+                // `selectorFor()` returns null when the phase never registered this requestId/step
+                // pair (or registered it but the card was not found in the DOM), or when the frame
+                // carries no requestId at all (live behaviour against a server predating the typed
+                // protocol). Recorded as `selector: null` rather than falling back to the server's
+                // `classes` string, which this migration removed as a wire-correlation mechanism.
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? null );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -921,7 +1051,14 @@ const connectWebSocket = () => {
                     }
                     case TestState.SpecificUnitTests: {
                         updateText('successfulUnitTestsCount', ++successfulUnitTests);
-                        const testSlug = slugify(responseData.test);
+                        // `responseData.test` is not part of the published `WebSocketFrame.json`
+                        // schema — the server never sends it. `target.id` is the real source: a
+                        // test-run frame's `target` is built by `Health::sendTestResult()` via
+                        // `frameTarget($test, [...])`, so `target.id` names the test.
+                        // `responseData.test` is kept only as a fallback for a stub or server that
+                        // predates the typed target.
+                        const testName = responseData.target?.id ?? responseData.test;
+                        const testSlug = slugify(testName);
                         const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
                         updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
                         break;
@@ -929,8 +1066,10 @@ const connectWebSocket = () => {
                 }
             }
             else if ( responseData.type === "error" ) {
-                applyResultToDom( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                phaseRunner.paintResult( responseData );
+                // See the matching comment on the success branch above: `selectorFor()` can still
+                // legitimately return null, and that is recorded as `selector: null`.
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? null );
                 updateText('failedCount', ++failedTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -943,7 +1082,10 @@ const connectWebSocket = () => {
                     }
                     case TestState.SpecificUnitTests: {
                         updateText('failedUnitTestsCount', ++failedUnitTests);
-                        const testSlug = slugify(responseData.test);
+                        // See the matching comment on the success branch above: `target.id`, not the
+                        // never-sent `responseData.test`, is the real source for the test name.
+                        const testName = responseData.target?.id ?? responseData.test;
+                        const testSlug = slugify(testName);
                         const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
                         updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
                         break;
@@ -1151,10 +1293,18 @@ const fetchMetadataAndTests = () => {
             headers: {
                 Accept: "application/json"
             }
-        } )
+        } ),
+        // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to
+        // the `{litcal_validations}` shape the branch below expects — it is not a `Response`, so
+        // the `.json()` step right after this array must not try to call `.json()` on it too.
+        fetchValidations( getApiBaseUrl() ).then( items => ( { litcal_validations: items } ) )
     ] )
         .then( ( responses ) => {
             return Promise.all( responses.map( ( response ) => {
+                if ( typeof response.json !== 'function' ) {
+                    // Already-parsed data from `fetchValidations()`, not a `fetch()` Response.
+                    return response;
+                }
                 if ( response.ok ) { return response.json(); }
                 else {
                     if (response.headers.get('Content-Type') === 'application/problem+json') {
@@ -1174,16 +1324,24 @@ const fetchMetadataAndTests = () => {
                 console.log( data );
                 if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                     MetaData = data.litcal_metadata;
-                    if ( UnitTests !== null && RomanMissals !== null ) {
+                    if ( UnitTests !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
                         ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
+                        console.log( 'it seems that UnitTests, RomanMissals and the validations inventory were set first, now Metadata is also ready' );
                         setupPage();
                     }
                 } else if ( data.hasOwnProperty( 'litcal_missals' ) ) {
                     RomanMissals = data.litcal_missals;
-                    if ( UnitTests !== null && MetaData !== null ) {
+                    if ( UnitTests !== null && MetaData !== null && ValidationsInventoryReady === true ) {
                         ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests and MetaData were set first, now RomanMissals is also ready' );
+                        console.log( 'it seems that UnitTests, MetaData and the validations inventory were set first, now RomanMissals is also ready' );
+                        setupPage();
+                    }
+                } else if ( data.hasOwnProperty( 'litcal_validations' ) ) {
+                    ValidationsInventory = data.litcal_validations;
+                    ValidationsInventoryReady = true;
+                    if ( UnitTests !== null && MetaData !== null && RomanMissals !== null ) {
+                        ReadyToRunTests.AsyncDataReady = true;
+                        console.log( 'it seems that UnitTests, MetaData and RomanMissals were set first, now the validations inventory is also ready' );
                         setupPage();
                     }
                 } else {
@@ -1197,15 +1355,15 @@ const fetchMetadataAndTests = () => {
                         let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
                         console.error( message );
                     }
-                    if ( MetaData !== null && RomanMissals !== null ) {
+                    if ( MetaData !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
                         ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that Metadata and RomanMissals were set first, now UnitTests is also ready' );
+                        console.log( 'it seems that Metadata, RomanMissals and the validations inventory were set first, now UnitTests is also ready' );
                         setupPage();
                     }
                 }
             } );
         } ).catch( ( error ) => {
-            console.error( 'Error fetching metadata and/or roman missals and/or tests data:', error );
+            console.error( 'Error fetching metadata and/or roman missals and/or tests data and/or the validations inventory:', error );
         } );
 }
 
@@ -1339,7 +1497,8 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 
 /**
  * Builds source data checks for non-VA (non-Vatican) calendars.
- * Adds checks for wider region, national calendar, missals, and optionally diocesan calendar.
+ * Resolves the diocese-to-nation and nation-to-wider-region/missals metadata this page holds,
+ * then delegates the actual check list to `buildSourceDataChecks()`.
  *
  * @param {string} calendarId - The calendar ID (national or diocesan).
  * @param {string} calendarCategory - The category: 'nationalcalendar' or 'diocesancalendar'.
@@ -1347,6 +1506,7 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
  */
 const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     let nation = calendarId;
+    let dioceseId = null;
 
     // For diocesan calendars, find the parent nation
     if (calendarCategory !== 'nationalcalendar') {
@@ -1358,13 +1518,8 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
             return null;
         }
         nation = diocesanData.nation;
+        dioceseId = calendarId;
     }
-
-    // National and diocesan calendars always start from the Roman universal corpus: national
-    // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
-    // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
-    // corpus is a separate (pre-existing) design question.
-    const checks = buildUniversalSourceDataChecks( 'roman' );
 
     const nationalCalendarData = MetaData.national_calendars.find(
         nationalCalendar => nationalCalendar.calendar_id === nation
@@ -1374,49 +1529,23 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         return null;
     }
 
-    // Add wider region check
-    checks.push({
-        "validate": `wider-region-${nationalCalendarData.wider_region}`,
-        "sourceFile": nationalCalendarData.wider_region,
-        "category": "sourceDataCheck"
-    });
-
-    // Add national calendar check
-    checks.push({
-        "validate": `national-calendar-${nation}`,
-        "sourceFile": nation,
-        "category": "sourceDataCheck"
-    });
-
-    // Add missal checks
-    // Server expects validate like "proprium-de-sanctis-IT-1983" for sourceDataCheck category
-    nationalCalendarData.missals.forEach((missal) => {
-        console.log('retrieving Missal definition for missal: ' + missal);
-        const missalDef = Object.values(RomanMissals).find(el => el.missal_id === missal);
-        if (missalDef) {
-            // Use structured properties: region='VA' means editio typica (no region in path)
-            const validateStr = `proprium-de-sanctis${missalDef.region === 'VA' ? '' : `-${missalDef.region}`}-${missalDef.year_published}`;
-            console.log('found Missal definition for missal: ' + missal + ', validate: ' + validateStr);
-            checks.push({
-                "validate": validateStr,
-                "sourceFile": missal,
-                "category": "sourceDataCheck"
-            });
-        } else {
-            console.warn('could not find Missal definition for missal: ' + missal);
-        }
-    });
-
-    // Add diocesan calendar check if applicable
-    if (calendarCategory === 'diocesancalendar') {
-        checks.push({
-            "validate": `diocesan-calendar-${calendarId}`,
-            "sourceFile": calendarId,
-            "category": "sourceDataCheck"
-        });
-    }
-
-    return checks;
+    // National and diocesan calendars always start from the Roman universal corpus: national
+    // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
+    // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
+    // corpus is a separate (pre-existing) design question — `rite: 'roman'` below is what preserves
+    // it, matching v1's behaviour exactly. `dioceseRite` is separate and is the calendar's own rite:
+    // a diocese id must resolve to what the inventory actually advertises (e.g.
+    // `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`). For a national
+    // calendar there is no diocese id, so `dioceseRite` is inert, but `currentRite` is always
+    // `'roman'` there anyway, since national calendars exist only under that rite.
+    return buildSourceDataChecks( {
+        rite: 'roman',
+        dioceseRite: currentRite,
+        nation,
+        widerRegion: nationalCalendarData.wider_region,
+        missals: nationalCalendarData.missals,
+        dioceseId
+    } );
 };
 
 /**
@@ -1475,18 +1604,19 @@ const setupPage = () => {
         // corpus of its own rite, plus — for the Roman rite — the editio typica missals, which the
         // General Roman Calendar uses and no national calendar supplies. Derived from /missals
         // rather than hardcoded, so a new editio typica needs no edit here.
-        currentSourceDataChecks = buildUniversalSourceDataChecks( currentRite );
-        if ( currentRite === 'roman' ) {
-            Object.values( RomanMissals )
+        const missals = currentRite === 'roman'
+            ? Object.values( RomanMissals )
                 .filter( missalDef => missalDef.region === 'VA' )
-                .forEach( missalDef => {
-                    currentSourceDataChecks.push({
-                        "validate": `proprium-de-sanctis-${missalDef.year_published}`,
-                        "sourceFile": missalDef.missal_id,
-                        "category": "sourceDataCheck"
-                    });
-                } );
-        }
+                .map( missalDef => missalDef.missal_id )
+            : [];
+        currentSourceDataChecks = buildSourceDataChecks( {
+            rite: currentRite,
+            dioceseRite: currentRite,
+            nation: null,
+            widerRegion: null,
+            missals,
+            dioceseId: null
+        } );
     } else {
         const checks = buildNonVASourceDataChecks(currentSelectedCalendar, currentCalendarCategory);
         if (checks === null) {
@@ -1517,7 +1647,7 @@ const setupPage = () => {
             }
         }
         renderedUnitTests.push( unitTest );
-        SpecificUnitTestCategories.push( { "action": "executeUnitTest", "test": unitTest.name } );
+        SpecificUnitTestCategories.push( { "test": unitTest.name } );
         SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
     } );
 
@@ -1580,12 +1710,19 @@ const setupPage = () => {
 }
 
 /**
- * Resolves the calendar/category/national-calendar triple from the current state of the mounted
- * controls, via `toWireTarget()` and (for a diocesan calendar) the loaded `apiBase` metadata.
+ * Resolves the calendar/category/national-calendar/identity state from the current state of the
+ * mounted controls, via `toCalendarIdentity()` and (for a diocesan calendar) the loaded `apiBase`
+ * metadata.
  *
  * Shared by `handleCalendarSelectChange()` and `resyncLiveStateFromDom()`, which both need to
- * derive the same triple from the same two library controls — the former on a live user change,
- * the latter when restoring live state after viewing a stored past run.
+ * derive the same state from the same two library controls — the former on a live user change, the
+ * latter when restoring live state after viewing a stored past run.
+ *
+ * This is the *only* reader of the calendar select's `data-calendartype` dataset: `category` and
+ * `calendar` (the v1 `nationalcalendar`/`diocesancalendar`/`ritecalendar` vocabulary, which
+ * `currentCalendarCategory` still needs for its non-wire consumers — `buildCalendarsPayload()`,
+ * `buildNonVASourceDataChecks()`, the replay path) are derived from `identity.kind` here rather than
+ * read from the dataset a second time, so the two vocabularies cannot drift apart.
  *
  * `riteSelect` / `calendarSelect` are null when `mountCalendarControls()` failed (a CDN or
  * metadata failure — see its catch block and the `#controls-load-failed` toast). Both callers of
@@ -1594,7 +1731,7 @@ const setupPage = () => {
  * Falling back to whatever module state already holds keeps the rest of the page degrading
  * gracefully instead of throwing on `null._domElement`.
  *
- * @returns {{rite: string, calendar: string, category: string, nationalCalendar: ?string}}
+ * @returns {{rite: string, calendar: string, category: string, nationalCalendar: ?string, identity: {kind: string, id?: string, rite: string}}}
  */
 const resolveCalendarTargetFromControls = () => {
     if ( !riteSelect || !calendarSelect ) {
@@ -1603,36 +1740,41 @@ const resolveCalendarTargetFromControls = () => {
             calendar: currentSelectedCalendar,
             category: currentCalendarCategory,
             nationalCalendar: currentNationalCalendar,
+            identity: currentCalendarIdentity,
         };
     }
     const rite = riteSelect._domElement.value;
     const selectEl = calendarSelect._domElement;
     const selectedOption = selectEl.options[ selectEl.selectedIndex ] ?? null;
 
-    const target = toWireTarget(
+    const identity = toCalendarIdentity(
         selectEl.value,
         selectedOption?.dataset?.calendartype ?? '',
         rite
     );
+    const category = identity.kind === 'rite' ? 'ritecalendar'
+        : identity.kind === 'national' ? 'nationalcalendar'
+        : 'diocesancalendar';
+    const calendar = identity.kind === 'rite' ? identity.rite : identity.id;
 
     let nationalCalendar;
-    if ( target.category === 'diocesancalendar' ) {
+    if ( category === 'diocesancalendar' ) {
         // The library's diocese options carry no parent-nation attribute, so resolve it from the
         // same loaded metadata the select was built from.
         const diocesanData = apiBase
             .diocesanCalendars( rite )
-            .find( entry => entry.calendar_id === target.calendar );
+            .find( entry => entry.calendar_id === calendar );
         nationalCalendar = diocesanData ? diocesanData.nation : null;
-    } else if ( target.category === 'ritecalendar' ) {
+    } else if ( category === 'ritecalendar' ) {
         // A rite-level calendar has no national calendar. null (rather than the calendar id) keeps
         // `scope.national_calendars.includes( currentNationalCalendar )` false, so national-scoped
         // tests are correctly excluded from it.
         nationalCalendar = null;
     } else {
-        nationalCalendar = target.calendar;
+        nationalCalendar = calendar;
     }
 
-    return { rite, calendar: target.calendar, category: target.category, nationalCalendar };
+    return { rite, calendar, category, nationalCalendar, identity };
 };
 
 /**
@@ -1691,6 +1833,7 @@ const handleCalendarSelectChange = () => {
     currentSelectedCalendar = target.calendar;
     currentCalendarCategory = target.category;
     currentNationalCalendar = target.nationalCalendar;
+    currentCalendarIdentity = target.identity;
 
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory + ', currentRite = ' + currentRite );
     document.querySelectorAll(`.calendar-${slugify(oldSelectedCalendar)}`).forEach(el => {
@@ -1723,12 +1866,11 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         return;
     }
     if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
-        index = 0;
-        yearIndex = 0;
-        messageCounter = 0;
         resultCollector.reset();
-        calendarDataReceivedResponses = 0;
-        calendarDataExpectedResponses = 0;
+        // Releases the previous run's registry entries, selectors and outstanding set — see
+        // `endRun()` in wsRunner.js for why a run must not simply be allowed to leak its state into
+        // the next one.
+        phaseRunner.endRun();
         resetTestUI();
         currentState = ( conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ) ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
@@ -1759,6 +1901,12 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
+        phaseRunner.clearWatchdog();
+        // Releases the stopped run's outstanding set, so a `giveUpOnOutstandingRequests()` call
+        // reaching this page after a Stop (its exported seam, or the watchdog's callback in a race)
+        // finds nothing outstanding to give up on — the same no-op it was before this state moved
+        // into the runner.
+        phaseRunner.endRun();
         currentState = TestState.Stopped;
         currentRunToken = null;
         setScaffoldControlsDisabledForRun( false );
@@ -1806,6 +1954,13 @@ const replayCalendarsRun = async ( file ) => {
     currentCalendarCategory = run.calendarCategory;
     // Runs stored before the rite dimension existed have no `rite`; they were all Roman.
     currentRite = run.rite ?? 'roman';
+    // Kept in sync with `currentCalendarCategory` here too: `resolveCalendarTargetFromControls()`
+    // falls back to this module state when `mountCalendarControls()` failed, and a stale identity
+    // beside a fresh `currentSelectedCalendar` would send a later run's messages for one calendar
+    // while its cards are addressed to another's — a wrong green.
+    currentCalendarIdentity = run.calendarCategory === 'ritecalendar'
+        ? { kind: 'rite', rite: currentRite }
+        : { kind: run.calendarCategory === 'nationalcalendar' ? 'national' : 'diocesan', id: run.calendar, rite: currentRite };
     currentResponseType = run.responseType;
     currentSourceDataChecks = run.scaffold.sourceDataChecks;
     buildScaffolding({
@@ -1876,6 +2031,7 @@ const resyncLiveStateFromDom = () => {
     currentSelectedCalendar = target.calendar;
     currentCalendarCategory = target.category;
     currentNationalCalendar = target.nationalCalendar;
+    currentCalendarIdentity = target.identity;
 
     const responseSelect = document.querySelector('#APIResponseSelect');
     currentResponseType = responseSelect ? responseSelect.value : currentResponseType;

@@ -12,46 +12,6 @@ const load = async (page: import('@playwright/test').Page) => {
     return page;
 };
 
-test('UNIVERSAL_CHECKS covers both rites, temporale and decrees, files and i18n folders', async ({ page }) => {
-    await load(page);
-    const checks: any = await page.evaluate(async () => {
-        const { UNIVERSAL_CHECKS } = await import('/assets/js/wsProtocol.js' as any);
-        return UNIVERSAL_CHECKS;
-    });
-
-    expect(checks).toHaveLength(8);
-    // Every entry names exactly one of sourceFile / sourceFolder.
-    expect(checks.every((c: any) => ('sourceFile' in c) !== ('sourceFolder' in c))).toBe(true);
-    // Category tracks that same split, not a single constant: Health::executeValidation() only
-    // recognises `sourceFolder` under `category: 'sourceDataCheck'` (Health.php:609-660) — every
-    // other category, `universalcalendar` included, requires `sourceFile` and throws (which closes
-    // the connection) when only `sourceFolder` is present. So files stay `universalcalendar`,
-    // resolved from the path via CheckableInventory::byPath(); folders are `sourceDataCheck`.
-    expect(checks.every((c: any) => ('sourceFile' in c) === (c.category === 'universalcalendar'))).toBe(true);
-    expect(checks.every((c: any) => ('sourceFolder' in c) === (c.category === 'sourceDataCheck'))).toBe(true);
-    // Four per rite, half of them i18n folders.
-    expect(checks.filter((c: any) => c.rite === 'roman')).toHaveLength(4);
-    expect(checks.filter((c: any) => c.rite === 'ambrosian')).toHaveLength(4);
-    expect(checks.filter((c: any) => 'sourceFolder' in c)).toHaveLength(4);
-    // validate values are distinct — they become card CSS classes.
-    const validates = checks.map((c: any) => c.validate);
-    expect(new Set(validates).size).toBe(validates.length);
-    // The Ambrosian corpus is present at all, which is the gap issue #48 opens on.
-    expect(checks.some((c: any) => c.rite === 'ambrosian' && 'sourceFolder' in c)).toBe(true);
-});
-
-test('universalChecksForRite returns only that rite', async ({ page }) => {
-    await load(page);
-    const result = await page.evaluate(async () => {
-        const { universalChecksForRite } = await import('/assets/js/wsProtocol.js' as any);
-        return {
-            roman: universalChecksForRite('roman').map((c: any) => c.rite),
-            ambrosian: universalChecksForRite('ambrosian').map((c: any) => c.rite),
-        };
-    });
-    expect(result.roman).toEqual(['roman', 'roman', 'roman', 'roman']);
-    expect(result.ambrosian).toEqual(['ambrosian', 'ambrosian', 'ambrosian', 'ambrosian']);
-});
 
 test('inRiteScope treats a missing rite as roman, never as a wildcard', async ({ page }) => {
     await load(page);
@@ -70,37 +30,6 @@ test('inRiteScope treats a missing rite as roman, never as a wildcard', async ({
     expect(result.absentUnderAmbrosian).toBe(false);
 });
 
-test('toWireTarget maps the empty option to the rite-level calendar', async ({ page }) => {
-    await load(page);
-    const result = await page.evaluate(async () => {
-        const { toWireTarget } = await import('/assets/js/wsProtocol.js' as any);
-        return {
-            romanRiteLevel: toWireTarget('', '', 'roman'),
-            ambrosianRiteLevel: toWireTarget('', '', 'ambrosian'),
-            national: toWireTarget('IT', 'national', 'roman'),
-            diocesan: toWireTarget('milano_it', 'diocesan', 'ambrosian'),
-        };
-    });
-    expect(result.romanRiteLevel).toEqual({ calendar: 'roman', category: 'ritecalendar' });
-    expect(result.ambrosianRiteLevel).toEqual({ calendar: 'ambrosian', category: 'ritecalendar' });
-    expect(result.national).toEqual({ calendar: 'IT', category: 'nationalcalendar' });
-    expect(result.diocesan).toEqual({ calendar: 'milano_it', category: 'diocesancalendar' });
-});
-
-test('toWireTarget throws on an unknown calendartype rather than sending a partial message', async ({ page }) => {
-    await load(page);
-    const message = await page.evaluate(async () => {
-        const { toWireTarget } = await import('/assets/js/wsProtocol.js' as any);
-        try {
-            toWireTarget('IT', 'nationalcalendar', 'roman');
-            return null;
-        } catch (e) {
-            return (e as Error).message;
-        }
-    });
-    expect(message).toContain('nationalcalendar');
-});
-
 test('testAppliesToRite filters a rite-only scope and defaults an absent rite to roman', async ({ page }) => {
     await load(page);
     const result = await page.evaluate(async () => {
@@ -116,4 +45,93 @@ test('testAppliesToRite filters a rite-only scope and defaults an absent rite to
     expect(result.ambrosianUnderRoman).toBe(false);
     expect(result.legacyUnderRoman).toBe(true);
     expect(result.legacyUnderAmbrosian).toBe(false);
+});
+
+test('inventoryIdsForCalendar composes the ids the API advertises', async ({ page }) => {
+    await page.goto('/resources.php');
+    const ids = await page.evaluate(async () => {
+        const { inventoryIdsForCalendar } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            national: inventoryIdsForCalendar({
+                rite: 'roman', dioceseRite: 'roman', nation: 'IT', widerRegion: 'Europe',
+                missals: ['EDITIO_TYPICA_1970', 'IT_1983'], dioceseId: null,
+            }),
+            // A national/diocesan calendar's universal corpus is always Roman (rite: 'roman'),
+            // even though this diocese's own rite — and therefore its diocese id — is Ambrosian.
+            diocesan: inventoryIdsForCalendar({
+                rite: 'roman', dioceseRite: 'ambrosian', nation: 'IT', widerRegion: 'Europe',
+                missals: [], dioceseId: 'milano_it',
+            }),
+            // A rite-level calendar has no diocese id, so `rite` and `dioceseRite` are simply the
+            // same selected rite. Ambrosian's universal corpus is temporale + sanctorale, never
+            // decrees (a Roman-only file v1 never checked here either).
+            ambrosianRiteLevel: inventoryIdsForCalendar({
+                rite: 'ambrosian', dioceseRite: 'ambrosian', nation: null, widerRegion: null,
+                missals: [], dioceseId: null,
+            }),
+        };
+    });
+
+    // The universal corpus (temporale + decrees) includes i18n folders (#48); only the calendar-specific tier omits i18n (#61).
+    expect(ids.national).toEqual([
+        'temporale:roman',
+        'temporale:roman:i18n',
+        'decrees:roman',
+        'decrees:roman:i18n',
+        'widerregion:roman:Europe',
+        'nation:roman:IT',
+        'sanctorale:roman:EDITIO_TYPICA_1970',
+        'sanctorale:roman:IT_1983',
+    ]);
+    // toEqual, not toContain: the diocese is qualified by its own rite while everything it inherits
+    // stays Roman-qualified — a wrong rite on either half, or an extra/missing id, must fail this.
+    expect(ids.diocesan).toEqual([
+        'temporale:roman',
+        'temporale:roman:i18n',
+        'decrees:roman',
+        'decrees:roman:i18n',
+        'widerregion:roman:Europe',
+        'nation:roman:IT',
+        'diocese:ambrosian:milano_it',
+    ]);
+    expect(ids.ambrosianRiteLevel).toEqual([
+        'temporale:ambrosian',
+        'temporale:ambrosian:i18n',
+        'sanctorale:ambrosian',
+        'sanctorale:ambrosian:i18n',
+    ]);
+    // decrees:roman must never appear under a pure-Ambrosian scope — v1 never checked it there.
+    expect(ids.ambrosianRiteLevel.some((id: string) => id.startsWith('decrees:'))).toBe(false);
+});
+
+test('toCalendarIdentity maps the select values onto the typed calendar', async ({ page }) => {
+    await page.goto('/index.php');
+    const identities = await page.evaluate(async () => {
+        const { toCalendarIdentity } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            riteLevel: toCalendarIdentity('', '', 'roman'),
+            ambrosianRiteLevel: toCalendarIdentity('', '', 'ambrosian'),
+            national: toCalendarIdentity('IT', 'national', 'roman'),
+            diocesan: toCalendarIdentity('milano_it', 'diocesan', 'ambrosian'),
+        };
+    });
+
+    expect(identities.riteLevel).toEqual({ kind: 'rite', rite: 'roman' });
+    expect(identities.ambrosianRiteLevel).toEqual({ kind: 'rite', rite: 'ambrosian' });
+    expect(identities.national).toEqual({ kind: 'national', id: 'IT', rite: 'roman' });
+    expect(identities.diocesan).toEqual({ kind: 'diocesan', id: 'milano_it', rite: 'ambrosian' });
+});
+
+test('toCalendarIdentity throws on an unknown calendartype rather than sending a partial message', async ({ page }) => {
+    await page.goto('/index.php');
+    const threw = await page.evaluate(async () => {
+        const { toCalendarIdentity } = await import('/assets/js/wsProtocol.js' as any);
+        try {
+            toCalendarIdentity('IT', 'nationalcalendar', 'roman');
+            return false;
+        } catch {
+            return true;
+        }
+    });
+    expect(threw).toBe(true);
 });

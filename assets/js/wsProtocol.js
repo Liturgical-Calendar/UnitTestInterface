@@ -1,10 +1,11 @@
 /**
  * Shared helpers for the Health WebSocket protocol.
  *
- * `index.js` and `resources.js` are two independent implementations of the same protocol and have already
+ * `index.js` and `resources.js` used to be two independent implementations of the same protocol, and had
  * drifted apart in ways that cost debugging sessions — different state names, different runToken guards,
- * two vocabularies for the same file (see #42). New protocol behaviour lands here so both runners share one
- * definition rather than acquiring a fourth thing to keep in lockstep.
+ * two vocabularies for the same file (see #42). That drift is what #42 closed: both runners now drive their
+ * phases through the shared `createPhaseRunner()` in `wsRunner.js`. New protocol behaviour lands here so
+ * both runners keep sharing one definition rather than reacquiring a thing to keep in lockstep.
  * @module wsProtocol
  */
 
@@ -32,99 +33,6 @@ export const sendCancelRun = ( conn, runToken ) => {
     return true;
 };
 
-/**
- * The rite-level universal source corpus, hardcoded — **`index.js` only, and on its way out.**
- *
- * `resources.php` no longer reads this: it takes its whole source-data list from the API's
- * advertised inventory instead (see {@link validationChecksForRite}), which is what #42 replaces
- * this with. `index.js` has not been migrated yet and still needs it, so it stays until that
- * happens — and then goes, along with the last copy of the API's on-disk layout in this repository.
- *
- * Everything below this line describes why the list looks the way it does, and stays accurate for
- * as long as anything sends it.
- *
- * `index.js` and `resources.js` each carried their own version of this, with two different
- * vocabularies for the same file on disk — `PropriumDeTempore` under `universalcalendar` here,
- * `proprium-de-tempore` under `sourceDataCheck` there (see #42). Neither listed the Ambrosian
- * corpus, and neither listed any i18n folder (#48).
- *
- * Category is NOT uniform across the list, and that split is load-bearing, not cosmetic.
- * `Health::executeValidation()` only recognises a `sourceFolder` property inside its
- * `category === 'sourceDataCheck'` branch (`Health.php:609-660`); every other category — including
- * `universalcalendar` — falls into the branch that requires `sourceFile` and throws when only
- * `sourceFolder` is present, and that exception closes the WebSocket connection instead of
- * returning a result. So:
- *
- * - the four **file** entries use `category: 'universalcalendar'`, resolved from the path via
- *   `CheckableInventory::byPath()`;
- * - the four **folder** (i18n) entries use `category: 'sourceDataCheck'`, with hyphenated
- *   `validate` slugs `Health::retrieveSchemaForCategory()`'s `sourceDataCheck` arm already
- *   resolves: the two Roman slugs through its `legacySlugToId` table (which is also what
- *   `resources.js` already sends — these two entries now agree with it), and the two Ambrosian
- *   slugs through its trailing `/-i18n$/` regex fallback. For `sourceDataCheck`, the data path is
- *   `sourceFolder` exactly as supplied — the slug-based path *reconstruction* in `Health.php`
- *   applies only to the wider-region / national-calendar / diocesan-calendar / proprium-de-sanctis
- *   slug families, which these are not.
- *
- * `validate` values are card CSS class names once slugified, and the server echoes them back in
- * its `classes` selector — so they are effectively part of the wire contract and must stay
- * distinct. See CLAUDE.md, "Server Response Format".
- *
- * These paths are the last hardcoded copy of the API's on-disk layout; #42 replaces the whole
- * list with a fetch of the `/validations` inventory once the wire accepts opaque ids.
- *
- * @type {ReadonlyArray<{rite: string, validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
- */
-export const UNIVERSAL_CHECKS = Object.freeze([
-    {
-        rite: 'roman',
-        validate: 'PropriumDeTempore',
-        sourceFile: 'jsondata/sourcedata/rite/roman/missals/propriumdetempore/propriumdetempore.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'roman',
-        validate: 'proprium-de-tempore-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/roman/missals/propriumdetempore/i18n',
-        category: 'sourceDataCheck'
-    },
-    {
-        rite: 'roman',
-        validate: 'MemorialsFromDecrees',
-        sourceFile: 'jsondata/sourcedata/rite/roman/decrees/decrees.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'roman',
-        validate: 'memorials-from-decrees-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/roman/decrees/i18n',
-        category: 'sourceDataCheck'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'AmbrosianPropriumDeTempore',
-        sourceFile: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdetempore/propriumdetempore.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'ambrosian-proprium-de-tempore-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdetempore/i18n',
-        category: 'sourceDataCheck'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'AmbrosianPropriumDeSanctis',
-        sourceFile: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdesanctis_2024/propriumdesanctis.json',
-        category: 'universalcalendar'
-    },
-    {
-        rite: 'ambrosian',
-        validate: 'ambrosian-proprium-de-sanctis-i18n',
-        sourceFolder: 'jsondata/sourcedata/rite/ambrosian/missals/propriumdesanctis_2024/i18n',
-        category: 'sourceDataCheck'
-    }
-]);
 
 /**
  * Whether a rite-tagged item belongs to the selected rite.
@@ -207,16 +115,6 @@ export const yearsForRite = ( rite, upperBound, riteProperties ) => {
 };
 
 /**
- * The universal source checks belonging to one rite. **`index.js` only** — see
- * {@link UNIVERSAL_CHECKS}, and {@link validationChecksForRite} for what replaces it.
- *
- * @param {string} rite - The selected rite.
- * @returns {Array<object>} A fresh array; callers push calendar-specific checks onto it.
- */
-export const universalChecksForRite = ( rite ) =>
-    UNIVERSAL_CHECKS.filter( check => inRiteScope( check, rite ) ).map( check => ( { ...check } ) );
-
-/**
  * The CSS class a checkable's cards carry, derived from its inventory id.
  *
  * **Not `slugify()`.** That helper strips every character outside `[a-z0-9-_]` rather than replacing
@@ -259,41 +157,35 @@ export const validationChecksForRite = ( inventory, rite ) =>
         .map( item => ( { id: item.id, label: item.label, steps: item.steps, rite: item.rite } ) );
 
 /**
- * Translate a `CalendarSelect` selection into the protocol's calendar/category vocabulary.
+ * The typed calendar identity the v2 `validateCalendar` and `runTest` messages carry.
  *
  * The library speaks `national` / `diocesan` and represents the rite-level calendar as its empty
- * option; the WebSocket protocol speaks `nationalcalendar` / `diocesancalendar` / `ritecalendar`
- * and names the rite-level calendar explicitly. This is the only place the two meet.
+ * option; the WebSocket protocol speaks a typed `{kind, id?, rite}` shape and names the rite-level
+ * calendar explicitly. This is the only place the two meet.
  *
- * The empty option maps to `{calendar: rite, category: 'ritecalendar'}` for both rites. For the
- * Roman rite this is the same request the old `VA` option produced —
- * `Health::buildCalendarRequestPath()` reads `'VA'` as the historical marker for the rite-level
- * calendar and resolves it to `/roman/{year}` exactly as `ritecalendar` does — but it stops
- * naming the General Roman Calendar `VA`, which matters now that Vatican City is to gain its own
- * national calendar data distinct from it.
+ * The empty option maps to `{kind: 'rite', rite}` for both rites. The server rejects `category` on
+ * this typed shape outright (`Health::RETIRED_PROPERTIES`), so `calendar.kind` is the discriminator.
  *
- * @param {string} value - The selected option's value; '' for the rite-level calendar.
- * @param {string} calendartype - The selected option's `data-calendartype`; '' for the empty option.
+ * Throws on an unrecognised type rather than composing a partial message: a message the server
+ * rejects costs a red card and a rate-limit charge, and says nothing useful about which of our call
+ * sites was wrong.
+ *
+ * @param {string} value - The calendar select's value; empty means the rite-level calendar.
+ * @param {string} calendartype - The option's `data-calendartype`: 'national', 'diocesan' or ''.
  * @param {string} rite - The selected rite.
- * @returns {{calendar: string, category: string}}
- * @throws {Error} If `calendartype` is not one the library emits. Throwing beats returning a
- *         partial message: a wrong `category` silently checks a different path and reports success.
+ * @returns {{kind: string, id?: string, rite: string}}
  */
-export const toWireTarget = ( value, calendartype, rite ) => {
-    if ( value === '' ) {
-        return { calendar: rite, category: 'ritecalendar' };
+export const toCalendarIdentity = ( value, calendartype, rite ) => {
+    if ( '' === value ) {
+        return { kind: 'rite', rite };
     }
-    switch ( calendartype ) {
-        case 'national':
-            return { calendar: value, category: 'nationalcalendar' };
-        case 'diocesan':
-            return { calendar: value, category: 'diocesancalendar' };
-        default:
-            throw new Error(
-                `Unknown data-calendartype "${calendartype}" on calendar option "${value}"; `
-                + 'expected "national" or "diocesan" from liturgy-components-js CalendarSelect.'
-            );
+    if ( 'national' === calendartype ) {
+        return { kind: 'national', id: value, rite };
     }
+    if ( 'diocesan' === calendartype ) {
+        return { kind: 'diocesan', id: value, rite };
+    }
+    throw new Error( `Unknown calendartype "${calendartype}" for calendar "${value}".` );
 };
 
 /**
@@ -341,17 +233,13 @@ export const testAppliesToRite = ( unitTest, rite ) =>
 export const PROTOCOL_VERSION = 1;
 
 /**
- * The card class each published step is reported on.
+ * The card class each published step is reported on, per frame family.
  *
- * The server projects the same mapping onto the `classes` selector it still sends (its
- * `FrameFamily::CLASS_FOR_STEP`), and this is the client's half of it. It exists because the step
- * vocabulary was renamed and the CSS class names were not: `exists`/`parses`/`validates` are what
- * the wire says, `file-exists`/`json-valid`/`schema-valid` are what the markup says, and nothing
- * related the two until API#819. Addressing a card by `data-step` would need the templates changed
- * in both runners at once; this maps onto the classes already there.
+ * Mirrors the server's `FrameFamily::CLASS_FOR_STEP`. The families matter because `validates` means a
+ * different card in each: `schema-valid` for a file or a calendar, `test-valid` for a test run. A
+ * single flat map cannot express that, and silently painted test results onto nothing.
  *
- * `complete` is absent on purpose — the terminal frame addresses no card. It reports that a
- * request finished, not that anything passed.
+ * `complete` is absent on purpose — the terminal frame addresses no card.
  *
  * @type {Readonly<Record<string, string>>}
  */
@@ -359,6 +247,18 @@ export const STEP_CARD_CLASS = Object.freeze({
     exists: 'file-exists',
     parses: 'json-valid',
     validates: 'schema-valid'
+});
+
+/**
+ * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
+ * report three steps through {@link STEP_CARD_CLASS}; a test run reports exactly one, `validates`,
+ * addressed at a different card (`test-valid`) than the other two families use for the same step
+ * name. Consumed by `index.js`'s specific-unit-test phase (commit 163c8c0).
+ *
+ * @type {Readonly<Record<string, string>>}
+ */
+export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
+    validates: 'test-valid'
 });
 
 /**
@@ -670,4 +570,62 @@ export const summariseAbandoned = ( registry, requestIds ) => {
     }
 
     return { unpaintedSteps, incomplete, silent };
+};
+
+/**
+ * The `/validations` inventory ids a calendar's source-data phase checks.
+ *
+ * Replaces the slug-and-path construction this repository used to do — `wider-region-Europe` with a
+ * bare `sourceFile`, `proprium-de-sanctis-IT-1983` derived from missal metadata, and repo-relative
+ * paths into the API for the universal corpus. The server advertises these ids; nothing here knows
+ * where any of it lives on disk, which is the whole of #42.
+ *
+ * **Two rites, not one.** `rite` selects the *universal corpus* — for `'roman'` that is the
+ * temporale and decrees, each with its `:i18n` translation folder; for any other rite (currently
+ * only `'ambrosian'`) it is that rite's own temporale and sanctorale, each with its `:i18n` folder,
+ * and no decrees (v1 never checked `MemorialsFromDecrees`, a Roman-only file, under Ambrosian).
+ * `dioceseRite` separately qualifies the diocese id, because it can disagree with `rite`: a national
+ * or diocesan calendar's universal corpus is always Roman — a national calendar is Roman by
+ * definition, and an Ambrosian diocese still inherits the Roman national calendar of its nation
+ * (a pre-existing behaviour and a pre-existing open design question, preserved here deliberately and
+ * not resolved) — while the diocese's *own* id must be qualified by its actual rite, e.g.
+ * `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`. A rite-level calendar has no
+ * diocese id, so there `rite` and `dioceseRite` are simply the same selected rite. The wider-region,
+ * nation and missal tiers stay hardcoded Roman regardless of either argument, for the same
+ * inheritance reason.
+ *
+ * `:i18n` ids ARE included for the universal corpus, matching what this repository already checked
+ * before this migration (`UNIVERSAL_CHECKS` in this file). They are NOT included for the
+ * calendar-specific tier (wider region, nation, missals, diocese) — v1 never checked those either.
+ * Coverage is held constant across the migration; a change in card counts is a migration bug, not
+ * intended new coverage. See issue #61 for the follow-up that would add calendar-specific i18n
+ * coverage as new scope, deliberately out of bounds here.
+ *
+ * @param {object} scope
+ * @param {string} scope.rite - The rite whose universal corpus (temporale/decrees or
+ *   temporale/sanctorale) is checked.
+ * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`. Equal to `scope.rite`
+ *   for a rite-level calendar; always the calendar's own rite (which may differ from `scope.rite`)
+ *   for a diocesan calendar.
+ * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
+ * @param {?string} scope.widerRegion - The nation's wider region, or null.
+ * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
+ * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
+ * @returns {Array<string>}
+ */
+export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ) => {
+    const ids = 'roman' === rite
+        ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
+        : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
+    if ( widerRegion ) {
+        ids.push( `widerregion:roman:${widerRegion}` );
+    }
+    if ( nation ) {
+        ids.push( `nation:roman:${nation}` );
+    }
+    ( missals ?? [] ).forEach( missalId => ids.push( `sanctorale:roman:${missalId}` ) );
+    if ( dioceseId ) {
+        ids.push( `diocese:${dioceseRite}:${dioceseId}` );
+    }
+    return ids;
 };

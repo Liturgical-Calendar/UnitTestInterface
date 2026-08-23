@@ -166,30 +166,41 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
     await page.goto('/');
     await waitForLiveScaffold(page);
 
-    const cardClasses = async () =>
-        page.locator('.sourcedata-tests .card').evaluateAll(
+    // Exact class TOKENS, not a joined-string substring. Card classes are idToCardClass(item.id)
+    // — a colon-separated /validations inventory id with every character outside [A-Za-z0-9_-]
+    // replaced by '-', not a slug derived from a repo-relative path (#42):
+    // temporale:roman -> temporale-roman, temporale:roman:i18n -> temporale-roman-i18n. Under
+    // this vocabulary every non-i18n class is a PREFIX of its own i18n partner
+    // ('temporale-roman' ⊂ 'temporale-roman-i18n'), so a substring check on the joined string
+    // would still pass with the non-i18n card missing entirely — silently un-pinning exactly the
+    // coverage a missing card would lose. Splitting each class list into tokens keeps
+    // 'temporale-roman' and 'temporale-roman-i18n' as two distinct, independently-assertable
+    // tokens.
+    const classTokens = async () => {
+        const classes = await page.locator('.sourcedata-tests .card').evaluateAll(
             (els) => els.map((e) => e.className)
         );
+        const tokens = new Set<string>();
+        classes.forEach((c: string) => c.split(/\s+/).forEach((t: string) => tokens.add(t)));
+        return tokens;
+    };
 
-    // The four i18n-folder checks send category: 'sourceDataCheck' (not 'universalcalendar')
-    // with hyphenated validate slugs — see wsProtocol.js's UNIVERSAL_CHECKS docblock for why:
-    // Health::executeValidation() only recognises sourceFolder under sourceDataCheck, and sending
-    // it under universalcalendar closes the connection instead of returning a result.
-    const roman = (await cardClasses()).join(' ');
-    expect(roman).toContain('propriumdetempore');
-    expect(roman).toContain('proprium-de-tempore-i18n');
-    expect(roman).toContain('memorialsfromdecrees');
-    expect(roman).toContain('memorials-from-decrees-i18n');
-    expect(roman).not.toContain('ambrosianpropriumdetempore');
+    const roman = await classTokens();
+    expect(roman.has('temporale-roman')).toBe(true);
+    expect(roman.has('temporale-roman-i18n')).toBe(true);
+    expect(roman.has('decrees-roman')).toBe(true);
+    expect(roman.has('decrees-roman-i18n')).toBe(true);
+    expect(roman.has('temporale-ambrosian')).toBe(false);
 
     await selectRite(page, 'ambrosian');
-    const ambrosian = (await cardClasses()).join(' ');
-    expect(ambrosian).toContain('ambrosianpropriumdetempore');
-    expect(ambrosian).toContain('ambrosian-proprium-de-tempore-i18n');
-    expect(ambrosian).toContain('ambrosianpropriumdesanctis');
-    expect(ambrosian).toContain('ambrosian-proprium-de-sanctis-i18n');
-    // The Roman corpus is gone, not merely joined.
-    expect(ambrosian).not.toContain('memorialsfromdecrees');
+    const ambrosian = await classTokens();
+    expect(ambrosian.has('temporale-ambrosian')).toBe(true);
+    expect(ambrosian.has('temporale-ambrosian-i18n')).toBe(true);
+    expect(ambrosian.has('sanctorale-ambrosian')).toBe(true);
+    expect(ambrosian.has('sanctorale-ambrosian-i18n')).toBe(true);
+    // The Roman corpus is gone, not merely joined: an Ambrosian scaffold's universal corpus is
+    // its own temporale/sanctorale, never the Roman decrees.
+    expect(ambrosian.has('decrees-roman')).toBe(false);
 });
 
 test('an i18n folder card names its folder rather than "undefined"', async ({ page }) => {
@@ -200,7 +211,11 @@ test('an i18n folder card names its folder rather than "undefined"', async ({ pa
     );
     expect(titles.length).toBeGreaterThan(0);
     expect(titles).not.toContain('undefined');
-    expect(titles.some((t) => (t ?? '').endsWith('/i18n'))).toBe(true);
+    // The tooltip is the inventory id itself (sourceDataCheckTemplate's `tooltip`), not a
+    // repo-relative folder path any more — Ruling 5 restored the universal-corpus i18n ids, so
+    // there are genuinely i18n cards to name, and each one's id ends ':i18n' (not the old '/i18n'
+    // path suffix).
+    expect(titles.some((t) => (t ?? '').endsWith(':i18n'))).toBe(true);
 });
 
 test('accuracy tests are filtered by rite', async ({ page, request }) => {
@@ -320,7 +335,13 @@ test('a rite change between runs clears the previous run\'s counters and timers'
     // never called `resetTestUI()`, so the badges kept asserting the previous run's totals over a
     // card set that was entirely pending. Easier to hit here than on resources.php: it triggers on
     // any calendar change, not only a rite change.
-    await installReplyingWebSocketStub(page);
+    // `answerOnly` restricts the stub to the source-data phase on purpose: this test's second click
+    // needs the run still parked mid-run, in the stop-button role asserted below. Once the stub also
+    // learned `validateCalendar` and `runTest`, an unrestricted stub would drive the run all the way to
+    // completion before that click lands, flipping the button out of its stop role and popping a
+    // completion toast that overlaps it — see the comment further down for what that state actually
+    // needs to look like.
+    await installReplyingWebSocketStub(page, { answerOnly: ['executeValidation', 'validateSource'] });
     // See the note in resources-rite.spec.ts: a completed run POSTs itself to results.php, whose
     // 50-per-type retention would evict the older-timestamped fixtures the replay specs seed.
     await page.route('**/results.php', (route) => route.fulfill({ status: 200, body: '{}' }));

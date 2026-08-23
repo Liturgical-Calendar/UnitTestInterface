@@ -91,13 +91,29 @@ export const paintCard = (el, isSuccess, text) => {
 export const createResultCollector = () => {
     const results = [];
     return {
-        record(phase, responseData) {
+        /**
+         * @param {string} phase
+         * @param {object} responseData - The frame; read for status, message and test name only.
+         * @param {?string} selector - The selector *we* found the card by. Not `responseData.classes`:
+         *        that is the server's, and #42 removes our dependence on it. A stored run replays by
+         *        applying this string, so it must address our own markup.
+         */
+        record(phase, responseData, selector) {
             results.push({
                 phase,
-                selector: responseData.classes,
+                selector: selector ?? null,
                 status: responseData.type === 'success' ? 'success' : 'error',
                 message: responseData.type === 'error' ? (responseData.text ?? null) : null,
-                test: responseData.test ?? null,
+                // `responseData.test` is not part of the published `WebSocketFrame.json` schema — the
+                // server never sends it; `Health::sendStepResult()` builds
+                // `{type, text, classes, responsetype, target, step, status, details}` and nothing
+                // else. For a unit-test-phase frame, `target.id` *is* the test name
+                // (`Health::sendTestResult()` builds it via `frameTarget($test, [...])`), so it is the
+                // real source; `responseData.test` is kept only as a fallback for a stub or server
+                // that predates the typed target. Scoped to the `unitTest` phase: `target.id` names
+                // something else for every other phase (an inventory id, a calendar), and must not
+                // leak into this field for those.
+                test: 'unitTest' === phase ? ( responseData.target?.id ?? responseData.test ?? null ) : null,
             });
         },
         all: () => results.slice(),
