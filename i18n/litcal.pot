@@ -342,6 +342,12 @@ msgstr ""
 msgid "Could not load the calendar controls."
 msgstr ""
 
+#: index.php:83 resources.php:83
+msgid ""
+"Could not load the list of checks from the API, so no test run can be "
+"started. Try reloading the page."
+msgstr ""
+
 #: index.php:91 resources.php:88
 msgid "Response Format"
 msgstr ""

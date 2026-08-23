@@ -74,6 +74,17 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <!-- Distinct from #controls-load-failed on purpose: when /validations fails the controls
+                 built fine, so saying they did not would be untrue. What is missing is the list of
+                 things a run would check, and without it no run may be started (#63). -->
+            <div class="toast align-items-center text-white bg-danger border-0 p-3 shadow" aria-live="assertive" role="alert" id="validations-load-failed">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-triangle-exclamation fa-fw"></i> <?php echo _("Could not load the list of checks from the API, so no test run can be started. Try reloading the page."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -6,6 +6,7 @@
 
 import {
     escapeQuotesAndLinkifyUrls,
+    hidePageLoader,
     safeCollapseShow,
     safeToastShow,
     updateText,
@@ -927,6 +928,25 @@ const methodAndHeaders = Object.freeze({
 });
 
 /**
+ * Fetches a JSON endpoint, rejecting on a non-ok response instead of parsing the error body.
+ *
+ * `loadAsyncData()` used a bare `.then(response => response.json())`, which on a 429 parsed the
+ * problem document happily and handed on an object with none of the properties the dispatch below
+ * looks for — so the dataset went missing in complete silence, its readiness flag stayed false, and
+ * the page sat under `.page-loader` for ever (#63). A rejection is what makes that visible.
+ *
+ * @param {string} endpoint - The URL to fetch.
+ * @returns {Promise<object>}
+ */
+const fetchJson = async ( endpoint ) => {
+    const response = await fetch( endpoint, methodAndHeaders );
+    if ( false === response.ok ) {
+        throw new Error( `${endpoint}: ${response.status} ${response.statusText}` );
+    }
+    return response.json();
+};
+
+/**
  * The API's base URL, without a trailing slash and without an endpoint.
  * @returns {string}
  */
@@ -1058,15 +1078,18 @@ const resetCheckListsForRite = () => {
  */
 const loadAsyncData = () => {
     const myGeneration = ++loadAsyncDataGeneration;
-    Promise.all([
-        fetch( ENDPOINTS.CALENDARS, methodAndHeaders).then(response => response.json()),
-        fetch( ENDPOINTS.MISSALS, methodAndHeaders).then(response => response.json()),
+    // `allSettled`, not `all`: one rejection there discarded all three results, so `setupPage()`
+    // never ran and `.page-loader` — rendered visible in the markup — was never lowered. The page
+    // simply stayed greyed out, with a `console.error` as its only trace (#63).
+    Promise.allSettled([
+        fetchJson( ENDPOINTS.CALENDARS ),
+        fetchJson( ENDPOINTS.MISSALS ),
         // `/validations` in place of `/tests`: the inventory carries the test corpus as items of
         // its own (`test:{rite}:{name}`), so fetching the tests list to build source checks from it
         // would be deriving a second time what the server already advertises. `/tests` is still
         // health-checked as a resource path, so nothing stops being covered.
         fetchValidations( ENDPOINTS.ROOT ).then( items => ( { litcal_validations: items } ) )
-    ]).then(dataArr => {
+    ]).then(results => {
         if ( myGeneration !== loadAsyncDataGeneration ) {
             // A newer rite change started another loadAsyncData() call before this one's fetches
             // resolved; that call owns the current scaffold. Applying this stale generation's
@@ -1074,6 +1097,12 @@ const loadAsyncData = () => {
             console.log( 'Discarding stale loadAsyncData() results — a newer rite change has since started' );
             return;
         }
+        results.filter( result => 'rejected' === result.status ).forEach( result => {
+            console.error( 'A dataset this page builds its checks from could not be loaded:', result.reason );
+        } );
+        // Whatever did arrive, dispatched by shape exactly as before. A dataset that failed simply
+        // is not here, and its `ReadyToRunTests` flag stays false.
+        const dataArr = results.filter( result => 'fulfilled' === result.status ).map( result => result.value );
         dataArr.forEach(data => {
             if(data.hasOwnProperty('litcal_metadata')) {
                 MetaData = data.litcal_metadata;
@@ -1182,28 +1211,52 @@ const loadAsyncData = () => {
                 ReadyToRunTests.ValidationsReady = true;
             }
         });
-        // Render once, after ALL datasets in this Promise.all pass have been processed.
-        // Rendering from inside the metadata/missals branches (gated on each other) fired
-        // mid-loop, before the tests dataset was processed — its per-test source checks
-        // were pushed into sourceDataChecks but never rendered, and the Time badge totals
-        // under-counted until something re-ran setupPage().
+        // Render once, after ALL datasets in this pass have been processed. Rendering from inside
+        // the metadata/missals branches (gated on each other) fired mid-loop, before the tests
+        // dataset was processed — its per-test source checks were pushed into sourceDataChecks but
+        // never rendered, and the Time badge totals under-counted until something re-ran
+        // setupPage(). Reached now even when a dataset failed, so the page shows what it does have
+        // instead of nothing at all.
         setupPage();
-    }).catch( error => {
-        // Without this the chain rejects unhandled: `setupPage()` never runs, the start button stays
-        // disabled — safe, but silent — and the page sits looking like it is still loading with
-        // nothing to say why. The same toast the rite-select mount failure uses, because to a user
-        // it is the same event: the controls could not be built from what the API returned.
+
+        // JUDGEMENT CALL (#63): degrade the *render*, never the *run*.
         //
-        // Left disabled deliberately. Every dataset here decides what a run would check, so a run
-        // started without them would check a subset and report success for it — the class of untruth
-        // this interface exists to detect, produced by the interface itself.
+        // The rationale the previous `.catch` recorded still holds in full, and is why nothing below
+        // re-enables anything: every dataset here decides what a run would check, so a run started
+        // without one of them would check a subset and report success for it — the class of untruth
+        // this interface exists to detect, produced by the interface itself. `ReadyToRunTests`
+        // already refuses on any unset flag, and none of them is forced here.
+        //
+        // What the old behaviour got wrong was the *silence*: refusing the run is right, but leaving
+        // the page under a translucent overlay with no message is not. So the scaffold renders, the
+        // loader comes down, and a toast names which half of the problem occurred — the two are
+        // separate facts and both can be true at once.
+        const validationsFailed = false === ReadyToRunTests.ValidationsReady;
+        const metadataFailed    = false === ReadyToRunTests.MetaDataReady || false === ReadyToRunTests.MissalsReady;
+        if ( validationsFailed ) {
+            safeToastShow( '#validations-load-failed' );
+        }
+        if ( metadataFailed ) {
+            // The same toast the rite-select mount failure uses, because to a user it is the same
+            // event: the controls could not be built from what the API returned.
+            safeToastShow( '#controls-load-failed' );
+        }
+        if ( validationsFailed || metadataFailed ) {
+            // `setupPage()` ends in `tryEnableBtn()`, which lowers the loader only when every flag
+            // is set — and one of them never will be now.
+            hidePageLoader();
+        }
+    }).catch( error => {
+        // Only an unexpected throw from the handler above can land here now: every fetch failure is
+        // a settled rejection, handled inline. Still not swallowed, and still not left greyed out.
         if ( myGeneration !== loadAsyncDataGeneration ) {
             return;
         }
-        console.error( 'Could not load the data this page builds its checks from', error );
+        console.error( 'Could not set this page up from the data it builds its checks from', error );
         safeToastShow( '#controls-load-failed' );
         document.querySelectorAll( '.fa-spin' ).forEach( el => el.classList.remove( 'fa-spin' ) );
         ReadyToRunTests.tryEnableBtn();
+        hidePageLoader();
     });
 }
 
