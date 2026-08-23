@@ -899,7 +899,7 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
-    // KNOWN DEFECT (#ISSUE): `conn.onopen` resets `currentState` to `Ready` unconditionally, even
+    // KNOWN DEFECT (#66): `conn.onopen` resets `currentState` to `Ready` unconditionally, even
     // when a run is still in flight and merely dropped/reconnected its socket. If the watchdog
     // fires in that window, it sees `Ready`, `canAdvance()` returns true, and `onAdvance()` ->
     // `runTests()` re-enters the `Ready` case, re-sending the phase on the new socket under the
