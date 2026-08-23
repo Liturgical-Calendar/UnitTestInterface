@@ -680,24 +680,43 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  * paths into the API for the universal corpus. The server advertises these ids; nothing here knows
  * where any of it lives on disk, which is the whole of #42.
  *
- * The universal corpus is qualified by `rite`, but everything a calendar *inherits* is Roman: a
- * national calendar is Roman by definition, and an Ambrosian diocese still inherits the Roman
- * national calendar of its nation. That is pre-existing behaviour and a pre-existing open design
- * question; it is preserved here deliberately and not resolved.
+ * **Two rites, not one.** `rite` selects the *universal corpus* — for `'roman'` that is the
+ * temporale and decrees, each with its `:i18n` translation folder; for any other rite (currently
+ * only `'ambrosian'`) it is that rite's own temporale and sanctorale, each with its `:i18n` folder,
+ * and no decrees (v1 never checked `MemorialsFromDecrees`, a Roman-only file, under Ambrosian).
+ * `dioceseRite` separately qualifies the diocese id, because it can disagree with `rite`: a national
+ * or diocesan calendar's universal corpus is always Roman — a national calendar is Roman by
+ * definition, and an Ambrosian diocese still inherits the Roman national calendar of its nation
+ * (a pre-existing behaviour and a pre-existing open design question, preserved here deliberately and
+ * not resolved) — while the diocese's *own* id must be qualified by its actual rite, e.g.
+ * `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`. A rite-level calendar has no
+ * diocese id, so there `rite` and `dioceseRite` are simply the same selected rite. The wider-region,
+ * nation and missal tiers stay hardcoded Roman regardless of either argument, for the same
+ * inheritance reason.
  *
- * No `:i18n` ids: coverage is held constant across the migration so a change in card counts is a
- * migration bug rather than intended new coverage. See issue #61.
+ * `:i18n` ids ARE included for the universal corpus, matching what this repository already checked
+ * before this migration (`UNIVERSAL_CHECKS` in this file). They are NOT included for the
+ * calendar-specific tier (wider region, nation, missals, diocese) — v1 never checked those either.
+ * Coverage is held constant across the migration; a change in card counts is a migration bug, not
+ * intended new coverage. See issue #61 for the follow-up that would add calendar-specific i18n
+ * coverage as new scope, deliberately out of bounds here.
  *
  * @param {object} scope
- * @param {string} scope.rite - The selected rite.
+ * @param {string} scope.rite - The rite whose universal corpus (temporale/decrees or
+ *   temporale/sanctorale) is checked.
+ * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`. Equal to `scope.rite`
+ *   for a rite-level calendar; always the calendar's own rite (which may differ from `scope.rite`)
+ *   for a diocesan calendar.
  * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
  * @param {?string} scope.widerRegion - The nation's wider region, or null.
  * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
  * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
  * @returns {Array<string>}
  */
-export const inventoryIdsForCalendar = ( { rite, nation, widerRegion, missals, dioceseId } ) => {
-    const ids = [ `temporale:${rite}`, 'decrees:roman' ];
+export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ) => {
+    const ids = 'roman' === rite
+        ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
+        : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
     if ( widerRegion ) {
         ids.push( `widerregion:roman:${widerRegion}` );
     }
@@ -706,7 +725,7 @@ export const inventoryIdsForCalendar = ( { rite, nation, widerRegion, missals, d
     }
     ( missals ?? [] ).forEach( missalId => ids.push( `sanctorale:roman:${missalId}` ) );
     if ( dioceseId ) {
-        ids.push( `diocese:${rite}:${dioceseId}` );
+        ids.push( `diocese:${dioceseRite}:${dioceseId}` );
     }
     return ids;
 };

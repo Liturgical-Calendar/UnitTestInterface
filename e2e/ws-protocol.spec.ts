@@ -124,27 +124,54 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
         const { inventoryIdsForCalendar } = await import('/assets/js/wsProtocol.js' as any);
         return {
             national: inventoryIdsForCalendar({
-                rite: 'roman', nation: 'IT', widerRegion: 'Europe',
+                rite: 'roman', dioceseRite: 'roman', nation: 'IT', widerRegion: 'Europe',
                 missals: ['EDITIO_TYPICA_1970', 'IT_1983'], dioceseId: null,
             }),
+            // A national/diocesan calendar's universal corpus is always Roman (rite: 'roman'),
+            // even though this diocese's own rite — and therefore its diocese id — is Ambrosian.
             diocesan: inventoryIdsForCalendar({
-                rite: 'ambrosian', nation: 'IT', widerRegion: 'Europe',
+                rite: 'roman', dioceseRite: 'ambrosian', nation: 'IT', widerRegion: 'Europe',
                 missals: [], dioceseId: 'milano_it',
+            }),
+            // A rite-level calendar has no diocese id, so `rite` and `dioceseRite` are simply the
+            // same selected rite. Ambrosian's universal corpus is temporale + sanctorale, never
+            // decrees (a Roman-only file v1 never checked here either).
+            ambrosianRiteLevel: inventoryIdsForCalendar({
+                rite: 'ambrosian', dioceseRite: 'ambrosian', nation: null, widerRegion: null,
+                missals: [], dioceseId: null,
             }),
         };
     });
 
+    // The universal corpus carries its `:i18n` folder pair — this repository already checked those
+    // before #42 (see UNIVERSAL_CHECKS); only the calendar-specific tier below omits i18n (#61).
     expect(ids.national).toEqual([
         'temporale:roman',
+        'temporale:roman:i18n',
         'decrees:roman',
+        'decrees:roman:i18n',
         'widerregion:roman:Europe',
         'nation:roman:IT',
         'sanctorale:roman:EDITIO_TYPICA_1970',
         'sanctorale:roman:IT_1983',
     ]);
-    // The diocese is qualified by its own rite; everything it inherits stays Roman.
-    expect(ids.diocesan).toContain('diocese:ambrosian:milano_it');
-    expect(ids.diocesan).toContain('nation:roman:IT');
-    // Coverage is deliberately held constant: no i18n ids yet. See issue #61.
-    expect(ids.national.some((id: string) => id.endsWith(':i18n'))).toBe(false);
+    // toEqual, not toContain: the diocese is qualified by its own rite while everything it inherits
+    // stays Roman-qualified — a wrong rite on either half, or an extra/missing id, must fail this.
+    expect(ids.diocesan).toEqual([
+        'temporale:roman',
+        'temporale:roman:i18n',
+        'decrees:roman',
+        'decrees:roman:i18n',
+        'widerregion:roman:Europe',
+        'nation:roman:IT',
+        'diocese:ambrosian:milano_it',
+    ]);
+    expect(ids.ambrosianRiteLevel).toEqual([
+        'temporale:ambrosian',
+        'temporale:ambrosian:i18n',
+        'sanctorale:ambrosian',
+        'sanctorale:ambrosian:i18n',
+    ]);
+    // decrees:roman must never appear under a pure-Ambrosian scope — v1 never checked it there.
+    expect(ids.ambrosianRiteLevel.some((id: string) => id.startsWith('decrees:'))).toBe(false);
 });

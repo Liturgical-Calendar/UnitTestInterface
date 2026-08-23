@@ -138,21 +138,25 @@ let ValidationsInventoryReady = false;
  * advertised.
  *
  * @param {object} scope
- * @param {string} scope.rite - The selected rite.
+ * @param {string} scope.rite - The rite whose universal corpus is checked (see
+ *   `inventoryIdsForCalendar()`: Roman for a national/diocesan calendar regardless of the
+ *   calendar's own rite; the selected rite itself for a rite-level calendar).
+ * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`; equal to
+ *   `scope.rite` when there is no diocese.
  * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
  * @param {?string} scope.widerRegion - The nation's wider region, or null.
  * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
  * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
  * @returns {Array<object>}
  */
-const buildSourceDataChecks = ( { rite, nation, widerRegion, missals, dioceseId } ) => {
+const buildSourceDataChecks = ( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ) => {
     const checks = [ {
         validate: 'LitCalMetadata',
         sourceFile: ENDPOINTS.CALENDARS,
         category: 'universalcalendar'
     } ];
     const advertised = new Map( ValidationsInventory.map( item => [ item.id, item ] ) );
-    inventoryIdsForCalendar( { rite, nation, widerRegion, missals, dioceseId } ).forEach( id => {
+    inventoryIdsForCalendar( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ).forEach( id => {
         const item = advertised.get( id );
         if ( undefined === item ) {
             // Said out loud rather than skipped silently: the inventory is the contract now, so an id
@@ -1452,14 +1456,15 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     // National and diocesan calendars always start from the Roman universal corpus: national
     // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
     // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
-    // corpus is a separate (pre-existing) design question. `inventoryIdsForCalendar()` is what
-    // implements that inheritance now: its wider-region, nation and missal ids are hardcoded
-    // `roman` no matter what `rite` is passed in below. `rite` here is still the calendar's own
-    // rite — needed so a diocese resolves to the id the inventory actually advertises (e.g.
-    // `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`) — and, for a national
-    // calendar, is always `'roman'` regardless, since national calendars exist only under that rite.
+    // corpus is a separate (pre-existing) design question — `rite: 'roman'` below is what preserves
+    // it, matching v1's behaviour exactly. `dioceseRite` is separate and is the calendar's own rite:
+    // a diocese id must resolve to what the inventory actually advertises (e.g.
+    // `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`). For a national
+    // calendar there is no diocese id, so `dioceseRite` is inert, but `currentRite` is always
+    // `'roman'` there anyway, since national calendars exist only under that rite.
     return buildSourceDataChecks( {
-        rite: currentRite,
+        rite: 'roman',
+        dioceseRite: currentRite,
         nation,
         widerRegion: nationalCalendarData.wider_region,
         missals: nationalCalendarData.missals,
@@ -1530,6 +1535,7 @@ const setupPage = () => {
             : [];
         currentSourceDataChecks = buildSourceDataChecks( {
             rite: currentRite,
+            dioceseRite: currentRite,
             nation: null,
             widerRegion: null,
             missals,
