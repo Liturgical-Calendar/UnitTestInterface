@@ -166,31 +166,41 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
     await page.goto('/');
     await waitForLiveScaffold(page);
 
-    const cardClasses = async () =>
-        page.locator('.sourcedata-tests .card').evaluateAll(
+    // Exact class TOKENS, not a joined-string substring. Card classes are idToCardClass(item.id)
+    // — a colon-separated /validations inventory id with every character outside [A-Za-z0-9_-]
+    // replaced by '-', not a slug derived from a repo-relative path (#42):
+    // temporale:roman -> temporale-roman, temporale:roman:i18n -> temporale-roman-i18n. Under
+    // this vocabulary every non-i18n class is a PREFIX of its own i18n partner
+    // ('temporale-roman' ⊂ 'temporale-roman-i18n'), so a substring check on the joined string
+    // would still pass with the non-i18n card missing entirely — silently un-pinning exactly the
+    // coverage a missing card would lose. Splitting each class list into tokens keeps
+    // 'temporale-roman' and 'temporale-roman-i18n' as two distinct, independently-assertable
+    // tokens.
+    const classTokens = async () => {
+        const classes = await page.locator('.sourcedata-tests .card').evaluateAll(
             (els) => els.map((e) => e.className)
         );
+        const tokens = new Set<string>();
+        classes.forEach((c: string) => c.split(/\s+/).forEach((t: string) => tokens.add(t)));
+        return tokens;
+    };
 
-    // Card classes are idToCardClass(item.id) — a colon-separated /validations inventory id with
-    // every character outside [A-Za-z0-9_-] replaced by '-', not a slug derived from a
-    // repo-relative path (#42). temporale:roman -> temporale-roman,
-    // temporale:roman:i18n -> temporale-roman-i18n, and so on.
-    const roman = (await cardClasses()).join(' ');
-    expect(roman).toContain('temporale-roman');
-    expect(roman).toContain('temporale-roman-i18n');
-    expect(roman).toContain('decrees-roman');
-    expect(roman).toContain('decrees-roman-i18n');
-    expect(roman).not.toContain('temporale-ambrosian');
+    const roman = await classTokens();
+    expect(roman.has('temporale-roman')).toBe(true);
+    expect(roman.has('temporale-roman-i18n')).toBe(true);
+    expect(roman.has('decrees-roman')).toBe(true);
+    expect(roman.has('decrees-roman-i18n')).toBe(true);
+    expect(roman.has('temporale-ambrosian')).toBe(false);
 
     await selectRite(page, 'ambrosian');
-    const ambrosian = (await cardClasses()).join(' ');
-    expect(ambrosian).toContain('temporale-ambrosian');
-    expect(ambrosian).toContain('temporale-ambrosian-i18n');
-    expect(ambrosian).toContain('sanctorale-ambrosian');
-    expect(ambrosian).toContain('sanctorale-ambrosian-i18n');
+    const ambrosian = await classTokens();
+    expect(ambrosian.has('temporale-ambrosian')).toBe(true);
+    expect(ambrosian.has('temporale-ambrosian-i18n')).toBe(true);
+    expect(ambrosian.has('sanctorale-ambrosian')).toBe(true);
+    expect(ambrosian.has('sanctorale-ambrosian-i18n')).toBe(true);
     // The Roman corpus is gone, not merely joined: an Ambrosian scaffold's universal corpus is
     // its own temporale/sanctorale, never the Roman decrees.
-    expect(ambrosian).not.toContain('decrees-roman');
+    expect(ambrosian.has('decrees-roman')).toBe(false);
 });
 
 test('an i18n folder card names its folder rather than "undefined"', async ({ page }) => {

@@ -512,7 +512,10 @@ const sourceDataCheckTemplate = ( item, idx ) => {
         }
     }
     const validateSlug = fromInventory ? idToCardClass( item.id ) : slugify( item.validate );
-    const caption = item.label ?? item.validate;
+    // An inventory item with an absent/null label falls back to `validate` (which it doesn't
+    // have) and then to `id`, so a caption is never the literal string "undefined" -- exactly the
+    // defect the tooltip comment below already records having been fixed once.
+    const caption = item.label ?? item.validate ?? item.id;
     // A legacy check names either a single file or a folder of i18n files, never both. Reading
     // only `sourceFile` rendered `title="undefined"` for every folder check.
     const tooltip = item.id ?? item.sourceFile ?? item.sourceFolder ?? '';
