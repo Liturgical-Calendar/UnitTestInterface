@@ -32,13 +32,13 @@ import {
     idToCardClass,
     inRiteScope,
     readHello,
-    resetHello,
     stepsForCheck,
     stepCardsHtml,
     checkCardSelector,
 } from './wsProtocol.js';
 
 import { createPhaseRunner } from './wsRunner.js';
+import { createWebSocketClient } from './wsClient.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
 // top-level `import … from` specifier that fails to resolve (CDN outage, blocked host in
@@ -55,7 +55,7 @@ const resultCollector = createResultCollector();
 
 // Access global config from window (set by PHP in footer.php)
 const {
-    locale, WS_PROTOCOL, WS_PORT, WS_HOST, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, API_PROXY_BASE, APP_ENV,
+    locale, API_PROTOCOL, API_PORT, API_HOST, API_BASE_PATH, API_PROXY_BASE, APP_ENV,
     riteSelectLabel: riteSelectLabelText = 'Liturgical Rite',
 } = window.LitCalConfig;
 
@@ -455,45 +455,160 @@ ${stepCardsHtml({
 }
 
 /**
- * Establishes a websocket connection to the test server.
- * If the connection is successful, it sets the state to ReadyState and tries
- * to enable the test runner button. If the connection is closed, it sets the
- * state to JobsFinished and tries to enable the test runner button. If an
- * error occurs, it sets the state to JobsFinished and shows an error toast.
- * Also sets up event listeners for the open, message, close, and error events.
+ * Handles incoming messages from the websocket server.
+ * Each message is expected to be a JSON object with the following properties:
+ * - type: either "success" or "error"
+ * - classes: a string of CSS classes that identify which test is being reported
+ * - text: a string of text to display in case of an error
+ * If the message is a success, it updates the corresponding success count and marks the test as successful.
+ * If the message is an error, it updates the corresponding failed count and marks the test as failed.
+ * If the test is not finished, it continues running tests and measures the total test time.
+ *
+ * @param {MessageEvent} e
+ * @returns {void}
  */
-const connectWebSocket = () => {
-    // Guard against creating multiple connections
-    if (conn && (conn.readyState === WebSocket.OPEN || conn.readyState === WebSocket.CONNECTING)) {
-        console.log('WebSocket connection already exists, skipping new connection');
+const handleWebSocketMessage = ( e ) => {
+    // Parsed once, before the run guards, because one frame is not about a run: the server's
+    // `hello` arrives on connect and carries no run token — which is exactly what makes it
+    // invisible to a client that predates it, and exactly why the guards below would discard
+    // it. See readHello().
+    let responseData;
+    let parseError = null;
+    try {
+        responseData = JSON.parse( e.data );
+    } catch ( error ) {
+        parseError = error;
+    }
+
+    if ( null === parseError && readHello( responseData ) ) {
         return;
     }
-    console.log( `Connecting to websocket... WS_PROTOCOL: ${WS_PROTOCOL}, WS_HOST: ${WS_HOST}, WS_PORT: ${WS_PORT}` );
-    const websocketURL = `${WS_PROTOCOL}://${WS_HOST}${[443,80].includes(WS_PORT) ? '' : `:${WS_PORT}`}`;
-    conn = new WebSocket( websocketURL );
 
-    /**
-     * Event handler for the onopen event. Called when the websocket connection to the test server is established.
-     * Logs a message to the console, shows a toast to indicate the connection is established, and updates the state to ReadyState.
-     * Additionally, it stops the connection attempt timer, sets ReadyToRunTests.SocketReady to true, and tries to enable the test runner button.
-     */
-    conn.onopen = () => {
-        console.log( "Websocket connection established!" );
-        safeToastShow('#websocket-connected');
-        const wsStatus = document.querySelector('#websocket-status');
-        if (wsStatus) {
-            wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
-            wsStatus.classList.add('bg-success');
-            const wsSvg = wsStatus.querySelector('svg');
-            if (wsSvg) {
-                wsSvg.classList.remove('fa-plug', 'fa-plug-circle-xmark', 'fa-plug-circle-exclamation');
-                wsSvg.classList.add('fa-plug-circle-check');
+    if ( currentState === TestState.Stopped || currentRunToken === null ) {
+        return;
+    }
+
+    if ( null !== parseError ) {
+        // The state machine is driven from this handler: an exception escaping here means
+        // runTests() is never called again and the run wedges with the spinner still going
+        // and nothing in the UI to say why (#43). Count it and keep the run moving.
+        //
+        // Reached only inside a run, as before: an unparseable frame arriving before one is
+        // nothing to attribute a failure to, and pumping the state machine for it would be
+        // acting on a run that has not started.
+        console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
+        countUnattributableFailure();
+        if ( currentState !== TestState.JobsFinished ) {
+            runTests();
+        }
+        return;
+    }
+    // Require the matching token, as index.js does. This page used to accept *untagged*
+    // responses (`responseData.runToken && …`), so the two runners disagreed about which
+    // frames belong to the current run; the server tags every frame once a run token is set.
+    //
+    // The object test is load-bearing, not defensive noise: `JSON.parse('null')` succeeds and
+    // returns `null`, so reading `.runToken` off it throws a TypeError — between the two
+    // try/catch blocks, escaping both, and wedging the run exactly as an unparseable frame
+    // used to. Bare scalars box rather than throw, but are rejected here all the same.
+    if ( null === responseData || 'object' !== typeof responseData || responseData.runToken !== currentRunToken ) {
+        return;
+    }
+    console.log( responseData );
+
+    // Any frame of this run is proof the server is still answering.
+    phaseRunner.restartWatchdog();
+
+    // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
+    // recorded or counted. Counting it would inflate the totals badge past the number of
+    // rendered cards — the drift #42 describes, arrived at from the other direction.
+    if ( phaseRunner.noteTerminalFrame( responseData ) ) {
+        return;
+    }
+
+    // A rejection is an *ending* for the request it names (#70). Handled here rather than left
+    // to the `type` dispatch below, which had no branch for it: the frame fell through to the
+    // unattributable `else`, booked one failure for a request whose scaffold rendered three
+    // cards, and — carrying no `step: 'complete'` — never ended the request, so the phase sat
+    // out the full silence watchdog even though the server had answered instantly.
+    if ( phaseRunner.handleProtocolError( responseData ) ) {
+        return;
+    }
+
+    try {
+        if ( responseData.type === "success" ) {
+            phaseRunner.paintResult( responseData );
+            resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
+            updateText('successfulCount', ++successfulTests);
+            switch( currentState ) {
+                case TestState.ExecutingResourceValidations:
+                    updateText('successfulResourceDataTestsCount', ++successfulResourceDataTests);
+                    break;
+                case TestState.ExecutingSourceValidations:
+                    updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
+                    break;
             }
         }
-        if ( connectionAttempt !== null ) {
-            clearInterval( connectionAttempt );
-            connectionAttempt = null;
+        else if ( responseData.type === "error" ) {
+            phaseRunner.paintResult( responseData );
+            resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
+            updateText('failedCount', ++failedTests);
+            switch( currentState ) {
+                case TestState.ExecutingResourceValidations:
+                    updateText('failedResourceDataTestsCount', ++failedResourceDataTests);
+                    break;
+                case TestState.ExecutingSourceValidations:
+                    updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
+                    break;
+            }
         }
+        else {
+            // `echobot` is what the server returns for a malformed or unrecognised message.
+            // Silently ignoring it (while still advancing the state machine below) is how a
+            // protocol error used to disappear from the UI entirely.
+            console.error( `Unexpected response type "${responseData.type}" — treating as a failure.`, responseData );
+            countUnattributableFailure();
+        }
+    } catch ( handlerError ) {
+        // Same reasoning as the parse guard: a response we cannot process must not stop
+        // the run from finishing.
+        console.error( 'Failed to process a WebSocket response.', handlerError, responseData );
+        countUnattributableFailure();
+    }
+    if ( currentState !== TestState.JobsFinished ) {
+        runTests();
+    }
+    performance.mark( 'litcalTestRunnerEnd' );
+    const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
+    console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
+    updateText('total-time', MsToTimeString( Math.round( totalTestTime.duration ) ));
+    switch( currentState ) {
+        case TestState.ExecutingResourceValidations: {
+            performance.mark( 'resourceDataTestsEnd' );
+            const totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
+            updateText('totalResourceDataTestsTime', MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ));
+            break;
+        }
+        case TestState.ExecutingSourceValidations: {
+            performance.mark( 'sourceDataTestsEnd' );
+            const totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
+            updateText('totalSourceDataTestsTime', MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ));
+            break;
+        }
+    }
+};
+
+/**
+ * This page's connection to the test server.
+ *
+ * The socket lifecycle — URL, reconnect timer, status badge, `resetHello()` on close — lives in
+ * {@link module:wsClient}, shared with `index.js` (#69 item 2). What stays here is the part that
+ * is genuinely this page's: its `TestState` enum and its `ReadyToRunTests` gate.
+ */
+const wsClient = createWebSocketClient( {
+    onMessage: handleWebSocketMessage,
+
+    onOpen: () => {
         // Only when no run is in flight (#66). See the matching guard in index.js: a mid-run socket
         // drop that reconnects must not reset the state machine, or the silence watchdog would see
         // `Ready`, `canAdvance()` would return true, and `runTests()` would re-send the phase on the
@@ -503,221 +618,13 @@ const connectWebSocket = () => {
         }
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
-    };
+    },
 
-    /**
-     * Handles incoming messages from the websocket server.
-     * Each message is expected to be a JSON object with the following properties:
-     * - type: either "success" or "error"
-     * - classes: a string of CSS classes that identify which test is being reported
-     * - text: a string of text to display in case of an error
-     * If the message is a success, it updates the corresponding success count and marks the test as successful.
-     * If the message is an error, it updates the corresponding failed count and marks the test as failed.
-     * If the test is not finished, it continues running tests and measures the total test time.
-     */
-    /**
-     * Count a frame we could not attribute to a specific check.
-     *
-     * The frame is unusable, but the *phase* is still known from `currentState`, so the failure
-     * is booked against both the global total and the current phase's total. Incrementing only
-     * the global one would leave the header count and the per-phase counts disagreeing, which is
-     * the same silent drift #43 flags for unmatched selectors.
-     */
-    conn.onmessage = ( e ) => {
-        // Parsed once, before the run guards, because one frame is not about a run: the server's
-        // `hello` arrives on connect and carries no run token — which is exactly what makes it
-        // invisible to a client that predates it, and exactly why the guards below would discard
-        // it. See readHello().
-        let responseData;
-        let parseError = null;
-        try {
-            responseData = JSON.parse( e.data );
-        } catch ( error ) {
-            parseError = error;
-        }
-
-        if ( null === parseError && readHello( responseData ) ) {
-            return;
-        }
-
-        if ( currentState === TestState.Stopped || currentRunToken === null ) {
-            return;
-        }
-
-        if ( null !== parseError ) {
-            // The state machine is driven from this handler: an exception escaping here means
-            // runTests() is never called again and the run wedges with the spinner still going
-            // and nothing in the UI to say why (#43). Count it and keep the run moving.
-            //
-            // Reached only inside a run, as before: an unparseable frame arriving before one is
-            // nothing to attribute a failure to, and pumping the state machine for it would be
-            // acting on a run that has not started.
-            console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
-            countUnattributableFailure();
-            if ( currentState !== TestState.JobsFinished ) {
-                runTests();
-            }
-            return;
-        }
-        // Require the matching token, as index.js does. This page used to accept *untagged*
-        // responses (`responseData.runToken && …`), so the two runners disagreed about which
-        // frames belong to the current run; the server tags every frame once a run token is set.
-        //
-        // The object test is load-bearing, not defensive noise: `JSON.parse('null')` succeeds and
-        // returns `null`, so reading `.runToken` off it throws a TypeError — between the two
-        // try/catch blocks, escaping both, and wedging the run exactly as an unparseable frame
-        // used to. Bare scalars box rather than throw, but are rejected here all the same.
-        if ( null === responseData || 'object' !== typeof responseData || responseData.runToken !== currentRunToken ) {
-            return;
-        }
-        console.log( responseData );
-
-        // Any frame of this run is proof the server is still answering.
-        phaseRunner.restartWatchdog();
-
-        // The terminal frame ends a request; it reports no step outcome, so it must not be painted,
-        // recorded or counted. Counting it would inflate the totals badge past the number of
-        // rendered cards — the drift #42 describes, arrived at from the other direction.
-        if ( phaseRunner.noteTerminalFrame( responseData ) ) {
-            return;
-        }
-
-        // A rejection is an *ending* for the request it names (#70). Handled here rather than left
-        // to the `type` dispatch below, which had no branch for it: the frame fell through to the
-        // unattributable `else`, booked one failure for a request whose scaffold rendered three
-        // cards, and — carrying no `step: 'complete'` — never ended the request, so the phase sat
-        // out the full silence watchdog even though the server had answered instantly.
-        if ( phaseRunner.handleProtocolError( responseData ) ) {
-            return;
-        }
-
-        try {
-            if ( responseData.type === "success" ) {
-                phaseRunner.paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
-                updateText('successfulCount', ++successfulTests);
-                switch( currentState ) {
-                    case TestState.ExecutingResourceValidations:
-                        updateText('successfulResourceDataTestsCount', ++successfulResourceDataTests);
-                        break;
-                    case TestState.ExecutingSourceValidations:
-                        updateText('successfulSourceDataTestsCount', ++successfulSourceDataTests);
-                        break;
-                }
-            }
-            else if ( responseData.type === "error" ) {
-                phaseRunner.paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
-                updateText('failedCount', ++failedTests);
-                switch( currentState ) {
-                    case TestState.ExecutingResourceValidations:
-                        updateText('failedResourceDataTestsCount', ++failedResourceDataTests);
-                        break;
-                    case TestState.ExecutingSourceValidations:
-                        updateText('failedSourceDataTestsCount', ++failedSourceDataTests);
-                        break;
-                }
-            }
-            else {
-                // `echobot` is what the server returns for a malformed or unrecognised message.
-                // Silently ignoring it (while still advancing the state machine below) is how a
-                // protocol error used to disappear from the UI entirely.
-                console.error( `Unexpected response type "${responseData.type}" — treating as a failure.`, responseData );
-                countUnattributableFailure();
-            }
-        } catch ( handlerError ) {
-            // Same reasoning as the parse guard: a response we cannot process must not stop
-            // the run from finishing.
-            console.error( 'Failed to process a WebSocket response.', handlerError, responseData );
-            countUnattributableFailure();
-        }
-        if ( currentState !== TestState.JobsFinished ) {
-            runTests();
-        }
-        performance.mark( 'litcalTestRunnerEnd' );
-        const totalTestTime = performance.measure( 'litcalTestRunner', 'litcalTestRunnerStart', 'litcalTestRunnerEnd' );
-        console.log( 'Total test time = ' + Math.round( totalTestTime.duration ) + 'ms' );
-        updateText('total-time', MsToTimeString( Math.round( totalTestTime.duration ) ));
-        switch( currentState ) {
-            case TestState.ExecutingResourceValidations: {
-                performance.mark( 'resourceDataTestsEnd' );
-                const totalResourceDataTestsTime = performance.measure( 'litcalResourceDataTestRunner', 'resourceDataTestsStart', 'resourceDataTestsEnd' );
-                updateText('totalResourceDataTestsTime', MsToTimeString( Math.round( totalResourceDataTestsTime.duration ) ));
-                break;
-            }
-            case TestState.ExecutingSourceValidations: {
-                performance.mark( 'sourceDataTestsEnd' );
-                const totalSourceDataTestsTime = performance.measure( 'litcalSourceDataTestRunner', 'sourceDataTestsStart', 'sourceDataTestsEnd' );
-                updateText('totalSourceDataTestsTime', MsToTimeString( Math.round( totalSourceDataTestsTime.duration ) ));
-                break;
-            }
-        }
-    };
-
-    /**
-     * Handles the onclose event of the websocket connection.
-     * Logs a message to the console, shows a toast to indicate the connection is closed,
-     * and updates the state to JobsFinished.
-     * Additionally, it stops the connection attempt timer, sets ReadyToRunTests.SocketReady to false,
-     * and tries to enable the test runner button.
-     */
-    conn.onclose = () => {
-        console.log( 'Connection closed on remote end' );
-        // Forget what this connection advertised. The reconnection below may reach a server of a
-        // different vintage — a deploy is exactly when a socket drops — and answering it with the
-        // previous one's capabilities would declare a protocol it never claimed to read.
-        resetHello();
+    onClose: () => {
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
-        if ( connectionAttempt === null ) {
-            const wsStatus = document.querySelector('#websocket-status');
-            if (wsStatus) {
-                wsStatus.classList.remove('bg-secondary', 'bg-danger', 'bg-success');
-                wsStatus.classList.add('bg-warning');
-                const wsSvg = wsStatus.querySelector('svg');
-                if (wsSvg) {
-                    wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-exclamation');
-                    wsSvg.classList.add('fa-plug-circle-xmark');
-                }
-            }
-            safeToastShow('#websocket-closed');
-            document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
-            setTimeout( function () {
-                connectWebSocket();
-            }, 3000 );
-        }
     }
-
-    /**
-     * Handles websocket connection errors.
-     * If a connection error occurs, it sets the connection status to "error",
-     * shows an error toast, and stops the spinner.
-     * If there is no connection attempt currently running, it starts a new
-     * connection attempt after 3 seconds.
-     * @param {ErrorEvent} e - The error event.
-     */
-    conn.onerror = ( e ) => {
-        const wsStatus = document.querySelector('#websocket-status');
-        if (wsStatus) {
-            wsStatus.classList.remove('bg-secondary', 'bg-warning', 'bg-success');
-            wsStatus.classList.add('bg-danger');
-            const wsSvg = wsStatus.querySelector('svg');
-            if (wsSvg) {
-                wsSvg.classList.remove('fa-plug', 'fa-plug-circle-check', 'fa-plug-circle-xmark');
-                wsSvg.classList.add('fa-plug-circle-exclamation');
-            }
-        }
-        console.error( 'Websocket connection error:' );
-        console.log( e );
-        safeToastShow('#websocket-error');
-        document.querySelectorAll('.fa-spin').forEach(el => el.classList.remove('fa-spin'));
-        if ( connectionAttempt === null ) {
-            connectionAttempt = setInterval( function () {
-                connectWebSocket();
-            }, 3000 );
-        }
-    }
-}
+} );
 
 /**
  * Updates the text content of the #startTestRunnerBtnLbl element.
@@ -843,7 +750,7 @@ const setupPage = () => {
     buildScaffolding({ resourceDataChecks: Object.keys(resourcePaths), sourceDataChecks });
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
-    connectWebSocket();
+    wsClient.connect();
 }
 
 
@@ -851,8 +758,6 @@ let currentState                = TestState.NotReady;
 let MetaData                    = null;
 let Missals                     = null;
 let startTestRunnerBtnLbl       = '';
-let connectionAttempt           = null;
-let conn;
 let currentRunToken             = null;
 let currentResponseType         = "JSON";
 
@@ -866,7 +771,7 @@ let failedResourceDataTests     = 0;
 /**
  * Count a failure that belongs to no card.
  *
- * **Module scope, not inside `connectWebSocket()`, and that is a fix rather than a tidy.** The phase
+ * **Module scope, as `phaseRunner` itself is, and that is a fix rather than a tidy.** The phase
  * watchdog is defined at module level and calls this; while it lived in the connection closure, the
  * watchdog firing raised a ReferenceError instead of rescuing the run — so the one safety net
  * standing between a missing terminal frame and a permanently hung phase was itself broken. Nothing
@@ -902,7 +807,7 @@ const countUnattributableFailure = () => {
  * `currentState !== JobsFinished` for a terminal frame and
  * `currentState !== JobsFinished && currentState !== Stopped` for giving up — into the single,
  * stricter guard. See {@link createPhaseRunner}'s `giveUpOnOutstandingRequests` for why that is
- * behaviour-preserving rather than a widening: `conn.onmessage` already returns early once
+ * behaviour-preserving rather than a widening: `handleWebSocketMessage()` already returns early once
  * `currentState === Stopped`, so the terminal-frame path is unreachable in that state regardless.
  */
 const phaseRunner = createPhaseRunner( {
@@ -928,12 +833,13 @@ const phaseRunner = createPhaseRunner( {
         resultCollector.record( phaseForState(), frame, selector );
         countUnattributableFailure();
     },
-    // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
+    // The `onOpen` callback handed to `createWebSocketClient()` only resets `currentState` when no
+    // run is in flight (#66), so a mid-run
     // reconnect cannot land the watchdog in the `Ready` case and restart a phase. Adding
     // `currentRunToken !== null` here would be inert: the token stays set across exactly that
     // window, so the guard belongs in `onopen`, not in this predicate.
     canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
-    socket: () => conn,
+    socket: () => wsClient.socket(),
     runToken: () => currentRunToken
 } );
 
@@ -1487,7 +1393,7 @@ const buildResourcesPayload = () => {
 };
 
 document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
-    if (!conn) {
+    if ( ! wsClient.socket() ) {
         console.warn('cannot run tests: websocket connection not initialized');
         return;
     }
@@ -1498,10 +1404,11 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         // the next one.
         phaseRunner.endRun();
         resetTestUI();
-        currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
-        if ( conn.readyState !== WebSocket.OPEN ) {
+        const readyState = wsClient.socket().readyState;
+        currentState = readyState !== WebSocket.CLOSED && readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
+        if ( readyState !== WebSocket.OPEN ) {
             console.warn( 'cannot run tests: websocket connection is not ready' );
-            console.warn( 'WebSocket readyState:', conn.readyState );
+            console.warn( 'WebSocket readyState:', readyState );
         } else {
             currentRunToken = crypto.randomUUID();
             setRiteSelectDisabledForRun( true );
@@ -1526,7 +1433,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         console.log( 'Stopping test run...' );
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
-        sendCancelRun( conn, currentRunToken );
+        sendCancelRun( wsClient.socket(), currentRunToken );
         phaseRunner.clearWatchdog();
         // Releases the stopped run's outstanding set, so a `giveUpOnOutstandingRequests()` call
         // reaching this page after a Stop (its exported seam, or the watchdog's callback in a race)
