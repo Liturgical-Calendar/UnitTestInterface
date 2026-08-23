@@ -1020,12 +1020,12 @@ const connectWebSocket = () => {
         try {
             if ( responseData.type === "success" ) {
                 phaseRunner.paintResult( responseData );
-                // TEMPORARY: `?? responseData.classes` is now unreachable — every phase (source data,
-                // calendar data since Task 8, unit tests since Task 9) registers a requestId with
-                // `beginPhase()`, so `selectorFor()` always resolves. Left in place rather than
-                // removed here: Task 10 removes it as its own reviewable change, once this and the
-                // matching branch below have proven the registry path covers every phase in practice.
-                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
+                // `selectorFor()` returns null when the phase never registered this requestId/step
+                // pair (or registered it but the card was not found in the DOM), or when the frame
+                // carries no requestId at all (live behaviour against a server predating the typed
+                // protocol). Recorded as `selector: null` rather than falling back to the server's
+                // `classes` string, which this migration removed as a wire-correlation mechanism.
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? null );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -1054,9 +1054,9 @@ const connectWebSocket = () => {
             }
             else if ( responseData.type === "error" ) {
                 phaseRunner.paintResult( responseData );
-                // TEMPORARY: see the matching comment on the success branch above — unreachable now,
-                // Task 10 removes it.
-                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
+                // See the matching comment on the success branch above: `selectorFor()` can still
+                // legitimately return null, and that is recorded as `selector: null`.
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? null );
                 updateText('failedCount', ++failedTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {

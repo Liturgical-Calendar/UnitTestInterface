@@ -156,53 +156,18 @@ export const validationChecksForRite = ( inventory, rite ) =>
         .map( item => ( { id: item.id, label: item.label, steps: item.steps, rite: item.rite } ) );
 
 /**
- * Translate a `CalendarSelect` selection into the protocol's calendar/category vocabulary.
- *
- * The library speaks `national` / `diocesan` and represents the rite-level calendar as its empty
- * option; the WebSocket protocol speaks `nationalcalendar` / `diocesancalendar` / `ritecalendar`
- * and names the rite-level calendar explicitly. This is the only place the two meet.
- *
- * The empty option maps to `{calendar: rite, category: 'ritecalendar'}` for both rites. For the
- * Roman rite this is the same request the old `VA` option produced —
- * `Health::buildCalendarRequestPath()` reads `'VA'` as the historical marker for the rite-level
- * calendar and resolves it to `/roman/{year}` exactly as `ritecalendar` does — but it stops
- * naming the General Roman Calendar `VA`, which matters now that Vatican City is to gain its own
- * national calendar data distinct from it.
- *
- * @param {string} value - The selected option's value; '' for the rite-level calendar.
- * @param {string} calendartype - The selected option's `data-calendartype`; '' for the empty option.
- * @param {string} rite - The selected rite.
- * @returns {{calendar: string, category: string}}
- * @throws {Error} If `calendartype` is not one the library emits. Throwing beats returning a
- *         partial message: a wrong `category` silently checks a different path and reports success.
- */
-export const toWireTarget = ( value, calendartype, rite ) => {
-    if ( value === '' ) {
-        return { calendar: rite, category: 'ritecalendar' };
-    }
-    switch ( calendartype ) {
-        case 'national':
-            return { calendar: value, category: 'nationalcalendar' };
-        case 'diocesan':
-            return { calendar: value, category: 'diocesancalendar' };
-        default:
-            throw new Error(
-                `Unknown data-calendartype "${calendartype}" on calendar option "${value}"; `
-                + 'expected "national" or "diocesan" from liturgy-components-js CalendarSelect.'
-            );
-    }
-};
-
-/**
  * The typed calendar identity the v2 `validateCalendar` and `runTest` messages carry.
  *
- * Replaces `toWireTarget()`, which produced the v1 `{calendar, category}` pair. The server rejects
- * `category` on the typed shape outright (`Health::RETIRED_PROPERTIES`), so the two cannot be mixed:
- * `calendar.kind` is the discriminator now.
+ * The library speaks `national` / `diocesan` and represents the rite-level calendar as its empty
+ * option; the WebSocket protocol speaks a typed `{kind, id?, rite}` shape and names the rite-level
+ * calendar explicitly. This is the only place the two meet.
  *
- * Throws on an unrecognised type rather than composing a partial message, for the reason
- * `toWireTarget()` did: a message the server rejects costs a red card and a rate-limit charge, and
- * says nothing useful about which of our call sites was wrong.
+ * The empty option maps to `{kind: 'rite', rite}` for both rites. The server rejects `category` on
+ * this typed shape outright (`Health::RETIRED_PROPERTIES`), so `calendar.kind` is the discriminator.
+ *
+ * Throws on an unrecognised type rather than composing a partial message: a message the server
+ * rejects costs a red card and a rate-limit charge, and says nothing useful about which of our call
+ * sites was wrong.
  *
  * @param {string} value - The calendar select's value; empty means the rite-level calendar.
  * @param {string} calendartype - The option's `data-calendartype`: 'national', 'diocesan' or ''.

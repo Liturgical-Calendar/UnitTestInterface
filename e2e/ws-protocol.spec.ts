@@ -30,37 +30,6 @@ test('inRiteScope treats a missing rite as roman, never as a wildcard', async ({
     expect(result.absentUnderAmbrosian).toBe(false);
 });
 
-test('toWireTarget maps the empty option to the rite-level calendar', async ({ page }) => {
-    await load(page);
-    const result = await page.evaluate(async () => {
-        const { toWireTarget } = await import('/assets/js/wsProtocol.js' as any);
-        return {
-            romanRiteLevel: toWireTarget('', '', 'roman'),
-            ambrosianRiteLevel: toWireTarget('', '', 'ambrosian'),
-            national: toWireTarget('IT', 'national', 'roman'),
-            diocesan: toWireTarget('milano_it', 'diocesan', 'ambrosian'),
-        };
-    });
-    expect(result.romanRiteLevel).toEqual({ calendar: 'roman', category: 'ritecalendar' });
-    expect(result.ambrosianRiteLevel).toEqual({ calendar: 'ambrosian', category: 'ritecalendar' });
-    expect(result.national).toEqual({ calendar: 'IT', category: 'nationalcalendar' });
-    expect(result.diocesan).toEqual({ calendar: 'milano_it', category: 'diocesancalendar' });
-});
-
-test('toWireTarget throws on an unknown calendartype rather than sending a partial message', async ({ page }) => {
-    await load(page);
-    const message = await page.evaluate(async () => {
-        const { toWireTarget } = await import('/assets/js/wsProtocol.js' as any);
-        try {
-            toWireTarget('IT', 'nationalcalendar', 'roman');
-            return null;
-        } catch (e) {
-            return (e as Error).message;
-        }
-    });
-    expect(message).toContain('nationalcalendar');
-});
-
 test('testAppliesToRite filters a rite-only scope and defaults an absent rite to roman', async ({ page }) => {
     await load(page);
     const result = await page.evaluate(async () => {
