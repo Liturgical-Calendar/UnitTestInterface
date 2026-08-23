@@ -9,10 +9,11 @@ check — together with a locale-coverage step that grew out of it and applies m
 PRs: the API half on `feat/61-lectionary-validation` in LiturgicalCalendarAPI, and the client half on `feat/61-lectionary-coverage` here.
 Where the shipped code and this document differ, the code is authoritative — notably three things corrected during implementation:
 
-- **`covers` reaches 47 items, not the 45 predicted here.** The count in this document was computed from a scan of the Roman calendar tiers
-  only; the two extra are Ambrosian diocesan `:i18n` folders, whose calendars declare `locales` in source like every other diocese.
-- **The Europe wider-region lectionary is missing 29 locales, not 28.** `en_UK` is present but not declared, so only three of the thirty-two
-  declared locales have files.
+- **`covers` reaches 47 items (21 i18n + 26 lectionary), where the design predicted 45.** The prediction came from a scan of the Roman calendar
+  tiers only; the two extra are Ambrosian diocesan `:i18n` folders, whose calendars declare `locales` in source like every other diocese. The
+  figures below have been corrected to what shipped.
+- **The Europe wider-region lectionary is missing 29 locales, where the design said 28.** `en_UK` is present but not declared, so only three of
+  the thirty-two declared locales have files. Corrected below.
 - **The rite-level corpus items are not part of `CheckableInventory::staticItems()`.** Their expected locale set comes from
   `CheckableInventory::metadata()`, so the producer can fail for the same reason the enumerating ones can, and the static half exists
   precisely as a fallback that cannot throw. A `lectionary:` id therefore does not resolve through `staticById()`, exactly as a national or
@@ -125,7 +126,7 @@ diocese:{rite}:{calendarId}:lectionary  sanctorale:roman:{missalId}:lectionary
 
 ## What `covers` reports today
 
-45 items would carry the step — 19 i18n folders and all 26 lectionary folders. **One is red.**
+47 items carry the step — 21 i18n folders and all 26 lectionary folders. **One is red.**
 
 | item                                            | expected | present | verdict               |
 |-------------------------------------------------|----------|---------|-----------------------|
@@ -136,8 +137,8 @@ diocese:{rite}:{calendarId}:lectionary  sanctorale:roman:{missalId}:lectionary
 | `nation:roman:US:lectionary`                    | 1        | 2       | green (extra `es_US`) |
 | `diocese:roman:{9}:lectionary`                  | 1        | 1–2     | green                 |
 | `sanctorale:roman:{IT_1983,US_2011}:lectionary` | 1        | 1–2     | green                 |
-| all 19 i18n items with an authority             | 1–5      | 1–14    | green                 |
-| `widerregion:roman:Europe:lectionary`           | 32       | 4       | **red — 28 missing**  |
+| all 21 i18n items with an authority             | 1–5      | 1–14    | green                 |
+| `widerregion:roman:Europe:lectionary`           | 32       | 4       | **red — 29 missing**  |
 
 The `es_US` extra on the US lectionary is a real finding: `US.json` declares only `en_US`, yet both the national lectionary and the US_2011
 missal lectionary carry `es_US.json`. Fixing the declaration turns that item into expected 2 / present 2 and correctly turns
@@ -186,7 +187,7 @@ the existing third-person-singular vocabulary (`exists`, `parses`, `validates`).
 pattern and `schema` already accepts `Lectionary.json`, so `LitCalValidationsPath.json` needs no other change.
 
 **A6. `CheckableInventory` emits 26 lectionary folder items** — conditional on the folder existing — and populates `expectedLocales` on those and
-on the 19 qualifying i18n items. The 10 universal sections come from the `JsonData::LECTIONARY_*_FOLDER` constants that already exist; the rest
+on the 21 qualifying i18n items. The 10 universal sections come from the `JsonData::LECTIONARY_*_FOLDER` constants that already exist; the rest
 hang off the existing producers, so a new calendar with a lectionary folder joins with no edit here.
 
 **A7. `Health` needs no change for the three existing steps.** Its `kind: 'folder'` branch already validates every `*.json` in a folder against
@@ -238,7 +239,7 @@ four-step item.
 
 ## Cost
 
-The universal corpus adds 11 checks / 33 cards to every Roman run on `index.php`; `covers` adds one card to each of the 45 qualifying items.
+The universal corpus adds 11 checks / 33 cards to every Roman run on `index.php`; `covers` adds one card to each of the 47 qualifying items.
 
 | scaffold             | before      | after       |
 |----------------------|-------------|-------------|
@@ -252,8 +253,8 @@ from. If the universal corpus proves too noisy on `index.php` it is reversible w
 ## Out of scope
 
 - **Filling in the readings.** LiturgicalCalendarAPI#712.
-- **`US.json` declaring `es_US`.** A data fix this design surfaces but does not make.
-- **The 28 missing Europe wider-region lectionary locales.** A data gap this design surfaces.
+- **`US.json` declaring `es_US`.** A data fix this design surfaces but does not make — filed as LiturgicalCalendarAPI#883.
+- **The 29 missing Europe wider-region lectionary locales.** A data gap this design surfaces — filed as LiturgicalCalendarAPI#882.
 - **Folding `PropriumDeSanctis.json`'s local vigil definitions into `SourceReadings`.** They are correct source-shaped definitions, not
   duplication to repair; sharing them is a follow-up.
 - **An `x-litcal-role` keyword in the schema files**, advertised by `SchemasHandler` for external consumers.

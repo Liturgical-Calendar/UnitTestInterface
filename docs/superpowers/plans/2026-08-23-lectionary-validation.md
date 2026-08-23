@@ -1043,7 +1043,7 @@ print('covers-bearing:', sum(1 for i in items if 'covers' in i['steps']))
 "
 ```
 
-Expected: the prefix list now includes `lectionary`, and the covers count is 45.
+Expected: the prefix list now includes `lectionary`, and the covers count is 47 (21 i18n + 26 lectionary).
 
 - [ ] **Step 10: Commit**
 
@@ -1471,7 +1471,7 @@ Expected: PASS.
 
 Start the API, the WebSocket server and this interface, load `index.php` for the General Roman Calendar,
 and run the source-data phase. Expected: 22 checks / 79 cards, all green. Then select the Diocese of Rome:
-27 checks / 99 cards, with `widerregion:roman:Europe:lectionary`'s `covers` card red naming 28 missing
+27 checks / 99 cards, with `widerregion:roman:Europe:lectionary`'s `covers` card red naming 29 missing
 locales, and every other card green.
 
 - [ ] **Step 6: Commit**
@@ -1524,4 +1524,4 @@ git commit -m "docs: document the lectionary corpus, schema roles and the covers
 
 After both PRs merge, comment on UnitTestInterface#61 recording that part 2 is done, the id scheme, the
 final card counts, and the two data gaps this work surfaced but did not fix: `US.json` not declaring
-`es_US`, and the 28 missing Europe wider-region lectionary locales. File each as its own issue.
+`es_US`, and the 29 missing Europe wider-region lectionary locales. Filed as LiturgicalCalendarAPI#883 and #882 respectively.
