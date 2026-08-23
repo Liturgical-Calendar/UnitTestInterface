@@ -192,6 +192,17 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
     expect(roman.has('decrees-roman-i18n')).toBe(true);
     expect(roman.has('temporale-ambrosian')).toBe(false);
 
+    // #61: the calendar-specific tier carries its i18n folders too, not only the universal corpus.
+    // The rite-level Roman scaffold's calendar-specific tier is its editio typica missals, so the
+    // invariant to pin is the pairing: every missal card on the page has a translations card next
+    // to it. (Stated as a pairing rather than as a literal missal id so a new editio typica, or a
+    // missal that gains or loses translations upstream, does not have to be edited in here.)
+    const missalCards = [...roman].filter((t) => /^sanctorale-roman-[a-z0-9_]+$/.test(t));
+    expect(missalCards.length).toBeGreaterThan(0);
+    for (const missal of missalCards) {
+        expect(roman.has(`${missal}-i18n`)).toBe(true);
+    }
+
     await selectRite(page, 'ambrosian');
     const ambrosian = await classTokens();
     expect(ambrosian.has('temporale-ambrosian')).toBe(true);

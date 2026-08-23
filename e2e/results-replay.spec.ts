@@ -82,10 +82,12 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
 
 test('restores live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
     // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live
-    // General Roman scaffold has 8 sourceDataChecks: metadata, temporale + i18n, decrees + i18n, and 3 editio typica missals from /missals.
+    // General Roman scaffold has 11 sourceDataChecks: metadata, temporale + i18n, decrees + i18n,
+    // and the 3 editio typica missals from /missals, each with its own i18n folder (#61 added the
+    // calendar-specific i18n tier; all three editio typica missals have translations).
     // After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold shows only 1
     // check. Returning to "— Live —" must re-sync state from the DOM controls and rebuild the
-    // scaffold via setupPage(), restoring the 8-check General Roman layout.
+    // scaffold via setupPage(), restoring the 11-check General Roman layout.
     const run = {
         schemaVersion: 1,
         timestamp: '2026-07-03T11:00:00Z',
@@ -120,9 +122,9 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
     await expect(page.locator('.sourcedata-tests > div')).toHaveCount(1);
 
     // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the General Roman scaffold
-    // (8 checks)
+    // (11 checks)
     await page.selectOption('#pastRunsSelect', '');
-    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(8);
+    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(11);
     // .currentSelectedCalendar cells must reflect the live dropdown value ('roman'), not 'IT'
     await expect(page.locator('.currentSelectedCalendar').first()).toContainText('roman');
 });

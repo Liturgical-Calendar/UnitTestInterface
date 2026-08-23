@@ -31,6 +31,7 @@ import {
     yearsForRite,
     fetchValidations,
     inventoryIdsForCalendar,
+    isConditionalInventoryId,
     idToCardClass,
     STEP_CARD_CLASS,
     TEST_RUN_STEP_CARD_CLASS,
@@ -163,6 +164,11 @@ const buildSourceDataChecks = ( { rite, dioceseRite, nation, widerRegion, missal
     inventoryIdsForCalendar( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ).forEach( id => {
         const item = advertised.get( id );
         if ( undefined === item ) {
+            if ( isConditionalInventoryId( id ) ) {
+                // Not a disagreement: the server publishes this family only when the folder exists
+                // (see `isConditionalInventoryId()`), so an absence here is the contract being kept.
+                return;
+            }
             // Said out loud rather than skipped silently: the inventory is the contract now, so an id
             // this page composed that the server does not advertise is a real disagreement.
             console.warn( `The API advertises no checkable item "${id}"; it will not be checked.` );
