@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-22 23:32+0000\n"
+"POT-Creation-Date: 2026-08-23 13:47+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -308,93 +308,93 @@ msgstr ""
 msgid "Failed to extend session. Please login again."
 msgstr ""
 
-#: index.php:15 resources.php:15
+#: index.php:18 resources.php:18
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
 msgstr ""
 
-#: index.php:24 resources.php:24
+#: index.php:27 resources.php:27
 msgid "WebSocket connected successfully!"
 msgstr ""
 
-#: index.php:32 resources.php:32
+#: index.php:35 resources.php:35
 msgid "WebSocket connection closed."
 msgstr ""
 
-#: index.php:40 resources.php:40
+#: index.php:43 resources.php:43
 msgid "All tests complete!"
 msgstr ""
 
-#: index.php:48 resources.php:48
+#: index.php:51 resources.php:51
 msgid "Run results saved."
 msgstr ""
 
-#: index.php:56 resources.php:56
+#: index.php:59 resources.php:59
 msgid "Could not save run results."
 msgstr ""
 
-#: index.php:64 resources.php:64
+#: index.php:67 resources.php:67
 msgid "Could not load run results."
 msgstr ""
 
-#: index.php:72 resources.php:72
+#: index.php:75 resources.php:75
 msgid "Could not load the calendar controls."
 msgstr ""
 
-#: index.php:83 resources.php:83
+#: index.php:86 resources.php:86
 msgid ""
 "Could not load the list of checks from the API, so no test run can be "
 "started. Try reloading the page."
 msgstr ""
 
-#: index.php:91 resources.php:88
+#: index.php:105 resources.php:102
 msgid "Response Format"
 msgstr ""
 
-#: index.php:100 resources.php:95
+#: index.php:114 resources.php:109
 msgid "Past Runs"
 msgstr ""
 
-#: index.php:102 resources.php:97
+#: index.php:116 resources.php:111
 msgid "— Live —"
 msgstr ""
 
-#: index.php:109 resources.php:104
+#: index.php:123 resources.php:118
 msgid "Run Tests"
 msgstr ""
 
-#: index.php:115 index.php:139 index.php:176 index.php:206 resources.php:110
-#: resources.php:136 resources.php:164
+#: index.php:129 index.php:153 index.php:190 index.php:220 resources.php:124
+#: resources.php:150 resources.php:178
 msgid "Successful:"
 msgstr ""
 
-#: index.php:118 index.php:142 index.php:179 index.php:209 resources.php:113
-#: resources.php:139 resources.php:167
+#: index.php:132 index.php:156 index.php:193 index.php:223 resources.php:127
+#: resources.php:153 resources.php:181
 msgid "Failed:"
 msgstr ""
 
-#: index.php:122 index.php:146 index.php:183 index.php:213 resources.php:117
-#: resources.php:143 resources.php:171
+#: index.php:136 index.php:160 index.php:197 index.php:227 resources.php:131
+#: resources.php:157 resources.php:185
 #, php-format
 msgid "Time (%s):"
 msgstr ""
 
-#: index.php:135
+#: index.php:149
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
 #. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
-#: index.php:167
+#: index.php:181
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
 msgstr ""
 
-#: index.php:201
+#: index.php:215
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:234 resources.php:191
+#: index.php:248 resources.php:205
 msgid "Loading…"
 msgstr ""
 
@@ -442,10 +442,10 @@ msgstr ""
 msgid "WebSocket connection status"
 msgstr ""
 
-#: resources.php:131
+#: resources.php:145
 msgid "API Paths"
 msgstr ""
 
-#: resources.php:160
+#: resources.php:174
 msgid "Source data"
 msgstr ""
