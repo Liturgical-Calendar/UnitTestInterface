@@ -335,7 +335,13 @@ test('a rite change between runs clears the previous run\'s counters and timers'
     // never called `resetTestUI()`, so the badges kept asserting the previous run's totals over a
     // card set that was entirely pending. Easier to hit here than on resources.php: it triggers on
     // any calendar change, not only a rite change.
-    await installReplyingWebSocketStub(page);
+    // `answerOnly` restricts the stub to the source-data phase on purpose: this test's second click
+    // needs the run still parked mid-run, in the stop-button role asserted below. Once the stub also
+    // learned `validateCalendar` and `runTest`, an unrestricted stub would drive the run all the way to
+    // completion before that click lands, flipping the button out of its stop role and popping a
+    // completion toast that overlaps it — see the comment further down for what that state actually
+    // needs to look like.
+    await installReplyingWebSocketStub(page, { answerOnly: ['executeValidation', 'validateSource'] });
     // See the note in resources-rite.spec.ts: a completed run POSTs itself to results.php, whose
     // 50-per-type retention would evict the older-timestamped fixtures the replay specs seed.
     await page.route('**/results.php', (route) => route.fulfill({ status: 200, body: '{}' }));

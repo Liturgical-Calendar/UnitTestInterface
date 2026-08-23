@@ -86,17 +86,28 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  * @param options.stopAfterStep - Answer only up to this step, and send no terminal frame — a request
  *   that died partway, leaving its remaining cards grey. The other way a request goes outstanding,
  *   and the one that has to be counted.
+ * @param options.answerOnly - Restrict the set of `action`s this stub replies to; any other action is
+ *   received (and recorded in `__wsSent`) but never gets a response, parking the run at that request —
+ *   the same "never replies" state `installWebSocketStub()` produces, but for only part of the protocol.
+ *   Defaults to every action the `hello` frame advertises, i.e. current behaviour, so existing callers
+ *   are unaffected.
  */
 export const installReplyingWebSocketStub = async (
     page: Page,
-    options: { protocol?: number | null; omitComplete?: boolean; stopAfterStep?: string | null } = {}
+    options: {
+        protocol?: number | null;
+        omitComplete?: boolean;
+        stopAfterStep?: string | null;
+        answerOnly?: string[] | null;
+    } = {}
 ): Promise<void> => {
     const protocol = options.protocol === undefined ? 1 : options.protocol;
     const omitComplete = options.omitComplete ?? false;
     const stopAfterStep = options.stopAfterStep ?? null;
+    const answerOnly = options.answerOnly ?? null;
 
     await page.addInitScript(
-        ({ protocol, omitComplete, stopAfterStep }) => {
+        ({ protocol, omitComplete, stopAfterStep, answerOnly }) => {
             const sent: string[] = [];
             (window as unknown as { __wsSent: string[] }).__wsSent = sent;
 
@@ -160,6 +171,9 @@ export const installReplyingWebSocketStub = async (
                     if (!CHECK_ACTIONS.includes(message.action as string) && !TEST_ACTIONS.includes(message.action as string)) {
                         return;
                     }
+                    if (null !== answerOnly && !answerOnly.includes(message.action as string)) {
+                        return;
+                    }
                     const isTestRun = TEST_ACTIONS.includes(message.action as string);
                     const allSteps = (isTestRun ? ['validates'] : ['exists', 'parses', 'validates']) as string[];
                     const stepClassFor = (step: string): string => (isTestRun ? 'test-valid' : STEP_CLASS[step]);
@@ -219,6 +233,6 @@ export const installReplyingWebSocketStub = async (
 
             (window as unknown as { WebSocket: unknown }).WebSocket = ReplyingWebSocket;
         },
-        { protocol, omitComplete, stopAfterStep }
+        { protocol, omitComplete, stopAfterStep, answerOnly }
     );
 };
