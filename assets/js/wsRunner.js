@@ -31,7 +31,19 @@ import { paintCard, applyResultToDom } from './testResults.js';
  * @param {function(): boolean}        options.canAdvance       - false once the run is finished or stopped
  * @param {function(): ?WebSocket}     options.socket           - the live connection, read at send time
  * @param {function(): ?string}        options.runToken         - the current run token, or null outside a run
- * @param {number}  [options.silenceTimeoutMs=60000]
+ * @param {number}  [options.silenceTimeoutMs=60000] - How long a run may go without a single frame
+ *   before the current phase is given up on.
+ *
+ *   Stopping on the terminal `complete` frame is what lets a client delete the hardcoded step count
+ *   (see {@link beginPhase}), but it trades one failure mode for another: a request that never
+ *   reports completion now hangs its phase for ever, where counting frames would eventually have
+ *   overshot its way past it. The server has a known hole of exactly that shape — a throw inside a
+ *   promise's fulfil handler skips the terminal frame (LiturgicalCalendarAPI#823) — and the
+ *   published contract says in as many words to pair stopping on `complete` with a timeout.
+ *
+ *   The clock measures *silence*, not phase duration, and is restarted by every frame of the run.
+ *   Requests run in parallel and a slow one is covered by its neighbours' frames, so this only fires
+ *   when the server has genuinely stopped answering — never merely because a check was slow.
  * @returns {{
  *   beginPhase: function(Array<object>, object): void,
  *   outstandingCount: function(): number,
@@ -43,7 +55,8 @@ import { paintCard, applyResultToDom } from './testResults.js';
  *   paintResult: function(object): void,
  *   selectorFor: function(string, string): ?string,
  *   giveUpOnOutstandingRequests: function(): void,
- *   sendMessage: function(object): void
+ *   sendMessage: function(object): void,
+ *   endRun: function(): void
  * }}
  */
 export const createPhaseRunner = ( options ) => {
@@ -64,7 +77,22 @@ export const createPhaseRunner = ( options ) => {
 
     const watchdog = createSilenceWatchdog( silenceTimeoutMs, () => giveUpOnOutstandingRequests() );
 
-    const defaultCardSelectorFor = ( check, step ) => `.${cardSlugFor( check )}.${STEP_CARD_CLASS[ step ]}`;
+    /**
+     * The default `cardSelectorFor`: a check's own slug plus the step's card class.
+     *
+     * Returns null for a step this page's markup carries no class for, rather than the string
+     * `.slug.undefined` — so the "server advertises a step this page renders no card for" warning in
+     * {@link beginPhase} fires on the specific, attributable branch instead of degrading to the less
+     * specific "no card rendered at this selector" one.
+     *
+     * @param {object} check
+     * @param {string} step
+     * @returns {?string}
+     */
+    const defaultCardSelectorFor = ( check, step ) => {
+        const cardClass = STEP_CARD_CLASS[ step ];
+        return undefined === cardClass ? null : `.${cardSlugFor( check )}.${cardClass}`;
+    };
 
     /**
      * The selector the card for this (request, step) was found by.
@@ -142,15 +170,23 @@ export const createPhaseRunner = ( options ) => {
             check.requestId = requestId;
             const cards = {};
             const cardSelectors = {};
+            // The steps the server advertised for this item, where it advertised any — the count is
+            // exact since LiturgicalCalendarAPI#825, so it can be trusted rather than assumed. A
+            // check that carries none falls back to every step the shared card-class table has.
             const steps = Array.isArray( check.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
             steps.forEach( step => {
                 const suffix = cardSelectorFor( check, step );
                 if ( null === suffix ) {
+                    // A step this page has no card for. Said out loud rather than skipped silently:
+                    // the server has added a step to its vocabulary and the templates have not caught up.
                     console.warn( `The server advertises a step "${step}" for "${check.id ?? check.validate}" that this page renders no card for.` );
                     return;
                 }
                 const card = document.querySelector( `${containerSelector} ${suffix}` );
                 if ( null === card ) {
+                    // Loud, and specific about which check and which step. The selector-based
+                    // addressing this replaces could only produce an empty NodeList, which said
+                    // nothing about what was missing and did not stop the counters advancing.
                     console.warn( `No card rendered at "${suffix}" for check "${check.id ?? check.validate}"; its ${step} result will have nowhere to go.` );
                     return;
                 }
@@ -169,8 +205,13 @@ export const createPhaseRunner = ( options ) => {
      *
      * A phase now ends on the terminal frames of the requests it started, so a phase that starts *no*
      * requests would otherwise wait for frames that are never coming — and the silence watchdog cannot
-     * rescue it either, since it only runs while something is outstanding. The run would sit forever
-     * with no diagnostic.
+     * rescue it either, since it only runs while something is outstanding. The run would sit on
+     * "Tests Running..." for ever with no diagnostic, which is the wedge #43 is about, reached by a
+     * door the frame counting this replaces did not have.
+     *
+     * Reachable: a page's check list can be built from something the server advertised for the
+     * selected rite, so a rite with no advertised checks — or an inventory that came back empty — is
+     * an empty phase.
      *
      * @returns {void}
      */
@@ -293,9 +334,31 @@ export const createPhaseRunner = ( options ) => {
         }
     };
 
+    /**
+     * Release everything a finished or abandoned run was holding, so the next run starts clean.
+     *
+     * The runner owns the mutable state of a run in progress — the registry's `Element` references,
+     * the recorded selectors and the outstanding set — and state a run never releases contradicts
+     * that ownership. Both containers this state addresses are wiped (`innerHTML = ''`) on every run
+     * and every rite change, which would otherwise leave the registry and `selectors` map holding a
+     * few hundred **detached** card nodes for the life of the page.
+     *
+     * Call at both ends of a run's lifecycle: when a new run is about to start (so it does not
+     * inherit the previous run's bindings) and when a run is stopped (so a `giveUpOnOutstandingRequests()`
+     * call reaching the watchdog's callback after a Stop — or any other post-stop caller — finds
+     * nothing outstanding to give up on, exactly as it did before this state moved into the runner).
+     *
+     * @returns {void}
+     */
+    const endRun = () => {
+        registry.reset();
+        selectors.clear();
+        phaseOutstanding = new Set();
+    };
+
     return {
         beginPhase, outstandingCount: () => phaseOutstanding.size, advanceIfPhaseIsEmpty,
         armWatchdog, restartWatchdog, clearWatchdog, noteTerminalFrame, paintResult,
-        selectorFor, giveUpOnOutstandingRequests, sendMessage
+        selectorFor, giveUpOnOutstandingRequests, sendMessage, endRun
     };
 };

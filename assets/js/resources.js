@@ -887,6 +887,15 @@ const countUnattributableFailure = () => {
  * `currentState === Stopped`, so the terminal-frame path is unreachable in that state regardless.
  */
 const phaseRunner = createPhaseRunner( {
+    // The card class a check's cards were rendered with.
+    //
+    // The two families name themselves differently and always did: a resource check is a route,
+    // known by the `validate` key it shares with `resourcePaths`, slugified with this page's own
+    // `slugify()`; a source check is an inventory item, known by the opaque `id` the server minted,
+    // turned into a class with `idToCardClass()`. Neither is derived from anything the server sends
+    // at *run* time — that was the coupling #42 removes — so this is only about which of our own two
+    // vocabularies a check belongs to, and the distinction must not be conflated: a resource check's
+    // `id` is always undefined, which is what selects between the two here.
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
@@ -1399,10 +1408,10 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
     }
     if ( currentState === TestState.Ready || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
         resultCollector.reset();
-        // No explicit registry/outstanding reset here: `phaseRunner`'s internal state is
-        // request-id-keyed (freshly minted per phase by `beginPhase`), so a previous run's
-        // bindings cannot collide with this one, and `runTests()` below installs a fresh
-        // outstanding set the moment the first phase begins.
+        // Releases the previous run's registry entries, selectors and outstanding set — see
+        // `endRun()` in wsRunner.js for why a run must not simply be allowed to leak its state into
+        // the next one.
+        phaseRunner.endRun();
         resetTestUI();
         currentState = conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ? TestState.Ready : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
@@ -1434,9 +1443,11 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
         phaseRunner.clearWatchdog();
-        // No explicit outstanding-set clear here: `currentState` is about to become `Stopped`,
-        // and `conn.onmessage` returns early whenever it is — so nothing reads the outstanding
-        // set again until the next run installs a fresh one via `beginPhase()`.
+        // Releases the stopped run's outstanding set, so a `giveUpOnOutstandingRequests()` call
+        // reaching this page after a Stop (its exported seam, or the watchdog's callback in a race)
+        // finds nothing outstanding to give up on — the same no-op it was before this state moved
+        // into the runner.
+        phaseRunner.endRun();
         currentState = TestState.Stopped;
         currentRunToken = null;
         setRiteSelectDisabledForRun( false );
