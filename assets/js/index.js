@@ -26,10 +26,12 @@ import {
 import {
     sendCancelRun,
     toWireTarget,
-    universalChecksForRite,
     testAppliesToRite,
     CALENDAR_SCOPE_KEYS,
     yearsForRite,
+    fetchValidations,
+    inventoryIdsForCalendar,
+    idToCardClass,
 } from './wsProtocol.js';
 
 // `@liturgical-calendar/components-js` is deliberately NOT imported statically here. A static
@@ -107,24 +109,61 @@ const ENDPOINTS = {
 }
 
 /**
- * The universal source-data checks for a rite, plus the two API-path checks this page renders
+ * The `/validations` inventory, as fetched by `fetchMetadataAndTests()`.
+ *
+ * Empty until that fetch resolves. `buildSourceDataChecks()` reads it to resolve the ids
+ * `inventoryIdsForCalendar()` composes into the advertised `{id, label, steps}` shape.
+ *
+ * @type {Array<{id: string, kind: string, rite: string, region: ?string, label: string, schema: string, steps: Array<string>}>}
+ */
+let ValidationsInventory = [];
+
+/**
+ * Whether {@link ValidationsInventory} has been populated.
+ *
+ * `fetchMetadataAndTests()` gates `ReadyToRunTests.AsyncDataReady` on four fetches now instead of
+ * three; a bare `ValidationsInventory.length > 0` would be indistinguishable from "not fetched yet"
+ * if the API ever legitimately advertised zero items, so readiness is tracked separately.
+ *
+ * @type {boolean}
+ */
+let ValidationsInventoryReady = false;
+
+/**
+ * The source-data checks for a calendar, as inventory items plus the one URL check this page renders
  * alongside them.
  *
- * The corpus itself comes from `wsProtocol.js` so that `resources.js` checks the same files under
- * the same names. The `/calendars` metadata check is rite-independent and belongs to no rite's
- * corpus, so it is added here rather than listed there.
+ * `LitCalMetadata` is a *resource* check living in a source-data phase: it validates the `/calendars`
+ * response, has no inventory id, and stays on `executeValidation`. Everything else is an id the API
+ * advertised.
  *
- * @param {string} rite - The rite identifier, e.g. 'roman' or 'ambrosian'.
- * @returns {Array<{validate: string, category: string, sourceFile?: string, sourceFolder?: string}>}
+ * @param {object} scope
+ * @param {string} scope.rite - The selected rite.
+ * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
+ * @param {?string} scope.widerRegion - The nation's wider region, or null.
+ * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
+ * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
+ * @returns {Array<object>}
  */
-const buildUniversalSourceDataChecks = ( rite ) => [
-    {
-        "validate": "LitCalMetadata",
-        "sourceFile": ENDPOINTS.CALENDARS,
-        "category": "universalcalendar"
-    },
-    ...universalChecksForRite( rite )
-];
+const buildSourceDataChecks = ( { rite, nation, widerRegion, missals, dioceseId } ) => {
+    const checks = [ {
+        validate: 'LitCalMetadata',
+        sourceFile: ENDPOINTS.CALENDARS,
+        category: 'universalcalendar'
+    } ];
+    const advertised = new Map( ValidationsInventory.map( item => [ item.id, item ] ) );
+    inventoryIdsForCalendar( { rite, nation, widerRegion, missals, dioceseId } ).forEach( id => {
+        const item = advertised.get( id );
+        if ( undefined === item ) {
+            // Said out loud rather than skipped silently: the inventory is the contract now, so an id
+            // this page composed that the server does not advertise is a real disagreement.
+            console.warn( `The API advertises no checkable item "${id}"; it will not be checked.` );
+            return;
+        }
+        checks.push( { id: item.id, label: item.label, steps: item.steps } );
+    } );
+    return checks;
+};
 
 /**
  * Sets the API endpoints based on the configured API_BASE_PATH environment variable.
@@ -436,28 +475,45 @@ const calDataTestTemplate = ( idx, years ) => {
  *   - `json-valid`: indicates whether the source data is valid JSON.
  *   - `schema-valid`: indicates whether the source data is valid according to the schema.
  * The template is used by the `index.js` script.
- * @param {object} item An object containing the validate, category and sourceFile properties of the source data check.
+ *
+ * Two shapes reach this template. A live run supplies an advertised inventory item —
+ * `{id, label, steps}` — whose caption is the server's own label and whose tooltip is the id the
+ * request actually carries; that is the shape #42 moves this page to. The URL check this page
+ * still renders directly (`LitCalMetadata`), and any run stored before this migration replayed
+ * from the Past Runs dropdown, carry the old `{validate, category, sourceFile|sourceFolder}`
+ * shape instead — a slug this page invented and the repo-relative path it invented it from.
+ * Replaying those stored runs is not optional, so both shapes must render.
+ *
+ * @param {object} item An inventory item (`{id, label, steps}`) or a `{validate, category, sourceFile}` URL/legacy check.
  * @param {number} idx The index of the source data check.
  * @return {string} The HTML template as a string.
  */
 const sourceDataCheckTemplate = ( item, idx ) => {
+    const fromInventory = undefined !== item.id;
+
     let categoryStr;
-    // Determine category description from validate field prefix (since category is now "sourceDataCheck")
-    if ( item.validate.startsWith('national-calendar-') ) {
-        categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
-    } else if ( item.validate.startsWith('wider-region-') ) {
-        categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
-    } else if ( item.validate.startsWith('diocesan-calendar-') ) {
-        categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
-    } else if ( item.validate.startsWith('proprium-de-sanctis-') ) {
-        categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
+    // Category descriptions keyed off a `validate` slug prefix only ever matched the legacy
+    // slug families (`national-calendar-`, `wider-region-`, `diocesan-calendar-`,
+    // `proprium-de-sanctis-`) this page composed before #42; an inventory item carries no
+    // `validate` at all, so this only runs for the URL check and for replayed pre-#42 runs.
+    if ( false === fromInventory ) {
+        if ( item.validate.startsWith('national-calendar-') ) {
+            categoryStr = 'National Calendar definition: defines any actions that need to be taken on the liturgical events already defined in the Universal Calendar, to adapt them to this specific National Calendar';
+        } else if ( item.validate.startsWith('wider-region-') ) {
+            categoryStr = 'Wider Region definition: contains any liturgical events that apply not only to a particular nation, but to a group of nations that belong to the wider region. There will also be translation files associated with this data';
+        } else if ( item.validate.startsWith('diocesan-calendar-') ) {
+            categoryStr = 'Diocesan Calendar definition: contains any liturgical events that are proper to the given diocese. This data will not overwrite national or universal calendar data, it will be simply appended to the calendar';
+        } else if ( item.validate.startsWith('proprium-de-sanctis-') ) {
+            categoryStr = 'Proprium de Sanctis data: contains any liturgical events defined in the Missal printed for the given nation, that are not already defined in the Universal Calendar';
+        }
     }
-    const validateSlug = slugify(item.validate);
-    // A check names either a single file or a folder of i18n files, never both. Reading only
-    // `sourceFile` rendered `title="undefined"` for every folder check; index.js never sent one
-    // before #48 added the i18n folders to the universal corpus.
-    const escapedSourceFile = escapeHtmlAttr(item.sourceFile ?? item.sourceFolder ?? '');
-    const escapedValidate = escapeHtmlAttr(item.validate);
+    const validateSlug = fromInventory ? idToCardClass( item.id ) : slugify( item.validate );
+    const caption = item.label ?? item.validate;
+    // A legacy check names either a single file or a folder of i18n files, never both. Reading
+    // only `sourceFile` rendered `title="undefined"` for every folder check.
+    const tooltip = item.id ?? item.sourceFile ?? item.sourceFolder ?? '';
+    const escapedTooltip = escapeHtmlAttr(tooltip);
+    const escapedCaption = escapeHtmlAttr(caption);
     const infoIcon = categoryStr ? ` <span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(categoryStr)}"><i class="fas fa-circle-info fa-fw" aria-hidden="true"></i></span>` : '';
     // The label is not truncated to a character budget: it wraps, exactly as `resources.js`'s
     // `sourceTemplate()` renders these same slugs. A character count is only a proxy for pixel
@@ -470,7 +526,7 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     // grid line down together instead of misaligning its own column — are `common.css`'s job, via
     // the flex rule on `.sourcedata-tests > div`. Nothing here needs a height.
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
-    <p class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapedSourceFile}" class="text-break d-inline-block w-75">${escapedValidate}</span>${item.category !== 'universalcalendar' ? infoIcon : ''}</p>
+    <p class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapedTooltip}" class="text-break d-inline-block w-75">${escapedCaption}</span>${( false === fromInventory && item.category !== 'universalcalendar' ) ? infoIcon : ''}</p>
     <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
         <div class="card-body">
             <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
@@ -1157,10 +1213,18 @@ const fetchMetadataAndTests = () => {
             headers: {
                 Accept: "application/json"
             }
-        } )
+        } ),
+        // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to
+        // the `{litcal_validations}` shape the branch below expects — it is not a `Response`, so
+        // the `.json()` step right after this array must not try to call `.json()` on it too.
+        fetchValidations( getApiBaseUrl() ).then( items => ( { litcal_validations: items } ) )
     ] )
         .then( ( responses ) => {
             return Promise.all( responses.map( ( response ) => {
+                if ( typeof response.json !== 'function' ) {
+                    // Already-parsed data from `fetchValidations()`, not a `fetch()` Response.
+                    return response;
+                }
                 if ( response.ok ) { return response.json(); }
                 else {
                     if (response.headers.get('Content-Type') === 'application/problem+json') {
@@ -1180,16 +1244,24 @@ const fetchMetadataAndTests = () => {
                 console.log( data );
                 if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
                     MetaData = data.litcal_metadata;
-                    if ( UnitTests !== null && RomanMissals !== null ) {
+                    if ( UnitTests !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
                         ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests and RomanMissals were set first, now Metadata is also ready' );
+                        console.log( 'it seems that UnitTests, RomanMissals and the validations inventory were set first, now Metadata is also ready' );
                         setupPage();
                     }
                 } else if ( data.hasOwnProperty( 'litcal_missals' ) ) {
                     RomanMissals = data.litcal_missals;
-                    if ( UnitTests !== null && MetaData !== null ) {
+                    if ( UnitTests !== null && MetaData !== null && ValidationsInventoryReady === true ) {
                         ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests and MetaData were set first, now RomanMissals is also ready' );
+                        console.log( 'it seems that UnitTests, MetaData and the validations inventory were set first, now RomanMissals is also ready' );
+                        setupPage();
+                    }
+                } else if ( data.hasOwnProperty( 'litcal_validations' ) ) {
+                    ValidationsInventory = data.litcal_validations;
+                    ValidationsInventoryReady = true;
+                    if ( UnitTests !== null && MetaData !== null && RomanMissals !== null ) {
+                        ReadyToRunTests.AsyncDataReady = true;
+                        console.log( 'it seems that UnitTests, MetaData and RomanMissals were set first, now the validations inventory is also ready' );
                         setupPage();
                     }
                 } else {
@@ -1203,15 +1275,15 @@ const fetchMetadataAndTests = () => {
                         let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
                         console.error( message );
                     }
-                    if ( MetaData !== null && RomanMissals !== null ) {
+                    if ( MetaData !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
                         ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that Metadata and RomanMissals were set first, now UnitTests is also ready' );
+                        console.log( 'it seems that Metadata, RomanMissals and the validations inventory were set first, now UnitTests is also ready' );
                         setupPage();
                     }
                 }
             } );
         } ).catch( ( error ) => {
-            console.error( 'Error fetching metadata and/or roman missals and/or tests data:', error );
+            console.error( 'Error fetching metadata and/or roman missals and/or tests data and/or the validations inventory:', error );
         } );
 }
 
@@ -1345,7 +1417,8 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 
 /**
  * Builds source data checks for non-VA (non-Vatican) calendars.
- * Adds checks for wider region, national calendar, missals, and optionally diocesan calendar.
+ * Resolves the diocese-to-nation and nation-to-wider-region/missals metadata this page holds,
+ * then delegates the actual check list to `buildSourceDataChecks()`.
  *
  * @param {string} calendarId - The calendar ID (national or diocesan).
  * @param {string} calendarCategory - The category: 'nationalcalendar' or 'diocesancalendar'.
@@ -1353,6 +1426,7 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
  */
 const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     let nation = calendarId;
+    let dioceseId = null;
 
     // For diocesan calendars, find the parent nation
     if (calendarCategory !== 'nationalcalendar') {
@@ -1364,13 +1438,8 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
             return null;
         }
         nation = diocesanData.nation;
+        dioceseId = calendarId;
     }
-
-    // National and diocesan calendars always start from the Roman universal corpus: national
-    // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
-    // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
-    // corpus is a separate (pre-existing) design question.
-    const checks = buildUniversalSourceDataChecks( 'roman' );
 
     const nationalCalendarData = MetaData.national_calendars.find(
         nationalCalendar => nationalCalendar.calendar_id === nation
@@ -1380,49 +1449,22 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         return null;
     }
 
-    // Add wider region check
-    checks.push({
-        "validate": `wider-region-${nationalCalendarData.wider_region}`,
-        "sourceFile": nationalCalendarData.wider_region,
-        "category": "sourceDataCheck"
-    });
-
-    // Add national calendar check
-    checks.push({
-        "validate": `national-calendar-${nation}`,
-        "sourceFile": nation,
-        "category": "sourceDataCheck"
-    });
-
-    // Add missal checks
-    // Server expects validate like "proprium-de-sanctis-IT-1983" for sourceDataCheck category
-    nationalCalendarData.missals.forEach((missal) => {
-        console.log('retrieving Missal definition for missal: ' + missal);
-        const missalDef = Object.values(RomanMissals).find(el => el.missal_id === missal);
-        if (missalDef) {
-            // Use structured properties: region='VA' means editio typica (no region in path)
-            const validateStr = `proprium-de-sanctis${missalDef.region === 'VA' ? '' : `-${missalDef.region}`}-${missalDef.year_published}`;
-            console.log('found Missal definition for missal: ' + missal + ', validate: ' + validateStr);
-            checks.push({
-                "validate": validateStr,
-                "sourceFile": missal,
-                "category": "sourceDataCheck"
-            });
-        } else {
-            console.warn('could not find Missal definition for missal: ' + missal);
-        }
-    });
-
-    // Add diocesan calendar check if applicable
-    if (calendarCategory === 'diocesancalendar') {
-        checks.push({
-            "validate": `diocesan-calendar-${calendarId}`,
-            "sourceFile": calendarId,
-            "category": "sourceDataCheck"
-        });
-    }
-
-    return checks;
+    // National and diocesan calendars always start from the Roman universal corpus: national
+    // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
+    // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
+    // corpus is a separate (pre-existing) design question. `inventoryIdsForCalendar()` is what
+    // implements that inheritance now: its wider-region, nation and missal ids are hardcoded
+    // `roman` no matter what `rite` is passed in below. `rite` here is still the calendar's own
+    // rite — needed so a diocese resolves to the id the inventory actually advertises (e.g.
+    // `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`) — and, for a national
+    // calendar, is always `'roman'` regardless, since national calendars exist only under that rite.
+    return buildSourceDataChecks( {
+        rite: currentRite,
+        nation,
+        widerRegion: nationalCalendarData.wider_region,
+        missals: nationalCalendarData.missals,
+        dioceseId
+    } );
 };
 
 /**
@@ -1481,18 +1523,18 @@ const setupPage = () => {
         // corpus of its own rite, plus — for the Roman rite — the editio typica missals, which the
         // General Roman Calendar uses and no national calendar supplies. Derived from /missals
         // rather than hardcoded, so a new editio typica needs no edit here.
-        currentSourceDataChecks = buildUniversalSourceDataChecks( currentRite );
-        if ( currentRite === 'roman' ) {
-            Object.values( RomanMissals )
+        const missals = currentRite === 'roman'
+            ? Object.values( RomanMissals )
                 .filter( missalDef => missalDef.region === 'VA' )
-                .forEach( missalDef => {
-                    currentSourceDataChecks.push({
-                        "validate": `proprium-de-sanctis-${missalDef.year_published}`,
-                        "sourceFile": missalDef.missal_id,
-                        "category": "sourceDataCheck"
-                    });
-                } );
-        }
+                .map( missalDef => missalDef.missal_id )
+            : [];
+        currentSourceDataChecks = buildSourceDataChecks( {
+            rite: currentRite,
+            nation: null,
+            widerRegion: null,
+            missals,
+            dioceseId: null
+        } );
     } else {
         const checks = buildNonVASourceDataChecks(currentSelectedCalendar, currentCalendarCategory);
         if (checks === null) {
