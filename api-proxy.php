@@ -40,6 +40,13 @@
  * Both are accepted so that a deployment whose PHP SAPI does not populate `PATH_INFO` can still be
  * diagnosed (`?route=` will work when the path form 404s), and so the flag can be switched off without
  * touching code.
+ *
+ * ## Where the request goes
+ *
+ * `API_HOST` and its siblings are the *browser's* address for the API. This fetch is server-side, so a
+ * containerized deployment needs a different one — `API_INTERNAL_URL`, the same variable `admin.php`
+ * reads for its own server-side calls. Unset, the composed `API_HOST` form is used exactly as before.
+ * See the comment on the composition below, and issue #74 for how the two came to be conflated.
  */
 
 declare(strict_types=1);
@@ -145,15 +152,55 @@ $basePath = trim((string) ($_ENV['API_BASE_PATH'] ?? ''), '/');
 
 $portPart = in_array($port, [80, 443], true) ? '' : ':' . $port;
 $pathPart = '' === $basePath ? '/' : '/' . $basePath . '/';
-$upstream = $protocol . '://' . $host . $portPart . $pathPart . $route;
+
+// Where *this server* reaches the API, which is not always where the browser reaches it.
+//
+// The variables above describe the API as the **browser** addresses it — `layout/footer.php` hands
+// the same three to the page. This request is server-side, so wherever this app is served from a
+// container the two are different addresses and `localhost` here is the container, not the API.
+// `admin.php` already draws exactly this distinction with `API_INTERNAL_URL` (as does
+// LiturgicalCalendarFrontend for its own PHP->API calls), and the docker stack already sets that
+// variable on this service — so this honours the convention that exists rather than adding a second
+// one. Unset, everything composes exactly as it did before, which is the path every single-host
+// deployment takes, production included.
+//
+// Read as a *complete base URL*, matching `admin.php`: whatever path it carries is the base path,
+// and `API_BASE_PATH` does not apply to it. One string to configure, so the two cannot disagree.
+$internalUrl = trim((string) ($_ENV['API_INTERNAL_URL'] ?? ''));
+
+if ('' !== $internalUrl) {
+    // Validated at least as strictly as the composed form, because this one string decides where the
+    // API key below is sent. Refused rather than fallen back from: quietly using an upstream the
+    // operator did not configure is precisely how a key reaches somewhere it was not meant to.
+    $internalParts  = parse_url($internalUrl);
+    $internalScheme = is_array($internalParts) ? ( $internalParts['scheme'] ?? null ) : null;
+    $internalHost   = is_array($internalParts) ? ( $internalParts['host'] ?? null ) : null;
+    $carriesExtras  = is_array($internalParts) && (
+        isset($internalParts['user']) || isset($internalParts['pass'])
+        || isset($internalParts['query']) || isset($internalParts['fragment'])
+    );
+
+    if (false === in_array($internalScheme, ['http', 'https'], true) || null === $internalHost || '' === $internalHost || $carriesExtras) {
+        refuse(500, 'Misconfigured proxy', 'API_INTERNAL_URL must be a plain http(s) base URL — scheme and host only, with no credentials, query or fragment.');
+    }
+
+    $expectedScheme = $internalScheme;
+    $expectedHost   = $internalHost;
+    $upstream       = rtrim($internalUrl, '/') . '/' . $route;
+} else {
+    $expectedScheme = $protocol;
+    $expectedHost   = $host;
+    $upstream       = $protocol . '://' . $host . $portPart . $pathPart . $route;
+}
 
 // Belt and braces over the validation above: whatever the parts were, confirm the URL they actually
-// composed still addresses the configured host over the configured scheme. `API_HOST` carrying
-// something with structure in it — a userinfo `@`, a path, a second host — would otherwise compose a
-// URL pointing somewhere else entirely, and this is a proxy, so "somewhere else" is the failure that
-// matters. Cheap, and it checks the finished string rather than the ingredients.
+// composed still addresses the intended host over the intended scheme — intended being whichever
+// source won above, so this checks the branch that was taken rather than the one that was not. A
+// host carrying something with structure in it — a userinfo `@`, a path, a second host — would
+// otherwise compose a URL pointing somewhere else entirely, and this is a proxy, so "somewhere else"
+// is the failure that matters. Cheap, and it checks the finished string rather than the ingredients.
 $parsed = parse_url($upstream);
-if (false === is_array($parsed) || ( $parsed['scheme'] ?? null ) !== $protocol || ( $parsed['host'] ?? null ) !== $host) {
+if (false === is_array($parsed) || ( $parsed['scheme'] ?? null ) !== $expectedScheme || ( $parsed['host'] ?? null ) !== $expectedHost) {
     refuse(500, 'Misconfigured proxy', 'The configured API location does not compose a URL addressing that host.');
 }
 
