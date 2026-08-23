@@ -1,12 +1,12 @@
 import { test, expect, Page } from '@playwright/test';
-import { installReplyingWebSocketStub, sentFrames } from './websocket-stub';
+import { deliverLateFrame, installReplyingWebSocketStub, sentFrames } from './websocket-stub';
 
 /**
  * The Resources runner attributes frames by `requestId` and ends phases on the terminal frame (#42).
  *
  * Two things this page used to do are being removed here, and each has its own spec below.
  *
- * **It executed CSS selectors the server sent it.** `classes` — `".proprium-de-sanctis-2002.json-valid"`
+ * **It executed CSS selectors the server sent it.** `classes` — `".proprium-de-sanctis-2002.step-parses"`
  * — went straight to `querySelectorAll()`, which made this repository's markup part of the API's
  * contract, and made a selector that matched nothing fail *silently* while the counters advanced
  * anyway. The stub used here therefore sends a selector that deliberately matches nothing: a run that
@@ -320,4 +320,79 @@ test('giving up moves the run on rather than throwing', async ({ page }) => {
 
     await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 20000 });
     expect(pageErrors).toEqual([]);
+});
+
+test('a rejected request paints its own cards and ends, instead of stalling the phase (#70)', async ({ page }) => {
+    // The resource phase is refused message by message; the source phase is answered normally. The
+    // run therefore has to survive a wholly rejected phase and go on to a working one.
+    await installReplyingWebSocketStub(page, { rejectActions: ['executeValidation'] });
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    // Well inside the sixty-second silence watchdog: before #70 the phase could only end by waiting
+    // it out, so a run that finishes this quickly is the fix itself, not merely its side effect.
+    await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 25000 });
+
+    await expect(page.locator('.resourcedata-tests .bg-info')).toHaveCount(0);
+    const rejected = await page.locator('.resourcedata-tests .bg-danger').count();
+    expect(rejected).toBeGreaterThan(0);
+
+    // One failure per red card, all of them in the phase that was rejected — the source phase was
+    // answered with passes, so nothing else moved this counter.
+    expect(Number(await page.locator('#failedResourceDataTestsCount').textContent())).toBe(rejected);
+
+    // The rejection reason reaches the card, not just the console: `paintCard()` puts the frame's
+    // text in the failure tooltip, which is how a red card explains itself.
+    await expect(page.locator('.resourcedata-tests .error-tooltip').first())
+        .toHaveAttribute('data-bs-title', 'stub rejects this message');
+});
+
+test('a frame arriving after its phase was given up on paints nothing (#64)', async ({ page }) => {
+    // The scenario the watchdog exists for, followed by the recovery it cannot predict: the server
+    // goes quiet mid-phase, the phase is given up on — every unpainted card counted as a failure —
+    // and then the server answers after all. Those steps have already been counted, so a late frame
+    // must not paint an abandoned phase's card as well; giving up unregisters its requests so the
+    // frame reaches the "no card is registered for this request" warning instead.
+    await installReplyingWebSocketStub(page, { stopAfterStep: 'exists' });
+    await page.goto('/resources.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    await expect.poll(async () => page.locator('.resourcedata-tests .card.bg-success').count(), { timeout: 20000 })
+        .toBeGreaterThan(0);
+    await page.waitForTimeout(200);
+
+    // A real request of the abandoned phase, named exactly as the server would name it.
+    const request = (await sentFrames(page))
+        .map((raw) => JSON.parse(raw) as Record<string, unknown>)
+        .find((message) => message.action === 'executeValidation');
+    expect(request).toBeDefined();
+
+    await giveUpNow(page);
+
+    const paintedBefore = await page.locator('.resourcedata-tests .card.bg-danger').count();
+    const greyBefore = await page.locator('.resourcedata-tests .card.bg-info').count();
+    expect(greyBefore).toBeGreaterThan(0);
+
+    await deliverLateFrame(page, {
+        type: 'error',
+        text: 'late answer from a recovered server',
+        classes: '.stub-addresses-nothing.step-parses',
+        target: { id: 'late' },
+        step: 'parses',
+        status: 'fail',
+        runToken: request?.runToken,
+        runId: request?.runToken,
+        requestId: request?.requestId,
+    });
+    await page.waitForTimeout(200);
+
+    // Nothing moved: the abandoned phase's cards are as the give-up left them.
+    expect(await page.locator('.resourcedata-tests .card.bg-danger').count()).toBe(paintedBefore);
+    expect(await page.locator('.resourcedata-tests .card.bg-info').count()).toBe(greyBefore);
 });

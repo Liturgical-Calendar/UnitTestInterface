@@ -94,7 +94,19 @@ export const yearLowerBoundForRite = ( rite, riteProperties ) => {
     if ( Number.isInteger( minYear ) ) {
         return minYear;
     }
-    console.warn( `No RiteProperties entry for rite '${rite}'; falling back to ${FALLBACK_YEAR_LOWER_BOUND}. Expected only when components-js failed to load.` );
+    // A null table and a table missing this rite are different events, and only the second is worth
+    // a warning. `index.js` seeds its `Years` array at module load with no table at all — the
+    // library is imported dynamically and has not resolved yet — so warning on null fired this
+    // message on every single page load, in a console the reader is using to find real faults, and
+    // said "expected only when components-js failed to load" while the load was proceeding normally.
+    // A message that cries wolf on every load is worse than no message: it trains the reader to
+    // scroll past the one time it is true.
+    //
+    // The fallback is correct on the null path by construction: with no library there is no rite
+    // select either, so the rite is still the Roman default, whose floor this is.
+    if ( null !== riteProperties && undefined !== riteProperties ) {
+        console.warn( `No RiteProperties entry for rite '${rite}'; falling back to ${FALLBACK_YEAR_LOWER_BOUND}. The library loaded but advertises no bound for this rite.` );
+    }
     return FALLBACK_YEAR_LOWER_BOUND;
 };
 
@@ -236,30 +248,161 @@ export const PROTOCOL_VERSION = 1;
  * The card class each published step is reported on, per frame family.
  *
  * Mirrors the server's `FrameFamily::CLASS_FOR_STEP`. The families matter because `validates` means a
- * different card in each: `schema-valid` for a file or a calendar, `test-valid` for a test run. A
- * single flat map cannot express that, and silently painted test results onto nothing.
+ * different card in each: `step-validates` for a file or a calendar, `step-test-validates` for a test
+ * run. A single flat map cannot express that, and silently painted test results onto nothing.
+ *
+ * These classes are **addresses, not verdicts** (#60). A card classed `step-exists` is "the card for
+ * this check's `exists` step", never a claim that anything exists; the verdict arrives separately, on
+ * the frame's `status`, and is painted as `bg-success` / `bg-danger` by `paintCard()`. The former
+ * names — `file-exists`, `json-valid`, `schema-valid`, `test-valid` — fused the two, and that fusion
+ * misled prose written *about* this code (LiturgicalCalendarAPI#867 described a failure as "a
+ * wrong-green `.file-exists` success", a sentence only that vocabulary makes writable). The `step-`
+ * prefix is deliberate: it keeps every step address greppable by one token and states the intent at
+ * every use site.
+ *
+ * The rename was a clean break — no aliases, and no card carries both vocabularies — so a run stored
+ * under the old names replays onto nothing. That was the owner's explicit call when #60 was scoped.
  *
  * `complete` is absent on purpose — the terminal frame addresses no card.
  *
  * @type {Readonly<Record<string, string>>}
  */
 export const STEP_CARD_CLASS = Object.freeze({
-    exists: 'file-exists',
-    parses: 'json-valid',
-    validates: 'schema-valid'
+    exists: 'step-exists',
+    parses: 'step-parses',
+    validates: 'step-validates'
 });
 
 /**
  * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
  * report three steps through {@link STEP_CARD_CLASS}; a test run reports exactly one, `validates`,
- * addressed at a different card (`test-valid`) than the other two families use for the same step
- * name. Consumed by `index.js`'s specific-unit-test phase (commit 163c8c0).
+ * addressed at a different card (`step-test-validates`) than the other two families use for the same
+ * step name. Consumed by `index.js`'s specific-unit-test phase (commit 163c8c0).
+ *
+ * Address-shaped for the same reason as {@link STEP_CARD_CLASS}, and distinct from `step-validates`
+ * because the *family*, not the verdict, is what differs: `step-test-validates` names the validates
+ * step of a test run. Class tokens match whole, so the two never collide in a selector.
  *
  * @type {Readonly<Record<string, string>>}
  */
 export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
-    validates: 'test-valid'
+    validates: 'step-test-validates'
 });
+
+/**
+ * The steps one checkable's cards are rendered *and* registered for.
+ *
+ * One rule, read by both the scaffold that renders the cards and `beginPhase()` that binds them, so
+ * the two cannot answer differently about the same check. They used to: the scaffolds rendered an
+ * unconditional three cards while `beginPhase()` registered whatever the inventory item advertised,
+ * and the run totals were then derived by counting the rendered cards. #42 removed the hardcoded
+ * three from the frame *counting*; #62 is what was left — two independent constants that agree only
+ * because every `/validations` item currently advertises exactly `['exists','parses','validates']`.
+ * The first two-step item would have left a permanently blue card no frame paints and a totals badge
+ * reading high; the first four-step item, a `console.warn` per check and a result with nowhere to go.
+ *
+ * A check that advertises nothing falls back to every step {@link STEP_CARD_CLASS} has. That is not
+ * a guess about the API: the checks carrying no `steps` are precisely the ones that never came from
+ * the inventory — the bare-URL `executeValidation` checks (`LitCalMetadata` on `index.js`,
+ * `resourceDataChecks` on `resources.js`), the calendar-data years, and runs stored before the #42
+ * migration — and every one of those is a three-step check by construction.
+ *
+ * @param {?{steps?: Array<string>}} [check] - An inventory item, or anything that carries no `steps`.
+ * @returns {Array<string>}
+ */
+export const stepsForCheck = ( check ) =>
+    Array.isArray( check?.steps ) ? check.steps : Object.keys( STEP_CARD_CLASS );
+
+/**
+ * What one scaffold card says, keyed by step.
+ *
+ * Beside {@link STEP_CARD_CLASS} rather than inside either page, because it answers the same
+ * question about the same vocabulary: the class a step's card carries and the words that card shows
+ * are two halves of one table, and both runner pages need both halves. Kept as functions because
+ * `parses` names the response format, which `resources.js` renders from its own live selection.
+ *
+ * A step absent from here is a step neither page can draw a card for, so {@link stepCardsHtml} skips
+ * it — and `beginPhase()` then says so out loud when it looks for that card and finds nothing, which
+ * is the diagnostic worth having rather than a silently blank column.
+ *
+ * @type {Readonly<Record<string, function(string): string>>}
+ */
+export const STEP_CARD_BODY = Object.freeze({
+    exists: () => 'data exists',
+    parses: ( responseType ) => `<span class="response-type">${responseType}</span> valid`,
+    validates: () => 'schema valid'
+});
+
+/**
+ * Render one checkable's scaffold cards — one per advertised step, no more and no fewer.
+ *
+ * The two pages differ only in the question-mark icon they draw (`index.js` uses a Font Awesome
+ * `<i>`, `resources.js` an inlined SVG) and in whether the card text is laid out with the
+ * `d-flex justify-content-between` split, so those are parameters rather than a reason to keep two
+ * copies of the markup.
+ *
+ * `classesFor` receives the step's card class and returns the *whole* class list for that card, so
+ * each call site keeps its own address components — `calendar-{slug}`, `year-{n}`, the check's own
+ * slug — and their exact order. Everything a card is addressed by therefore still comes from one
+ * place per page, which is what let #60 rename the step classes in {@link STEP_CARD_CLASS} alone.
+ *
+ * @param {object} options
+ * @param {Array<string>} options.steps - From {@link stepsForCheck}.
+ * @param {function(string): string} options.classesFor - Step card class -> the card's full class list.
+ * @param {string} options.icon - The pending-state icon markup this page draws.
+ * @param {string} [options.responseType='JSON'] - Named on the `parses` card.
+ * @param {boolean} [options.spread=true] - Lay the card text out with `d-flex justify-content-between`.
+ * @returns {string}
+ */
+export const stepCardsHtml = ( { steps, classesFor, icon, responseType = 'JSON', spread = true } ) =>
+    steps
+        .filter( step => undefined !== STEP_CARD_BODY[ step ] )
+        .map( step => {
+            const body = `${icon} ${STEP_CARD_BODY[ step ]( responseType )}`;
+            const text = spread
+                ? `<p class="card-text d-flex justify-content-between"><span>${body}</span></p>`
+                : `<p class="card-text">${body}</p>`;
+            return `<div class="card text-white bg-info rounded-0 ${classesFor( STEP_CARD_CLASS[ step ] )}">
+    <div class="card-body">
+        ${text}
+    </div>
+</div>`;
+        } )
+        .join( '\n' );
+
+/**
+ * A selector matching every card of one step family, optionally scoped to a container.
+ *
+ * @param {Readonly<Record<string, string>>} stepClasses - A step -> card class table.
+ * @param {string} scope - A container selector, or '' for the whole document.
+ * @returns {string}
+ */
+const cardSelectorForFamily = ( stepClasses, scope ) => {
+    const prefix = '' === scope ? '' : `${scope} `;
+    return [ ...new Set( Object.values( stepClasses ) ) ].map( cardClass => `${prefix}.${cardClass}` ).join( ',' );
+};
+
+/**
+ * The selector both pages count their *check* cards with.
+ *
+ * Derived from {@link STEP_CARD_CLASS}, the same table {@link stepCardsHtml} renders from, so the
+ * totals badge counts exactly the card families the scaffold can produce. Spelling the three classes
+ * out at each counting site is what let the badge drift from the page, and would have left #60 a
+ * fresh set of literals to chase when it renamed them.
+ *
+ * @param {string} [scope=''] - A container selector, e.g. `.sourcedata-tests`.
+ * @returns {string}
+ */
+export const checkCardSelector = ( scope = '' ) => cardSelectorForFamily( STEP_CARD_CLASS, scope );
+
+/**
+ * The selector `index.js` counts its *test run* cards with — {@link checkCardSelector}'s counterpart
+ * for the other frame family.
+ *
+ * @param {string} [scope=''] - A container selector, e.g. `.specificunittests`.
+ * @returns {string}
+ */
+export const testRunCardSelector = ( scope = '' ) => cardSelectorForFamily( TEST_RUN_STEP_CARD_CLASS, scope );
 
 /**
  * The capabilities the server advertised on connect, or null before a `hello` frame has arrived.
@@ -365,7 +508,7 @@ export const newRequestId = () => {
  * A registry inverts that: the client decides what a request's frames address, and a frame naming a
  * request nobody registered is a loud, specific failure rather than an empty NodeList.
  *
- * @returns {{register: Function, cardFor: Function, complete: Function, outstanding: Function, has: Function, reset: Function}}
+ * @returns {{register: Function, markReceived: Function, missingSteps: Function, cardFor: Function, complete: Function, outstanding: Function, has: Function, forget: Function, reset: Function}}
  */
 export const createRequestRegistry = () => {
     /** @type {Map<string, {cards: Record<string, Element>, done: boolean}>} */
@@ -452,6 +595,23 @@ export const createRequestRegistry = () => {
         /** @param {string} requestId @returns {boolean} */
         has( requestId ) {
             return entries.has( requestId );
+        },
+
+        /**
+         * Drop one request's binding, for a request nobody is waiting for any more.
+         *
+         * Called when a phase is given up on (#64). Clearing the outstanding set alone left the
+         * abandoned ids still bound to their cards, so a server that was merely quiet for longer
+         * than the watchdog's window and then recovered still painted the abandoned phase's cards —
+         * steps already counted as failures by `summariseAbandoned()`, now counted a second time
+         * against whichever phase is current by then. Forgetting the binding sends such a frame down
+         * the "no card is registered for this request" branch instead, which says so loudly.
+         *
+         * @param {string} requestId
+         * @returns {boolean} true when a binding was actually dropped.
+         */
+        forget( requestId ) {
+            return entries.delete( requestId );
         },
 
         /** Drop every binding, for a new run. */
@@ -594,12 +754,30 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  * nation and missal tiers stay hardcoded Roman regardless of either argument, for the same
  * inheritance reason.
  *
- * `:i18n` ids ARE included for the universal corpus, matching what this repository already checked
- * before this migration (`UNIVERSAL_CHECKS` in this file). They are NOT included for the
- * calendar-specific tier (wider region, nation, missals, diocese) — v1 never checked those either.
- * Coverage is held constant across the migration; a change in card counts is a migration bug, not
- * intended new coverage. See issue #61 for the follow-up that would add calendar-specific i18n
- * coverage as new scope, deliberately out of bounds here.
+ * **`:i18n` ids are included at every tier** — the universal corpus (temporale, decrees or the
+ * rite's own sanctorale) *and* the calendar-specific tier (wider region, nation, missals, diocese).
+ * The calendar-specific half is new in #61: the #42 migration deliberately held coverage constant
+ * so that any change in card counts during it would be a migration bug rather than intended new
+ * coverage, and this is that intended new coverage, landed separately. The API has advertised all
+ * four families all along (`CheckableInventory::nationalCalendarItems()`, `widerRegionItems()`,
+ * `diocesanCalendarItems()` and `missalItems()`); nothing here was checking them.
+ *
+ * **What it costs.** Each id is one `validateSource` request and three cards. Worked through for
+ * an Italian diocesan calendar (`romamo_it`: nation IT, wider region Europe, missals IT_1983 and
+ * IT_2020), the source-data phase goes from **9 checks / 27 cards** to **13 checks / 39 cards** —
+ * `widerregion:roman:Europe:i18n`, `nation:roman:IT:i18n`, `sanctorale:roman:IT_1983:i18n` and
+ * `diocese:roman:romamo_it:i18n` are added; the IT_2020 pair is composed but not advertised (that
+ * missal has no sanctorale file), so it never becomes a card. The General Roman rite-level
+ * scaffold goes from 8 checks / 24 cards to 11 / 33 (its three editio typica missals all have
+ * translations). Longer runs and more WebSocket traffic, therefore — but **not** more API
+ * rate-limit exposure: `Health::validateSource()` resolves an inventory id to a filesystem path
+ * and reads it locally, so unlike the calendar-data phase (which does spend HTTP requests, and is
+ * where this repository's history of 429s comes from) these checks cost the API nothing.
+ *
+ * Every id here is unconditional on the server side except the missal `:i18n` sibling, which
+ * `CheckableInventory::missalItems()` emits only when `RomanMissal::getSanctoraleI18nFilePath()`
+ * finds one — see {@link isConditionalInventoryId}, which is how the caller tells "the server does
+ * not publish this" from "the server and this page disagree".
  *
  * @param {object} scope
  * @param {string} scope.rite - The rite whose universal corpus (temporale/decrees or
@@ -618,14 +796,62 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
         ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
         : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
     if ( widerRegion ) {
-        ids.push( `widerregion:roman:${widerRegion}` );
+        ids.push( `widerregion:roman:${widerRegion}`, `widerregion:roman:${widerRegion}:i18n` );
     }
     if ( nation ) {
-        ids.push( `nation:roman:${nation}` );
+        ids.push( `nation:roman:${nation}`, `nation:roman:${nation}:i18n` );
     }
-    ( missals ?? [] ).forEach( missalId => ids.push( `sanctorale:roman:${missalId}` ) );
+    ( missals ?? [] ).forEach( missalId => ids.push(
+        `sanctorale:roman:${missalId}`,
+        // Conditional on the server side, unlike every other id composed here; see
+        // `isConditionalInventoryId()` for why it is still composed unconditionally.
+        `sanctorale:roman:${missalId}:i18n`
+    ) );
     if ( dioceseId ) {
-        ids.push( `diocese:${dioceseRite}:${dioceseId}` );
+        ids.push( `diocese:${dioceseRite}:${dioceseId}`, `diocese:${dioceseRite}:${dioceseId}:i18n` );
     }
     return ids;
 };
+
+/**
+ * The shape of a missal's translation-folder id, e.g. `sanctorale:roman:IT_1983:i18n`.
+ *
+ * Four segments, which is what separates it from the *rite's own* sanctorale i18n folder
+ * (`sanctorale:ambrosian:i18n`, three segments) — that one is unconditional and must not be
+ * matched here.
+ */
+const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
+
+/**
+ * Whether the API is entitled to advertise no inventory item for this composed id.
+ *
+ * `inventoryIdsForCalendar()` composes ids from calendar metadata alone, without consulting
+ * `/validations`, and that is deliberate: it stays a pure function of the scope, and the caller
+ * resolves what it composed against what the server actually published. For all but one family
+ * that resolution is total — an id the server does not advertise is a genuine disagreement worth
+ * saying out loud, which is the whole point of the inventory replacing a hand-maintained list.
+ *
+ * The exception is the missal family, in **both** its forms:
+ *
+ * - `sanctorale:roman:{missalId}:i18n` — `CheckableInventory::missalItems()` emits it only when
+ *   `RomanMissal::getSanctoraleI18nFilePath()` returns a path, and it returns `false` for several
+ *   missals.
+ * - `sanctorale:roman:{missalId}` — emitted only when the missal has a sanctorale source file at all.
+ *   A nation's calendar data may declare a missal before that file exists: `IT.json` lists `IT_2020`,
+ *   for which the API publishes neither id. The missal ids composed here come from the `/calendars`
+ *   metadata rather than from anything typed by hand, so an id in this family that the server does not
+ *   advertise is an upstream data gap, never a composition mistake — nothing this page can act on, and
+ *   a warning per page load would train the reader to ignore the warnings that mean something.
+ *
+ * Absence is therefore the contract for this family, not a disagreement. (Composing conditionally
+ * instead is not open to this function: knowing which missals have files means reading the inventory,
+ * which is precisely what this function does not do.)
+ *
+ * The negative lookahead is load-bearing: `sanctorale:{rite}:i18n` is a *rite's* sanctorale
+ * translations, which is unconditional and must keep warning, and it has the same three-segment shape
+ * as `sanctorale:roman:{missalId}`.
+ *
+ * @param {string} id - A composed inventory id.
+ * @returns {boolean} True when the server may legitimately publish no such item.
+ */
+export const isConditionalInventoryId = id => CONDITIONAL_INVENTORY_ID.test( id );

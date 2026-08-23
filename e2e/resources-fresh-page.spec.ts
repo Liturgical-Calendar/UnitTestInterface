@@ -26,9 +26,9 @@ test('fresh Resources page renders source checks for all async datasets', async 
     await expect(page.locator('#startTestRunnerBtn')).toBeEnabled({ timeout: 15000 });
 
     // The per-test source-data card must be part of the fresh scaffold
-    await expect(page.locator(`.sourcedata-tests .${testSlug}.file-exists`)).toHaveCount(1);
+    await expect(page.locator(`.sourcedata-tests .${testSlug}.step-exists`)).toHaveCount(1);
 
     // And the Time badge totals must agree with the rendered cards
-    const sourceCards = await page.locator('.sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid').count();
+    const sourceCards = await page.locator('.sourcedata-tests .step-exists, .sourcedata-tests .step-parses, .sourcedata-tests .step-validates').count();
     await expect(page.locator('#totalSourceDataTestsCount')).toHaveText(String(sourceCards));
 });

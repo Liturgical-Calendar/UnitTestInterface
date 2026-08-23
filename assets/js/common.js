@@ -81,6 +81,89 @@ export const safeToastShow = (selector) => {
 };
 
 /**
+ * Hides the full-page loading overlay.
+ *
+ * `.page-loader` is rendered *visible* in the markup, and is normally taken down by each runner's
+ * `ReadyToRunTests.tryEnableBtn()` — but only once every readiness flag is set. A page that has
+ * given up on ever becoming ready therefore has to lower it explicitly, or it stays greyed out for
+ * ever with nothing to say why (#63).
+ *
+ * Same two-step fade as those call sites, so a failure path and a success path look alike.
+ *
+ * @returns {void}
+ */
+export const hidePageLoader = () => {
+    const pageLoader = document.querySelector('.page-loader');
+    if (!pageLoader) {
+        return;
+    }
+    pageLoader.style.opacity = '0';
+    setTimeout(() => {
+        pageLoader.style.display = 'none';
+    }, 500);
+};
+
+/**
+ * Fetch a JSON endpoint, rejecting on a non-ok response instead of parsing the error body as data.
+ *
+ * Both runners used to do this for themselves, and neither did it well. `resources.js` used a bare
+ * `.then(response => response.json())`, which on a 429 parsed the problem document happily and handed
+ * on an object carrying none of the properties its dispatch looks for — so the dataset went missing in
+ * complete silence and the page sat under `.page-loader` for ever (#63). `index.js` logged a non-ok
+ * response and resolved to `undefined`, which threw a TypeError two `.then`s later, so every HTTP
+ * failure reached the outer `.catch` describing the wrong thing entirely.
+ *
+ * The `Content-Type` test compares the **media type only**. A server is free to send
+ * `application/problem+json; charset=utf-8`, and an exact-string comparison silently fails to
+ * recognise it — falling back to the bare status line and discarding the `detail` the API went to the
+ * trouble of writing, in exactly the situation where that text is what a reader needs.
+ *
+ * @param {string} endpoint - The URL being fetched, named in the rejection so the caller knows which one failed.
+ * @param {Response} response - The response to read.
+ * @returns {Promise<object>}
+ * @throws {Error} On a non-ok response, carrying the problem document's `detail`/`title` when there is one.
+ */
+export const readJsonOrThrow = async (endpoint, response) => {
+    if (response.ok) {
+        return response.json();
+    }
+    const mediaType = (response.headers.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
+    if ('application/problem+json' === mediaType) {
+        const problem = await response.json();
+        throw new Error(`${endpoint}: ${problem.detail ?? problem.title ?? response.statusText}`);
+    }
+    throw new Error(`${endpoint}: ${response.status} ${response.statusText}`);
+};
+
+/**
+ * Fetch one JSON endpoint through {@link readJsonOrThrow}.
+ *
+ * `init` is **merged** with the defaults rather than replacing them, and `init.headers` is merged
+ * with the default `Accept` rather than replacing it — otherwise a caller adding one unrelated header
+ * would silently drop `Accept: application/json`, which is the header this whole helper exists to
+ * pair with. A caller that really does want a different `Accept` still wins, because its own headers
+ * are spread last.
+ *
+ * @param {string} endpoint - The URL to fetch.
+ * @param {RequestInit} [init] - Merged over `{ method: 'GET' }`; `Accept: application/json` is sent unless the caller supplies its own.
+ * @returns {Promise<object>}
+ */
+export const fetchJson = async (endpoint, init = {}) => {
+    // Normalised through `Headers` rather than spread. `HeadersInit` has three legal shapes and
+    // object spread handles only one of them: a `Headers` instance spreads to `{}`, because its
+    // entries are not own enumerable properties, silently discarding every header the caller set;
+    // an array of `[name, value]` tuples spreads to `{0: [...]}`, which is not a header set at all.
+    // Both fail quietly, which is the worst way for a header to go missing.
+    const headers = new Headers(init.headers ?? {});
+    // Set only when absent, so a caller that genuinely wants a different `Accept` still wins.
+    if (false === headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
+    }
+    const response = await fetch(endpoint, { method: 'GET', ...init, headers });
+    return readJsonOrThrow(endpoint, response);
+};
+
+/**
  * Updates the text content of an element by ID.
  * @param {string} id - The element ID (without #).
  * @param {string|number} value - The value to set as textContent.

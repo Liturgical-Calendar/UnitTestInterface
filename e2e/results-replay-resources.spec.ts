@@ -1,26 +1,21 @@
 import { test, expect } from '@playwright/test';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { seedStoredRun, removeSeededRuns } from './storedRuns';
 
 // Clean up seeded run files so e2e fixtures don't pollute the real Past Runs dropdown.
-const seededFiles: string[] = [];
-test.afterAll(async () => {
-    for (const file of seededFiles) {
-        await unlink(path.join(__dirname, '..', 'results', file)).catch(() => { /* already removed by a parallel project */ });
-    }
-});
+test.afterAll(removeSeededRuns);
 
 test('replays a stored resources run onto the dashboard', async ({ page, request }) => {
     // Seed a minimal resources run.
     // resourceDataChecks[0].validate = 'calendars-path' → resourceTemplate produces cards with
-    // class "calendars-path file-exists" (slugify preserves the already-lowercase hyphenated string).
+    // class "calendars-path step-exists" (slugify preserves the already-lowercase hyphenated string).
     // sourceDataChecks[0].validate = 'memorials-from-decrees' → sourceTemplate produces
-    // "memorials-from-decrees file-exists".
+    // "memorials-from-decrees step-exists".
     // Both selectors are stored as-is; applyResultToDom runs them through slugifySelector, which
     // is a no-op for already-lowercase selectors.
+    // No `timestamp` here: seedStoredRun() writes the fixture straight into results/, so the
+    // 50-per-type retention cap in results.php never sees it (issue #65).
     const run = {
         schemaVersion: 1,
-        timestamp: '2026-07-03T10:00:00Z',
         runType: 'resources',
         duration: 1500,
         counts: { successful: 1, failed: 1 },
@@ -34,15 +29,13 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
             ],
         },
         apiPathResults: [
-            { id: '.calendars-path.file-exists', selector: '.calendars-path.file-exists', status: 'success', message: null, test: null }
+            { id: '.calendars-path.step-exists', selector: '.calendars-path.step-exists', status: 'success', message: null, test: null }
         ],
         sourceDataResults: [
-            { id: '.memorials-from-decrees.json-valid', selector: '.memorials-from-decrees.json-valid', status: 'error', message: 'seeded failure', test: null }
+            { id: '.memorials-from-decrees.step-parses', selector: '.memorials-from-decrees.step-parses', status: 'error', message: 'seeded failure', test: null }
         ],
     };
-    const save = await request.post('results.php', { data: run });
-    const { file } = await save.json();
-    seededFiles.push(file);
+    const file = await seedStoredRun(request, run);
 
     await page.goto('/resources.php');
     await page.waitForSelector('#pastRunsSelect');
@@ -67,7 +60,7 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
     // Per-section Time badge totals: 3 cards per seeded check in each section
     await expect(page.locator('#totalResourceDataTestsCount')).toHaveText('3');
     await expect(page.locator('#totalSourceDataTestsCount')).toHaveText('3');
-    // The resource-data file-exists card for calendars-path must be green (bg-success)
-    await expect(page.locator('.calendars-path.file-exists')).toHaveClass(/bg-success/);
+    // The resource-data `exists`-step card for calendars-path must be green (bg-success)
+    await expect(page.locator('.calendars-path.step-exists')).toHaveClass(/bg-success/);
     await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();
 });

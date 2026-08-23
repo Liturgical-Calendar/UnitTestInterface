@@ -208,24 +208,37 @@ test('a rapid double rite change does not duplicate checks', async ({ page }) =>
     const classNamesOf = (selector: string) =>
         page.locator(selector).evaluateAll((els) => els.map((e) => e.className));
 
-    // Every check contributes exactly one `.file-exists` card, carrying its (slugified) `validate`
+    // Every check contributes exactly one `.step-exists` card, carrying its (slugified) `validate`
     // value as a class. A duplicated check would render two cards with the identical class list.
-    const sourceFileExists = await classNamesOf('.sourcedata-tests .file-exists');
-    const resourceFileExists = await classNamesOf('.resourcedata-tests .file-exists');
-    expect(sourceFileExists.length).toBeGreaterThan(0);
-    expect(resourceFileExists.length).toBeGreaterThan(0);
-    expect(new Set(sourceFileExists).size).toBe(sourceFileExists.length);
-    expect(new Set(resourceFileExists).size).toBe(resourceFileExists.length);
+    const sourceStepExists = await classNamesOf('.sourcedata-tests .step-exists');
+    const resourceStepExists = await classNamesOf('.resourcedata-tests .step-exists');
+    expect(sourceStepExists.length).toBeGreaterThan(0);
+    expect(resourceStepExists.length).toBeGreaterThan(0);
+    expect(new Set(sourceStepExists).size).toBe(sourceStepExists.length);
+    expect(new Set(resourceStepExists).size).toBe(resourceStepExists.length);
 
     // The counter-vs-card drift finding 2 warns about (and issue #43 exists to prevent): the
-    // "Time" badge totals are computed straight from the rendered card counts, so they stay
-    // exactly 3x the (now duplicate-free) file-exists counts.
+    // "Time" badge totals are computed straight from the rendered card counts, so each badge must
+    // equal the number of cards actually in its section.
+    //
+    // Compared against the rendered count rather than `step-exists x 3`. Since #62 a check renders
+    // one card per step its `/validations` item advertises, so the multiplier is only right for as
+    // long as every item advertises exactly three — which is the assumption #62 exists to remove.
+    // Asserting against the real count keeps this test measuring the drift it is named for instead
+    // of re-introducing the coupling elsewhere in the codebase.
+    const cardCounts = await page.evaluate(() => ({
+        resource: document.querySelectorAll('.resourcedata-tests .card').length,
+        source: document.querySelectorAll('.sourcedata-tests .card').length,
+    }));
     const totals = await page.evaluate(() => ({
         resource: document.getElementById('totalResourceDataTestsCount')?.textContent,
         source: document.getElementById('totalSourceDataTestsCount')?.textContent,
     }));
-    expect(Number(totals.resource)).toBe(resourceFileExists.length * 3);
-    expect(Number(totals.source)).toBe(sourceFileExists.length * 3);
+    // Guard the guard: comparing two zeroes would pass while proving nothing.
+    expect(cardCounts.resource).toBeGreaterThanOrEqual(resourceStepExists.length);
+    expect(cardCounts.source).toBeGreaterThanOrEqual(sourceStepExists.length);
+    expect(Number(totals.resource)).toBe(cardCounts.resource);
+    expect(Number(totals.source)).toBe(cardCounts.source);
 });
 
 test('a rite change is blocked for the duration of a run', async ({ page }) => {

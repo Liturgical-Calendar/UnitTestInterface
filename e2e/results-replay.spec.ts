@@ -1,16 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { seedStoredRun, removeSeededRuns } from './storedRuns';
 
 // Seeded run files are stored in the real results/ directory, which real users
 // browse via the "Past Runs" dropdown — clean them up so e2e fixtures don't
 // pollute the UI (they look like broken partial runs when replayed).
-const seededFiles: string[] = [];
-test.afterAll(async () => {
-    for (const file of seededFiles) {
-        await unlink(path.join(__dirname, '..', 'results', file)).catch(() => { /* already removed by a parallel project */ });
-    }
-});
+test.afterAll(removeSeededRuns);
 
 test('replays a stored calendars run onto the dashboard', async ({ page, request }) => {
     // Seed a small run with mixed statuses across all three phases.
@@ -19,9 +13,10 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
     // Years.length (≈80) instead of cfg.years.length (1) to compute the year index, so the
     // rendered class was .year-<maxYear> while buildScaffolding queried .year-1970 → null →
     // TypeError crash. The calendar-data assertion below directly exercises that cross-year path.
+    // No `timestamp` here: seedStoredRun() writes the fixture straight into results/, so the
+    // 50-per-type retention cap in results.php never sees it (issue #65).
     const run = {
         schemaVersion: 1,
-        timestamp: '2026-07-03T09:00:00Z',
         runType: 'calendars',
         calendar: 'VA',
         calendarCategory: 'nationalcalendar',
@@ -40,15 +35,13 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
             ],
         },
         sourceDataResults: [
-            { id: '.proprium-de-sanctis-1970.file-exists', selector: '.proprium-de-sanctis-1970.file-exists', status: 'success', message: null, test: null },
-            { id: '.proprium-de-sanctis-2002.json-valid', selector: '.proprium-de-sanctis-2002.json-valid', status: 'error', message: 'seeded failure', test: null },
+            { id: '.proprium-de-sanctis-1970.step-exists', selector: '.proprium-de-sanctis-1970.step-exists', status: 'success', message: null, test: null },
+            { id: '.proprium-de-sanctis-2002.step-parses', selector: '.proprium-de-sanctis-2002.step-parses', status: 'error', message: 'seeded failure', test: null },
         ],
-        calendarDataResults: [{ id: '.file-exists.calendar-va.year-1970', selector: '.file-exists.calendar-va.year-1970', status: 'success', message: null, test: null }],
-        unitTestResults: [{ id: '.testseedreplay.year-1970.test-valid', selector: '.TestSeedReplay.year-1970.test-valid', status: 'success', message: null, test: 'TestSeedReplay' }],
+        calendarDataResults: [{ id: '.step-exists.calendar-va.year-1970', selector: '.step-exists.calendar-va.year-1970', status: 'success', message: null, test: null }],
+        unitTestResults: [{ id: '.testseedreplay.year-1970.step-test-validates', selector: '.TestSeedReplay.year-1970.step-test-validates', status: 'success', message: null, test: 'TestSeedReplay' }],
     };
-    const save = await request.post('results.php', { data: run });
-    const { file } = await save.json();
-    seededFiles.push(file);
+    const file = await seedStoredRun(request, run);
 
     await page.goto('/');
     await page.waitForSelector('#pastRunsSelect');
@@ -72,23 +65,25 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
     await expect(page.locator('#successfultestseedreplayTestsCount')).toHaveText('1');
     // Totals: 2 source checks × 3 cards + 1 year × 3 cards + 1 assertion card = 10
     await expect(page.locator('#total-tests-count')).toHaveText('10');
-    // The calendar-data file-exists card for year 1970 must be green (bg-success),
+    // The calendar-data `exists`-step card for year 1970 must be green (bg-success),
     // proving the fix: cfg.years=[1970] drove the render so .year-1970 was found in the DOM.
-    await expect(page.locator('.file-exists.calendar-va.year-1970')).toHaveClass(/bg-success/);
+    await expect(page.locator('.step-exists.calendar-va.year-1970')).toHaveClass(/bg-success/);
     // The failed source-data card carries the stored error message as a tooltip
-    await expect(page.locator('.proprium-de-sanctis-2002.json-valid .error-tooltip')).toHaveCount(1);
+    await expect(page.locator('.proprium-de-sanctis-2002.step-parses .error-tooltip')).toHaveCount(1);
     await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();
 });
 
 test('restores live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
     // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live
-    // General Roman scaffold has 8 sourceDataChecks: metadata, temporale + i18n, decrees + i18n, and 3 editio typica missals from /missals.
+    // General Roman scaffold has 11 sourceDataChecks: metadata, temporale + i18n, decrees + i18n,
+    // and the 3 editio typica missals from /missals, each with its own i18n folder (#61 added the
+    // calendar-specific i18n tier; all three editio typica missals have translations).
     // After replay, currentSelectedCalendar is clobbered to 'IT' and the scaffold shows only 1
     // check. Returning to "— Live —" must re-sync state from the DOM controls and rebuild the
-    // scaffold via setupPage(), restoring the 8-check General Roman layout.
+    // scaffold via setupPage(), restoring the 11-check General Roman layout.
+    // As above, the timestamp is supplied by seedStoredRun() rather than hardcoded.
     const run = {
         schemaVersion: 1,
-        timestamp: '2026-07-03T11:00:00Z',
         runType: 'calendars',
         calendar: 'IT',
         calendarCategory: 'nationalcalendar',
@@ -105,9 +100,7 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
         calendarDataResults: [],
         unitTestResults: [],
     };
-    const save = await request.post('results.php', { data: run });
-    const { file } = await save.json();
-    seededFiles.push(file);
+    const file = await seedStoredRun(request, run);
 
     await page.goto('/');
     await page.waitForSelector('#pastRunsSelect');
@@ -120,9 +113,9 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
     await expect(page.locator('.sourcedata-tests > div')).toHaveCount(1);
 
     // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the General Roman scaffold
-    // (8 checks)
+    // (11 checks)
     await page.selectOption('#pastRunsSelect', '');
-    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(8);
+    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(11);
     // .currentSelectedCalendar cells must reflect the live dropdown value ('roman'), not 'IT'
     await expect(page.locator('.currentSelectedCalendar').first()).toContainText('roman');
 });

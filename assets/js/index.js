@@ -7,6 +7,8 @@
 import {
     escapeHtmlAttr,
     escapeQuotesAndLinkifyUrls,
+    fetchJson,
+    hidePageLoader,
     safeCollapseShow,
     safeToastShow,
     updateText,
@@ -31,9 +33,16 @@ import {
     yearsForRite,
     fetchValidations,
     inventoryIdsForCalendar,
+    isConditionalInventoryId,
     idToCardClass,
+    readHello,
+    resetHello,
     STEP_CARD_CLASS,
     TEST_RUN_STEP_CARD_CLASS,
+    stepsForCheck,
+    stepCardsHtml,
+    checkCardSelector,
+    testRunCardSelector,
 } from './wsProtocol.js';
 
 import { createPhaseRunner } from './wsRunner.js';
@@ -163,6 +172,11 @@ const buildSourceDataChecks = ( { rite, dioceseRite, nation, widerRegion, missal
     inventoryIdsForCalendar( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ).forEach( id => {
         const item = advertised.get( id );
         if ( undefined === item ) {
+            if ( isConditionalInventoryId( id ) ) {
+                // Not a disagreement: the server publishes this family only when the folder exists
+                // (see `isConditionalInventoryId()`), so an absence here is the contract being kept.
+                return;
+            }
             // Said out loud rather than skipped silently: the inventory is the contract now, so an id
             // this page composed that the server does not advertise is a real disagreement.
             console.warn( `The API advertises no checkable item "${id}"; it will not be checked.` );
@@ -335,13 +349,7 @@ class ReadyToRunTests {
             // only try to set the #startTestRunnerBtnLbl with the stored value when the page is ready
             // to prevent if from being set to an empty value (before we have actually stored the original value)
             setTestRunnerBtnLblTxt( startTestRunnerBtnLbl );
-            const pageLoader = document.querySelector('.page-loader');
-            if (pageLoader) {
-                pageLoader.style.opacity = '0';
-                setTimeout(() => {
-                    pageLoader.style.display = 'none';
-                }, 500);
-            }
+            hidePageLoader();
         }
     }
 }
@@ -417,16 +425,30 @@ class TestState {
 
 
 /**
+ * The pending-state icon every card on this page is scaffolded with.
+ *
+ * `resources.js` inlines the same glyph as SVG instead; that difference is why {@link stepCardsHtml}
+ * takes the icon as a parameter rather than owning one.
+ *
+ * @type {string}
+ */
+const CARD_ICON = '<i class="fas fa-circle-question fa-fw" aria-hidden="true"></i>';
+
+/**
  * Returns a string that represents the HTML template for a specific calendar.
  * This template is used in the index page to represent the state of a calendar test.
  * The template has the following structure:
  * - A paragraph with the name of the calendar that is being tested.
- * - Three div elements, each with a class that represents the state of the calendar test.
- *   The classes are:
- *   - `file-exists`: indicates whether the calendar data exists.
- *   - `json-valid`: indicates whether the calendar data is valid JSON.
- *   - `schema-valid`: indicates whether the calendar data is valid according to the schema.
+ * - One card per step of the *check* frame family, from `STEP_CARD_CLASS` via `stepsForCheck()`.
  * The template is used by the `calendarTemplate` function in `index.js`.
+ *
+ * Calendar-data validation is not driven by a `/validations` item and so advertises no `steps` of
+ * its own — the `yearChecks` this scaffolds for are built locally in `runTests()`. It is rendered
+ * through `stepsForCheck()` all the same, with no argument, so it takes the *same* fallback
+ * `beginPhase()` applies to those same step-less checks. That is the whole point: the cards drawn
+ * here and the cards registered there come from one expression, not from two threes that happen to
+ * match (#62).
+ *
  * @param {string} calendarName The name of the calendar that is being tested.
  * @param {number|null} [year=null] Optional year to include as a class on card elements.
  * @return {string} The HTML template as a string.
@@ -434,23 +456,20 @@ class TestState {
 const testTemplate = ( calendarName, year = null ) => {
     const calendarSlug = slugify(calendarName);
     const yearClass = year !== null ? ` year-${year}` : '';
+    // The `parses` card names the response format being validated, so it has to be rendered with the
+    // *currently selected* one. Rendering a literal `JSON` here made the `#APIResponseSelect` handler
+    // a no-op in effect: it rewrote every `.response-type` span, then called `setupPage()`, which
+    // rebuilt these very cards from this template and put `JSON` straight back. Choosing YAML, XML or
+    // ICS therefore left the cards claiming JSON while the run validated something else.
     return `
 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar" title="${calendarName}">${truncate( calendarName, 22 )}</p>
-<div class="card text-white bg-info rounded-0 file-exists calendar-${calendarSlug}${yearClass}">
-    <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</p>
-    </div>
-</div>
-<div class="card text-white bg-info rounded-0 json-valid calendar-${calendarSlug}${yearClass}">
-    <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</p>
-    </div>
-</div>
-<div class="card text-white bg-info rounded-0 schema-valid calendar-${calendarSlug}${yearClass}">
-    <div class="card-body">
-        <p class="card-text"><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</p>
-    </div>
-</div>
+${stepCardsHtml({
+    steps: stepsForCheck(),
+    classesFor: cardClass => `${cardClass} calendar-${calendarSlug}${yearClass}`,
+    icon: CARD_ICON,
+    responseType: currentResponseType,
+    spread: false
+})}
 `;
 }
 
@@ -477,11 +496,9 @@ const calDataTestTemplate = ( idx, years ) => {
  * Returns a string that represents the HTML template for a specific source data check.
  * The template has the following structure:
  * - A paragraph with the name of the source data check.
- * - Three div elements, each with a class that represents the state of the source data check.
- *   The classes are:
- *   - `file-exists`: indicates whether the source data exists.
- *   - `json-valid`: indicates whether the source data is valid JSON.
- *   - `schema-valid`: indicates whether the source data is valid according to the schema.
+ * - One card per step the check advertised, from `stepsForCheck()` — `step-exists` for `exists`,
+ *   `step-parses` for `parses`, `step-validates` for `validates`. A check that advertises no `steps`
+ *   (the `LitCalMetadata` URL check, and any run stored before the #42 migration) gets all three.
  * The template is used by the `index.js` script.
  *
  * Two shapes reach this template. A live run supplies an advertised inventory item —
@@ -538,21 +555,11 @@ const sourceDataCheckTemplate = ( item, idx ) => {
     // the flex rule on `.sourcedata-tests > div`. Nothing here needs a height.
     return `<div class="col-1${idx === 0 || idx % 11 === 0 ? ' offset-1' : ''}">
     <p class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapedTooltip}" class="text-break d-inline-block w-75">${escapedCaption}</span>${( false === fromInventory && item.category !== 'universalcalendar' ) ? infoIcon : ''}</p>
-    <div class="card text-white bg-info rounded-0 ${validateSlug} file-exists">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> data exists</span></p>
-        </div>
-    </div>
-    <div class="card text-white bg-info rounded-0 ${validateSlug} json-valid">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> <span class="response-type">JSON</span> valid</span></p>
-        </div>
-    </div>
-    <div class="card text-white bg-info rounded-0 ${validateSlug} schema-valid">
-        <div class="card-body">
-            <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> schema valid</span></p>
-        </div>
-    </div>
+${stepCardsHtml({
+    steps: stepsForCheck( item ),
+    classesFor: cardClass => `${validateSlug} ${cardClass}`,
+    icon: CARD_ICON
+})}
 </div>
 `;
 }
@@ -635,6 +642,31 @@ const countUnattributableFailure = () => {
 };
 
 /**
+ * Re-read one unit test's failed-card tally from the DOM.
+ *
+ * The `error` step branch resolves the test a frame belongs to from `target.id`, but a
+ * `protocolError` frame carries no `target` at all — so an attributed rejection (#70) would leave
+ * this counter reading fewer failures than the accordion has red cards, which is exactly the drift
+ * between the totals and the rendered cards that #42 set out to remove.
+ *
+ * The card the runner painted is the attribution instead: it sits inside its own test's accordion
+ * panel, whose id (`specificUnitTest-{slug}`) names the test, and the per-test counter is a DOM
+ * tally of `.bg-danger` within that panel in the first place — the same query the `error` branch
+ * runs, reached from the card rather than from the frame.
+ *
+ * @param {?Element} card - The card just painted.
+ * @returns {void}
+ */
+const refreshUnitTestFailedCount = ( card ) => {
+    const panelId = card?.closest( '.accordion-collapse' )?.id ?? '';
+    if ( false === panelId.startsWith( 'specificUnitTest-' ) ) {
+        return;
+    }
+    const testSlug = panelId.slice( 'specificUnitTest-'.length );
+    updateText( `failed${testSlug}TestsCount`, document.querySelectorAll( `#${panelId} .bg-danger` ).length );
+};
+
+/**
  * The one phase runner for this page's phases.
  *
  * Replaces what this page used to own directly: the registry-backed painter (painting by the CSS
@@ -656,6 +688,18 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
+    // One card the runner painted red for a request the server rejected outright (#70). Recorded
+    // and counted exactly as an `error` step frame for that card would be: the global and phase
+    // totals through `countUnattributableFailure()` — same arithmetic, the difference being that
+    // this failure *is* attributed, to a card painted with the rejection text — plus, in the
+    // unit-test phase, the per-test accordion counter that only an attributed failure can reach.
+    onAttributedFailure: ( frame, selector, card ) => {
+        resultCollector.record( phaseForState(), frame, selector );
+        countUnattributableFailure();
+        if ( currentState === TestState.SpecificUnitTests ) {
+            refreshUnitTestFailedCount( card );
+        }
+    },
     // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
     // reconnect cannot land the watchdog in the `ReadyState` case and restart a phase. Note that
     // adding `currentRunToken !== null` here would be inert: the token stays set across exactly
@@ -990,16 +1034,37 @@ const connectWebSocket = () => {
      * finished, it updates the total test time and displays it.
      */
     conn.onmessage = ( e ) => {
+        // Parsed once, before the run guards, because one frame is not about a run: the server's
+        // `hello` arrives on connect and carries no run token — which is exactly what makes it
+        // invisible to a client that predates it, and exactly why the guards below would discard
+        // it. This page used to return early on `currentRunToken === null`, which is always true at
+        // connect time, so the handshake was thrown away before `readHello()` could be reached at
+        // all; reading it is #69 item 1, and the restructuring is the substance of it.
+        // See readHello(), and the matching shape in resources.js.
+        let responseData;
+        let parseError = null;
+        try {
+            responseData = JSON.parse( e.data );
+        } catch ( error ) {
+            parseError = error;
+        }
+
+        if ( null === parseError && readHello( responseData ) ) {
+            return;
+        }
+
         if ( currentState === TestState.Stopped || currentRunToken === null ) {
             return;
         }
-        let responseData;
-        try {
-            responseData = JSON.parse( e.data );
-        } catch ( parseError ) {
+
+        if ( null !== parseError ) {
             // The state machine is driven from this handler: an exception escaping here means
             // runTests() is never called again and the run wedges with the spinner still going
             // and nothing in the UI to say why (#43). Count it and keep the run moving.
+            //
+            // Reached only inside a run, as before: an unparseable frame arriving before one is
+            // nothing to attribute a failure to, and pumping the state machine for it would be
+            // acting on a run that has not started.
             console.error( 'Discarding unparseable WebSocket frame.', parseError, e.data );
             countUnattributableFailure();
             if ( currentState !== TestState.JobsFinished ) {
@@ -1027,6 +1092,15 @@ const connectWebSocket = () => {
         // recorded or counted. Counting it would inflate the totals badge past the number of
         // rendered cards — the drift #42 describes, arrived at from the other direction.
         if ( phaseRunner.noteTerminalFrame( responseData ) ) {
+            return;
+        }
+
+        // A rejection is an *ending* for the request it names (#70). Handled here rather than left
+        // to the `type` dispatch below, which had no branch for it: the frame fell through to the
+        // unattributable `else`, booked one failure for a request whose scaffold rendered three
+        // cards, and — carrying no `step: 'complete'` — never ended the request, so the phase sat
+        // out the full silence watchdog even though the server had answered instantly.
+        if ( phaseRunner.handleProtocolError( responseData ) ) {
             return;
         }
 
@@ -1141,6 +1215,10 @@ const connectWebSocket = () => {
      */
     conn.onclose = () => {
         console.log( 'Connection closed on remote end' );
+        // Forget what this connection advertised. The reconnection below may reach a server of a
+        // different vintage — a deploy is exactly when a socket drops — and answering it with the
+        // previous one's capabilities would declare a protocol it never claimed to read.
+        resetHello();
         ReadyToRunTests.SocketReady = false;
         ReadyToRunTests.tryEnableBtn();
         if ( connectionAttempt === null ) {
@@ -1266,105 +1344,105 @@ const resetTestUI = () => {
 }
 
 /**
- * Fetches metadata and tests data from the server.
- * If the promise resolves, it sets the MetaData and UnitTests variables.
- * If the promise rejects, it logs an error message.
+ * Fetches the four datasets this page builds its scaffold and its checks from, and assigns
+ * {@link MetaData}, {@link UnitTests}, {@link RomanMissals} and {@link ValidationsInventory}.
+ *
+ * **Settled independently, not as one `Promise.all`.** A single rejection there discarded all four
+ * results at once: none of the globals was assigned, `setupPage()` never ran, and `.page-loader` —
+ * rendered *visible* in the markup and lowered only by a `tryEnableBtn()` that finds every flag set
+ * — stayed up for ever over a page that was never going to resolve, with a `console.error` as its
+ * only trace. `/validations` answers 429 routinely in local development, which made that the most
+ * reachable user-visible failure on this page (#63).
+ *
  * @returns {Promise<void>}
  */
 const fetchMetadataAndTests = () => {
-    Promise.all( [
-        fetch( ENDPOINTS.CALENDARS, {
-            method: "GET",
-            //mode: "no-cors",
-            headers: {
-                Accept: "application/json"
+    return Promise.allSettled( [
+        fetchJson( ENDPOINTS.CALENDARS ),
+        fetchJson( ENDPOINTS.TESTS ),
+        fetchJson( ENDPOINTS.MISSALS ),
+        // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to the
+        // inventory array — it is not a `Response`, so it must not go through `readJsonOrThrow()`.
+        fetchValidations( getApiBaseUrl() )
+    ] ).then( ( [ metadataResult, testsResult, missalsResult, validationsResult ] ) => {
+        // Positional rather than shape-sniffed: with `allSettled` a dataset that failed has no shape
+        // to sniff, and "which endpoint is missing" is exactly what the failure path has to say.
+        if ( 'fulfilled' === metadataResult.status && metadataResult.value?.hasOwnProperty( 'litcal_metadata' ) ) {
+            MetaData = metadataResult.value.litcal_metadata;
+        } else {
+            console.error( 'Could not load the calendars metadata:', metadataResult.reason ?? metadataResult.value );
+        }
+
+        if ( 'fulfilled' === testsResult.status ) {
+            const testsData = testsResult.value;
+            if ( Array.isArray( testsData ) ) {
+                UnitTests = testsData;
+            } else if ( Array.isArray( testsData?.litcal_tests ) ) {
+                UnitTests = testsData.litcal_tests;
+            } else {
+                console.error( 'Could not decode tests data! Expected an array, or an object with a `litcal_tests` array; got:', testsData );
             }
-        } ),
-        fetch( ENDPOINTS.TESTS, {
-            method: "GET",
-            //mode: "no-cors",
-            headers: {
-                Accept: "application/json"
-            }
-        } ),
-        fetch( ENDPOINTS.MISSALS, {
-            method: "GET",
-            //mode: "no-cors",
-            headers: {
-                Accept: "application/json"
-            }
-        } ),
-        // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to
-        // the `{litcal_validations}` shape the branch below expects — it is not a `Response`, so
-        // the `.json()` step right after this array must not try to call `.json()` on it too.
-        fetchValidations( getApiBaseUrl() ).then( items => ( { litcal_validations: items } ) )
-    ] )
-        .then( ( responses ) => {
-            return Promise.all( responses.map( ( response ) => {
-                if ( typeof response.json !== 'function' ) {
-                    // Already-parsed data from `fetchValidations()`, not a `fetch()` Response.
-                    return response;
-                }
-                if ( response.ok ) { return response.json(); }
-                else {
-                    if (response.headers.get('Content-Type') === 'application/problem+json') {
-                        return response.json().then(errorData => {
-                            console.error('Error:', errorData);
-                            // Handle the error data here
-                        });
-                    } else {
-                        console.error('Error:', response.status, response.statusText);
-                    }
-                    //throw new Error( `response.status = ${response.status}, response.statusText = ${response.statusText}`);
-                }
-            } ) );
-        } )
-        .then( dataArr => {
-            dataArr.forEach( data => {
-                console.log( data );
-                if ( data.hasOwnProperty( 'litcal_metadata' ) ) {
-                    MetaData = data.litcal_metadata;
-                    if ( UnitTests !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests, RomanMissals and the validations inventory were set first, now Metadata is also ready' );
-                        setupPage();
-                    }
-                } else if ( data.hasOwnProperty( 'litcal_missals' ) ) {
-                    RomanMissals = data.litcal_missals;
-                    if ( UnitTests !== null && MetaData !== null && ValidationsInventoryReady === true ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests, MetaData and the validations inventory were set first, now RomanMissals is also ready' );
-                        setupPage();
-                    }
-                } else if ( data.hasOwnProperty( 'litcal_validations' ) ) {
-                    ValidationsInventory = data.litcal_validations;
-                    ValidationsInventoryReady = true;
-                    if ( UnitTests !== null && MetaData !== null && RomanMissals !== null ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that UnitTests, MetaData and RomanMissals were set first, now the validations inventory is also ready' );
-                        setupPage();
-                    }
-                } else {
-                    if ( data instanceof Array ) {
-                        UnitTests = data;
-                    } else if ( data.hasOwnProperty( 'litcal_tests' ) ) {
-                        UnitTests = data.litcal_tests;
-                    } else {
-                        let arrayStatus = data instanceof Array ? 'true' : 'false';
-                        let objStatus = data.hasOwnProperty( 'litcal_tests' ) ? 'true' : 'false';
-                        let message = `Could not decode tests data! Is it an array? ${arrayStatus} Is it an object with property 'litcal_tests'? ${objStatus}`;
-                        console.error( message );
-                    }
-                    if ( MetaData !== null && RomanMissals !== null && ValidationsInventoryReady === true ) {
-                        ReadyToRunTests.AsyncDataReady = true;
-                        console.log( 'it seems that Metadata, RomanMissals and the validations inventory were set first, now UnitTests is also ready' );
-                        setupPage();
-                    }
-                }
-            } );
-        } ).catch( ( error ) => {
-            console.error( 'Error fetching metadata and/or roman missals and/or tests data and/or the validations inventory:', error );
-        } );
+        } else {
+            console.error( 'Could not load the unit tests:', testsResult.reason );
+        }
+
+        if ( 'fulfilled' === missalsResult.status && missalsResult.value?.hasOwnProperty( 'litcal_missals' ) ) {
+            RomanMissals = missalsResult.value.litcal_missals;
+        } else {
+            console.error( 'Could not load the missals metadata:', missalsResult.reason ?? missalsResult.value );
+        }
+
+        if ( 'fulfilled' === validationsResult.status ) {
+            ValidationsInventory = validationsResult.value;
+            ValidationsInventoryReady = true;
+        } else {
+            console.error( 'Could not load the validations inventory:', validationsResult.reason );
+        }
+
+        // The three datasets `setupPage()` itself dereferences (`MetaData.diocesan_calendars`,
+        // `UnitTests.forEach`, `Object.values( RomanMissals )`). Without them there is no scaffold
+        // to render and calling it would throw; with them the page renders whatever it has.
+        const canRenderScaffold = null !== MetaData && null !== UnitTests && null !== RomanMissals;
+
+        // JUDGEMENT CALL (#63): the inventory gates the *run*, not the *render*.
+        //
+        // `ValidationsInventory` is the list of source-data items a run checks. Without it,
+        // `buildSourceDataChecks()` composes ids that match nothing advertised, warns about each in
+        // turn, and returns only the single `LitCalMetadata` URL check — so a run started in that
+        // state would check almost nothing and then report itself green. That is precisely the class
+        // of untruth this interface exists to detect, manufactured by the interface itself, and it
+        // is worse than no run at all. So the Start button stays refused: `AsyncDataReady` is set
+        // only once the inventory is actually in.
+        //
+        // What a failure must *not* do is what it used to do — leave the page under a translucent
+        // overlay with no explanation. So the scaffold still renders, the controls stay usable, the
+        // loader comes down, and a toast says why nothing can be run.
+        ReadyToRunTests.AsyncDataReady = canRenderScaffold && ValidationsInventoryReady;
+
+        if ( canRenderScaffold ) {
+            setupPage();
+        }
+
+        // Two distinct toasts because they are two distinct facts, and both can be true at once.
+        if ( false === ValidationsInventoryReady ) {
+            safeToastShow( '#validations-load-failed' );
+        }
+        if ( false === canRenderScaffold ) {
+            safeToastShow( '#controls-load-failed' );
+        }
+        if ( false === ReadyToRunTests.AsyncDataReady ) {
+            ReadyToRunTests.tryEnableBtn();
+            // After `tryEnableBtn()`, which lowers the loader only when every flag is set — and one
+            // of them never will be now.
+            hidePageLoader();
+        }
+    } ).catch( ( error ) => {
+        // Only an unexpected throw from the handler above can land here now: every fetch failure is
+        // a settled rejection, handled inline. Still not swallowed, and still not left greyed out.
+        console.error( 'Failed to set the page up from the fetched metadata:', error );
+        safeToastShow( '#controls-load-failed' );
+        hidePageLoader();
+    } );
 }
 
 /**
@@ -1395,7 +1473,7 @@ const appendAccordionItem = ( obj ) => {
             <div class="col-1 ${idy === 0 || idy % 11 === 0 ? 'offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} test-valid">
+                <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} ${TEST_RUN_STEP_CARD_CLASS.validates}">
                     <div class="card-body">
                         <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> test valid</span><span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"><i class="fas fa-circle-info" aria-hidden="true"></i></span></p>
                     </div>
@@ -1423,7 +1501,7 @@ const appendAccordionItem = ( obj ) => {
             </div>
         </div>
     `);
-    let specificUnitTestTotalCount = document.querySelectorAll(`#specificUnitTest-${nameSlug} .test-valid`).length;
+    let specificUnitTestTotalCount = document.querySelectorAll(testRunCardSelector(`#specificUnitTest-${nameSlug}`)).length;
     updateText(`total${nameSlug}TestsCount`, specificUnitTestTotalCount);
 }
 
@@ -1676,11 +1754,14 @@ const setupPage = () => {
         years: Years,
         unitTests: renderedUnitTests,
     });
-    let totalTestsCount = document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length;
+    // Counted through `checkCardSelector()` / `testRunCardSelector()` rather than by naming the card
+    // classes here: they enumerate the very tables `stepCardsHtml()` renders from, so the badge can
+    // only ever describe cards the scaffold can actually produce (#62).
+    let totalTestsCount = document.querySelectorAll(`${checkCardSelector()},${testRunCardSelector()}`).length;
     updateText('total-tests-count', totalTestsCount);
-    let totalSourceDataTestsCount = document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length;
-    let totalCalendarDataTestsCount = document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length;
-    let totalUnitTestsCount = document.querySelectorAll('.specificunittests .test-valid').length;
+    let totalSourceDataTestsCount = document.querySelectorAll(checkCardSelector('.sourcedata-tests')).length;
+    let totalCalendarDataTestsCount = document.querySelectorAll(checkCardSelector('.calendardata-tests')).length;
+    let totalUnitTestsCount = document.querySelectorAll(testRunCardSelector('.specificunittests')).length;
     updateText('totalSourceDataTestsCount', totalSourceDataTestsCount);
     updateText('totalCalendarDataTestsCount', totalCalendarDataTestsCount);
     updateText('totalUnitTestsCount', totalUnitTestsCount);
@@ -1700,13 +1781,7 @@ const setupPage = () => {
     initInfoTooltips();
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
-    const pageLoader = document.querySelector('.page-loader');
-    if (pageLoader) {
-        pageLoader.style.opacity = '0';
-        setTimeout(() => {
-            pageLoader.style.display = 'none';
-        }, 500);
-    }
+    hidePageLoader();
 }
 
 /**
@@ -1853,7 +1928,9 @@ document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) =
     ReadyToRunTests.PageReady = false;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
-    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.json-valid .response-type`).forEach(el => {
+    // The response format is named on the `parses` card, so this addresses that step's card class
+    // rather than spelling one out — the literal it replaced went stale the moment #60 renamed them.
+    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.${STEP_CARD_CLASS.parses} .response-type`).forEach(el => {
         el.textContent = currentResponseType;
     });
     setupPage();
@@ -2001,10 +2078,10 @@ const replayCalendarsRun = async ( file ) => {
         updateText(`failed${testSlug}TestsCount`, entry.failed);
     } );
     // Totals: same DOM-derived counts setupPage computes for a live run
-    updateText('total-tests-count', document.querySelectorAll('.file-exists,.json-valid,.schema-valid,.test-valid').length);
-    updateText('totalSourceDataTestsCount', document.querySelectorAll('.sourcedata-tests .file-exists,.sourcedata-tests .json-valid,.sourcedata-tests .schema-valid').length);
-    updateText('totalCalendarDataTestsCount', document.querySelectorAll('.calendardata-tests .file-exists,.calendardata-tests .json-valid,.calendardata-tests .schema-valid').length);
-    updateText('totalUnitTestsCount', document.querySelectorAll('.specificunittests .test-valid').length);
+    updateText('total-tests-count', document.querySelectorAll(`${checkCardSelector()},${testRunCardSelector()}`).length);
+    updateText('totalSourceDataTestsCount', document.querySelectorAll(checkCardSelector('.sourcedata-tests')).length);
+    updateText('totalCalendarDataTestsCount', document.querySelectorAll(checkCardSelector('.calendardata-tests')).length);
+    updateText('totalUnitTestsCount', document.querySelectorAll(testRunCardSelector('.specificunittests')).length);
     updateText('total-time', MsToTimeString( run.duration ));
     updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
     updateText('totalCalendarDataTestsTime', MsToTimeString( run.timings.calendarData ));

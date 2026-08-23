@@ -102,7 +102,7 @@ mirrored networking mode; only IPv4 loopback passes through), so the connection 
 falls back to IPv4, WebSockets do not. Binding the WS server to IPv6 inside WSL (`WS_HOST="[::]"` in the API's env)
 does not help — the Windows-to-WSL `::1` path itself is missing. Keep `API_HOST=localhost`: the WS server
 (`Health.php`) matches resource URLs against the API's configured host when resolving JSON schemas, so `127.0.0.1`
-there makes the base API path `schema-valid` checks fail. The docker stack is unaffected.
+there makes the base API path's `validates`-step checks fail. The docker stack is unaffected.
 
 ## Code Standards
 
@@ -180,11 +180,27 @@ verbatim; no filesystem path crosses the wire. Both runners fetch it with `fetch
 it to the selected rite — `resources.js` with that same module's `validationChecksForRite()`, `index.js` with its own
 `inventoryIdsForCalendar()` (see Rite Scoping below).
 
+An item's `steps` array is the single source of truth for how many cards that check gets, on both pages. `stepsForCheck()` in
+`assets/js/wsProtocol.js` is read by both halves — the scaffold that draws the cards (`stepCardsHtml()`, with the per-step card body in
+`STEP_CARD_BODY` beside `STEP_CARD_CLASS`) and `beginPhase()` in `wsRunner.js` that binds them to a `requestId` — so a two-step or
+four-step item cannot leave the rendered page and the run totals disagreeing (#62). A check that advertises no `steps` at all — the
+bare-URL `executeValidation` checks, `index.php`'s calendar-data years, and runs stored before this migration — takes the same fallback
+in both halves: every step in `STEP_CARD_CLASS`. The totals badges are counted through `checkCardSelector()` / `testRunCardSelector()`,
+derived from those same two tables, rather than by naming the card classes at each counting site.
+
 This is what closed the class of lockstep breakage this repository used to have between a hand-maintained checklist and the API's actual
 layout — issues #38, API#795 and API#800 all trace back to that list going stale. The list it replaced, `UNIVERSAL_CHECKS`, no longer
 exists in this repository; neither does the slug-and-path construction (`wider-region-…`, `national-calendar-…`, `proprium-de-sanctis-…`)
 that used to build `executeValidation` messages by hand. Do not resurrect either — the code they describe is gone, and the inventory is
 what does that job now.
+
+**When the inventory fetch fails** (`/validations` answers 429 routinely in local development), each runner settles it independently of its
+other metadata fetches — `Promise.allSettled`, not `Promise.all` — so one rejection no longer discards the rest and leaves the page under a
+translucent `.page-loader` that is never lowered (#63). The degradation is deliberately asymmetric: the page **renders** what it can, lowers
+the loader (`hidePageLoader()` in `common.js`) and raises the `#validations-load-failed` toast, but the Start button stays **refused**. That
+is not an oversight to relax — the inventory *is* the list of things a run checks, so a run started without it would check a subset and
+report success for it, which is the class of untruth this interface exists to detect. `#validations-load-failed` is a distinct toast from
+`#controls-load-failed` because the two are distinct facts and can be true at once: when only the inventory failed, the controls did build.
 
 ### Message Actions
 
@@ -261,11 +277,16 @@ on, so an untagged frame would be discarded before reaching their `type` dispatc
 `capabilities` (`{rites, actions, responseFormats, steps, statuses}`), each list derived server-side from the same enums that define the
 behaviour it describes, so an advertisement cannot go stale against what the server actually does.
 
-**Adoption is uneven between the two runners, and that is the current state of this repository, not a bug to fix here.** `resources.js`
-imports and calls `readHello()`. `index.js` does not import it at all, and consequently never declares `protocol` on its own messages —
-`negotiatedProtocol()` in `wsProtocol.js` returns null until a `hello` has been read, and `sendMessage()` omits the `protocol` property
-whenever it does, which for `index.js` is always. This is silently correct rather than silently broken: declaring a version the server
-never advertised would trip the same unknown-property gate that sending `requestId` arms.
+**Both runners read it** (#69 item 1; `index.js` did not until then). Each calls `readHello()` as the first thing its `onmessage` does,
+above the `Stopped` / `currentRunToken === null` guard, and `resetHello()` in its `onclose` so a reconnection to a server of a different
+vintage is not answered with the previous one's capabilities. The ordering is the whole of it: `index.js` used to return early while
+`currentRunToken === null`, which is always true at connect time, so the handshake was discarded before `readHello()` could be reached —
+which is why adopting it was never a one-line import. Against a server that sends no `hello`, `negotiatedProtocol()` stays null and
+`sendMessage()` omits the `protocol` property, which is correct rather than lax: declaring a version the server never advertised would
+trip the same unknown-property gate that sending `requestId` arms.
+
+**Item 2 of #69 is still open**: each page owns its own `conn`, `onopen`, `onmessage` and reconnect handling, near-identical but still two
+copies. The runner half of that duplication is what `wsRunner.js` already removed; the connection half has not been done.
 
 ### Frames: `stepResult`, `complete`, `protocolError`
 
@@ -278,11 +299,24 @@ shape, which names no id.
 **Two step vocabularies, addressed to different cards, sharing the same three-word `step` enum:**
 
 - A **check** — source-data validation (`validateSource`/`executeValidation`) or calendar-data validation (`validateCalendar`) —
-  reports `exists`, `parses`, then `validates`, on cards classed `file-exists`, `json-valid`, `schema-valid` respectively
-  (`STEP_CARD_CLASS` in `wsProtocol.js`, mirroring the server's `FrameFamily::CLASS_FOR_STEP`).
-- A **test run** (`runTest`) reports only `validates`, on a card classed `test-valid` instead (`TEST_RUN_STEP_CARD_CLASS`). The same step
-  name addresses a different card family depending on which kind of request produced the frame, which is why `wsProtocol.js` keeps two
-  maps rather than one.
+  reports `exists`, `parses`, then `validates`, on cards classed `step-exists`, `step-parses`, `step-validates` respectively
+  (`STEP_CARD_CLASS` in `wsProtocol.js`) — or whichever subset of those three its inventory item advertised, which is also the subset the
+  scaffold drew (see The `/validations` Inventory above).
+- A **test run** (`runTest`) reports only `validates`, on a card classed `step-test-validates` instead (`TEST_RUN_STEP_CARD_CLASS`). The
+  same step name addresses a different card family depending on which kind of request produced the frame, which is why `wsProtocol.js`
+  keeps two maps rather than one.
+
+**Those card classes are DOM addresses, not verdicts (#60).** `step-exists` names *the card for this check's `exists` step*; it asserts
+nothing about whether anything exists. The verdict is carried solely by the frame's `status` and by the `bg-success` / `bg-danger` that
+`paintCard()` puts on the card. The classes were once phrased as claims — `file-exists`, `json-valid`, `schema-valid`, `test-valid` —
+and that fusion of address and verdict misled prose written *about* this code (LiturgicalCalendarAPI#867 described a failure mode as "a
+wrong-green `.file-exists` success", a sentence only that vocabulary makes writable). Do not reintroduce a verdict word into a card
+class, and do not mirror the server's `FrameFamily::CLASS_FOR_STEP` names: this repository's card vocabulary is now deliberately its
+own, and `STEP_CARD_CLASS` is the only place either table is written down.
+
+The rename was a **clean break**: no aliases, and no card carries two vocabularies. A run stored under the old names therefore replays
+onto nothing — the owner's explicit call when #60 was scoped — and the DEPRECATED `classes` fallback below only lands on a card while
+the server happens to spell a step the same way this repository does.
 
 Phase completion is driven by the terminal `complete` frame, one per request that carried a `requestId` — **not** by counting frames.
 The old "each `executeValidation` yields exactly 3 responses" constant, and the `* 3` / `>= 3` arithmetic it drove, are gone from this
@@ -290,11 +324,24 @@ repository along with the frame-counting they supported: a phase now advances on
 (`noteTerminalFrame()` in `wsRunner.js`). That trades one failure mode for another — a request whose `complete` frame never arrives now
 hangs its phase forever, rather than a frame count eventually overshooting past it — so `createSilenceWatchdog()` pairs it with a
 timeout, restarted on every frame of the run and firing only once the server has genuinely gone quiet (LiturgicalCalendarAPI#823 is a
-known way for a `complete` frame to be skipped after the underlying work already succeeded).
+known way for a `complete` frame to be skipped after the underlying work already succeeded). Giving up on a phase **unregisters** the
+requests it abandons (`registry.forget()`, #64): their unpainted steps have already been counted as failures, so a late frame from a
+server that was merely quiet longer than the window and then recovered must reach the "no card is registered for this request" warning
+rather than paint an abandoned phase's card a second time.
 
 A `protocolError` frame (`{type: "protocolError", errorCode, text, runToken?, requestId?}`) reports a message that could not be acted
 on — an unknown action, a retired property, a malformed `requestId`, and so on. It is not gated on `requestId` the way `complete` is: a
 new frame type changes nothing for a client that was going to receive a frame anyway.
+
+**A rejection is an ending, and both runners treat it as one** (#70). `handleProtocolError()` in `wsRunner.js` — called from each page's
+`onmessage` immediately after `noteTerminalFrame()`, so both pages get it from one implementation — paints every *unpainted* step card of
+the named request red with the frame's `text` (the steps `registry.missingSteps()` reports, the same question `summariseAbandoned()` asks
+when a phase is given up on), reports each one to the page's own failure counters through the `onAttributedFailure` callback, and completes
+the request so the phase advances. A rejection carrying no `requestId`, or naming a request no longer registered, is left to the page's
+existing unattributable-failure branch. Before this, a `protocolError` fell through the `type` dispatch into that branch unconditionally:
+one failure booked for a request whose scaffold rendered three cards, and — carrying no `step: "complete"` — no ending at all, so the phase
+waited out the full silence watchdog even though the server had answered instantly (observed live: 82 rejections inside half a second, then
+a sixty-second stall).
 
 ### Rite Scoping
 
@@ -364,6 +411,9 @@ calendar uses becomes an id of the form `sanctorale:roman:{missal_id}` (e.g. `sa
 the calendar's `/calendars` metadata, and sent as a `validateSource` message — `{action: "validateSource", target: {id: "sanctorale:roman:IT_1983"}}`.
 No `validate` slug, `sourceFile` or `category` is built or sent for a missal check any more.
 
+Each missal id is composed together with its translation folder, `sanctorale:roman:{missal_id}:i18n` — see Calendar-Tier `:i18n`
+Coverage below, and note that this is the one composed id the server is entitled not to advertise.
+
 The old `proprium-de-sanctis-{REGION}-{YEAR}` slug format (region omitted for the editio typica, `region === 'VA'`) still appears in this
 repository, but only as a *label*, recognised when rendering a stored run from before this migration
 (`sourceDataCheckTemplate()`'s `false === fromInventory` branch in `assets/js/index.js`) — it is read, never built. Replaying an old
@@ -382,6 +432,34 @@ An earlier version of this section documented a `missal_id.split('_')` parse; th
 **Note:** The `/missals` API endpoint returns `api_path` (URL), not a filesystem path. It is not used for source-data validation at all —
 missal source checks address the missal by its `/validations` inventory id, not by any URL or path the `/missals` endpoint returns.
 
+### Calendar-Tier `:i18n` Coverage
+
+`inventoryIdsForCalendar()` composes a `:i18n` id beside **every** id it composes, at every tier — the universal corpus (temporale,
+decrees, or a non-Roman rite's own sanctorale) and the calendar-specific tier alike:
+
+```text
+nation:roman:{id}:i18n              widerregion:roman:{name}:i18n
+diocese:{rite}:{calendar_id}:i18n   sanctorale:roman:{missalId}:i18n
+```
+
+The calendar-specific half is issue #61, landed after the #42 migration rather than during it: #42 deliberately held coverage constant so
+that a change in card counts would be a migration bug rather than intended new coverage. Do not reintroduce the omission, and do not read
+`inventoryIdsForCalendar()`'s old docblock (which described it as deliberate) from a stale checkout as current behaviour. `resources.js`
+never had the gap — it takes its whole list from `GET /validations`.
+
+**Cost.** One `validateSource` request and three cards per id. An Italian diocesan calendar's source-data phase goes from 9 checks /
+27 cards to 13 / 39; the General Roman rite-level scaffold from 8 / 24 to 11 / 33. This buys longer runs and more WebSocket traffic but
+**no** extra API rate-limit exposure: `Health::validateSource()` resolves an inventory id to a filesystem path and reads it locally,
+unlike the calendar-data phase, which is where this repository's history of 429s actually comes from.
+
+**One id is conditional.** `CheckableInventory::missalItems()` emits `sanctorale:roman:{missalId}:i18n` only when
+`RomanMissal::getSanctoraleI18nFilePath()` finds a folder, and it returns `false` for several missals; every other composed id is
+unconditional upstream. `buildSourceDataChecks()` in `index.js` resolves each composed id against the fetched inventory and warns about
+one the server does not advertise — a real disagreement, and the whole point of the inventory replacing a hand-maintained list — except
+where `isConditionalInventoryId()` in `wsProtocol.js` says the absence is the contract. That predicate matches the four-segment missal
+form only; the three-segment `sanctorale:{rite}:i18n` (a rite's own sanctorale translations) is unconditional and must keep warning.
+`inventoryIdsForCalendar()` deliberately stays a pure function of the calendar scope and does not read the inventory itself.
+
 ### CSS Class Slugification (deprecated fallback path)
 
 The v2 frame shapes are documented above in Frames; this subsection covers the one thing that still reads `classes` directly.
@@ -390,12 +468,24 @@ never a top-level `test` field. An earlier task in this migration fixed both thi
 had been sending and reading a fictional `test` property that the server never produced; do not reintroduce it, here or in code.
 
 `classes` is still on every `stepResult` frame, DEPRECATED and sent with the server's own casing (e.g. `.MaryMotherChurchTest`, not
-`.marymotherchurchtest`) — `slugifySelector()` in `common.js` lowercases it before it is fed to `document.querySelectorAll()`. It is
-read in exactly two places now, both of them fallbacks rather than the primary attribution path: `applyResultToDom()` in
-`assets/js/testResults.js`, used only when a frame carries no usable `requestId`/`step` pair (a server predating per-request
-correlation), and the replay of a stored run recorded before this migration, whose descriptors carry the server's old selector rather
-than a client-recorded one. A current run attributes every frame by `(requestId, step)` through the registry described in Correlation
-above, and does not read `classes` to do it.
+`.marymotherchurchtest`) — `slugifySelector()` in `common.js` lowercases it before it is fed to `document.querySelectorAll()`. The
+rename in #60 did not change what `slugifySelector()` does: the new step classes are already lowercase, so it stays a no-op for them
+and remains needed only for the check/test slug the server casts in its own casing. It is read in exactly two places now, both of them
+fallbacks rather than the primary attribution path: `applyResultToDom()` in `assets/js/testResults.js`, used only when a frame carries
+no usable `requestId`/`step` pair (a server predating per-request correlation), and the replay of a stored run recorded before this
+migration, whose descriptors carry the server's old selector rather than a client-recorded one. A current run attributes every frame by
+`(requestId, step)` through the registry described in Correlation above, and does not read `classes` to do it.
+
+**Both fallbacks now depend on a vocabulary this repository no longer uses**, since #60 renamed the card classes on this side only. A
+`classes` selector composed by the server's `FrameFamily::CLASS_FOR_STEP` (`.foo.file-exists`) matches no card here any more, and
+neither does a run stored before the rename. Both cases warn — `applyResultToDom()` logs the selector that matched nothing — rather
+than failing silently, and neither is reachable from a current run against a current API. That is the accepted cost of the clean break;
+do not "fix" it by teaching either path to translate between the two vocabularies, which is exactly the dual addressability #60
+removed.
+
+The **other address components on a card are unchanged and were reviewed in the same pass**: `calendar-{slug}` and `year-{n}` are
+already noun-valued addresses carrying no verdict, and the check's own slug (`idToCardClass()` / `slugify()`) names what is being
+checked. Only the step component was ever phrased as a claim.
 
 ## Authentication
 

@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { installReplyingWebSocketStub, sentFrames } from './websocket-stub';
+import { installReplyingWebSocketStub, sentFrames, deliverRawFrame } from './websocket-stub';
 
 /**
  * The Calendars runner attributes frames by `requestId` and ends phases on the terminal frame (#42).
@@ -154,7 +154,7 @@ test('unit tests go out as runTest with a typed calendar', async ({ page }) => {
     // Left blue (`.bg-info`, the pending state `appendAccordionItem()` renders every card in) would
     // mean this phase still needs a selector the server composed — the same drift #42 removes for
     // the other two phases, checked here from the unit-test side.
-    const cards = page.locator('#specificUnitTests .test-valid');
+    const cards = page.locator('#specificUnitTests .step-test-validates');
     await expect(cards).not.toHaveCount(0);
     await expect(page.locator('#specificUnitTests .bg-info')).toHaveCount(0);
 });
@@ -188,4 +188,78 @@ test('per-test accordion counters resolve the test name from target.id, not the 
 
     const totalTestsRendered = await page.locator('#specificUnitTestsAccordion .accordion-item').count();
     expect(totalTestsRendered).toBeGreaterThan(0);
+});
+
+test('a rejected request paints its own cards and ends, instead of stalling the phase (#70)', async ({ page }) => {
+    // Every `validateCalendar` message is refused outright, the way production refused all 82 of a
+    // General Roman run's ("calendar.id is required for kind rite."). Each rejection names the
+    // request it refused and arrives instantly, so the phase has everything it needs to end at once.
+    await installReplyingWebSocketStub(page, { rejectActions: ['validateCalendar'] });
+    await page.goto('/index.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    // Well inside the sixty-second silence watchdog: before #70 the phase could only end by waiting
+    // it out, so a run that finishes this quickly is the fix itself, not merely its side effect.
+    await expect(page.locator('#startTestRunnerBtnLbl')).toHaveText('Tests Complete', { timeout: 25000 });
+
+    // Not one card left grey: a rejection is an answer for every step the request registered, and
+    // the reason is carried onto each of them.
+    await expect(page.locator('.calendardata-tests .bg-info')).toHaveCount(0);
+    const rejected = await page.locator('.calendardata-tests .bg-danger').count();
+    expect(rejected).toBeGreaterThan(0);
+
+    // One failure per red card — not the single unattributable failure a rejection used to book for
+    // a request whose scaffold rendered three of them.
+    expect(Number(await page.locator('#failedCalendarDataTestsCount').textContent())).toBe(rejected);
+});
+
+test('an unparseable frame costs one failure and does not abandon the phase', async ({ page }) => {
+    // The parse-failure branch is the only thing between a garbled frame and a run that wedges with
+    // the spinner still turning and nothing in the UI to say why (#43). Nothing reached it before
+    // this test, on either page.
+    //
+    // What it must NOT do is give up on the phase. A frame that cannot be parsed cannot be
+    // attributed either — it names no requestId, because there was nothing to read one out of — so
+    // the honest cost is one unattributable failure. Abandoning the phase instead would mark every
+    // request still in flight as failed on the strength of one bad frame, including the ones the
+    // server is answering perfectly well; the silence watchdog is what exists for a phase that has
+    // genuinely stopped being answered.
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+
+    // `omitComplete` holds the first phase open, which is what makes the assertions below
+    // deterministic: the phase cannot end on its own, so if it ends, the malformed frame ended it.
+    await installReplyingWebSocketStub(page, { omitComplete: true });
+    await page.goto('/index.php');
+
+    const startBtn = page.locator('#startTestRunnerBtn');
+    await expect(startBtn).toBeEnabled({ timeout: 20000 });
+    await startBtn.click();
+
+    // Every step of the source phase answered, no terminal frame: the phase is fully painted and
+    // still outstanding.
+    await expect.poll(async () => page.locator('.sourcedata-tests .card.bg-info').count(), { timeout: 20000 })
+        .toBe(0);
+
+    const failedBefore = Number(await page.locator('#failedCount').textContent());
+    const sentBefore = (await sentFrames(page)).length;
+
+    await deliverRawFrame(page, 'this is not JSON {');
+
+    // Exactly one failure, not one per outstanding step.
+    await expect.poll(async () => Number(await page.locator('#failedCount').textContent()), { timeout: 10000 })
+        .toBe(failedBefore + 1);
+
+    // The phase did not advance: advancing would begin the calendar-data phase and send its
+    // messages, so the sent count is the observable that would move if the run had given up.
+    await page.waitForTimeout(1000);
+    expect((await sentFrames(page)).length).toBe(sentBefore);
+    await expect(page.locator('#startTestRunnerBtnLbl')).not.toHaveText('Tests Complete');
+
+    // And the handler did not throw on the way: an exception escaping it means runTests() is never
+    // called again, which is the wedge this branch exists to prevent.
+    expect(pageErrors).toEqual([]);
 });

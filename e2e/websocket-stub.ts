@@ -86,6 +86,11 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  * @param options.stopAfterStep - Answer only up to this step, and send no terminal frame — a request
  *   that died partway, leaving its remaining cards grey. The other way a request goes outstanding,
  *   and the one that has to be counted.
+ * @param options.rejectActions - Answer these `action`s with a single `protocolError` frame instead of
+ *   step frames, echoing back the `runToken` and `requestId` the message carried — what the server does
+ *   for a message it cannot act on at all (`Health::rejectMessage()`). A rejection is the whole answer
+ *   to that request: no step frames and no terminal `complete` frame follow it, so a page that does not
+ *   read it leaves the request outstanding until the silence watchdog gives up sixty seconds later (#70).
  * @param options.answerOnly - Restrict the set of `action`s this stub replies to; any other action is
  *   received (and recorded in `__wsSent`) but never gets a response, parking the run at that request —
  *   the same "never replies" state `installWebSocketStub()` produces, but for only part of the protocol.
@@ -99,22 +104,27 @@ export const installReplyingWebSocketStub = async (
         omitComplete?: boolean;
         stopAfterStep?: string | null;
         answerOnly?: string[] | null;
+        rejectActions?: string[] | null;
     } = {}
 ): Promise<void> => {
     const protocol = options.protocol === undefined ? 1 : options.protocol;
     const omitComplete = options.omitComplete ?? false;
     const stopAfterStep = options.stopAfterStep ?? null;
     const answerOnly = options.answerOnly ?? null;
+    const rejectActions = options.rejectActions ?? null;
 
     await page.addInitScript(
-        ({ protocol, omitComplete, stopAfterStep, answerOnly }) => {
+        ({ protocol, omitComplete, stopAfterStep, answerOnly, rejectActions }) => {
             const sent: string[] = [];
             (window as unknown as { __wsSent: string[] }).__wsSent = sent;
 
+            // Mirrors `STEP_CARD_CLASS` in `assets/js/wsProtocol.js` — address-shaped step names
+            // (#60), not verdicts. Only the DEPRECATED `classes` projection is built from this; a
+            // frame is attributed by `(requestId, step)`.
             const STEP_CLASS: Record<string, string> = {
-                exists: 'file-exists',
-                parses: 'json-valid',
-                validates: 'schema-valid',
+                exists: 'step-exists',
+                parses: 'step-parses',
+                validates: 'step-validates',
             };
 
             class ReplyingWebSocket {
@@ -135,6 +145,9 @@ export const installReplyingWebSocketStub = async (
                 onerror: ((event: unknown) => void) | null = null;
 
                 constructor(public readonly url: string) {
+                    // Published so a spec can play the server *after* the fact — a frame that
+                    // arrives once the page has stopped waiting for it. See `deliverLateFrame()`.
+                    (window as unknown as { __wsStub: unknown }).__wsStub = this;
                     setTimeout(() => {
                         this.readyState = 1;
                         this.onopen?.({});
@@ -158,12 +171,42 @@ export const installReplyingWebSocketStub = async (
                     setTimeout(() => this.onmessage?.({ data: JSON.stringify(frame) }), 0);
                 }
 
+                /** Deliver an arbitrary frame, for a spec driving the server's side directly. */
+                pushFrame(frame: unknown): void {
+                    this.deliver(frame);
+                }
+
+                /**
+                 * Deliver a payload verbatim, without serialising it.
+                 *
+                 * `pushFrame()` cannot express this: it JSON-stringifies, so everything it sends is
+                 * parseable by construction, and the client's parse-failure branch is unreachable
+                 * through it.
+                 */
+                pushRaw(data: string): void {
+                    setTimeout(() => this.onmessage?.({ data }), 0);
+                }
+
                 send(data: string): void {
                     sent.push(data);
                     let message: Record<string, unknown>;
                     try {
                         message = JSON.parse(data);
                     } catch {
+                        return;
+                    }
+                    if (null !== rejectActions && rejectActions.includes(message.action as string)) {
+                        // The whole answer to this request: `Health::rejectMessage()` refuses the
+                        // message before it is interpreted, so no step frame and no terminal frame
+                        // follow. The `requestId` is echoed, which is what makes the rejection
+                        // attributable to the cards the request registered.
+                        this.deliver({
+                            type: 'protocolError',
+                            errorCode: 'invalid_message',
+                            text: 'stub rejects this message',
+                            runToken: message.runToken,
+                            requestId: message.requestId,
+                        });
                         return;
                     }
                     const CHECK_ACTIONS = ['executeValidation', 'validateSource', 'validateCalendar'];
@@ -176,7 +219,7 @@ export const installReplyingWebSocketStub = async (
                     }
                     const isTestRun = TEST_ACTIONS.includes(message.action as string);
                     const allSteps = (isTestRun ? ['validates'] : ['exists', 'parses', 'validates']) as string[];
-                    const stepClassFor = (step: string): string => (isTestRun ? 'test-valid' : STEP_CLASS[step]);
+                    const stepClassFor = (step: string): string => (isTestRun ? 'step-test-validates' : STEP_CLASS[step]);
                     const runToken = message.runToken;
                     const requestId = message.requestId;
                     // Mirrors `Health::frameTarget()`: the server never reads a client-sent `target`
@@ -233,6 +276,38 @@ export const installReplyingWebSocketStub = async (
 
             (window as unknown as { WebSocket: unknown }).WebSocket = ReplyingWebSocket;
         },
-        { protocol, omitComplete, stopAfterStep, answerOnly }
+        { protocol, omitComplete, stopAfterStep, answerOnly, rejectActions }
     );
 };
+
+/**
+ * Deliver one frame from the stub as if the server had just sent it.
+ *
+ * For the frames a run does not ask for at a predictable moment — a straggler arriving after the
+ * page has given up waiting for it (#64). The frame is delivered through the same `onmessage` path
+ * every other frame takes, so nothing about how the page receives it is special-cased.
+ */
+export const deliverLateFrame = (page: Page, frame: Record<string, unknown>): Promise<void> =>
+    page.evaluate((payload) => {
+        const stub = (window as unknown as { __wsStub?: { pushFrame: (frame: unknown) => void } }).__wsStub;
+        if (undefined === stub) {
+            throw new Error('No stub WebSocket has been constructed on this page.');
+        }
+        stub.pushFrame(payload);
+    }, frame);
+
+/**
+ * Deliver one payload from the stub exactly as given, without serialising it.
+ *
+ * For the frame no well-behaved server sends and every client has to survive: one that is not JSON
+ * at all. The client's parse-failure branch is the only thing standing between a garbled frame and a
+ * wedged run (#43), and it cannot be reached through `deliverLateFrame()`, which serialises.
+ */
+export const deliverRawFrame = (page: Page, data: string): Promise<void> =>
+    page.evaluate((payload) => {
+        const stub = (window as unknown as { __wsStub?: { pushRaw: (data: string) => void } }).__wsStub;
+        if (undefined === stub) {
+            throw new Error('No stub WebSocket has been constructed on this page.');
+        }
+        stub.pushRaw(payload);
+    }, data);
