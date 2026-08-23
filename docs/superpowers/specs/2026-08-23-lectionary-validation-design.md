@@ -179,9 +179,14 @@ pattern and `schema` already accepts `Lectionary.json`, so `LitCalValidationsPat
 on the 19 qualifying i18n items. The 10 universal sections come from the `JsonData::LECTIONARY_*_FOLDER` constants that already exist; the rest
 hang off the existing producers, so a new calendar with a lectionary folder joins with no edit here.
 
-**A7. `Health` needs no change.** Its `kind: 'folder'` branch already validates every `*.json` in a folder against the item's schema and emits
-exactly one frame per step, and its i18n filename regex accepts every filename in the corpus (`en.json`, `en_US.json`, `la_NL.json`,
-`en_UK.json`). The `covers` step is computed from the same `glob()` that branch already performs.
+**A7. `Health` needs no change for the three existing steps.** Its `kind: 'folder'` branch already validates every `*.json` in a folder against
+the item's schema and emits exactly one frame per step, and its i18n filename regex accepts every filename in the corpus (`en.json`,
+`en_US.json`, `la_NL.json`, `en_UK.json`). Lectionary items therefore need no new execution path.
+
+**A8. `Health` emits the `covers` frame.** `runValidationSteps()` takes the item's `expectedLocales`, and the folder branch computes coverage
+from the same `glob()` it already performs — no second filesystem read. Both of that branch's exits must honour it: the `$allPromises` callback
+emits a fourth frame, and the empty-folder early return must emit a failing `covers` frame too, or an item that advertised four steps delivers
+three and the client waits out the silence watchdog for a card that never arrives.
 
 ## PR 2 — UnitTestInterface
 
