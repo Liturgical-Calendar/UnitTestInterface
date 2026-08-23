@@ -266,6 +266,13 @@ export const createPhaseRunner = ( options ) => {
      * Handle a terminal `complete` frame. Returns true when the frame was terminal and the caller
      * should stop processing it: it reports no step outcome, so painting, recording or counting it
      * would inflate the totals past the number of rendered cards.
+     *
+     * `onAdvance()` is called only when `registry.complete()` reports this requestId actually
+     * completed something — a duplicate or unregistered requestId completes nothing, and must not
+     * advance the run. Calling it unconditionally let a stray terminal frame (one with an unknown or
+     * already-completed requestId — the shared stub emits exactly this for `validateCalendar`, whose
+     * requestId is undefined) silently pump the state machine one step early, ending whichever phase
+     * was current on a frame that named no request in it at all.
      */
     const noteTerminalFrame = ( responseData ) => {
         if ( responseData.step !== 'complete' ) {
@@ -273,9 +280,9 @@ export const createPhaseRunner = ( options ) => {
         }
         if ( registry.complete( responseData.requestId ) ) {
             phaseOutstanding.delete( responseData.requestId );
-        }
-        if ( canAdvance() ) {
-            onAdvance();
+            if ( canAdvance() ) {
+                onAdvance();
+            }
         }
         return true;
     };

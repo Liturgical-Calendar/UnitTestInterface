@@ -882,6 +882,7 @@ const runTests = () => {
             break;
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
+            phaseRunner.clearWatchdog();
             safeToastShow('#tests-complete');
             currentRunToken = null;
             setScaffoldControlsDisabledForRun( false );
@@ -997,7 +998,13 @@ const connectWebSocket = () => {
         try {
             if ( responseData.type === "success" ) {
                 phaseRunner.paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
+                // TEMPORARY: falls back to `responseData.classes` for the calendar-data and
+                // unit-test phases, which do not yet register a requestId with `beginPhase()` and so
+                // cannot be answered by `selectorFor()`. Without this a freshly recorded run replays
+                // those two phases blank — green counts over blue cards, the totals-vs-cards drift
+                // #42 exists to remove, reached from the other direction. Removable once Tasks 8/9
+                // migrate both phases onto the registry; Task 10 removes it.
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -1019,7 +1026,8 @@ const connectWebSocket = () => {
             }
             else if ( responseData.type === "error" ) {
                 phaseRunner.paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
+                // TEMPORARY: see the matching comment on the success branch above.
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
                 updateText('failedCount', ++failedTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -1839,6 +1847,7 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         // Tell the server the run is abandoned, so it stops draining a backlog nobody is watching.
         // Must precede clearing currentRunToken: the cancel has to name the run it is stopping.
         sendCancelRun( conn, currentRunToken );
+        phaseRunner.clearWatchdog();
         // Releases the stopped run's outstanding set, so a `giveUpOnOutstandingRequests()` call
         // reaching this page after a Stop (its exported seam, or the watchdog's callback in a race)
         // finds nothing outstanding to give up on — the same no-op it was before this state moved
