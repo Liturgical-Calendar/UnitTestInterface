@@ -248,29 +248,45 @@ export const PROTOCOL_VERSION = 1;
  * The card class each published step is reported on, per frame family.
  *
  * Mirrors the server's `FrameFamily::CLASS_FOR_STEP`. The families matter because `validates` means a
- * different card in each: `schema-valid` for a file or a calendar, `test-valid` for a test run. A
- * single flat map cannot express that, and silently painted test results onto nothing.
+ * different card in each: `step-validates` for a file or a calendar, `step-test-validates` for a test
+ * run. A single flat map cannot express that, and silently painted test results onto nothing.
+ *
+ * These classes are **addresses, not verdicts** (#60). A card classed `step-exists` is "the card for
+ * this check's `exists` step", never a claim that anything exists; the verdict arrives separately, on
+ * the frame's `status`, and is painted as `bg-success` / `bg-danger` by `paintCard()`. The former
+ * names — `file-exists`, `json-valid`, `schema-valid`, `test-valid` — fused the two, and that fusion
+ * misled prose written *about* this code (LiturgicalCalendarAPI#867 described a failure as "a
+ * wrong-green `.file-exists` success", a sentence only that vocabulary makes writable). The `step-`
+ * prefix is deliberate: it keeps every step address greppable by one token and states the intent at
+ * every use site.
+ *
+ * The rename was a clean break — no aliases, and no card carries both vocabularies — so a run stored
+ * under the old names replays onto nothing. That was the owner's explicit call when #60 was scoped.
  *
  * `complete` is absent on purpose — the terminal frame addresses no card.
  *
  * @type {Readonly<Record<string, string>>}
  */
 export const STEP_CARD_CLASS = Object.freeze({
-    exists: 'file-exists',
-    parses: 'json-valid',
-    validates: 'schema-valid'
+    exists: 'step-exists',
+    parses: 'step-parses',
+    validates: 'step-validates'
 });
 
 /**
  * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
  * report three steps through {@link STEP_CARD_CLASS}; a test run reports exactly one, `validates`,
- * addressed at a different card (`test-valid`) than the other two families use for the same step
- * name. Consumed by `index.js`'s specific-unit-test phase (commit 163c8c0).
+ * addressed at a different card (`step-test-validates`) than the other two families use for the same
+ * step name. Consumed by `index.js`'s specific-unit-test phase (commit 163c8c0).
+ *
+ * Address-shaped for the same reason as {@link STEP_CARD_CLASS}, and distinct from `step-validates`
+ * because the *family*, not the verdict, is what differs: `step-test-validates` names the validates
+ * step of a test run. Class tokens match whole, so the two never collide in a selector.
  *
  * @type {Readonly<Record<string, string>>}
  */
 export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
-    validates: 'test-valid'
+    validates: 'step-test-validates'
 });
 
 /**
@@ -328,7 +344,7 @@ export const STEP_CARD_BODY = Object.freeze({
  * `classesFor` receives the step's card class and returns the *whole* class list for that card, so
  * each call site keeps its own address components — `calendar-{slug}`, `year-{n}`, the check's own
  * slug — and their exact order. Everything a card is addressed by therefore still comes from one
- * place per page, which is what #60 needs to find when it renames the step classes.
+ * place per page, which is what let #60 rename the step classes in {@link STEP_CARD_CLASS} alone.
  *
  * @param {object} options
  * @param {Array<string>} options.steps - From {@link stepsForCheck}.
@@ -371,8 +387,8 @@ const cardSelectorForFamily = ( stepClasses, scope ) => {
  *
  * Derived from {@link STEP_CARD_CLASS}, the same table {@link stepCardsHtml} renders from, so the
  * totals badge counts exactly the card families the scaffold can produce. Spelling the three classes
- * out at each counting site is what let the badge drift from the page, and would leave #60 a fresh
- * set of literals to chase after it renames them.
+ * out at each counting site is what let the badge drift from the page, and would have left #60 a
+ * fresh set of literals to chase when it renamed them.
  *
  * @param {string} [scope=''] - A container selector, e.g. `.sourcedata-tests`.
  * @returns {string}

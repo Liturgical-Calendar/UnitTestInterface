@@ -208,24 +208,24 @@ test('a rapid double rite change does not duplicate checks', async ({ page }) =>
     const classNamesOf = (selector: string) =>
         page.locator(selector).evaluateAll((els) => els.map((e) => e.className));
 
-    // Every check contributes exactly one `.file-exists` card, carrying its (slugified) `validate`
+    // Every check contributes exactly one `.step-exists` card, carrying its (slugified) `validate`
     // value as a class. A duplicated check would render two cards with the identical class list.
-    const sourceFileExists = await classNamesOf('.sourcedata-tests .file-exists');
-    const resourceFileExists = await classNamesOf('.resourcedata-tests .file-exists');
-    expect(sourceFileExists.length).toBeGreaterThan(0);
-    expect(resourceFileExists.length).toBeGreaterThan(0);
-    expect(new Set(sourceFileExists).size).toBe(sourceFileExists.length);
-    expect(new Set(resourceFileExists).size).toBe(resourceFileExists.length);
+    const sourceStepExists = await classNamesOf('.sourcedata-tests .step-exists');
+    const resourceStepExists = await classNamesOf('.resourcedata-tests .step-exists');
+    expect(sourceStepExists.length).toBeGreaterThan(0);
+    expect(resourceStepExists.length).toBeGreaterThan(0);
+    expect(new Set(sourceStepExists).size).toBe(sourceStepExists.length);
+    expect(new Set(resourceStepExists).size).toBe(resourceStepExists.length);
 
     // The counter-vs-card drift finding 2 warns about (and issue #43 exists to prevent): the
     // "Time" badge totals are computed straight from the rendered card counts, so they stay
-    // exactly 3x the (now duplicate-free) file-exists counts.
+    // exactly 3x the (now duplicate-free) `step-exists` counts.
     const totals = await page.evaluate(() => ({
         resource: document.getElementById('totalResourceDataTestsCount')?.textContent,
         source: document.getElementById('totalSourceDataTestsCount')?.textContent,
     }));
-    expect(Number(totals.resource)).toBe(resourceFileExists.length * 3);
-    expect(Number(totals.source)).toBe(sourceFileExists.length * 3);
+    expect(Number(totals.resource)).toBe(resourceStepExists.length * 3);
+    expect(Number(totals.source)).toBe(sourceStepExists.length * 3);
 });
 
 test('a rite change is blocked for the duration of a run', async ({ page }) => {

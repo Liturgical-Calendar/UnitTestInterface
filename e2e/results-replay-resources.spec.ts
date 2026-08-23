@@ -7,9 +7,9 @@ test.afterAll(removeSeededRuns);
 test('replays a stored resources run onto the dashboard', async ({ page, request }) => {
     // Seed a minimal resources run.
     // resourceDataChecks[0].validate = 'calendars-path' → resourceTemplate produces cards with
-    // class "calendars-path file-exists" (slugify preserves the already-lowercase hyphenated string).
+    // class "calendars-path step-exists" (slugify preserves the already-lowercase hyphenated string).
     // sourceDataChecks[0].validate = 'memorials-from-decrees' → sourceTemplate produces
-    // "memorials-from-decrees file-exists".
+    // "memorials-from-decrees step-exists".
     // Both selectors are stored as-is; applyResultToDom runs them through slugifySelector, which
     // is a no-op for already-lowercase selectors.
     // No `timestamp` here: seedStoredRun() writes the fixture straight into results/, so the
@@ -29,10 +29,10 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
             ],
         },
         apiPathResults: [
-            { id: '.calendars-path.file-exists', selector: '.calendars-path.file-exists', status: 'success', message: null, test: null }
+            { id: '.calendars-path.step-exists', selector: '.calendars-path.step-exists', status: 'success', message: null, test: null }
         ],
         sourceDataResults: [
-            { id: '.memorials-from-decrees.json-valid', selector: '.memorials-from-decrees.json-valid', status: 'error', message: 'seeded failure', test: null }
+            { id: '.memorials-from-decrees.step-parses', selector: '.memorials-from-decrees.step-parses', status: 'error', message: 'seeded failure', test: null }
         ],
     };
     const file = await seedStoredRun(request, run);
@@ -60,7 +60,7 @@ test('replays a stored resources run onto the dashboard', async ({ page, request
     // Per-section Time badge totals: 3 cards per seeded check in each section
     await expect(page.locator('#totalResourceDataTestsCount')).toHaveText('3');
     await expect(page.locator('#totalSourceDataTestsCount')).toHaveText('3');
-    // The resource-data file-exists card for calendars-path must be green (bg-success)
-    await expect(page.locator('.calendars-path.file-exists')).toHaveClass(/bg-success/);
+    // The resource-data `exists`-step card for calendars-path must be green (bg-success)
+    await expect(page.locator('.calendars-path.step-exists')).toHaveClass(/bg-success/);
     await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();
 });

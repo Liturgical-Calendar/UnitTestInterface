@@ -498,8 +498,8 @@ const calDataTestTemplate = ( idx, years ) => {
  * Returns a string that represents the HTML template for a specific source data check.
  * The template has the following structure:
  * - A paragraph with the name of the source data check.
- * - One card per step the check advertised, from `stepsForCheck()` — `file-exists` for `exists`,
- *   `json-valid` for `parses`, `schema-valid` for `validates`. A check that advertises no `steps`
+ * - One card per step the check advertised, from `stepsForCheck()` — `step-exists` for `exists`,
+ *   `step-parses` for `parses`, `step-validates` for `validates`. A check that advertises no `steps`
  *   (the `LitCalMetadata` URL check, and any run stored before the #42 migration) gets all three.
  * The template is used by the `index.js` script.
  *
@@ -1501,7 +1501,7 @@ const appendAccordionItem = ( obj ) => {
             <div class="col-1 ${idy === 0 || idy % 11 === 0 ? 'offset-1' : ''}">
                 <p class="text-center mb-0 fw-bold">${assertion.year}</p>
                 <p class="text-center mb-0 bg-secondary text-white currentSelectedCalendar"></p>
-                <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} test-valid">
+                <div class="card text-white bg-info rounded-0 ${nameSlug} year-${assertion.year} ${TEST_RUN_STEP_CARD_CLASS.validates}">
                     <div class="card-body">
                         <p class="card-text d-flex justify-content-between"><span><i class="fas fa-circle-question fa-fw" aria-hidden="true"></i> test valid</span><span role="button" data-bs-toggle="tooltip" data-bs-title="${escapeHtmlAttr(assertion.assertion + ' ' + dateStr)}"><i class="fas fa-circle-info" aria-hidden="true"></i></span></p>
                     </div>
@@ -1962,7 +1962,9 @@ document.querySelector('#APIResponseSelect').addEventListener('change', ( ev ) =
     ReadyToRunTests.PageReady = false;
     currentResponseType = ev.currentTarget.value;
     console.log( `currentResponseType: ${currentResponseType}` );
-    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.json-valid .response-type`).forEach(el => {
+    // The response format is named on the `parses` card, so this addresses that step's card class
+    // rather than spelling one out — the literal it replaced went stale the moment #60 renamed them.
+    document.querySelectorAll(`.calendar-${slugify(currentSelectedCalendar)}.${STEP_CARD_CLASS.parses} .response-type`).forEach(el => {
         el.textContent = currentResponseType;
     });
     setupPage();

@@ -195,10 +195,11 @@
  *   frames, for the same reason as `classes`. The v2 outgoing shape spells this `responseFormat`.
  * @property {?FrameTarget} target
  * @property {"exists"|"parses"|"validates"} step - A **check** (source-data or calendar) reports
- *   `exists`/`parses`/`validates` on cards classed `file-exists`/`json-valid`/`schema-valid`
+ *   `exists`/`parses`/`validates` on cards classed `step-exists`/`step-parses`/`step-validates`
  *   (`STEP_CARD_CLASS` in `wsProtocol.js`). A **test run** reports only `validates`, on a card
- *   classed `test-valid` instead (`TEST_RUN_STEP_CARD_CLASS`) — the same step name addresses a
- *   different card family depending on which kind of request produced the frame.
+ *   classed `step-test-validates` instead (`TEST_RUN_STEP_CARD_CLASS`) — the same step name addresses
+ *   a different card family depending on which kind of request produced the frame. Those classes name
+ *   the step only; the verdict is this frame's `status`, never the class (#60).
  * @property {"pass"|"fail"} status
  * @property {string[]} [details] - Individual failures behind a summarising `text`. Absent, not
  *   empty, when there are none.

@@ -154,7 +154,7 @@ test('unit tests go out as runTest with a typed calendar', async ({ page }) => {
     // Left blue (`.bg-info`, the pending state `appendAccordionItem()` renders every card in) would
     // mean this phase still needs a selector the server composed — the same drift #42 removes for
     // the other two phases, checked here from the unit-test side.
-    const cards = page.locator('#specificUnitTests .test-valid');
+    const cards = page.locator('#specificUnitTests .step-test-validates');
     await expect(cards).not.toHaveCount(0);
     await expect(page.locator('#specificUnitTests .bg-info')).toHaveCount(0);
 });

@@ -254,6 +254,13 @@ export const createPhaseRunner = ( options ) => {
      * code: a server that predates section C sends no `requestId`, and the caller should degrade to
      * the old behaviour rather than paint nothing at all.
      *
+     * That fallback only lands on a card while the server's `FrameFamily::CLASS_FOR_STEP` and this
+     * repository's {@link STEP_CARD_CLASS} still spell the step the same way, and #60 renamed this
+     * side (`file-exists` -> `step-exists`, and so on) without touching the server's. Degrading to a
+     * selector that now matches nothing is the accepted cost of that clean break: it can only be
+     * reached by a server old enough to send no `requestId` at all, which every currently deployed
+     * API is not, and `applyResultToDom()` says so out loud rather than failing silently.
+     *
      * @param {object} responseData - A step-result frame.
      * @returns {void}
      */

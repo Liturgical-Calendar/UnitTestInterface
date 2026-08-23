@@ -72,7 +72,7 @@ in an `.env.local` file (or in an `.env.development` file for the development en
 > inside WSL (e.g. `WS_HOST="[::]"` in the API's `.env.local`) does not help, since the Windows-to-WSL `::1` path itself is
 > missing; connecting explicitly via `127.0.0.1` is the reliable workaround.
 > Leave `API_HOST=localhost`: the websocket server matches resource URLs against the API's configured host when resolving
-> JSON schemas, so `127.0.0.1` there would make the base API path `schema-valid` checks fail.
+> JSON schemas, so `127.0.0.1` there would make the base API path's schema-validation checks fail.
 > The docker stack is unaffected because Docker Desktop's proxy listens on both IPv4 and IPv6 on the Windows side.
 
 If you have the Liturgical Calendar API loaded in the same VSCode workspace as the Unit Test Interface,

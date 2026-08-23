@@ -151,8 +151,9 @@ Server resolves via `RomanMissal::getSanctoraleFileName()`.
 }
 ```
 
-Each `executeValidation` yields exactly **3** responses (`file-exists`, `json-valid`, `schema-valid`) — a constant both `index.js` and
-`resources.js` hardcode when counting phase completion. See #42 / #43.
+**This frame sketch is pre-#42 and no longer describes the wire.** Read `CLAUDE.md`'s "WebSocket Messaging" section instead: phase
+completion is driven by the terminal `complete` frame per `requestId`, not by a hardcoded response count, and the per-step card classes
+are `step-exists` / `step-parses` / `step-validates` (`step-test-validates` for a test run) — addresses, not verdicts (#60).
 
 Server sends selectors with **original casing** but client uses **slugified** card class names. Always pass through `slugifySelector()` from `common.js`:
 

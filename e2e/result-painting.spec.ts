@@ -65,7 +65,7 @@ test('a non-object response paints nothing instead of throwing', async ({ page }
 });
 
 test('a well-formed selector matching no card paints nothing instead of throwing', async ({ page }) => {
-    expect(await paint(page, { type: 'success', classes: '.no-such-card.file-exists', text: 'ok' })).toBe(0);
+    expect(await paint(page, { type: 'success', classes: '.no-such-card.step-exists', text: 'ok' })).toBe(0);
 });
 
 test('a matching selector paints the card and reports how many it painted', async ({ page }) => {
@@ -73,14 +73,14 @@ test('a matching selector paints the card and reports how many it painted', asyn
     // Static literal markup mirroring the card templates — no interpolation, no external input.
     await page.evaluate(() => {
         const el = document.createElement('div');
-        el.className = 'card text-white bg-info rounded-0 spec-fixture-card file-exists';
+        el.className = 'card text-white bg-info rounded-0 spec-fixture-card step-exists';
         el.innerHTML = '<div class="card-body"><p class="card-text"><i class="fas fa-circle-question"></i> data exists</p></div>';
         document.body.appendChild(el);
     });
 
-    expect(await paint(page, { type: 'success', classes: '.spec-fixture-card.file-exists', text: 'ok' })).toBe(1);
+    expect(await paint(page, { type: 'success', classes: '.spec-fixture-card.step-exists', text: 'ok' })).toBe(1);
 
-    const card = page.locator('.spec-fixture-card.file-exists');
+    const card = page.locator('.spec-fixture-card.step-exists');
     await expect(card).toHaveClass(/bg-success/);
     await expect(card).not.toHaveClass(/bg-info/);
 });
@@ -89,14 +89,14 @@ test('a failing response attaches its message as an error tooltip', async ({ pag
     // Static literal markup mirroring the card templates — no interpolation, no external input.
     await page.evaluate(() => {
         const el = document.createElement('div');
-        el.className = 'card text-white bg-info rounded-0 spec-fixture-fail schema-valid';
+        el.className = 'card text-white bg-info rounded-0 spec-fixture-fail step-validates';
         el.innerHTML = '<div class="card-body"><p class="card-text"><i class="fas fa-circle-question"></i> schema valid</p></div>';
         document.body.appendChild(el);
     });
 
-    expect(await paint(page, { type: 'error', classes: '.spec-fixture-fail.schema-valid', text: 'Unable to detect schema' })).toBe(1);
+    expect(await paint(page, { type: 'error', classes: '.spec-fixture-fail.step-validates', text: 'Unable to detect schema' })).toBe(1);
 
-    const card = page.locator('.spec-fixture-fail.schema-valid');
+    const card = page.locator('.spec-fixture-fail.step-validates');
     await expect(card).toHaveClass(/bg-danger/);
     await expect(card.locator('.error-tooltip')).toHaveAttribute('data-bs-title', 'Unable to detect schema');
 });

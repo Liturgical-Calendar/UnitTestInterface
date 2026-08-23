@@ -102,7 +102,7 @@ mirrored networking mode; only IPv4 loopback passes through), so the connection 
 falls back to IPv4, WebSockets do not. Binding the WS server to IPv6 inside WSL (`WS_HOST="[::]"` in the API's env)
 does not help — the Windows-to-WSL `::1` path itself is missing. Keep `API_HOST=localhost`: the WS server
 (`Health.php`) matches resource URLs against the API's configured host when resolving JSON schemas, so `127.0.0.1`
-there makes the base API path `schema-valid` checks fail. The docker stack is unaffected.
+there makes the base API path's `validates`-step checks fail. The docker stack is unaffected.
 
 ## Code Standards
 
@@ -299,12 +299,24 @@ shape, which names no id.
 **Two step vocabularies, addressed to different cards, sharing the same three-word `step` enum:**
 
 - A **check** — source-data validation (`validateSource`/`executeValidation`) or calendar-data validation (`validateCalendar`) —
-  reports `exists`, `parses`, then `validates`, on cards classed `file-exists`, `json-valid`, `schema-valid` respectively
-  (`STEP_CARD_CLASS` in `wsProtocol.js`, mirroring the server's `FrameFamily::CLASS_FOR_STEP`) — or whichever subset of those three its
-  inventory item advertised, which is also the subset the scaffold drew (see The `/validations` Inventory above).
-- A **test run** (`runTest`) reports only `validates`, on a card classed `test-valid` instead (`TEST_RUN_STEP_CARD_CLASS`). The same step
-  name addresses a different card family depending on which kind of request produced the frame, which is why `wsProtocol.js` keeps two
-  maps rather than one.
+  reports `exists`, `parses`, then `validates`, on cards classed `step-exists`, `step-parses`, `step-validates` respectively
+  (`STEP_CARD_CLASS` in `wsProtocol.js`) — or whichever subset of those three its inventory item advertised, which is also the subset the
+  scaffold drew (see The `/validations` Inventory above).
+- A **test run** (`runTest`) reports only `validates`, on a card classed `step-test-validates` instead (`TEST_RUN_STEP_CARD_CLASS`). The
+  same step name addresses a different card family depending on which kind of request produced the frame, which is why `wsProtocol.js`
+  keeps two maps rather than one.
+
+**Those card classes are DOM addresses, not verdicts (#60).** `step-exists` names *the card for this check's `exists` step*; it asserts
+nothing about whether anything exists. The verdict is carried solely by the frame's `status` and by the `bg-success` / `bg-danger` that
+`paintCard()` puts on the card. The classes were once phrased as claims — `file-exists`, `json-valid`, `schema-valid`, `test-valid` —
+and that fusion of address and verdict misled prose written *about* this code (LiturgicalCalendarAPI#867 described a failure mode as "a
+wrong-green `.file-exists` success", a sentence only that vocabulary makes writable). Do not reintroduce a verdict word into a card
+class, and do not mirror the server's `FrameFamily::CLASS_FOR_STEP` names: this repository's card vocabulary is now deliberately its
+own, and `STEP_CARD_CLASS` is the only place either table is written down.
+
+The rename was a **clean break**: no aliases, and no card carries two vocabularies. A run stored under the old names therefore replays
+onto nothing — the owner's explicit call when #60 was scoped — and the DEPRECATED `classes` fallback below only lands on a card while
+the server happens to spell a step the same way this repository does.
 
 Phase completion is driven by the terminal `complete` frame, one per request that carried a `requestId` — **not** by counting frames.
 The old "each `executeValidation` yields exactly 3 responses" constant, and the `* 3` / `>= 3` arithmetic it drove, are gone from this
@@ -456,12 +468,24 @@ never a top-level `test` field. An earlier task in this migration fixed both thi
 had been sending and reading a fictional `test` property that the server never produced; do not reintroduce it, here or in code.
 
 `classes` is still on every `stepResult` frame, DEPRECATED and sent with the server's own casing (e.g. `.MaryMotherChurchTest`, not
-`.marymotherchurchtest`) — `slugifySelector()` in `common.js` lowercases it before it is fed to `document.querySelectorAll()`. It is
-read in exactly two places now, both of them fallbacks rather than the primary attribution path: `applyResultToDom()` in
-`assets/js/testResults.js`, used only when a frame carries no usable `requestId`/`step` pair (a server predating per-request
-correlation), and the replay of a stored run recorded before this migration, whose descriptors carry the server's old selector rather
-than a client-recorded one. A current run attributes every frame by `(requestId, step)` through the registry described in Correlation
-above, and does not read `classes` to do it.
+`.marymotherchurchtest`) — `slugifySelector()` in `common.js` lowercases it before it is fed to `document.querySelectorAll()`. The
+rename in #60 did not change what `slugifySelector()` does: the new step classes are already lowercase, so it stays a no-op for them
+and remains needed only for the check/test slug the server casts in its own casing. It is read in exactly two places now, both of them
+fallbacks rather than the primary attribution path: `applyResultToDom()` in `assets/js/testResults.js`, used only when a frame carries
+no usable `requestId`/`step` pair (a server predating per-request correlation), and the replay of a stored run recorded before this
+migration, whose descriptors carry the server's old selector rather than a client-recorded one. A current run attributes every frame by
+`(requestId, step)` through the registry described in Correlation above, and does not read `classes` to do it.
+
+**Both fallbacks now depend on a vocabulary this repository no longer uses**, since #60 renamed the card classes on this side only. A
+`classes` selector composed by the server's `FrameFamily::CLASS_FOR_STEP` (`.foo.file-exists`) matches no card here any more, and
+neither does a run stored before the rename. Both cases warn — `applyResultToDom()` logs the selector that matched nothing — rather
+than failing silently, and neither is reachable from a current run against a current API. That is the accepted cost of the clean break;
+do not "fix" it by teaching either path to translate between the two vocabularies, which is exactly the dual addressability #60
+removed.
+
+The **other address components on a card are unchanged and were reviewed in the same pass**: `calendar-{slug}` and `year-{n}` are
+already noun-valued addresses carrying no verdict, and the check's own slug (`idToCardClass()` / `slugify()`) names what is being
+checked. Only the step component was ever phrased as a claim.
 
 ## Authentication
 

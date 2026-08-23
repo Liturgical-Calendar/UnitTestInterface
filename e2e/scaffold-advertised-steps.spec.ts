@@ -5,7 +5,7 @@ import { installReplyingWebSocketStub } from './websocket-stub';
  * The card scaffold must render exactly the steps the `/validations` inventory advertises (#62).
  *
  * #42 removed the hardcoded "3 responses per check" from the frame *counting*, but the literal three
- * survived in the scaffolds: both runner pages drew `file-exists`, `json-valid` and `schema-valid`
+ * survived in the scaffolds: both runner pages drew all three step cards
  * unconditionally, while `beginPhase()` registered only the steps the item advertised — and the run
  * totals were then derived by counting the rendered cards. Those two threes agreed only because
  * every item the API currently advertises happens to carry exactly `['exists','parses','validates']`.
@@ -50,13 +50,13 @@ const serveTwoStepInventory = async (page: Page, request: APIRequestContext): Pr
 
 /** Every check card the source-data scaffold rendered, whichever step families it used. */
 const sourceCards = (page: Page) =>
-    page.locator('.sourcedata-tests .file-exists, .sourcedata-tests .json-valid, .sourcedata-tests .schema-valid');
+    page.locator('.sourcedata-tests .step-exists, .sourcedata-tests .step-parses, .sourcedata-tests .step-validates');
 
 const assertTwoStepScaffold = async (page: Page): Promise<void> => {
-    await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.file-exists`)).toHaveCount(1);
-    await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.schema-valid`)).toHaveCount(1);
+    await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.step-exists`)).toHaveCount(1);
+    await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.step-validates`)).toHaveCount(1);
     // The card that would have been drawn for a step this item never reports.
-    await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.json-valid`)).toHaveCount(0);
+    await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}.step-parses`)).toHaveCount(0);
     // And nothing else was rendered for it either — two cards, not three with one hidden.
     await expect(page.locator(`.sourcedata-tests .${TWO_STEP_CLASS}`)).toHaveCount(2);
 
@@ -87,9 +87,9 @@ test('the Calendars source scaffold renders only the steps the inventory adverti
     // The calendar-data scaffold is not inventory-driven — its checks are built locally and
     // advertise no steps — so it keeps the same three-card shape, from the shared fallback both the
     // scaffold and `beginPhase()` now read.
-    const years = await page.locator('.calendardata-tests .file-exists').count();
+    const years = await page.locator('.calendardata-tests .step-exists').count();
     expect(years).toBeGreaterThan(0);
-    await expect(page.locator('.calendardata-tests .json-valid')).toHaveCount(years);
-    await expect(page.locator('.calendardata-tests .schema-valid')).toHaveCount(years);
+    await expect(page.locator('.calendardata-tests .step-parses')).toHaveCount(years);
+    await expect(page.locator('.calendardata-tests .step-validates')).toHaveCount(years);
     await expect(page.locator('#totalCalendarDataTestsCount')).toHaveText(String(years * 3));
 });

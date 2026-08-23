@@ -118,10 +118,13 @@ export const installReplyingWebSocketStub = async (
             const sent: string[] = [];
             (window as unknown as { __wsSent: string[] }).__wsSent = sent;
 
+            // Mirrors `STEP_CARD_CLASS` in `assets/js/wsProtocol.js` — address-shaped step names
+            // (#60), not verdicts. Only the DEPRECATED `classes` projection is built from this; a
+            // frame is attributed by `(requestId, step)`.
             const STEP_CLASS: Record<string, string> = {
-                exists: 'file-exists',
-                parses: 'json-valid',
-                validates: 'schema-valid',
+                exists: 'step-exists',
+                parses: 'step-parses',
+                validates: 'step-validates',
             };
 
             class ReplyingWebSocket {
@@ -205,7 +208,7 @@ export const installReplyingWebSocketStub = async (
                     }
                     const isTestRun = TEST_ACTIONS.includes(message.action as string);
                     const allSteps = (isTestRun ? ['validates'] : ['exists', 'parses', 'validates']) as string[];
-                    const stepClassFor = (step: string): string => (isTestRun ? 'test-valid' : STEP_CLASS[step]);
+                    const stepClassFor = (step: string): string => (isTestRun ? 'step-test-validates' : STEP_CLASS[step]);
                     const runToken = message.runToken;
                     const requestId = message.requestId;
                     // Mirrors `Health::frameTarget()`: the server never reads a client-sent `target`

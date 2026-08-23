@@ -6,7 +6,7 @@ import { deliverLateFrame, installReplyingWebSocketStub, sentFrames } from './we
  *
  * Two things this page used to do are being removed here, and each has its own spec below.
  *
- * **It executed CSS selectors the server sent it.** `classes` — `".proprium-de-sanctis-2002.json-valid"`
+ * **It executed CSS selectors the server sent it.** `classes` — `".proprium-de-sanctis-2002.step-parses"`
  * — went straight to `querySelectorAll()`, which made this repository's markup part of the API's
  * contract, and made a selector that matched nothing fail *silently* while the counters advanced
  * anyway. The stub used here therefore sends a selector that deliberately matches nothing: a run that
@@ -382,7 +382,7 @@ test('a frame arriving after its phase was given up on paints nothing (#64)', as
     await deliverLateFrame(page, {
         type: 'error',
         text: 'late answer from a recovered server',
-        classes: '.stub-addresses-nothing.json-valid',
+        classes: '.stub-addresses-nothing.step-parses',
         target: { id: 'late' },
         step: 'parses',
         status: 'fail',

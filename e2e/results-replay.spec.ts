@@ -35,11 +35,11 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
             ],
         },
         sourceDataResults: [
-            { id: '.proprium-de-sanctis-1970.file-exists', selector: '.proprium-de-sanctis-1970.file-exists', status: 'success', message: null, test: null },
-            { id: '.proprium-de-sanctis-2002.json-valid', selector: '.proprium-de-sanctis-2002.json-valid', status: 'error', message: 'seeded failure', test: null },
+            { id: '.proprium-de-sanctis-1970.step-exists', selector: '.proprium-de-sanctis-1970.step-exists', status: 'success', message: null, test: null },
+            { id: '.proprium-de-sanctis-2002.step-parses', selector: '.proprium-de-sanctis-2002.step-parses', status: 'error', message: 'seeded failure', test: null },
         ],
-        calendarDataResults: [{ id: '.file-exists.calendar-va.year-1970', selector: '.file-exists.calendar-va.year-1970', status: 'success', message: null, test: null }],
-        unitTestResults: [{ id: '.testseedreplay.year-1970.test-valid', selector: '.TestSeedReplay.year-1970.test-valid', status: 'success', message: null, test: 'TestSeedReplay' }],
+        calendarDataResults: [{ id: '.step-exists.calendar-va.year-1970', selector: '.step-exists.calendar-va.year-1970', status: 'success', message: null, test: null }],
+        unitTestResults: [{ id: '.testseedreplay.year-1970.step-test-validates', selector: '.TestSeedReplay.year-1970.step-test-validates', status: 'success', message: null, test: 'TestSeedReplay' }],
     };
     const file = await seedStoredRun(request, run);
 
@@ -65,11 +65,11 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
     await expect(page.locator('#successfultestseedreplayTestsCount')).toHaveText('1');
     // Totals: 2 source checks × 3 cards + 1 year × 3 cards + 1 assertion card = 10
     await expect(page.locator('#total-tests-count')).toHaveText('10');
-    // The calendar-data file-exists card for year 1970 must be green (bg-success),
+    // The calendar-data `exists`-step card for year 1970 must be green (bg-success),
     // proving the fix: cfg.years=[1970] drove the render so .year-1970 was found in the DOM.
-    await expect(page.locator('.file-exists.calendar-va.year-1970')).toHaveClass(/bg-success/);
+    await expect(page.locator('.step-exists.calendar-va.year-1970')).toHaveClass(/bg-success/);
     // The failed source-data card carries the stored error message as a tooltip
-    await expect(page.locator('.proprium-de-sanctis-2002.json-valid .error-tooltip')).toHaveCount(1);
+    await expect(page.locator('.proprium-de-sanctis-2002.step-parses .error-tooltip')).toHaveCount(1);
     await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();
 });
 
