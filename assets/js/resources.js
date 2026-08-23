@@ -899,13 +899,17 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
-    // `currentRunToken !== null` closes a reconnect hole: `conn.onopen` resets `currentState` to
-    // `Ready` unconditionally, even when a run is still in flight (the socket merely dropped and
-    // reconnected) and `currentRunToken` is still set. Without this guard, the watchdog firing in
-    // that window would see `Ready` and call `onAdvance()` -> `runTests()`, which re-enters the
-    // `Ready` case and re-sends the phase on the new socket under the stale run token, doubling
-    // every counter against an already-painted scaffold.
-    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped && currentRunToken !== null,
+    // KNOWN DEFECT (#ISSUE): `conn.onopen` resets `currentState` to `Ready` unconditionally, even
+    // when a run is still in flight and merely dropped/reconnected its socket. If the watchdog
+    // fires in that window, it sees `Ready`, `canAdvance()` returns true, and `onAdvance()` ->
+    // `runTests()` re-enters the `Ready` case, re-sending the phase on the new socket under the
+    // stale run token — doubling every counter against an already-painted scaffold.
+    // `currentRunToken !== null` does NOT guard against this: the token is still set throughout
+    // that exact window (it is only nulled at `JobsFinished` or an explicit Stop), so the clause
+    // is inert here. The real fix is to stop `onopen` from resetting `currentState` while a run
+    // is in flight; that is a behavioural change needing its own review, not something to patch
+    // into this guard.
+    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
     socket: () => conn,
     runToken: () => currentRunToken
 } );

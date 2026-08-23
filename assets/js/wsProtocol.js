@@ -253,7 +253,7 @@ export const STEP_CARD_CLASS = Object.freeze({
  * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
  * report three steps through {@link STEP_CARD_CLASS}; a test run reports exactly one, `validates`,
  * addressed at a different card (`test-valid`) than the other two families use for the same step
- * name. Consumed by `index.js`'s specific-unit-test phase (commit c43c0e7).
+ * name. Consumed by `index.js`'s specific-unit-test phase (commit 163c8c0).
  *
  * @type {Readonly<Record<string, string>>}
  */
