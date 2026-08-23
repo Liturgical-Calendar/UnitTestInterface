@@ -45,6 +45,7 @@
 declare(strict_types=1);
 
 use Dotenv\Dotenv;
+use Dotenv\Exception\ValidationException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -94,6 +95,22 @@ if (false === in_array($route, ROUTES, true)) {
     refuse(404, 'Unknown route', sprintf('This proxy forwards only: %s. Received: %s', implode(', ', ROUTES), '' === $route ? '(none)' : $route));
 }
 
+// Validated before use, the way `layout/head.php` validates the same variables — but this file has
+// the stronger reason to: those values are not merely displayed here, they are composed into an
+// outbound request. `API_PROTOCOL` is additionally constrained to http/https, which `head.php` has no
+// need to do; a scheme is the one part of a URL that decides what kind of thing the request even is,
+// and a typo like `file` in an env file should be a refusal rather than an attempt.
+//
+// Caught rather than allowed to escape: an uncaught ValidationException prints a PHP error page, and
+// every caller of this endpoint is parsing JSON.
+try {
+    $dotenv->ifPresent(['API_HOST'])->notEmpty();
+    $dotenv->ifPresent(['API_PROTOCOL'])->notEmpty()->allowedValues(['http', 'https']);
+    $dotenv->ifPresent(['API_PORT'])->isInteger();
+} catch (ValidationException $e) {
+    refuse(500, 'Misconfigured proxy', 'The API location this proxy is configured with is not usable: ' . $e->getMessage());
+}
+
 $protocol = $_ENV['API_PROTOCOL'] ?? 'https';
 $host     = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
 $port     = (int) ($_ENV['API_PORT'] ?? 443);
@@ -102,6 +119,16 @@ $basePath = trim((string) ($_ENV['API_BASE_PATH'] ?? ''), '/');
 $portPart = in_array($port, [80, 443], true) ? '' : ':' . $port;
 $pathPart = '' === $basePath ? '/' : '/' . $basePath . '/';
 $upstream = $protocol . '://' . $host . $portPart . $pathPart . $route;
+
+// Belt and braces over the validation above: whatever the parts were, confirm the URL they actually
+// composed still addresses the configured host over the configured scheme. `API_HOST` carrying
+// something with structure in it — a userinfo `@`, a path, a second host — would otherwise compose a
+// URL pointing somewhere else entirely, and this is a proxy, so "somewhere else" is the failure that
+// matters. Cheap, and it checks the finished string rather than the ingredients.
+$parsed = parse_url($upstream);
+if (false === is_array($parsed) || ( $parsed['scheme'] ?? null ) !== $protocol || ( $parsed['host'] ?? null ) !== $host) {
+    refuse(500, 'Misconfigured proxy', 'The configured API location does not compose a URL addressing that host.');
+}
 
 // Only two request headers are forwarded, and both are content negotiation rather than identity.
 // Nothing that could authenticate the *visitor* travels upstream: no cookies, no Authorization. The
