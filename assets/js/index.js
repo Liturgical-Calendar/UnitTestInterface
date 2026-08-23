@@ -25,13 +25,14 @@ import {
 
 import {
     sendCancelRun,
-    toWireTarget,
+    toCalendarIdentity,
     testAppliesToRite,
     CALENDAR_SCOPE_KEYS,
     yearsForRite,
     fetchValidations,
     inventoryIdsForCalendar,
     idToCardClass,
+    STEP_CARD_CLASS,
 } from './wsProtocol.js';
 
 import { createPhaseRunner } from './wsRunner.js';
@@ -598,10 +599,6 @@ let failedCalendarDataTests = 0;
 let successfulUnitTests = 0;
 let failedUnitTests = 0;
 
-/** Track expected and received responses for parallel Calendar Data tests */
-let calendarDataExpectedResponses = 0;
-let calendarDataReceivedResponses = 0;
-
 let connectionAttempt = null;
 let conn;
 let currentRunToken = null;
@@ -677,6 +674,15 @@ export const giveUpOnOutstandingRequests = () => phaseRunner.giveUpOnOutstanding
 let currentSelectedCalendar = "roman";
 let currentNationalCalendar = null;
 let currentCalendarCategory = "ritecalendar";
+/**
+ * The typed calendar identity the v2 `validateCalendar` message carries — `{kind, id?, rite}`.
+ *
+ * Derived once, in `resolveCalendarTargetFromControls()`, from the same `data-calendartype` dataset
+ * read that already produces `currentCalendarCategory`, and kept in sync by that function's two
+ * callers (`handleCalendarSelectChange()` and `resyncLiveStateFromDom()`). Not re-derived at
+ * send-time: a second reader of that dataset attribute would invite the two drifting apart.
+ */
+let currentCalendarIdentity = { kind: 'rite', rite: 'roman' };
 /**
  * The liturgical rite of the currently selected calendar.
  * Derived from the rite select's own value (see `resolveCalendarTargetFromControls()`); 'roman' by default.
@@ -795,35 +801,39 @@ const runTests = () => {
         case TestState.ExecutingValidations:
             if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
-                // The body below is Task 8's; until that task lands, leave the existing
-                // ValidatingCalendarData transition here untouched.
                 currentState = TestState.ValidatingCalendarData;
                 index = 0;
                 performance.mark( 'calendarDataTestsStart' );
                 safeCollapseShow('#calendarDataTests');
 
-                // Send ALL calendar data requests at once - server handles concurrency
-                calendarDataExpectedResponses = Years.length * 3; // 3 responses per year
-                calendarDataReceivedResponses = 0;
-                console.log( `Sending ${Years.length} calendar data requests in parallel (expecting ${calendarDataExpectedResponses} responses)...` );
-                Years.forEach( year => {
+                // Calendar cards are addressed `.calendar-{slug}.{step-class}.year-{n}`, not the
+                // default `.{cardSlugFor(check)}.{step-class}` `beginPhase()` would otherwise use, so
+                // a custom `cardSelectorFor` is supplied.
+                const calendarSlug = slugify( currentSelectedCalendar );
+                const yearChecks = Years.map( year => ( { year } ) );
+
+                phaseRunner.beginPhase( yearChecks, {
+                    containerSelector: '.calendardata-tests',
+                    cardSelectorFor: ( check, step ) => {
+                        const stepClass = STEP_CARD_CLASS[ step ];
+                        return undefined === stepClass ? null : `.calendar-${calendarSlug}.${stepClass}.year-${check.year}`;
+                    }
+                } );
+                phaseRunner.armWatchdog();
+                yearChecks.forEach( check => {
                     phaseRunner.sendMessage( {
                         action: 'validateCalendar',
-                        year: year,
-                        calendar: currentSelectedCalendar,
-                        category: currentCalendarCategory,
-                        rite: currentRite,
-                        responsetype: currentResponseType
+                        calendar: currentCalendarIdentity,
+                        year: check.year,
+                        responseFormat: currentResponseType,
+                        requestId: check.requestId
                     } );
                 } );
+                phaseRunner.advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.ValidatingCalendarData:
-            // Count responses from parallel requests (all requests already sent)
-            calendarDataReceivedResponses++;
-            // `>=`, not `===` — see the note on the source-data counter above.
-            if ( calendarDataReceivedResponses >= calendarDataExpectedResponses ) {
-                console.log( `All ${calendarDataExpectedResponses} calendar data responses received!` );
+            if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
                 currentState = TestState.SpecificUnitTests;
                 index = 0;
@@ -1665,12 +1675,19 @@ const setupPage = () => {
 }
 
 /**
- * Resolves the calendar/category/national-calendar triple from the current state of the mounted
- * controls, via `toWireTarget()` and (for a diocesan calendar) the loaded `apiBase` metadata.
+ * Resolves the calendar/category/national-calendar/identity state from the current state of the
+ * mounted controls, via `toCalendarIdentity()` and (for a diocesan calendar) the loaded `apiBase`
+ * metadata.
  *
  * Shared by `handleCalendarSelectChange()` and `resyncLiveStateFromDom()`, which both need to
- * derive the same triple from the same two library controls — the former on a live user change,
- * the latter when restoring live state after viewing a stored past run.
+ * derive the same state from the same two library controls — the former on a live user change, the
+ * latter when restoring live state after viewing a stored past run.
+ *
+ * This is the *only* reader of the calendar select's `data-calendartype` dataset: `category` and
+ * `calendar` (the v1 `nationalcalendar`/`diocesancalendar`/`ritecalendar` vocabulary, which
+ * `currentCalendarCategory` still needs for its non-wire consumers — `buildCalendarsPayload()`,
+ * `buildNonVASourceDataChecks()`, the replay path) are derived from `identity.kind` here rather than
+ * read from the dataset a second time, so the two vocabularies cannot drift apart.
  *
  * `riteSelect` / `calendarSelect` are null when `mountCalendarControls()` failed (a CDN or
  * metadata failure — see its catch block and the `#controls-load-failed` toast). Both callers of
@@ -1679,7 +1696,7 @@ const setupPage = () => {
  * Falling back to whatever module state already holds keeps the rest of the page degrading
  * gracefully instead of throwing on `null._domElement`.
  *
- * @returns {{rite: string, calendar: string, category: string, nationalCalendar: ?string}}
+ * @returns {{rite: string, calendar: string, category: string, nationalCalendar: ?string, identity: {kind: string, id?: string, rite: string}}}
  */
 const resolveCalendarTargetFromControls = () => {
     if ( !riteSelect || !calendarSelect ) {
@@ -1688,36 +1705,41 @@ const resolveCalendarTargetFromControls = () => {
             calendar: currentSelectedCalendar,
             category: currentCalendarCategory,
             nationalCalendar: currentNationalCalendar,
+            identity: currentCalendarIdentity,
         };
     }
     const rite = riteSelect._domElement.value;
     const selectEl = calendarSelect._domElement;
     const selectedOption = selectEl.options[ selectEl.selectedIndex ] ?? null;
 
-    const target = toWireTarget(
+    const identity = toCalendarIdentity(
         selectEl.value,
         selectedOption?.dataset?.calendartype ?? '',
         rite
     );
+    const category = identity.kind === 'rite' ? 'ritecalendar'
+        : identity.kind === 'national' ? 'nationalcalendar'
+        : 'diocesancalendar';
+    const calendar = identity.kind === 'rite' ? identity.rite : identity.id;
 
     let nationalCalendar;
-    if ( target.category === 'diocesancalendar' ) {
+    if ( category === 'diocesancalendar' ) {
         // The library's diocese options carry no parent-nation attribute, so resolve it from the
         // same loaded metadata the select was built from.
         const diocesanData = apiBase
             .diocesanCalendars( rite )
-            .find( entry => entry.calendar_id === target.calendar );
+            .find( entry => entry.calendar_id === calendar );
         nationalCalendar = diocesanData ? diocesanData.nation : null;
-    } else if ( target.category === 'ritecalendar' ) {
+    } else if ( category === 'ritecalendar' ) {
         // A rite-level calendar has no national calendar. null (rather than the calendar id) keeps
         // `scope.national_calendars.includes( currentNationalCalendar )` false, so national-scoped
         // tests are correctly excluded from it.
         nationalCalendar = null;
     } else {
-        nationalCalendar = target.calendar;
+        nationalCalendar = calendar;
     }
 
-    return { rite, calendar: target.calendar, category: target.category, nationalCalendar };
+    return { rite, calendar, category, nationalCalendar, identity };
 };
 
 /**
@@ -1776,6 +1798,7 @@ const handleCalendarSelectChange = () => {
     currentSelectedCalendar = target.calendar;
     currentCalendarCategory = target.category;
     currentNationalCalendar = target.nationalCalendar;
+    currentCalendarIdentity = target.identity;
 
     console.log( 'currentCalendarCategory = ' + currentCalendarCategory + ', currentRite = ' + currentRite );
     document.querySelectorAll(`.calendar-${slugify(oldSelectedCalendar)}`).forEach(el => {
@@ -1815,8 +1838,6 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         // `endRun()` in wsRunner.js for why a run must not simply be allowed to leak its state into
         // the next one.
         phaseRunner.endRun();
-        calendarDataReceivedResponses = 0;
-        calendarDataExpectedResponses = 0;
         resetTestUI();
         currentState = ( conn.readyState !== WebSocket.CLOSED && conn.readyState !== WebSocket.CLOSING ) ? TestState.ReadyState : TestState.JobsFinished;
         if ( conn.readyState !== WebSocket.OPEN ) {
@@ -1970,6 +1991,7 @@ const resyncLiveStateFromDom = () => {
     currentSelectedCalendar = target.calendar;
     currentCalendarCategory = target.category;
     currentNationalCalendar = target.nationalCalendar;
+    currentCalendarIdentity = target.identity;
 
     const responseSelect = document.querySelector('#APIResponseSelect');
     currentResponseType = responseSelect ? responseSelect.value : currentResponseType;

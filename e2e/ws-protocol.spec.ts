@@ -134,3 +134,35 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
     // decrees:roman must never appear under a pure-Ambrosian scope — v1 never checked it there.
     expect(ids.ambrosianRiteLevel.some((id: string) => id.startsWith('decrees:'))).toBe(false);
 });
+
+test('toCalendarIdentity maps the select values onto the typed calendar', async ({ page }) => {
+    await page.goto('/index.php');
+    const identities = await page.evaluate(async () => {
+        const { toCalendarIdentity } = await import('/assets/js/wsProtocol.js' as any);
+        return {
+            riteLevel: toCalendarIdentity('', '', 'roman'),
+            ambrosianRiteLevel: toCalendarIdentity('', '', 'ambrosian'),
+            national: toCalendarIdentity('IT', 'national', 'roman'),
+            diocesan: toCalendarIdentity('milano_it', 'diocesan', 'ambrosian'),
+        };
+    });
+
+    expect(identities.riteLevel).toEqual({ kind: 'rite', rite: 'roman' });
+    expect(identities.ambrosianRiteLevel).toEqual({ kind: 'rite', rite: 'ambrosian' });
+    expect(identities.national).toEqual({ kind: 'national', id: 'IT', rite: 'roman' });
+    expect(identities.diocesan).toEqual({ kind: 'diocesan', id: 'milano_it', rite: 'ambrosian' });
+});
+
+test('toCalendarIdentity throws on an unknown calendartype rather than sending a partial message', async ({ page }) => {
+    await page.goto('/index.php');
+    const threw = await page.evaluate(async () => {
+        const { toCalendarIdentity } = await import('/assets/js/wsProtocol.js' as any);
+        try {
+            toCalendarIdentity('IT', 'nationalcalendar', 'roman');
+            return false;
+        } catch {
+            return true;
+        }
+    });
+    expect(threw).toBe(true);
+});

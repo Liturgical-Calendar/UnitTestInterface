@@ -91,3 +91,24 @@ test('giving up counts one failure per card left grey', async ({ page }) => {
 
     expect(Number(await page.locator('#failedCount').textContent())).toBeGreaterThanOrEqual(greyBefore);
 });
+
+test('calendar validation goes out with a typed calendar and no retired properties', async ({ page }) => {
+    await installReplyingWebSocketStub(page);
+    await page.goto('/index.php');
+    await runToCompletion(page);
+
+    const calendarChecks = (await sentFrames(page))
+        .map((raw) => JSON.parse(raw) as Record<string, unknown>)
+        .filter((m) => m.action === 'validateCalendar');
+
+    expect(calendarChecks.length).toBeGreaterThan(0);
+    for (const message of calendarChecks) {
+        expect(message.calendar).toMatchObject({ kind: expect.any(String), rite: expect.any(String) });
+        expect(message.responseFormat).toBe('JSON');
+        expect(typeof message.requestId).toBe('string');
+        // Retired on the typed shape; the server rejects the message outright if present.
+        expect(message).not.toHaveProperty('category');
+        expect(message).not.toHaveProperty('rite');
+        expect(message).not.toHaveProperty('responsetype');
+    }
+});

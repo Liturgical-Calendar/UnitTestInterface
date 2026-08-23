@@ -194,6 +194,35 @@ export const toWireTarget = ( value, calendartype, rite ) => {
 };
 
 /**
+ * The typed calendar identity the v2 `validateCalendar` and `runTest` messages carry.
+ *
+ * Replaces `toWireTarget()`, which produced the v1 `{calendar, category}` pair. The server rejects
+ * `category` on the typed shape outright (`Health::RETIRED_PROPERTIES`), so the two cannot be mixed:
+ * `calendar.kind` is the discriminator now.
+ *
+ * Throws on an unrecognised type rather than composing a partial message, for the reason
+ * `toWireTarget()` did: a message the server rejects costs a red card and a rate-limit charge, and
+ * says nothing useful about which of our call sites was wrong.
+ *
+ * @param {string} value - The calendar select's value; empty means the rite-level calendar.
+ * @param {string} calendartype - The option's `data-calendartype`: 'national', 'diocesan' or ''.
+ * @param {string} rite - The selected rite.
+ * @returns {{kind: string, id?: string, rite: string}}
+ */
+export const toCalendarIdentity = ( value, calendartype, rite ) => {
+    if ( '' === value ) {
+        return { kind: 'rite', rite };
+    }
+    if ( 'national' === calendartype ) {
+        return { kind: 'national', id: value, rite };
+    }
+    if ( 'diocesan' === calendartype ) {
+        return { kind: 'diocesan', id: value, rite };
+    }
+    throw new Error( `Unknown calendartype "${calendartype}" for calendar "${value}".` );
+};
+
+/**
  * The calendar-scope keys a test's `applies_to` / `appliesTo` / `filter` may carry, in the order
  * they are checked.
  *
@@ -238,17 +267,13 @@ export const testAppliesToRite = ( unitTest, rite ) =>
 export const PROTOCOL_VERSION = 1;
 
 /**
- * The card class each published step is reported on.
+ * The card class each published step is reported on, per frame family.
  *
- * The server projects the same mapping onto the `classes` selector it still sends (its
- * `FrameFamily::CLASS_FOR_STEP`), and this is the client's half of it. It exists because the step
- * vocabulary was renamed and the CSS class names were not: `exists`/`parses`/`validates` are what
- * the wire says, `file-exists`/`json-valid`/`schema-valid` are what the markup says, and nothing
- * related the two until API#819. Addressing a card by `data-step` would need the templates changed
- * in both runners at once; this maps onto the classes already there.
+ * Mirrors the server's `FrameFamily::CLASS_FOR_STEP`. The families matter because `validates` means a
+ * different card in each: `schema-valid` for a file or a calendar, `test-valid` for a test run. A
+ * single flat map cannot express that, and silently painted test results onto nothing.
  *
- * `complete` is absent on purpose — the terminal frame addresses no card. It reports that a
- * request finished, not that anything passed.
+ * `complete` is absent on purpose — the terminal frame addresses no card.
  *
  * @type {Readonly<Record<string, string>>}
  */
@@ -256,6 +281,18 @@ export const STEP_CARD_CLASS = Object.freeze({
     exists: 'file-exists',
     parses: 'json-valid',
     validates: 'schema-valid'
+});
+
+/**
+ * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
+ * report three steps through {@link STEP_CARD_CLASS}; a test run reports exactly one, `validates`,
+ * addressed at a different card (`test-valid`) than the other two families use for the same step
+ * name. Introduced here; consumed once the specific-unit-test phase migrates onto it.
+ *
+ * @type {Readonly<Record<string, string>>}
+ */
+export const TEST_RUN_STEP_CARD_CLASS = Object.freeze({
+    validates: 'test-valid'
 });
 
 /**
