@@ -111,4 +111,7 @@ test('calendar validation goes out with a typed calendar and no retired properti
         expect(message).not.toHaveProperty('rite');
         expect(message).not.toHaveProperty('responsetype');
     }
+    // The stub addresses every frame at `.stub-addresses-nothing.<step>`, matching no card on the
+    // page — a green calendar card can only be attributed by requestId, not by the server's selector.
+    await expect(page.locator('#calendarDataTests .calendardata-tests .bg-info')).toHaveCount(0);
 });

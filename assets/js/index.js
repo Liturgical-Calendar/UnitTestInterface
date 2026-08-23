@@ -810,7 +810,10 @@ const runTests = () => {
                 // default `.{cardSlugFor(check)}.{step-class}` `beginPhase()` would otherwise use, so
                 // a custom `cardSelectorFor` is supplied.
                 const calendarSlug = slugify( currentSelectedCalendar );
-                const yearChecks = Years.map( year => ( { year } ) );
+                // `id` is not read by `cardSelectorFor` above; it only names this check in
+                // `beginPhase()`'s own diagnostics (`check.id ?? check.validate`), so a missing card
+                // warns about a specific year instead of "undefined".
+                const yearChecks = Years.map( year => ( { id: `year-${year}`, year } ) );
 
                 phaseRunner.beginPhase( yearChecks, {
                     containerSelector: '.calendardata-tests',
@@ -1008,12 +1011,13 @@ const connectWebSocket = () => {
         try {
             if ( responseData.type === "success" ) {
                 phaseRunner.paintResult( responseData );
-                // TEMPORARY: falls back to `responseData.classes` for the calendar-data and
-                // unit-test phases, which do not yet register a requestId with `beginPhase()` and so
-                // cannot be answered by `selectorFor()`. Without this a freshly recorded run replays
-                // those two phases blank — green counts over blue cards, the totals-vs-cards drift
-                // #42 exists to remove, reached from the other direction. Removable once Tasks 8/9
-                // migrate both phases onto the registry; Task 10 removes it.
+                // TEMPORARY: falls back to `responseData.classes` for the unit-test phase, which
+                // does not yet register a requestId with `beginPhase()` and so cannot be answered by
+                // `selectorFor()` (calendar-data now does, since Task 8). Without this a freshly
+                // recorded run replays that phase blank — green counts over blue cards, the
+                // totals-vs-cards drift #42 exists to remove, reached from the other direction.
+                // Removable once Task 9 migrates the unit-test phase onto the registry; Task 10
+                // removes it.
                 resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
@@ -1921,6 +1925,13 @@ const replayCalendarsRun = async ( file ) => {
     currentCalendarCategory = run.calendarCategory;
     // Runs stored before the rite dimension existed have no `rite`; they were all Roman.
     currentRite = run.rite ?? 'roman';
+    // Kept in sync with `currentCalendarCategory` here too: `resolveCalendarTargetFromControls()`
+    // falls back to this module state when `mountCalendarControls()` failed, and a stale identity
+    // beside a fresh `currentSelectedCalendar` would send a later run's messages for one calendar
+    // while its cards are addressed to another's — a wrong green.
+    currentCalendarIdentity = run.calendarCategory === 'ritecalendar'
+        ? { kind: 'rite', rite: currentRite }
+        : { kind: run.calendarCategory === 'nationalcalendar' ? 'national' : 'diocesan', id: run.calendar, rite: currentRite };
     currentResponseType = run.responseType;
     currentSourceDataChecks = run.scaffold.sourceDataChecks;
     buildScaffolding({
