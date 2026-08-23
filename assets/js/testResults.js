@@ -104,7 +104,16 @@ export const createResultCollector = () => {
                 selector: selector ?? null,
                 status: responseData.type === 'success' ? 'success' : 'error',
                 message: responseData.type === 'error' ? (responseData.text ?? null) : null,
-                test: responseData.test ?? null,
+                // `responseData.test` is not part of the published `WebSocketFrame.json` schema — the
+                // server never sends it; `Health::sendStepResult()` builds
+                // `{type, text, classes, responsetype, target, step, status, details}` and nothing
+                // else. For a unit-test-phase frame, `target.id` *is* the test name
+                // (`Health::sendTestResult()` builds it via `frameTarget($test, [...])`), so it is the
+                // real source; `responseData.test` is kept only as a fallback for a stub or server
+                // that predates the typed target. Scoped to the `unitTest` phase: `target.id` names
+                // something else for every other phase (an inventory id, a calendar), and must not
+                // leak into this field for those.
+                test: 'unitTest' === phase ? ( responseData.target?.id ?? responseData.test ?? null ) : null,
             });
         },
         all: () => results.slice(),

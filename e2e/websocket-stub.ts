@@ -165,7 +165,17 @@ export const installReplyingWebSocketStub = async (
                     const stepClassFor = (step: string): string => (isTestRun ? 'test-valid' : STEP_CLASS[step]);
                     const runToken = message.runToken;
                     const requestId = message.requestId;
-                    const target = message.target ?? { id: String(message.validate ?? 'unknown') };
+                    // Mirrors `Health::frameTarget()`: the server never reads a client-sent `target`
+                    // for a check or a test run — it synthesizes one from the fields the message
+                    // already carries. A `runTest` message carries `test`/`calendar`/`year` at the top
+                    // level (never a `target`), and `Health::sendTestResult()` builds
+                    // `frameTarget($test, ['calendar' => ..., 'year' => ...])` from exactly those, so
+                    // `target.id` is the test name. `validateSource` is the one action that *does* send
+                    // its own `target` (`{ id: check.id }`), which is used as-is when present.
+                    const target = message.target
+                        ?? (isTestRun
+                            ? { id: String(message.test ?? 'unknown'), calendar: message.calendar, year: message.year }
+                            : { id: String(message.validate ?? 'unknown') });
 
                     const upTo = null === stopAfterStep
                         ? allSteps.length
@@ -182,7 +192,6 @@ export const installReplyingWebSocketStub = async (
                             runToken,
                             runId: runToken,
                             requestId,
-                            ...(isTestRun ? { test: String(message.test ?? 'StubTest') } : {}),
                         });
                     });
 

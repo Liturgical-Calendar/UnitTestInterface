@@ -1038,7 +1038,14 @@ const connectWebSocket = () => {
                     }
                     case TestState.SpecificUnitTests: {
                         updateText('successfulUnitTestsCount', ++successfulUnitTests);
-                        const testSlug = slugify(responseData.test);
+                        // `responseData.test` is not part of the published `WebSocketFrame.json`
+                        // schema — the server never sends it. `target.id` is the real source: a
+                        // test-run frame's `target` is built by `Health::sendTestResult()` via
+                        // `frameTarget($test, [...])`, so `target.id` names the test.
+                        // `responseData.test` is kept only as a fallback for a stub or server that
+                        // predates the typed target.
+                        const testName = responseData.target?.id ?? responseData.test;
+                        const testSlug = slugify(testName);
                         const specificUnitTestSuccessCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-success`).length;
                         updateText(`successful${testSlug}TestsCount`, specificUnitTestSuccessCount);
                         break;
@@ -1062,7 +1069,10 @@ const connectWebSocket = () => {
                     }
                     case TestState.SpecificUnitTests: {
                         updateText('failedUnitTestsCount', ++failedUnitTests);
-                        const testSlug = slugify(responseData.test);
+                        // See the matching comment on the success branch above: `target.id`, not the
+                        // never-sent `responseData.test`, is the real source for the test name.
+                        const testName = responseData.target?.id ?? responseData.test;
+                        const testSlug = slugify(testName);
                         const specificUnitTestFailedCount = document.querySelectorAll(`#specificUnitTest-${testSlug} .bg-danger`).length;
                         updateText(`failed${testSlug}TestsCount`, specificUnitTestFailedCount);
                         break;

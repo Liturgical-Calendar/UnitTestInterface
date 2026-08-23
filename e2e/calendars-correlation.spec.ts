@@ -145,3 +145,34 @@ test('unit tests go out as runTest with a typed calendar', async ({ page }) => {
     await expect(cards).not.toHaveCount(0);
     await expect(page.locator('#specificUnitTests .bg-info')).toHaveCount(0);
 });
+
+test('per-test accordion counters resolve the test name from target.id, not the retired test property', async ({ page }) => {
+    // The server never sends a `test` property on any frame (absent from the published
+    // `WebSocketFrame.json` schema); a test-run frame's `target.id` is the real source
+    // (`Health::sendTestResult()` builds `target` via `frameTarget($test, [...])`). The stub mirrors
+    // that: it derives `target.id` from the outgoing message's own `test` field rather than echoing
+    // one back, and sends no `test` property at all — so a page that still read `responseData.test`
+    // would leave every per-test counter at "0" here.
+    await installReplyingWebSocketStub(page);
+    await page.goto('/index.php');
+    await runToCompletion(page);
+
+    const mismatches = await page.evaluate(() => {
+        const items = Array.from(document.querySelectorAll('#specificUnitTestsAccordion .accordion-item'));
+        return items
+            .map((item) => ({
+                id: item.id,
+                total: Number(document.getElementById(`total${item.id}TestsCount`)?.textContent ?? 'NaN'),
+                successful: Number(document.getElementById(`successful${item.id}TestsCount`)?.textContent ?? 'NaN'),
+            }))
+            .filter((entry) => entry.total !== entry.successful);
+    });
+
+    // The happy-path stub answers every check with `status: 'pass'`, so every rendered test's
+    // successful count should equal its total — a mismatch means the per-test counter for that
+    // accordion item never updated, i.e. `#specificUnitTest-undefined` was being queried instead.
+    expect(mismatches).toEqual([]);
+
+    const totalTestsRendered = await page.locator('#specificUnitTestsAccordion .accordion-item').count();
+    expect(totalTestsRendered).toBeGreaterThan(0);
+});
