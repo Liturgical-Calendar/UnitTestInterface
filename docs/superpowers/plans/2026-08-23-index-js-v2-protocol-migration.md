@@ -599,26 +599,12 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Produces: `currentSourceDataChecks` entries shaped `{ id, label, steps }` for inventory checks, and the one legacy entry
   `{ validate: 'LitCalMetadata', sourceFile: <url>, category: 'universalcalendar' }`. Tasks 6 and 7 consume this shape.
 
-- [ ] **Step 1: Give `index.js` an `ENDPOINTS.ROOT` and the imports this task needs**
+- [ ] **Step 1: Add the imports this task needs**
 
-`resources.js` has `ROOT` in its `ENDPOINTS` object; `index.js` does **not** — its object holds only `CALENDARS`, `TESTS`, `DECREES` and
-`MISSALS`. `fetchValidations()` takes the API base URL, so add it:
-
-```javascript
-const ENDPOINTS = {
-    ROOT: "",
-    CALENDARS: "",
-    TESTS: "",
-    DECREES: "",
-    MISSALS: ""
-}
-```
-
-and assign it in `setEndpoints()` exactly as `resources.js` does, from the same parts the other endpoints are built from:
-
-```javascript
-ENDPOINTS.ROOT = `${API_PROTOCOL}://${API_HOST}${API_PORT_STR}${API_PATH}`;
-```
+`fetchValidations()` takes the API base URL. Do **not** add `ENDPOINTS.ROOT` to `index.js` — unlike `resources.js`, this page already has
+`getApiBaseUrl()`, which derives the base URL by stripping `/calendars` from `ENDPOINTS.CALENDARS`, and whose docblock says it is *"derived
+rather than stored so the two cannot drift"*. Adding a stored `ROOT` would reintroduce exactly that drift. Call `getApiBaseUrl()` wherever this
+task needs the base URL.
 
 Add to the `wsProtocol.js` import block in `index.js`: `fetchValidations`, `inventoryIdsForCalendar`, `idToCardClass`. Task 6 adds
 `createPhaseRunner` from the new `./wsRunner.js`; Task 8 adds `toCalendarIdentity` and `STEP_CARD_CLASS`; Task 9 adds
@@ -630,7 +616,7 @@ Add to the `wsProtocol.js` import block in `index.js`: `fetchValidations`, `inve
 `resources.js` uses:
 
 ```javascript
-fetchValidations( ENDPOINTS.ROOT ).then( items => ( { litcal_validations: items } ) )
+fetchValidations( getApiBaseUrl() ).then( items => ( { litcal_validations: items } ) )
 ```
 
 and store the result in a module-level `let ValidationsInventory = [];` in the branch that recognises `litcal_validations`.
