@@ -70,11 +70,14 @@ const ROUTES = ['calendars', 'tests', 'missals', 'validations'];
  * and `index.js`'s `readJsonOrThrow()` already reads `detail` out of it — so a proxy failure reports
  * itself through the same path an upstream failure would.
  */
-function refuse(int $status, string $title, string $detail): never
+function refuse(int $status, string $title, string $detail, array $extra = []): never
 {
     http_response_code($status);
     header('Content-Type: application/problem+json');
-    echo json_encode(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], JSON_UNESCAPED_SLASHES);
+    echo json_encode(
+        ['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail] + $extra,
+        JSON_UNESCAPED_SLASHES
+    );
     exit;
 }
 
@@ -93,6 +96,30 @@ if ('' === $route) {
 
 if (false === in_array($route, ROUTES, true)) {
     refuse(404, 'Unknown route', sprintf('This proxy forwards only: %s. Received: %s', implode(', ', ROUTES), '' === $route ? '(none)' : $route));
+}
+
+// The flag has to bind the *endpoint*, not merely the page. `layout/footer.php` reads the same
+// variable, but all that decides is whether this app's own pages are handed a proxy base — it does
+// nothing about anyone who requests this file directly. Left ungated, a deployment that had
+// deliberately not enabled the proxy would still be running an open relay that spends the project's
+// API key for whoever guesses the URL, which is the opposite of what "off by default" is for.
+//
+// Placed deliberately AFTER the route has been read and allowlisted, and before anything reaches the
+// network or the key: refusing earlier would be marginally tidier and would destroy the one thing a
+// deployment needs from this endpoint while it is still switched off. Turning the flag on depends on
+// first confirming that the SAPI populates PATH_INFO, and this ordering is what answers that:
+//
+//   api-proxy.php/calendars  ->  503, "route": "calendars"   PATH_INFO works; safe to enable
+//   api-proxy.php/calendars  ->  404, "Received: (none)"     PATH_INFO absent; use the query form
+//
+// No request is forwarded and no key is read on this path either way.
+if (false === filter_var($_ENV['API_PROXY_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+    refuse(
+        503,
+        'Proxy disabled',
+        'This proxy is switched off (API_PROXY_ENABLED). The route below was read successfully, so routing works; set the flag to enable forwarding.',
+        ['route' => $route]
+    );
 }
 
 // Validated before use, the way `layout/head.php` validates the same variables — but this file has
