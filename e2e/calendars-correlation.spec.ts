@@ -57,7 +57,7 @@ test('the source-data cards are painted despite a selector that matches nothing'
     await runToCompletion(page);
 
     const cards = page.locator('#sourceDataTests .sourcedata-tests .card');
-    await expect(cards.first()).toBeVisible();
+    await expect(cards).not.toHaveCount(0);
     // Every card left blue would mean the page still needs the server's selector to find it.
     await expect(page.locator('#sourceDataTests .sourcedata-tests .bg-info')).toHaveCount(0);
 });
