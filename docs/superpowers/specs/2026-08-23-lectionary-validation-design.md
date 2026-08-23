@@ -32,10 +32,16 @@ Four facts, established by reading all 95 files, that the issue body either got 
 **Every file is a flat `event_key → readings` map.** All 5,975 keys match `CommonDef.json#/definitions/EventKey` already, so `propertyNames`
 is a free assertion rather than a new constraint to negotiate.
 
-**`CommonDef.json#/definitions/Readings` does not cover the corpus.** Two key-sets match no variant of its `oneOf`: `{vigil, day}` (37 entries)
-and `{vigil, night, dawn, day}` (18, all Christmas). This is not a data problem — `ReadingsFestiveWithVigil` and `ReadingsChristmas` both carry
-`vigil` as PHP models, and `PropriumDeSanctis.json` defines local `ReadingsWithVigil` / `ReadingsChristmas` definitions. `CommonDef` is the one
-place that is behind, so the issue's "close to a one-liner over the existing definition" needs a `CommonDef` fix first.
+**Source readings nest a vigil; output readings do not.** Two key-sets in the corpus match no variant of
+`CommonDef.json#/definitions/Readings`: `{vigil, day}` (37 entries) and `{vigil, night, dawn, day}` (18, all Christmas). That is correct, not a
+gap. `Readings` describes **output**, where a vigil Mass is a liturgical event in its own right — its own `EventKeyVigilMass` (`…_vigil`), its
+own `is_vigil_for`, and its own flat `readings`. Nothing in output ever nests a `vigil` key, so admitting one there would let `LitCal.json`
+validate a shape the API must never emit.
+
+Source data nests it because the vigil's readings belong to the event that has the vigil. `PropriumDeSanctis.json` — a source schema — already
+says exactly this, defining `ReadingsWithVigil` and a vigil-bearing `ReadingsChristmas` locally while `$ref`-ing `CommonDef`'s `Readings` for the
+leaves. So the issue's "close to a one-liner over the existing definition" is wrong in an instructive way: `Readings` is the wrong definition to
+reuse wholesale, and the reason is a source/output boundary the schemas draw by hand and document nowhere.
 
 **The `oneOf` ambiguity the issue worried about does not exist.** Every variant sets `additionalProperties: false` with disjoint `required`
 sets, so variant selection is exact key-set equality. Checked over all 5,975 entries: no entry matches two variants, and none matches zero once
@@ -53,6 +59,19 @@ LiturgicalCalendarAPI#712's business.
 *Rejected:* `minLength: 1` everywhere, which would paint 85% of the corpus red from day one and train readers to ignore red. *Also rejected:* a
 second `…:complete` item per folder applying a recursive non-empty overlay — two honest cards instead of one ambiguous one, but it doubles the
 lectionary card count to report a fact #712 already tracks.
+
+**Source and output schemas are distinguished explicitly, and the distinction is enforced.** `LitSchema` gains a `role()` returning a new
+`SchemaRole` enum — `SOURCE`, `OUTPUT`, `PAYLOAD`, `PROTOCOL`, `LIBRARY` — in the same shape as its existing `error()` match. `CheckableItem`
+already requires a `LitSchema`, so this buys a test asserting that **every checkable item's schema has role `source`**, which is a mechanical
+statement of "`/validations` checks source data".
+
+This is not incidental scope. The first draft of this design proposed adding the vigil variants to `CommonDef`'s output `Readings`, which would
+have loosened `LitCal.json` to accept a shape the API cannot emit — a wrong-green in the output schema, introduced by the design meant to add a
+source check. The boundary was invisible because nothing writes it down. A role marker makes that class of error fail a test instead of shipping.
+
+*Rejected:* prose descriptions on each schema root, which document the boundary without enforcing it. *Deferred:* an `x-litcal-role` keyword in
+the schema files, advertised by `SchemasHandler`, so external consumers can tell source schemas from response schemas — worth doing when there
+are third-party consumers to serve.
 
 **Coverage is a fourth step, not a stricter `validates`.** "Is what is here well-formed?" and "is anything missing?" are different questions
 about the same folder, and #60 settled that this repository gives distinct facts distinct cards. `Step::COVERS` answers the second.
@@ -116,10 +135,24 @@ missal lectionary carry `es_US.json`. Fixing the declaration turns that item int
 
 ## PR 1 — LiturgicalCalendarAPI
 
-**A1. `CommonDef.json` gains the two missing `Readings` variants.** Add `ReadingsWithVigil` (`{vigil, day}`) and `ReadingsChristmasWithVigil`
-(`{vigil, night, dawn, day}`) as definitions and to the `Readings` `oneOf`. Both stay disjoint from every existing variant. This is purely
-permissive for calendar output — `ReadingsChristmas`'s model drops `vigil` on serialize, so `LitCal.json` never sees these shapes today.
-`PropriumDeSanctis.json`'s local duplicates are left alone; deduplicating them is a separate change with its own risk.
+**A0. `SchemaRole` enum and `LitSchema::role()`**, classifying all 24 schemas plus `Lectionary.json`:
+
+| role       | schemas                                                                                                                                                                         |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SOURCE`   | `DiocesanCalendar`, `NationalCalendar`, `WiderRegionCalendar`, `PropriumDeSanctis`, `PropriumDeTempore`, `LitCalDecreesSource`, `LitCalTranslation`, `LitCalTest`, `Lectionary` |
+| `OUTPUT`   | `LitCal`, `LitCalMetadata`, the seven `LitCal*Path` schemas, `Problem`, `LiturgicalCalendar.xsd`                                                                                |
+| `PAYLOAD`  | `LitCalDecreeWritePayload`                                                                                                                                                      |
+| `PROTOCOL` | `WebSocketMessage`, `WebSocketFrame`                                                                                                                                            |
+| `LIBRARY`  | `CommonDef`                                                                                                                                                                     |
+
+**A1. `CommonDef.json` gains a `SourceReadings` definition; `Readings` is not touched.** `SourceReadings` is a `oneOf` over the same variants as
+`Readings` plus `ReadingsWithVigil` (`{vigil, day}`) and `ReadingsChristmasWithVigil` (`{vigil, night, dawn, day}`), each of whose members
+`$ref`s `Readings` for the leaves — the shape `PropriumDeSanctis.json` already uses locally. All variants stay disjoint by
+`additionalProperties: false` and differing `required`, so selection remains exact key-set equality.
+
+`CommonDef` is a definitions library rather than a validating schema (hence `SchemaRole::LIBRARY`), so holding both a source-shaped and an
+output-shaped readings definition is correct: the role belongs to the reference, not to the file. `PropriumDeSanctis.json`'s local copies are
+left alone in this PR; folding them into `SourceReadings` afterwards is sharing, not a fix.
 
 **A2. New `jsondata/schemas/Lectionary.json`.**
 
@@ -129,7 +162,7 @@ permissive for calendar output — `ReadingsChristmas`'s model drops `vigil` on 
     "title": "Lectionary",
     "type": "object",
     "propertyNames": { "$ref": "./CommonDef.json#/definitions/EventKey" },
-    "additionalProperties": { "$ref": "./CommonDef.json#/definitions/Readings" }
+    "additionalProperties": { "$ref": "./CommonDef.json#/definitions/SourceReadings" }
 }
 ```
 
@@ -180,7 +213,8 @@ cards and the totals badges follow with no further change.
 ## Testing
 
 **API.** A data-integrity PHPUnit test validating all 95 lectionary files against `Lectionary.json`, written first — it fails on the 55 vigil
-entries until A1 lands. An inventory test asserting the 26 new ids with their kind, schema, rite and region. A `covers` test asserting the
+entries until A1 lands. A `SchemaRole` guard test asserting every `CheckableItem`'s schema has role `SOURCE`, and that `LitCal.json` validation
+never runs against a `SOURCE` schema. An inventory test asserting the 26 new ids with their kind, schema, rite and region. A `covers` test asserting the
 subset semantics, the two tautological exclusions, and that `steps` and `expectedLocales` agree.
 
 **Client.** `e2e/ws-protocol.spec.ts` for `inventoryIdsForCalendar()` and `isConditionalInventoryId()`.
@@ -205,5 +239,7 @@ from. If the universal corpus proves too noisy on `index.php` it is reversible w
 - **Filling in the readings.** LiturgicalCalendarAPI#712.
 - **`US.json` declaring `es_US`.** A data fix this design surfaces but does not make.
 - **The 28 missing Europe wider-region lectionary locales.** A data gap this design surfaces.
-- **Deduplicating `PropriumDeSanctis.json`'s local readings definitions** against the `CommonDef` ones A1 adds.
+- **Folding `PropriumDeSanctis.json`'s local vigil definitions into `SourceReadings`.** They are correct source-shaped definitions, not
+  duplication to repair; sharing them is a follow-up.
+- **An `x-litcal-role` keyword in the schema files**, advertised by `SchemasHandler` for external consumers.
 - **Ambrosian lectionary data.** None exists on disk; the inventory emits nothing for it, which is correct rather than an omission.
