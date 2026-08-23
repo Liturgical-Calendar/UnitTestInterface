@@ -149,11 +149,17 @@ export const readJsonOrThrow = async (endpoint, response) => {
  * @returns {Promise<object>}
  */
 export const fetchJson = async (endpoint, init = {}) => {
-    const response = await fetch(endpoint, {
-        method: 'GET',
-        ...init,
-        headers: { Accept: 'application/json', ...(init.headers ?? {}) }
-    });
+    // Normalised through `Headers` rather than spread. `HeadersInit` has three legal shapes and
+    // object spread handles only one of them: a `Headers` instance spreads to `{}`, because its
+    // entries are not own enumerable properties, silently discarding every header the caller set;
+    // an array of `[name, value]` tuples spreads to `{0: [...]}`, which is not a header set at all.
+    // Both fail quietly, which is the worst way for a header to go missing.
+    const headers = new Headers(init.headers ?? {});
+    // Set only when absent, so a caller that genuinely wants a different `Accept` still wins.
+    if (false === headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
+    }
+    const response = await fetch(endpoint, { method: 'GET', ...init, headers });
     return readJsonOrThrow(endpoint, response);
 };
 
