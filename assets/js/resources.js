@@ -579,7 +579,7 @@ const connectWebSocket = () => {
         try {
             if ( responseData.type === "success" ) {
                 phaseRunner.paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
                 updateText('successfulCount', ++successfulTests);
                 switch( currentState ) {
                     case TestState.ExecutingResourceValidations:
@@ -592,7 +592,7 @@ const connectWebSocket = () => {
             }
             else if ( responseData.type === "error" ) {
                 phaseRunner.paintResult( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) );
                 updateText('failedCount', ++failedTests);
                 switch( currentState ) {
                     case TestState.ExecutingResourceValidations:

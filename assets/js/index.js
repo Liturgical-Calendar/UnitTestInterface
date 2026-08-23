@@ -908,7 +908,10 @@ const connectWebSocket = () => {
         try {
             if ( responseData.type === "success" ) {
                 applyResultToDom( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                // Transitional v1 form: this page still addresses cards via the server-sent `classes`
+                // selector, so that is what gets recorded. A later task migrates this page onto the
+                // registry selector, at which point this becomes `phaseRunner.selectorFor(...)` like resources.js.
+                resultCollector.record( phaseForState(), responseData, responseData.classes );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {
@@ -930,7 +933,10 @@ const connectWebSocket = () => {
             }
             else if ( responseData.type === "error" ) {
                 applyResultToDom( responseData );
-                resultCollector.record( phaseForState(), responseData );
+                // Transitional v1 form: this page still addresses cards via the server-sent `classes`
+                // selector, so that is what gets recorded. A later task migrates this page onto the
+                // registry selector, at which point this becomes `phaseRunner.selectorFor(...)` like resources.js.
+                resultCollector.record( phaseForState(), responseData, responseData.classes );
                 updateText('failedCount', ++failedTests);
                 switch ( currentState ) {
                     case TestState.ExecutingValidations: {

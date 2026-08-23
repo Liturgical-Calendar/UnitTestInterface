@@ -91,10 +91,17 @@ export const paintCard = (el, isSuccess, text) => {
 export const createResultCollector = () => {
     const results = [];
     return {
-        record(phase, responseData) {
+        /**
+         * @param {string} phase
+         * @param {object} responseData - The frame; read for status, message and test name only.
+         * @param {?string} selector - The selector *we* found the card by. Not `responseData.classes`:
+         *        that is the server's, and #42 removes our dependence on it. A stored run replays by
+         *        applying this string, so it must address our own markup.
+         */
+        record(phase, responseData, selector) {
             results.push({
                 phase,
-                selector: responseData.classes,
+                selector: selector ?? null,
                 status: responseData.type === 'success' ? 'success' : 'error',
                 message: responseData.type === 'error' ? (responseData.text ?? null) : null,
                 test: responseData.test ?? null,
