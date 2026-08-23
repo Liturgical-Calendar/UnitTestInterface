@@ -155,14 +155,18 @@ export const installReplyingWebSocketStub = async (
                     } catch {
                         return;
                     }
-                    if (message.action !== 'executeValidation' && message.action !== 'validateSource') {
+                    const CHECK_ACTIONS = ['executeValidation', 'validateSource', 'validateCalendar'];
+                    const TEST_ACTIONS = ['runTest', 'executeUnitTest'];
+                    if (!CHECK_ACTIONS.includes(message.action as string) && !TEST_ACTIONS.includes(message.action as string)) {
                         return;
                     }
+                    const isTestRun = TEST_ACTIONS.includes(message.action as string);
+                    const allSteps = (isTestRun ? ['validates'] : ['exists', 'parses', 'validates']) as string[];
+                    const stepClassFor = (step: string): string => (isTestRun ? 'test-valid' : STEP_CLASS[step]);
                     const runToken = message.runToken;
                     const requestId = message.requestId;
                     const target = message.target ?? { id: String(message.validate ?? 'unknown') };
 
-                    const allSteps = ['exists', 'parses', 'validates'] as const;
                     const upTo = null === stopAfterStep
                         ? allSteps.length
                         : allSteps.indexOf(stopAfterStep as 'exists') + 1;
@@ -171,13 +175,14 @@ export const installReplyingWebSocketStub = async (
                         this.deliver({
                             type: 'success',
                             text: `stub ${step}`,
-                            classes: `.stub-addresses-nothing.${STEP_CLASS[step]}`,
+                            classes: `.stub-addresses-nothing.${stepClassFor(step)}`,
                             target,
                             step,
                             status: 'pass',
                             runToken,
                             runId: runToken,
                             requestId,
+                            ...(isTestRun ? { test: String(message.test ?? 'StubTest') } : {}),
                         });
                     });
 
