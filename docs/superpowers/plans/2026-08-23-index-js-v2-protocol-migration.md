@@ -87,7 +87,8 @@ something between frames belongs in the second.
  *   paintResult: function(object): void,
  *   selectorFor: function(string, string): ?string,
  *   giveUpOnOutstandingRequests: function(): void,
- *   sendMessage: function(object): void
+ *   sendMessage: function(object): void,
+ *   endRun: function(): void
  * }}
  */
 ```
@@ -120,16 +121,21 @@ because the numbers shift as you delete:
 | `giveUpOnOutstandingRequests`                                                      | `countUnattributableFailure()` becomes `options.onUnattributableFailure()`; the state guard becomes `options.canAdvance()`                               |
 | `requestRegistry`, `phaseOutstanding`, `PHASE_SILENCE_TIMEOUT_MS`, `phaseWatchdog` | become closure state inside the factory                                                                                                                  |
 
-Two behaviours to preserve deliberately, and to say so in comments:
+Three behaviours to preserve deliberately, and to say so in comments:
 
 1. **The two advance guards collapse into one.** `resources.js` guards the terminal-frame advance with `currentState !== JobsFinished` and the
    give-up advance with `currentState !== JobsFinished && currentState !== Stopped`. These are equivalent in practice: `conn.onmessage` returns
    early when `currentState === TestState.Stopped`, so the terminal-frame path is unreachable in the `Stopped` state. A single `canAdvance()`
    implementing the stricter guard is therefore behaviour-preserving, not a widening.
-2. **`beginPhase` records the selector as well as the element**, so Task 4 can persist a client-owned selector. Build it once, here, next to
+2. **`beginPhase` records the selector as well as the element**, so Task 2 can persist a client-owned selector. Build it once, here, next to
    the `querySelector` that uses it.
+3. **`endRun()` releases what a run leaves behind.** `resources.js` cleared `requestRegistry` and `phaseOutstanding` directly in its
+   start-run and stop-run handlers. Those call sites are not in the move table because the state moved inside the runner, but the *releasing*
+   still has to happen: `buildScaffolding()` wipes both card containers with `innerHTML = ''` on every run and every rite change, so a registry
+   that is never cleared retains detached card Elements for the life of the page. `endRun()` clears `registry`, `selectors` and
+   `phaseOutstanding`, and is called where those two lines were.
 
-New code — the factory skeleton and the two members that are genuinely new rather than moved:
+New code — the factory skeleton and the three members that are genuinely new rather than moved:
 
 ```javascript
 export const createPhaseRunner = ( options ) => {
@@ -183,7 +189,7 @@ export const createPhaseRunner = ( options ) => {
     return {
         beginPhase, outstandingCount: () => phaseOutstanding.size, advanceIfPhaseIsEmpty,
         armWatchdog, restartWatchdog, clearWatchdog, noteTerminalFrame, paintResult,
-        selectorFor, giveUpOnOutstandingRequests, sendMessage
+        selectorFor, giveUpOnOutstandingRequests, sendMessage, endRun
     };
 };
 ```
