@@ -171,25 +171,26 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
             (els) => els.map((e) => e.className)
         );
 
-    // The four i18n-folder checks send category: 'sourceDataCheck' (not 'universalcalendar')
-    // with hyphenated validate slugs — see wsProtocol.js's UNIVERSAL_CHECKS docblock for why:
-    // Health::executeValidation() only recognises sourceFolder under sourceDataCheck, and sending
-    // it under universalcalendar closes the connection instead of returning a result.
+    // Card classes are idToCardClass(item.id) — a colon-separated /validations inventory id with
+    // every character outside [A-Za-z0-9_-] replaced by '-', not a slug derived from a
+    // repo-relative path (#42). temporale:roman -> temporale-roman,
+    // temporale:roman:i18n -> temporale-roman-i18n, and so on.
     const roman = (await cardClasses()).join(' ');
-    expect(roman).toContain('propriumdetempore');
-    expect(roman).toContain('proprium-de-tempore-i18n');
-    expect(roman).toContain('memorialsfromdecrees');
-    expect(roman).toContain('memorials-from-decrees-i18n');
-    expect(roman).not.toContain('ambrosianpropriumdetempore');
+    expect(roman).toContain('temporale-roman');
+    expect(roman).toContain('temporale-roman-i18n');
+    expect(roman).toContain('decrees-roman');
+    expect(roman).toContain('decrees-roman-i18n');
+    expect(roman).not.toContain('temporale-ambrosian');
 
     await selectRite(page, 'ambrosian');
     const ambrosian = (await cardClasses()).join(' ');
-    expect(ambrosian).toContain('ambrosianpropriumdetempore');
-    expect(ambrosian).toContain('ambrosian-proprium-de-tempore-i18n');
-    expect(ambrosian).toContain('ambrosianpropriumdesanctis');
-    expect(ambrosian).toContain('ambrosian-proprium-de-sanctis-i18n');
-    // The Roman corpus is gone, not merely joined.
-    expect(ambrosian).not.toContain('memorialsfromdecrees');
+    expect(ambrosian).toContain('temporale-ambrosian');
+    expect(ambrosian).toContain('temporale-ambrosian-i18n');
+    expect(ambrosian).toContain('sanctorale-ambrosian');
+    expect(ambrosian).toContain('sanctorale-ambrosian-i18n');
+    // The Roman corpus is gone, not merely joined: an Ambrosian scaffold's universal corpus is
+    // its own temporale/sanctorale, never the Roman decrees.
+    expect(ambrosian).not.toContain('decrees-roman');
 });
 
 test('an i18n folder card names its folder rather than "undefined"', async ({ page }) => {
@@ -200,7 +201,11 @@ test('an i18n folder card names its folder rather than "undefined"', async ({ pa
     );
     expect(titles.length).toBeGreaterThan(0);
     expect(titles).not.toContain('undefined');
-    expect(titles.some((t) => (t ?? '').endsWith('/i18n'))).toBe(true);
+    // The tooltip is the inventory id itself (sourceDataCheckTemplate's `tooltip`), not a
+    // repo-relative folder path any more — Ruling 5 restored the universal-corpus i18n ids, so
+    // there are genuinely i18n cards to name, and each one's id ends ':i18n' (not the old '/i18n'
+    // path suffix).
+    expect(titles.some((t) => (t ?? '').endsWith(':i18n'))).toBe(true);
 });
 
 test('accuracy tests are filtered by rite', async ({ page, request }) => {
