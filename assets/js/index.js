@@ -656,7 +656,13 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
-    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
+    // `currentRunToken !== null` closes a reconnect hole: `conn.onopen` resets `currentState` to
+    // `ReadyState` unconditionally, even when a run is still in flight (the socket merely dropped
+    // and reconnected) and `currentRunToken` is still set. Without this guard, the watchdog firing
+    // in that window would see `ReadyState` and call `onAdvance()` -> `runTests()`, which re-enters
+    // the `ReadyState` case and re-sends the entire source-data phase on the new socket under the
+    // stale run token, doubling every counter against an already-painted scaffold.
+    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped && currentRunToken !== null,
     socket: () => conn,
     runToken: () => currentRunToken
 } );
@@ -840,9 +846,10 @@ const runTests = () => {
                 performance.mark( 'specificUnitTestsStart' );
                 safeCollapseShow('#specificUnitTests');
 
-                // One check per (test, year) pair, registered up front — the same move Task 8 made
-                // for calendar-data — so this phase, too, ends on the terminal frames of the requests
-                // it started rather than being walked one response at a time.
+                // One check per (test, year) pair, registered up front — the same move made for
+                // calendar-data in the `ValidatingCalendarData` case above (`yearChecks`) — so this
+                // phase, too, ends on the terminal frames of the requests it started rather than
+                // being walked one response at a time.
                 //
                 // `steps: ['validates']` is set explicitly rather than left to `beginPhase()`'s
                 // default (every step in `STEP_CARD_CLASS`, the *check* family's three): a test run

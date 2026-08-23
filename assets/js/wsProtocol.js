@@ -1,10 +1,11 @@
 /**
  * Shared helpers for the Health WebSocket protocol.
  *
- * `index.js` and `resources.js` are two independent implementations of the same protocol and have already
+ * `index.js` and `resources.js` used to be two independent implementations of the same protocol, and had
  * drifted apart in ways that cost debugging sessions — different state names, different runToken guards,
- * two vocabularies for the same file (see #42). New protocol behaviour lands here so both runners share one
- * definition rather than acquiring a fourth thing to keep in lockstep.
+ * two vocabularies for the same file (see #42). That drift is what #42 closed: both runners now drive their
+ * phases through the shared `createPhaseRunner()` in `wsRunner.js`. New protocol behaviour lands here so
+ * both runners keep sharing one definition rather than reacquiring a thing to keep in lockstep.
  * @module wsProtocol
  */
 
@@ -252,7 +253,7 @@ export const STEP_CARD_CLASS = Object.freeze({
  * The card class a *test run's* `validates` step is reported on. A check and a calendar validation
  * report three steps through {@link STEP_CARD_CLASS}; a test run reports exactly one, `validates`,
  * addressed at a different card (`test-valid`) than the other two families use for the same step
- * name. Introduced here; consumed once the specific-unit-test phase migrates onto it.
+ * name. Consumed by `index.js`'s specific-unit-test phase (commit c43c0e7).
  *
  * @type {Readonly<Record<string, string>>}
  */

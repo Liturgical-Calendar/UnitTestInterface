@@ -87,9 +87,22 @@ test('giving up counts one failure per card left grey', async ({ page }) => {
     const greyBefore = await page.locator('#sourceDataTests .sourcedata-tests .card.bg-info').count();
     expect(greyBefore).toBeGreaterThan(0);
 
+    // The calendar-data phase has not started yet: its accordion section is still collapsed
+    // (`index.php` renders it `class="accordion-collapse collapse"`, no `show`).
+    await expect(page.locator('#calendarDataTests')).not.toHaveClass(/show/);
+
     await giveUpNow(page);
 
-    expect(Number(await page.locator('#failedCount').textContent())).toBeGreaterThanOrEqual(greyBefore);
+    // Exactly one failure per grey card — not "at least", which would also pass the over-count
+    // `summariseAbandoned()` exists to prevent (every stub frame here is `status: 'pass'`, so
+    // nothing else touches `#failedCount` in this window).
+    expect(Number(await page.locator('#failedCount').textContent())).toBe(greyBefore);
+
+    // Giving up must also advance the run, not just count the failures: `runTests()`'s
+    // `ExecutingValidations` case calls `safeCollapseShow('#calendarDataTests')` when the phase's
+    // outstanding set is cleared, so the run having moved on to the calendar-data phase is
+    // observable as that accordion section opening.
+    await expect(page.locator('#calendarDataTests')).toHaveClass(/show/, { timeout: 5000 });
 });
 
 test('calendar validation goes out with a typed calendar and no retired properties', async ({ page }) => {

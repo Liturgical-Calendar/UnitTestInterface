@@ -236,12 +236,12 @@ export const createPhaseRunner = ( options ) => {
      * Paint one step result onto the card its request registered.
      *
      * Addressed by `(requestId, step)`, which the server has stamped on every frame — including the
-     * frames answering the legacy `executeValidation` messages this page still sends — since
-     * LiturgicalCalendarAPI#806 section C. The `classes` selector is still on the frame and is
-     * deliberately not read: it is the coupling #42 exists to remove.
+     * frames answering the legacy `executeValidation` messages both pages still send for the checks
+     * that have no inventory id — since LiturgicalCalendarAPI#806 section C. The `classes` selector
+     * is still on the frame and is deliberately not read: it is the coupling #42 exists to remove.
      *
      * Falls back to the selector for a frame that carries no usable correlation, which is not dead
-     * code: a server that predates section C sends no `requestId`, and this page should degrade to
+     * code: a server that predates section C sends no `requestId`, and the caller should degrade to
      * the old behaviour rather than paint nothing at all.
      *
      * @param {object} responseData - A step-result frame.

@@ -176,8 +176,9 @@ It is published as two JSON Schema documents in the API repository, not this one
 Both runners fetch `GET /validations` before building their checkable list, rather than hardcoding the API's on-disk layout in this
 repository. The response is `{ "litcal_validations": [...] }`, an array of `{id, kind, rite, region, label, schema, steps}`. `id` is
 opaque — e.g. `temporale:roman`, `nation:roman:IT`, `diocese:ambrosian:milano_it`, `test:roman:StIgnatiusOfLoyolaTest` — and is sent back
-verbatim; no filesystem path crosses the wire. `fetchValidations()` and `validationChecksForRite()` in `assets/js/wsProtocol.js` fetch it
-and filter it to the selected rite (see Rite Scoping below).
+verbatim; no filesystem path crosses the wire. Both runners fetch it with `fetchValidations()` in `assets/js/wsProtocol.js`, then filter
+it to the selected rite — `resources.js` with that same module's `validationChecksForRite()`, `index.js` with its own
+`inventoryIdsForCalendar()` (see Rite Scoping below).
 
 This is what closed the class of lockstep breakage this repository used to have between a hand-maintained checklist and the API's actual
 layout — issues #38, API#795 and API#800 all trace back to that list going stale. The list it replaced, `UNIVERSAL_CHECKS`, no longer

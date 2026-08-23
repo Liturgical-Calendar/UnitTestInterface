@@ -899,7 +899,13 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
-    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
+    // `currentRunToken !== null` closes a reconnect hole: `conn.onopen` resets `currentState` to
+    // `Ready` unconditionally, even when a run is still in flight (the socket merely dropped and
+    // reconnected) and `currentRunToken` is still set. Without this guard, the watchdog firing in
+    // that window would see `Ready` and call `onAdvance()` -> `runTests()`, which re-enters the
+    // `Ready` case and re-sends the phase on the new socket under the stale run token, doubling
+    // every counter against an already-painted scaffold.
+    canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped && currentRunToken !== null,
     socket: () => conn,
     runToken: () => currentRunToken
 } );
