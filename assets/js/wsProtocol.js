@@ -815,19 +815,32 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
         ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
         : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
     if ( widerRegion ) {
-        ids.push( `widerregion:roman:${widerRegion}`, `widerregion:roman:${widerRegion}:i18n` );
+        ids.push(
+            `widerregion:roman:${widerRegion}`,
+            `widerregion:roman:${widerRegion}:i18n`,
+            `widerregion:roman:${widerRegion}:lectionary`
+        );
     }
     if ( nation ) {
-        ids.push( `nation:roman:${nation}`, `nation:roman:${nation}:i18n` );
+        ids.push(
+            `nation:roman:${nation}`,
+            `nation:roman:${nation}:i18n`,
+            `nation:roman:${nation}:lectionary`
+        );
     }
     ( missals ?? [] ).forEach( missalId => ids.push(
         `sanctorale:roman:${missalId}`,
         // Conditional on the server side, unlike every other id composed here; see
         // `isConditionalInventoryId()` for why it is still composed unconditionally.
-        `sanctorale:roman:${missalId}:i18n`
+        `sanctorale:roman:${missalId}:i18n`,
+        `sanctorale:roman:${missalId}:lectionary`
     ) );
     if ( dioceseId ) {
-        ids.push( `diocese:${dioceseRite}:${dioceseId}`, `diocese:${dioceseRite}:${dioceseId}:i18n` );
+        ids.push(
+            `diocese:${dioceseRite}:${dioceseId}`,
+            `diocese:${dioceseRite}:${dioceseId}:i18n`,
+            `diocese:${dioceseRite}:${dioceseId}:lectionary`
+        );
     }
     return ids;
 };
@@ -840,6 +853,23 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
  * matched here.
  */
 const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
+
+/**
+ * The shape of a calendar-owned lectionary folder id, e.g. `nation:roman:US:lectionary`.
+ *
+ * Four segments, which is what separates it from the rite's own decrees lectionary
+ * (`decrees:roman:lectionary`, three segments) and from the rite-level corpus
+ * (`lectionary:roman:{section}`, which does not end in `:lectionary` at all). Both of those are on
+ * disk unconditionally and must keep warning if the server ever stops advertising them — exactly the
+ * segment-count split that already separates a missal's conditional `:i18n` from a rite's
+ * unconditional one, which is why the id scheme was chosen to make it fall out.
+ *
+ * Absence is the ordinary case here rather than the exception: three of ten nations, one wider region,
+ * two of five missals and nine dioceses have a lectionary folder, and the rest never will unless
+ * someone writes one. A warning per composed id per page load would drown the warnings that mean
+ * something.
+ */
+const CONDITIONAL_LECTIONARY_ID = /^(?:nation|widerregion|sanctorale|diocese):[^:]+:[^:]+:lectionary$/;
 
 /**
  * Whether the API is entitled to advertise no inventory item for this composed id.
@@ -862,7 +892,10 @@ const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
  *   advertise is an upstream data gap, never a composition mistake — nothing this page can act on, and
  *   a warning per page load would train the reader to ignore the warnings that mean something.
  *
- * Absence is therefore the contract for this family, not a disagreement. (Composing conditionally
+ * The lectionary family is the third, and the largest: a `:lectionary` sibling is composed beside every
+ * calendar-tier id, and most calendars have no such folder — see {@link CONDITIONAL_LECTIONARY_ID}.
+ *
+ * Absence is therefore the contract for these families, not a disagreement. (Composing conditionally
  * instead is not open to this function: knowing which missals have files means reading the inventory,
  * which is precisely what this function does not do.)
  *
@@ -873,4 +906,5 @@ const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
  * @param {string} id - A composed inventory id.
  * @returns {boolean} True when the server may legitimately publish no such item.
  */
-export const isConditionalInventoryId = id => CONDITIONAL_INVENTORY_ID.test( id );
+export const isConditionalInventoryId = id =>
+    CONDITIONAL_INVENTORY_ID.test( id ) || CONDITIONAL_LECTIONARY_ID.test( id );
