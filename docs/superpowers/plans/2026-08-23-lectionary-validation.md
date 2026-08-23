@@ -15,6 +15,10 @@ inventory items. UnitTestInterface then renders the new step and picks up the ne
 
 **Spec:** `docs/superpowers/specs/2026-08-23-lectionary-validation-design.md`
 
+**Status:** Implemented. See the spec's Status section for the three points where the shipped code diverges from the plan — most
+significantly Task 6, where the rite-level corpus producer had to move out of `staticItems()` because its locale set comes from
+`CheckableInventory::metadata()`, and the section folders are enumerated from `LectionaryCategory` rather than from a hardcoded map.
+
 ## Global Constraints
 
 - **Two repositories.** Tasks 1–7 are in `../LiturgicalCalendarAPI`; tasks 8–10 are in `UnitTestInterface`. Task 11 touches both.

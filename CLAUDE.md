@@ -185,8 +185,11 @@ An item's `steps` array is the single source of truth for how many cards that ch
 `STEP_CARD_BODY` beside `STEP_CARD_CLASS`) and `beginPhase()` in `wsRunner.js` that binds them to a `requestId` — so a two-step or
 four-step item cannot leave the rendered page and the run totals disagreeing (#62). A check that advertises no `steps` at all — the
 bare-URL `executeValidation` checks, `index.php`'s calendar-data years, and runs stored before this migration — takes the same fallback
-in both halves: every step in `STEP_CARD_CLASS`. The totals badges are counted through `checkCardSelector()` / `testRunCardSelector()`,
-derived from those same two tables, rather than by naming the card classes at each counting site.
+in both halves: `DEFAULT_CHECK_STEPS`, which is pinned to `exists`/`parses`/`validates` rather than derived from `STEP_CARD_CLASS`. It
+*was* derived, and that made the first card class added to the table — `step-covers` — hand every one of those legacy checks a fourth
+card no frame would ever paint, with the totals badge counting it. Do not re-derive it. The totals badges are counted through
+`checkCardSelector()` / `testRunCardSelector()`, derived from those same two tables, rather than by naming the card classes at each
+counting site.
 
 This is what closed the class of lockstep breakage this repository used to have between a hand-maintained checklist and the API's actual
 layout — issues #38, API#795 and API#800 all trace back to that list going stale. The list it replaced, `UNIVERSAL_CHECKS`, no longer
@@ -301,12 +304,14 @@ DEPRECATED projections kept only for a client that predates per-request correlat
 and not to be parsed by anything new. `target` is `{id, year?, calendar?}`, and is `null` only for the surviving `executeValidation`
 shape, which names no id.
 
-**Two step vocabularies, addressed to different cards, sharing the same three-word `step` enum:**
+**Two step vocabularies, addressed to different cards, sharing the same `step` enum:**
 
 - A **check** — source-data validation (`validateSource`/`executeValidation`) or calendar-data validation (`validateCalendar`) —
   reports `exists`, `parses`, then `validates`, on cards classed `step-exists`, `step-parses`, `step-validates` respectively
-  (`STEP_CARD_CLASS` in `wsProtocol.js`) — or whichever subset of those three its inventory item advertised, which is also the subset the
-  scaffold drew (see The `/validations` Inventory above).
+  (`STEP_CARD_CLASS` in `wsProtocol.js`) — or whichever subset of those its inventory item advertised, which is also the subset the
+  scaffold drew (see The `/validations` Inventory above). A folder item that also carries a non-null `expected_locales` advertises a
+  fourth, `covers`, on a card classed `step-covers`: the first three ask whether what is present is well-formed, `covers` asks whether
+  anything is missing — whether the folder holds a `{locale}.json` for every locale its owner declares. See Locale Coverage below.
 - A **test run** (`runTest`) reports only `validates`, on a card classed `step-test-validates` instead (`TEST_RUN_STEP_CARD_CLASS`). The
   same step name addresses a different card family depending on which kind of request produced the frame, which is why `wsProtocol.js`
   keeps two maps rather than one.
@@ -452,8 +457,9 @@ that a change in card counts would be a migration bug rather than intended new c
 `inventoryIdsForCalendar()`'s old docblock (which described it as deliberate) from a stale checkout as current behaviour. `resources.js`
 never had the gap — it takes its whole list from `GET /validations`.
 
-**Cost.** One `validateSource` request and three cards per id. An Italian diocesan calendar's source-data phase goes from 9 checks /
-27 cards to 13 / 39; the General Roman rite-level scaffold from 8 / 24 to 11 / 33. This buys longer runs and more WebSocket traffic but
+**Cost.** One `validateSource` request and three cards per id — four for an id that also advertises `covers`. An Italian diocesan
+calendar's source-data phase went from 9 checks / 27 cards to 13 / 39 with this change, and to 27 / 99 once the lectionary corpus and the
+`covers` step landed; the General Roman rite-level scaffold from 8 / 24 to 11 / 33, and then to 22 / 79. This buys longer runs and more WebSocket traffic but
 **no** extra API rate-limit exposure: `Health::validateSource()` resolves an inventory id to a filesystem path and reads it locally,
 unlike the calendar-data phase, which is where this repository's history of 429s actually comes from.
 
@@ -464,6 +470,50 @@ one the server does not advertise — a real disagreement, and the whole point o
 where `isConditionalInventoryId()` in `wsProtocol.js` says the absence is the contract. That predicate matches the four-segment missal
 form only; the three-segment `sanctorale:{rite}:i18n` (a rite's own sanctorale translations) is unconditional and must keep warning.
 `inventoryIdsForCalendar()` deliberately stays a pure function of the calendar scope and does not read the inventory itself.
+
+### Lectionary Validation
+
+The lectionary corpus — 95 files, 5,975 `event_key` → readings entries — became checkable in issue #61 part 2, once the API defined
+`Lectionary.json`. There are 26 folders across six tiers, and the id scheme mirrors the `:i18n` precedent: a `lectionary:` prefix for the
+corpus nothing owns, a `:lectionary` suffix on whatever owns the rest.
+
+```text
+lectionary:roman:{section}              decrees:roman:lectionary
+nation:roman:{id}:lectionary            widerregion:roman:{name}:lectionary
+diocese:{rite}:{calendarId}:lectionary  sanctorale:roman:{missalId}:lectionary
+```
+
+**Two mechanisms, one rule: compose what calendar metadata implies, discover from the inventory what it does not.**
+`inventoryIdsForCalendar()` composes a `:lectionary` sibling beside each calendar-tier id, exactly as it composes `:i18n`.
+The ten rite-level section names (`sanctorum`, `feriale_per_annum_I`, …) are **not** composed — nothing in `/calendars` publishes them, so
+`buildSourceDataChecks()` in `index.js` takes every advertised item whose id starts with `lectionary:{rite}:` instead, plus
+`decrees:{rite}:lectionary`. Listing the section names here would put a copy of the API's on-disk layout back into this repository, and a
+section added upstream would go silently unchecked — the same staleness `UNIVERSAL_CHECKS` used to cause.
+
+**The four-segment `:lectionary` form is conditional** (`CONDITIONAL_LECTIONARY_ID` in `wsProtocol.js`). Absence is its ordinary state:
+three of ten nations, one wider region, two of five missals and nine dioceses have a lectionary folder. The three-segment
+`decrees:roman:lectionary` and the `lectionary:roman:{section}` corpus are unconditional and must keep warning — the same segment-count
+split that already separates a missal's conditional `:i18n` from a rite's unconditional one, which is why the id scheme was chosen.
+
+`Lectionary.json` is **permissive about empty readings** by design: 85% of entries carry at least one empty-string reading, and filling
+them in is LiturgicalCalendarAPI#712. A green `validates` card asserts the structure is in place, which is what the item labels say
+("lectionary structure"). Note also that source readings nest a `vigil` key while output readings never do — see the API's CLAUDE.md on
+schema roles; `Lectionary.json` builds on `CommonDef.json#/definitions/SourceReadings`, not on `Readings`.
+
+### Locale Coverage: the `covers` step
+
+A folder item whose expected locale set has an authority **other than the folder itself** advertises a fourth step, `covers`, and carries
+that set as `expected_locales` on `/validations`. The two are derived from one another server-side, so an item cannot advertise the step
+with nothing to compare against.
+
+That excludes exactly two families, where the owner's declared locales are scanned from the very folder being checked and the comparison
+would be a tautology: a wider region's `:i18n` and a missal's `:i18n`. National and diocesan calendars **declare** `locales` in their own
+source files, so their `:i18n` folders *are* covered; the rite-level corpus is measured against the General Roman Calendar's set, which is
+five locales, not the fourteen gettext folders.
+
+The verdict is a subset test **by locale identity, never by count**: a declared locale with no `{locale}.json` fails the step, while a file
+for a locale the owner does not declare does not fail it and is named in the frame text — which is how a stale `locales` declaration
+surfaces. `nation:roman:US:lectionary` reports exactly that today: `es_US` data exists that `US.json` does not declare.
 
 ### CSS Class Slugification (deprecated fallback path)
 

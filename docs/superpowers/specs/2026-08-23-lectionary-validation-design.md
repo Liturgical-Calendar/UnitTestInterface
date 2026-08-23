@@ -5,8 +5,18 @@ check — together with a locale-coverage step that grew out of it and applies m
 
 ## Status
 
-**Designed, not yet implemented.** Part 1 of #61 (calendar-tier `:i18n` coverage) shipped in PR #71 (`ba13cb7`). This document covers part 2,
-which is upstream-first: LiturgicalCalendarAPI must define the schema and emit the inventory items before anything in this repository can act.
+**Implemented.** Part 1 of #61 (calendar-tier `:i18n` coverage) shipped in PR #71 (`ba13cb7`). This document covered part 2, delivered as two
+PRs: the API half on `feat/61-lectionary-validation` in LiturgicalCalendarAPI, and the client half on `feat/61-lectionary-coverage` here.
+Where the shipped code and this document differ, the code is authoritative — notably three things corrected during implementation:
+
+- **`covers` reaches 47 items, not the 45 predicted here.** The count in this document was computed from a scan of the Roman calendar tiers
+  only; the two extra are Ambrosian diocesan `:i18n` folders, whose calendars declare `locales` in source like every other diocese.
+- **The Europe wider-region lectionary is missing 29 locales, not 28.** `en_UK` is present but not declared, so only three of the thirty-two
+  declared locales have files.
+- **The rite-level corpus items are not part of `CheckableInventory::staticItems()`.** Their expected locale set comes from
+  `CheckableInventory::metadata()`, so the producer can fail for the same reason the enumerating ones can, and the static half exists
+  precisely as a fallback that cannot throw. A `lectionary:` id therefore does not resolve through `staticById()`, exactly as a national or
+  diocesan id does not.
 
 ## Context
 
