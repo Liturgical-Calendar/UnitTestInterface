@@ -218,14 +218,27 @@ test('a rapid double rite change does not duplicate checks', async ({ page }) =>
     expect(new Set(resourceStepExists).size).toBe(resourceStepExists.length);
 
     // The counter-vs-card drift finding 2 warns about (and issue #43 exists to prevent): the
-    // "Time" badge totals are computed straight from the rendered card counts, so they stay
-    // exactly 3x the (now duplicate-free) `step-exists` counts.
+    // "Time" badge totals are computed straight from the rendered card counts, so each badge must
+    // equal the number of cards actually in its section.
+    //
+    // Compared against the rendered count rather than `step-exists x 3`. Since #62 a check renders
+    // one card per step its `/validations` item advertises, so the multiplier is only right for as
+    // long as every item advertises exactly three — which is the assumption #62 exists to remove.
+    // Asserting against the real count keeps this test measuring the drift it is named for instead
+    // of re-introducing the coupling elsewhere in the codebase.
+    const cardCounts = await page.evaluate(() => ({
+        resource: document.querySelectorAll('.resourcedata-tests .card').length,
+        source: document.querySelectorAll('.sourcedata-tests .card').length,
+    }));
     const totals = await page.evaluate(() => ({
         resource: document.getElementById('totalResourceDataTestsCount')?.textContent,
         source: document.getElementById('totalSourceDataTestsCount')?.textContent,
     }));
-    expect(Number(totals.resource)).toBe(resourceStepExists.length * 3);
-    expect(Number(totals.source)).toBe(sourceStepExists.length * 3);
+    // Guard the guard: comparing two zeroes would pass while proving nothing.
+    expect(cardCounts.resource).toBeGreaterThanOrEqual(resourceStepExists.length);
+    expect(cardCounts.source).toBeGreaterThanOrEqual(sourceStepExists.length);
+    expect(Number(totals.resource)).toBe(cardCounts.resource);
+    expect(Number(totals.source)).toBe(cardCounts.source);
 });
 
 test('a rite change is blocked for the duration of a run', async ({ page }) => {

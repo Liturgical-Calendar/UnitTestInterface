@@ -176,6 +176,17 @@ export const installReplyingWebSocketStub = async (
                     this.deliver(frame);
                 }
 
+                /**
+                 * Deliver a payload verbatim, without serialising it.
+                 *
+                 * `pushFrame()` cannot express this: it JSON-stringifies, so everything it sends is
+                 * parseable by construction, and the client's parse-failure branch is unreachable
+                 * through it.
+                 */
+                pushRaw(data: string): void {
+                    setTimeout(() => this.onmessage?.({ data }), 0);
+                }
+
                 send(data: string): void {
                     sent.push(data);
                     let message: Record<string, unknown>;
@@ -284,3 +295,19 @@ export const deliverLateFrame = (page: Page, frame: Record<string, unknown>): Pr
         }
         stub.pushFrame(payload);
     }, frame);
+
+/**
+ * Deliver one payload from the stub exactly as given, without serialising it.
+ *
+ * For the frame no well-behaved server sends and every client has to survive: one that is not JSON
+ * at all. The client's parse-failure branch is the only thing standing between a garbled frame and a
+ * wedged run (#43), and it cannot be reached through `deliverLateFrame()`, which serialises.
+ */
+export const deliverRawFrame = (page: Page, data: string): Promise<void> =>
+    page.evaluate((payload) => {
+        const stub = (window as unknown as { __wsStub?: { pushRaw: (data: string) => void } }).__wsStub;
+        if (undefined === stub) {
+            throw new Error('No stub WebSocket has been constructed on this page.');
+        }
+        stub.pushRaw(payload);
+    }, data);
