@@ -5,7 +5,9 @@ Design for the client half of [#42](https://github.com/Liturgical-Calendar/UnitT
 
 ## Status
 
-Approved design, not yet implemented. Supersedes nothing; extends the migration begun in PR #55.
+**Implemented.** Delivered by PR #68; this document is retained as the historical design record. Extends the migration begun in
+PR #55. Where the shipped code and this document differ, the code is authoritative — notably the i18n coverage rule, which was
+corrected during implementation (see the note in Decisions).
 
 ## Context
 

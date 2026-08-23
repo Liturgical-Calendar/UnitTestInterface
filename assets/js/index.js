@@ -656,16 +656,10 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
-    // KNOWN DEFECT (#66): `conn.onopen` resets `currentState` to `ReadyState` unconditionally,
-    // even when a run is still in flight and merely dropped/reconnected its socket. If the
-    // watchdog fires in that window, it sees `ReadyState`, `canAdvance()` returns true, and
-    // `onAdvance()` -> `runTests()` re-enters the `ReadyState` case, re-sending the entire
-    // source-data phase on the new socket under the stale run token — doubling every counter
-    // against an already-painted scaffold. `currentRunToken !== null` does NOT guard against
-    // this: the token is still set throughout that exact window (it is only nulled at
-    // `JobsFinished` or an explicit Stop), so the clause is inert here. The real fix is to stop
-    // `onopen` from resetting `currentState` while a run is in flight; that is a behavioural
-    // change needing its own review, not something to patch into this guard.
+    // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
+    // reconnect cannot land the watchdog in the `ReadyState` case and restart a phase. Note that
+    // adding `currentRunToken !== null` here would be inert: the token stays set across exactly
+    // that window, so the guard had to go in `onopen`, not in this predicate.
     canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
     socket: () => conn,
     runToken: () => currentRunToken
@@ -971,7 +965,15 @@ const connectWebSocket = () => {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
         }
-        currentState = TestState.ReadyState;
+        // Only when no run is in flight (#66). A mid-run socket drop that reconnects must not reset
+        // the state machine: the silence watchdog would then see `ReadyState`, `canAdvance()` would
+        // return true, and `onAdvance()` -> `runTests()` would re-enter the `ReadyState` case and
+        // re-send the entire source-data phase on the new socket under the stale run token,
+        // doubling every counter against an already-painted scaffold. Preserving the phase lets the
+        // watchdog give up on the outstanding requests and advance the run normally instead.
+        if ( null === currentRunToken ) {
+            currentState = TestState.ReadyState;
+        }
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
     };

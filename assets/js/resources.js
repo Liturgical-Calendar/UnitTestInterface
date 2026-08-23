@@ -494,7 +494,13 @@ const connectWebSocket = () => {
             clearInterval( connectionAttempt );
             connectionAttempt = null;
         }
-        currentState = TestState.Ready;
+        // Only when no run is in flight (#66). See the matching guard in index.js: a mid-run socket
+        // drop that reconnects must not reset the state machine, or the silence watchdog would see
+        // `Ready`, `canAdvance()` would return true, and `runTests()` would re-send the phase on the
+        // new socket under the stale run token, doubling every counter against a painted scaffold.
+        if ( null === currentRunToken ) {
+            currentState = TestState.Ready;
+        }
         ReadyToRunTests.SocketReady = true;
         ReadyToRunTests.tryEnableBtn();
     };
@@ -899,16 +905,10 @@ const phaseRunner = createPhaseRunner( {
     cardSlugFor: ( check ) => ( undefined === check.id ? slugify( check.validate ) : idToCardClass( check.id ) ),
     onAdvance: () => runTests(),
     onUnattributableFailure: () => countUnattributableFailure(),
-    // KNOWN DEFECT (#66): `conn.onopen` resets `currentState` to `Ready` unconditionally, even
-    // when a run is still in flight and merely dropped/reconnected its socket. If the watchdog
-    // fires in that window, it sees `Ready`, `canAdvance()` returns true, and `onAdvance()` ->
-    // `runTests()` re-enters the `Ready` case, re-sending the phase on the new socket under the
-    // stale run token — doubling every counter against an already-painted scaffold.
-    // `currentRunToken !== null` does NOT guard against this: the token is still set throughout
-    // that exact window (it is only nulled at `JobsFinished` or an explicit Stop), so the clause
-    // is inert here. The real fix is to stop `onopen` from resetting `currentState` while a run
-    // is in flight; that is a behavioural change needing its own review, not something to patch
-    // into this guard.
+    // `conn.onopen` only resets `currentState` when no run is in flight (#66), so a mid-run
+    // reconnect cannot land the watchdog in the `Ready` case and restart a phase. Adding
+    // `currentRunToken !== null` here would be inert: the token stays set across exactly that
+    // window, so the guard belongs in `onopen`, not in this predicate.
     canAdvance: () => currentState !== TestState.JobsFinished && currentState !== TestState.Stopped,
     socket: () => conn,
     runToken: () => currentRunToken

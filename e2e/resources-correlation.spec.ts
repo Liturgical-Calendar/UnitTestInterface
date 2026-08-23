@@ -80,7 +80,11 @@ test('a stored run records our own card selector, never the server-sent one', as
     // The stub addresses every frame at `.stub-addresses-nothing.<step>`, which matches no card.
     // If that string reaches disk, the page is still persisting the server's selector.
     const summaries = await (await request.get('/results.php', { headers: { Accept: 'application/json' } })).json();
-    const newest = summaries.filter((r: { runType: string }) => r.runType === 'resources')[0];
+    const resourcesRuns = summaries.filter((r: { runType: string }) => r.runType === 'resources');
+    // Assert before indexing: without this, an empty list fails as `Cannot read properties of
+    // undefined (reading 'file')`, which says nothing about the run never having been stored.
+    expect(resourcesRuns.length).toBeGreaterThan(0);
+    const newest = resourcesRuns[0];
     const detail = await (await request.get(`/results.php?file=${encodeURIComponent(newest.file)}`, {
         headers: { Accept: 'application/json' },
     })).json();

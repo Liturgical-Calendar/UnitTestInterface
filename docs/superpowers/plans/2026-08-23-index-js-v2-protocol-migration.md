@@ -1,7 +1,9 @@
 # index.js v2 WebSocket Contract Migration — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
-> superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Status: completed.** All eleven tasks were implemented and reviewed; the work shipped as PR #68. This document is retained as
+> the historical implementation record — the unticked checkboxes below are the plan as written, not outstanding work. Several tasks
+> were amended during execution (most substantially the i18n coverage rule); where this plan and the shipped code differ, the code is
+> authoritative.
 
 **Goal:** Migrate the Calendars runner (`assets/js/index.js`) off the v1 WebSocket contract so it stops hardcoding the API's on-disk layout,
 stops executing CSS selectors the server builds for it, and stops hardcoding "3 responses per check".
