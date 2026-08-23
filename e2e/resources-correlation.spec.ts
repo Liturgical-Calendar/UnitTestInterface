@@ -221,9 +221,13 @@ test('a run whose source phase has nothing to check still finishes', async ({ pa
     // for ever with no diagnostic.
     //
     // Reachable for real: the source list is whatever /validations advertised for the selected rite.
+    // The stub installs a `/validations` route of its own, normalising every item to three steps so the
+    // frames it sends match the cards the page draws. Playwright gives the *last* registered handler
+    // precedence, so this one is installed after it: an empty inventory is the whole point of this test
+    // and must not be normalised away.
+    await installReplyingWebSocketStub(page);
     await page.route('**/validations', (route) =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ litcal_validations: [] }) }));
-    await installReplyingWebSocketStub(page);
     await page.goto('/resources.php');
 
     await runToCompletion(page);
