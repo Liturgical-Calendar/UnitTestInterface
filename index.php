@@ -5,9 +5,12 @@ define('SIDEBAR', false);
 include_once('layout/head.php');
 
 ?>
-    <!-- Toasts -->
+    <!-- Toasts. Anchored to the bottom-right of the viewport (issue #67): the stack used to be
+         absolutely positioned at the document's top-right, which is exactly where the controls row
+         and #startTestRunnerBtn sit, and it scrolled off with the page. See .page-toast-stack in
+         assets/css/common.css for the click-through half of the fix. -->
     <div aria-live="polite" aria-atomic="true" class="position-relative" style="z-index:9999;">
-        <div class="toast-container position-absolute top-0 end-0 p-3">
+        <div class="toast-container page-toast-stack position-fixed bottom-0 end-0 p-3">
             <div class="toast align-items-center text-white bg-danger border-0 p-3 shadow" aria-live="assertive" role="alert" id="websocket-error">
                 <div class="d-flex">
                     <div class="toast-body">

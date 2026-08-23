@@ -3,6 +3,35 @@ body {
     background: #f5f5f5;
 }
 
+/*
+ * Toast stack (issue #67). A toast must never be the thing that eats a click.
+ *
+ * Bootstrap already ships `pointer-events: none` on `.toast-container` and takes it straight back
+ * with `pointer-events: auto` on `.toast` (bootstrap 5.3.8, the `.toast` / `.toast-container` rules),
+ * so the container is not what intercepts and repeating the container rule here would change
+ * nothing: the toast box itself is the interceptor. That is what Playwright reported when a
+ * completion toast landed over `#startTestRunnerBtn` — the icon *inside* the toast took the click.
+ *
+ * So neutralise the toast box and hand pointer events back only to the controls it contains: the
+ * dismiss button stays clickable, and so does anything interactive a future toast grows (the session
+ * expiry toast in components/login-modal.php, for one, carries two buttons in its body — it lives on
+ * admin.php, which does not load this file, but the rule is written so that moving it here would not
+ * break it). Everything else — text, icons, padding — lets the click through to the page beneath,
+ * which is why the bottom-right anchor can sit over the fixed footer without swallowing its links.
+ *
+ * Trade-off: Bootstrap pauses a toast's autohide timer on `mouseover` of the toast element, and with
+ * the box transparent to the pointer that only fires while hovering an interactive child. These are
+ * transient status toasts with no content worth pausing to read, so that is an acceptable loss; a
+ * toast that ever needs hover-to-pause should opt out with `data-bs-autohide="false"` instead.
+ */
+.page-toast-stack .toast {
+    pointer-events: none;
+}
+
+.page-toast-stack .toast :is(a, button, input, select, textarea, label, summary, [tabindex]) {
+    pointer-events: auto;
+}
+
 /* Responsive navbar styling */
 .sb-topnav .navbar-brand {
     font-size: 0.9rem;
