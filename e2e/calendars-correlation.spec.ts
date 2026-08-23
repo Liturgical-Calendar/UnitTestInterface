@@ -115,3 +115,33 @@ test('calendar validation goes out with a typed calendar and no retired properti
     // page — a green calendar card can only be attributed by requestId, not by the server's selector.
     await expect(page.locator('#calendarDataTests .calendardata-tests .bg-info')).toHaveCount(0);
 });
+
+test('unit tests go out as runTest with a typed calendar', async ({ page }) => {
+    await installReplyingWebSocketStub(page);
+    await page.goto('/index.php');
+    await runToCompletion(page);
+
+    const frames = (await sentFrames(page)).map((raw) => JSON.parse(raw) as Record<string, unknown>);
+    expect(frames.some((m) => m.action === 'executeUnitTest')).toBe(false);
+
+    const testRuns = frames.filter((m) => m.action === 'runTest');
+    expect(testRuns.length).toBeGreaterThan(0);
+    for (const message of testRuns) {
+        expect(typeof message.test).toBe('string');
+        expect(message.calendar).toMatchObject({ kind: expect.any(String), rite: expect.any(String) });
+        expect(typeof message.year).toBe('number');
+        expect(typeof message.requestId).toBe('string');
+        expect(message).not.toHaveProperty('category');
+        expect(message).not.toHaveProperty('rite');
+    }
+
+    // Proof cards were actually rendered and painted, not just that the wire shape is right: the
+    // stub addresses every frame at `.stub-addresses-nothing.<step>`, matching no card on the page,
+    // so a card painted green/red can only be attributed by requestId, not by the server's selector.
+    // Left blue (`.bg-info`, the pending state `appendAccordionItem()` renders every card in) would
+    // mean this phase still needs a selector the server composed — the same drift #42 removes for
+    // the other two phases, checked here from the unit-test side.
+    const cards = page.locator('#specificUnitTests .test-valid');
+    await expect(cards).not.toHaveCount(0);
+    await expect(page.locator('#specificUnitTests .bg-info')).toHaveCount(0);
+});

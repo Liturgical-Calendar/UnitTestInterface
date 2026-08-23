@@ -33,6 +33,7 @@ import {
     inventoryIdsForCalendar,
     idToCardClass,
     STEP_CARD_CLASS,
+    TEST_RUN_STEP_CARD_CLASS,
 } from './wsProtocol.js';
 
 import { createPhaseRunner } from './wsRunner.js';
@@ -582,8 +583,6 @@ let MetaData = null;
 let UnitTests = null;
 let RomanMissals = null;
 let currentState;
-let index;
-let yearIndex;
 
 let startTestRunnerBtnLbl = '';
 
@@ -802,7 +801,6 @@ const runTests = () => {
             if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'Source file validation jobs are finished! Now continuing to check calendar data...' );
                 currentState = TestState.ValidatingCalendarData;
-                index = 0;
                 performance.mark( 'calendarDataTestsStart' );
                 safeCollapseShow('#calendarDataTests');
 
@@ -839,56 +837,54 @@ const runTests = () => {
             if ( 0 === phaseRunner.outstandingCount() ) {
                 console.log( 'Calendar data validation jobs are finished! Now continuing to specific unit tests...' );
                 currentState = TestState.SpecificUnitTests;
-                index = 0;
-                yearIndex = 0;
-                console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
                 performance.mark( 'specificUnitTestsStart' );
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                phaseRunner.sendMessage( {
-                    ...SpecificUnitTestCategories[ index ],
-                    year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
-                    calendar: currentSelectedCalendar,
-                    category: currentCalendarCategory,
-                    rite: currentRite
-                } );
                 safeCollapseShow('#specificUnitTests');
-                safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
+
+                // One check per (test, year) pair, registered up front — the same move Task 8 made
+                // for calendar-data — so this phase, too, ends on the terminal frames of the requests
+                // it started rather than being walked one response at a time.
+                //
+                // `steps: ['validates']` is set explicitly rather than left to `beginPhase()`'s
+                // default (every step in `STEP_CARD_CLASS`, the *check* family's three): a test run
+                // reports exactly one step, and defaulting here would have `beginPhase()` probe for
+                // `exists`/`parses` cards that this phase never renders, logging a spurious warning
+                // for every single check.
+                //
+                // `id` is not read by `cardSelectorFor` below; it only names this check in
+                // `beginPhase()`'s own diagnostics (`check.id ?? check.validate`), so a missing card
+                // warns about a specific test and year instead of "undefined".
+                const testChecks = SpecificUnitTestCategories.flatMap( category =>
+                    SpecificUnitTestYears[ category.test ].map( year => ( {
+                        id: `${category.test}-year-${year}`,
+                        test: category.test,
+                        year,
+                        steps: [ 'validates' ]
+                    } ) )
+                );
+
+                phaseRunner.beginPhase( testChecks, {
+                    containerSelector: '#specificUnitTests',
+                    cardSelectorFor: ( check, step ) => {
+                        const stepClass = TEST_RUN_STEP_CARD_CLASS[ step ];
+                        return undefined === stepClass ? null : `.${slugify( check.test )}.year-${check.year}.${stepClass}`;
+                    }
+                } );
+                phaseRunner.armWatchdog();
+                testChecks.forEach( check => {
+                    safeCollapseShow( `#specificUnitTest-${slugify( check.test )}` );
+                    phaseRunner.sendMessage( {
+                        action: 'runTest',
+                        test: check.test,
+                        calendar: currentCalendarIdentity,
+                        year: check.year,
+                        requestId: check.requestId
+                    } );
+                } );
+                phaseRunner.advanceIfPhaseIsEmpty();
             }
             break;
         case TestState.SpecificUnitTests:
-            if ( yearIndex < SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ].length ) {
-                phaseRunner.sendMessage( { ...SpecificUnitTestCategories[ index ], year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ], calendar: currentSelectedCalendar, category: currentCalendarCategory, rite: currentRite } );
-            }
-            else if ( ++index < SpecificUnitTestCategories.length ) {
-                yearIndex = 0;
-                console.log( `Specific unit test ${SpecificUnitTestCategories[ index - 1 ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory}) is complete, continuing to the next test...` );
-                console.log( `Starting specific unit test ${SpecificUnitTestCategories[ index ].test} for calendar ${currentSelectedCalendar} (${currentCalendarCategory})...` );
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
-                let totalUnitTestTime = performance.measure(
-                    'litcalUnitTestRunner',
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
-                );
-                updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index ].test}Start` );
-                phaseRunner.sendMessage( {
-                    ...SpecificUnitTestCategories[ index ],
-                    year: SpecificUnitTestYears[ SpecificUnitTestCategories[ index ].test ][ yearIndex++ ],
-                    calendar: currentSelectedCalendar,
-                    category: currentCalendarCategory,
-                    rite: currentRite
-                } );
-                safeCollapseShow(`#specificUnitTest-${slugify(SpecificUnitTestCategories[ index ].test)}`);
-            }
-            else {
-                console.log( 'Specific unit test validation jobs are finished!' );
-                performance.mark( `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End` );
-                let totalUnitTestTime = performance.measure(
-                    'litcalUnitTestRunner',
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}Start`,
-                    `specificUnitTest${SpecificUnitTestCategories[ index - 1 ].test}End`
-                );
-                updateText(`total${slugify(SpecificUnitTestCategories[ index - 1 ].test)}TestsTime`, MsToTimeString( Math.round( totalUnitTestTime.duration ) ));
+            if ( 0 === phaseRunner.outstandingCount() ) {
                 currentState = TestState.JobsFinished;
                 runTests();
             }
@@ -896,6 +892,19 @@ const runTests = () => {
         case TestState.JobsFinished: {
             console.log( 'All jobs finished!' );
             phaseRunner.clearWatchdog();
+            // The unit-test phase's checks are now all sent up front and run in parallel, so there is
+            // no longer a sequential point between individual tests for a per-test mark to fire at —
+            // the per-test `specificUnitTest{Name}Start`/`End` marks and `total{Test}TestsTime`
+            // updates this phase used to make are gone along with the walk that drove them. The phase
+            // is marked as a whole instead: `specificUnitTestsStart` was set when this phase began,
+            // and this is the definite end of it, reached exactly once, on the terminal frame that
+            // empties the phase's outstanding set. The `total{Test}TestsTime` elements themselves are
+            // left at the "0" `appendAccordionItem()` renders them with — `resetTestUI()` already
+            // zeroes every `[id$="TestsTime"]` element at the start of a run and scaffold rebuild, so
+            // leaving them unwritten here shows a neutral default, never a stale value from a
+            // previous run.
+            performance.mark( 'specificUnitTestsEnd' );
+            performance.measure( 'litcalUnitTestRunner', 'specificUnitTestsStart', 'specificUnitTestsEnd' );
             safeToastShow('#tests-complete');
             currentRunToken = null;
             setScaffoldControlsDisabledForRun( false );
@@ -1011,13 +1020,11 @@ const connectWebSocket = () => {
         try {
             if ( responseData.type === "success" ) {
                 phaseRunner.paintResult( responseData );
-                // TEMPORARY: falls back to `responseData.classes` for the unit-test phase, which
-                // does not yet register a requestId with `beginPhase()` and so cannot be answered by
-                // `selectorFor()` (calendar-data now does, since Task 8). Without this a freshly
-                // recorded run replays that phase blank — green counts over blue cards, the
-                // totals-vs-cards drift #42 exists to remove, reached from the other direction.
-                // Removable once Task 9 migrates the unit-test phase onto the registry; Task 10
-                // removes it.
+                // TEMPORARY: `?? responseData.classes` is now unreachable — every phase (source data,
+                // calendar data since Task 8, unit tests since Task 9) registers a requestId with
+                // `beginPhase()`, so `selectorFor()` always resolves. Left in place rather than
+                // removed here: Task 10 removes it as its own reviewable change, once this and the
+                // matching branch below have proven the registry path covers every phase in practice.
                 resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
                 updateText('successfulCount', ++successfulTests);
                 switch ( currentState ) {
@@ -1040,7 +1047,8 @@ const connectWebSocket = () => {
             }
             else if ( responseData.type === "error" ) {
                 phaseRunner.paintResult( responseData );
-                // TEMPORARY: see the matching comment on the success branch above.
+                // TEMPORARY: see the matching comment on the success branch above — unreachable now,
+                // Task 10 removes it.
                 resultCollector.record( phaseForState(), responseData, phaseRunner.selectorFor( responseData.requestId, responseData.step ) ?? responseData.classes ?? null );
                 updateText('failedCount', ++failedTests);
                 switch ( currentState ) {
@@ -1616,7 +1624,7 @@ const setupPage = () => {
             }
         }
         renderedUnitTests.push( unitTest );
-        SpecificUnitTestCategories.push( { "action": "executeUnitTest", "test": unitTest.name } );
+        SpecificUnitTestCategories.push( { "test": unitTest.name } );
         SpecificUnitTestYears[ unitTest.name ] = unitTest.assertions.reduce( ( prev, cur ) => { prev.push( cur.year ); return prev; }, [] );
     } );
 
@@ -1835,8 +1843,6 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
         return;
     }
     if ( currentState === TestState.ReadyState || currentState === TestState.JobsFinished || currentState === TestState.Stopped ) {
-        index = 0;
-        yearIndex = 0;
         resultCollector.reset();
         // Releases the previous run's registry entries, selectors and outstanding set — see
         // `endRun()` in wsRunner.js for why a run must not simply be allowed to leak its state into
