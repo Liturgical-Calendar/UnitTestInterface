@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-24 14:32+0000\n"
+"POT-Creation-Date: 2026-08-24 21:29+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,220 +17,12 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: admin.php:154
-msgid "Define a Liturgical Accuracy Test"
-msgstr ""
-
-#: admin.php:156
-msgid ""
-"In order to verify that the liturgical calendar data produced by the API is "
-"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
-"that events were / were not created in the calendar, or that they have "
-"expected dates from year to year."
-msgstr ""
-
-#: admin.php:161
-msgid "Edit an existing test"
-msgstr ""
-
-#: admin.php:174
-msgid "Create a New Test"
-msgstr ""
-
-#: admin.php:185
-msgid "Calendar to test"
-msgstr ""
-
-#: admin.php:193
-msgid "Test Type"
-msgstr ""
-
-#: admin.php:198
-msgid ""
-"In the span of years for which we are making an assertion, we assert that "
-"the liturgical event should exist, and should fall on an expected date (date "
-"can optionally be defined differently for each given year)"
-msgstr ""
-
-#: admin.php:200
-msgid "Exact date"
-msgstr ""
-
-#: admin.php:205
-msgid ""
-"When a liturgical event should only exist after a certain year, we assert "
-"that for a certain span of years before such year the liturgical event "
-"should not exist, while for a certain span of years after such year the "
-"liturgical event should exist and should fall on an expected date (date can "
-"optionally be defined differently for each given year)."
-msgstr ""
-
-#: admin.php:207
-msgid "Exact date since year"
-msgstr ""
-
-#: admin.php:212
-msgid ""
-"When a liturgical event should no longer exist after a certain year, we "
-"assert that for a certain span of years before such year the liturgical "
-"event should fall on an expected date (date can optionally be defined "
-"differently for each given year), while for a certain span of years after "
-"such year the liturgical event should not exist."
-msgstr ""
-
-#: admin.php:214
-msgid "Exact date until year"
-msgstr ""
-
-#: admin.php:219
-msgid ""
-"When a liturgical event is expected to be overridden in various years for "
-"whatever reason, we assert that it should exist in certain given years on an "
-"expected date (date can optionally be defined differently for each given "
-"year), and that it should not exist for other given years."
-msgstr ""
-
-#: admin.php:221
-msgid "Variable existence by year"
-msgstr ""
-
-#: admin.php:225
-msgid "Please login to create or edit tests."
-msgstr ""
-
-#: admin.php:237 admin.php:238
-msgid "Name of Test"
-msgstr ""
-
-#: admin.php:247 components/NewTestModal.php:30
-msgid "Description"
-msgstr ""
-
-#: admin.php:252
-msgid "Per year assertions"
-msgstr ""
-
-#: admin.php:263
-msgid "Login to view and edit test details."
-msgstr ""
-
-#: admin.php:267
-msgid "Save Accuracy Test"
-msgstr ""
-
-#: admin.php:284
-msgid "Add or Edit Comment"
-msgstr ""
-
-#: admin.php:289
-msgid "Comment"
-msgstr ""
-
-#: admin.php:290
-msgid "This test is significant because…"
-msgstr ""
-
-#: admin.php:294
-msgid "Save"
-msgstr ""
-
-#: components/NewTestModal.php:6
-msgid "Exact Correspondence Test"
-msgstr ""
-
-#: components/NewTestModal.php:22
-msgid "Choose the liturgical event for which you would like to create a test"
-msgstr ""
-
-#: components/NewTestModal.php:26
-msgid ""
-"This liturgical event does not seem to exist? Please choose from a value in "
-"the list."
-msgstr ""
-
-#: components/NewTestModal.php:37
-msgid "Years to test"
-msgstr ""
-
-#: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid "First choose the range of years that we will be testing."
-msgstr ""
-
-#: components/NewTestModal.php:43
-msgid ""
-"This range should include a few years before the year in which the "
-"liturgical event should start to exist."
-msgstr ""
-
-#: components/NewTestModal.php:46
-msgid ""
-"This range should include a few years after the year in which the liturgical "
-"event should cease to exist."
-msgstr ""
-
-#: components/NewTestModal.php:49
-msgid "You can then remove any years that won't be needed."
-msgstr ""
-
-#: components/NewTestModal.php:53
-msgid ""
-"Finally, set the year from which the liturgical event should exist by "
-"clicking on the hammer icon inside one of the years in the range."
-msgstr ""
-
-#: components/NewTestModal.php:59
-msgid ""
-"Finally, set the year until which the liturgical event should exist by "
-"clicking on the hammer icon inside one of the years in the range."
-msgstr ""
-
-#: components/NewTestModal.php:65
-msgid ""
-"Finally, set the years in which the liturgical event shouldn't exist by "
-"clicking on the hammer icon inside the years in the range."
-msgstr ""
-
-#: components/NewTestModal.php:88
-msgid "Please set the year from which the liturgical event should exist."
-msgstr ""
-
-#: components/NewTestModal.php:91
-msgid "Please set the year until which the liturgical event should exist."
-msgstr ""
-
-#: components/NewTestModal.php:94
-msgid "Please set the years in which the liturgical event should not exist."
-msgstr ""
-
-#: components/NewTestModal.php:100
-msgid "Set the base date for this liturgical event."
-msgstr ""
-
-#: components/NewTestModal.php:103
-msgid ""
-"If the liturgical event is mobile rather than fixed, set the date for the "
-"first year you are testing against. In any case you will later be able to "
-"adjust the date for each year if needed."
-msgstr ""
-
-#: components/NewTestModal.php:108
-msgid "The date input cannot be empty."
-msgstr ""
-
-#: components/NewTestModal.php:126
-msgid "Close"
-msgstr ""
-
-#: components/NewTestModal.php:127
-msgid "Create test"
-msgstr ""
-
 #: components/login-modal.php:6
 msgid "Session Expiring"
 msgstr ""
 
-#: components/login-modal.php:12 layout/topnavbar.php:120
-#: layout/topnavbar.php:121
+#: components/login-modal.php:12 layout/topnavbar.php:108
+#: layout/topnavbar.php:109
 msgid "Logout"
 msgstr ""
 
@@ -263,12 +55,11 @@ msgid "Cancel"
 msgstr ""
 
 #: components/login-modal.php:56 components/login-modal.php:340
-#: layout/topnavbar.php:111 layout/topnavbar.php:112
+#: layout/topnavbar.php:99 layout/topnavbar.php:100
 msgid "Login"
 msgstr ""
 
-#: components/login-modal.php:70 layout/topnavbar.php:99
-#: layout/topnavbar.php:107
+#: components/login-modal.php:70 layout/topnavbar.php:94
 msgid "Admin"
 msgstr ""
 
@@ -308,144 +99,132 @@ msgstr ""
 msgid "Failed to extend session. Please login again."
 msgstr ""
 
-#: index.php:18 resources.php:18
+#: index.php:17 resources.php:17
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
 msgstr ""
 
-#: index.php:27 resources.php:27
+#: index.php:26 resources.php:26
 msgid "WebSocket connected successfully!"
 msgstr ""
 
-#: index.php:35 resources.php:35
+#: index.php:34 resources.php:34
 msgid "WebSocket connection closed."
 msgstr ""
 
-#: index.php:43 resources.php:43
+#: index.php:42 resources.php:42
 msgid "All tests complete!"
 msgstr ""
 
-#: index.php:51 resources.php:51
+#: index.php:50 resources.php:50
 msgid "Run results saved."
 msgstr ""
 
-#: index.php:59 resources.php:59
+#: index.php:58 resources.php:58
 msgid "Could not save run results."
 msgstr ""
 
-#: index.php:67 resources.php:67
+#: index.php:66 resources.php:66
+msgid "Run complete. Log in to save it to Past Runs."
+msgstr ""
+
+#: index.php:74 resources.php:74
 msgid "Could not load run results."
 msgstr ""
 
-#: index.php:75 resources.php:75
+#: index.php:82 resources.php:82
 msgid "Could not load the calendar controls."
 msgstr ""
 
-#: index.php:86 resources.php:86
+#: index.php:93 resources.php:93
 msgid ""
 "Could not load the list of checks from the API, so no test run can be "
 "started. Try reloading the page."
 msgstr ""
 
-#: index.php:105 resources.php:102
+#: index.php:112 resources.php:109
 msgid "Response Format"
 msgstr ""
 
-#: index.php:118 resources.php:115
+#: index.php:125 resources.php:122
 msgid "Past Runs"
 msgstr ""
 
-#: index.php:120 resources.php:117
+#: index.php:127 resources.php:124
 msgid "— Live —"
 msgstr ""
 
-#: index.php:127 resources.php:124
+#: index.php:134 resources.php:131
 msgid "Run Tests"
-msgstr ""
-
-#: index.php:133 index.php:157 index.php:194 index.php:224 resources.php:130
-#: resources.php:156 resources.php:184
-msgid "Successful:"
-msgstr ""
-
-#: index.php:136 index.php:160 index.php:197 index.php:227 resources.php:133
-#: resources.php:159 resources.php:187
-msgid "Failed:"
 msgstr ""
 
 #: index.php:140 index.php:164 index.php:201 index.php:231 resources.php:137
 #: resources.php:163 resources.php:191
+msgid "Successful:"
+msgstr ""
+
+#: index.php:143 index.php:167 index.php:204 index.php:234 resources.php:140
+#: resources.php:166 resources.php:194
+msgid "Failed:"
+msgstr ""
+
+#: index.php:147 index.php:171 index.php:208 index.php:238 resources.php:144
+#: resources.php:170 resources.php:198
 #, php-format
 msgid "Time (%s):"
 msgstr ""
 
-#: index.php:153
+#: index.php:160
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
 #. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
-#: index.php:185
+#: index.php:192
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
 msgstr ""
 
-#: index.php:219
+#: index.php:226
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:252 resources.php:211
+#: index.php:259 resources.php:218
 msgid "Loading…"
 msgstr ""
 
-#: layout/footer.php:63
+#: layout/footer.php:62
 msgid "Liturgical Rite"
 msgstr ""
 
-#: layout/footer.php:64
+#: layout/footer.php:63
 msgid "Liturgical Calendar"
 msgstr ""
 
-#: layout/sidebar.php:13
-msgid "Catholic Liturgical Calendar"
-msgstr ""
-
-#: layout/sidebar.php:19
-msgid "Accuracy Tests Runner"
-msgstr ""
-
-#: layout/sidebar.php:23 layout/topnavbar.php:106
-msgid "Accuracy Tests Admin"
-msgstr ""
-
-#: layout/topnavbar.php:9
-msgid "Toggle sidebar"
-msgstr ""
-
-#: layout/topnavbar.php:23
+#: layout/topnavbar.php:17
 msgid "Calendars"
 msgstr ""
 
-#: layout/topnavbar.php:28
+#: layout/topnavbar.php:22
 msgid "Resources"
 msgstr ""
 
-#: layout/topnavbar.php:34
+#: layout/topnavbar.php:28
 msgid "API Version"
 msgstr ""
 
-#: layout/topnavbar.php:51 layout/topnavbar.php:52
+#: layout/topnavbar.php:45 layout/topnavbar.php:46
 msgid "LitCal Project"
 msgstr ""
 
-#: layout/topnavbar.php:66
+#: layout/topnavbar.php:60
 msgid "WebSocket connection status"
 msgstr ""
 
-#: resources.php:151
+#: resources.php:158
 msgid "API Paths"
 msgstr ""
 
-#: resources.php:180
+#: resources.php:187
 msgid "Source data"
 msgstr ""
