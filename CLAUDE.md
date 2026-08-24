@@ -363,6 +363,29 @@ Only the diocesan tier exists under more than one rite. National calendars, wide
 `RegionalDataParams::validateRiteCompatibility()` rejects a national or wider-region request under a non-Roman rite — so `resources.php`
 omits them entirely when the Ambrosian rite is selected rather than requesting and failing them.
 
+**A non-Roman diocese inherits no Roman layer at all**, and `index.php`'s source-data scaffold follows that:
+`buildNonVASourceDataChecks()` in `assets/js/index.js` has one branch per rite family, keyed on the diocese's own `rite` from
+`/calendars` rather than on `currentRite` (which corpus a calendar is built from is a property of the calendar, not of the select's
+state). A non-Roman diocesan scaffold is that rite's own corpus plus the diocese — identical to the rite-level scaffold plus
+`diocese:{rite}:{id}` — with no national tier, no wider region, no missals, no `temporale:roman`, no `decrees:roman` and no
+`lectionary:roman:*`. The authority is `CalendarHandler::calculateAmbrosianCalendar()`, which reads exactly three things: the Ambrosian
+temporale, the Ambrosian sanctorale and the diocese's own file. It never calls `calculateUniversalCalendar()` or
+`applyNationalCalendar()`; `loadDiocesanCalendarData()` deliberately leaves `NationalCalendar` null on that path; and
+`CalendarParams::validateRiteCompatibility()` throws if it is set at all. Until this landed the scaffold was built with `rite: 'roman'`
+regardless, so `milano_it` checked 26 items of which 19 named source data its calendar never reads (26 checks / 93 cards → 7 / 22). Do
+not restore the old reading: `inventoryIdsForCalendar()`'s pre-existing docblock described it as a deliberate open design question, and
+the API has since answered it.
+
+**Under the Roman rite the national tier is required, and a missing one is fatal.** `loadDiocesanCalendarData()` sets `NationalCalendar`
+to the diocese's nation unconditionally on the Roman path and `CalendarParams::validateNationalCalendar()` rejects a nation absent from
+`national_calendars_keys`, so a Roman diocese whose nation had no national calendar could not have its calendar generated at all —
+metadata saying otherwise is wrong, not merely sparse. components-js's `CalendarSelect` enforces the same rule and throws outright ("a
+metadata defect, not a recoverable runtime condition"), so this repository's guard is a backstop for the case where the library's
+`/calendars` fetch and this page's own disagree. Under a rite with no national layer the same absence is the contract, and stays quiet:
+`lugano_ch` (Ambrosian, nation `CH`) is the case in the data — the API ships dioceses under `CH` but no `nations/CH` calendar. Treating
+that as fatal for *every* non-rite calendar is what used to bail out of `setupPage()` above the scaffold rebuild, leaving the page under
+its loader showing the previously selected calendar's cards.
+
 Per-nation and per-diocese `/data` and `/events` URLs are sent **rite-qualified** (`/data/ambrosian/diocese/milano_it`); an unprefixed URL
 silently resolves to Roman, which would be a wrong-green. The `/events` and `/tests` **collections** are rite-qualified too. The other five
 collection endpoints — `/calendars`, `/decrees`, `/easter`, `/schemas`, `/missals` — carry no rite dimension and stay bare.
@@ -419,6 +442,8 @@ Missal source-data checks are now sent through the `/validations` inventory, lik
 calendar uses becomes an id of the form `sanctorale:roman:{missal_id}` (e.g. `sanctorale:roman:IT_1983`,
 `sanctorale:roman:EDITIO_TYPICA_1970`), built by `inventoryIdsForCalendar()` in `assets/js/wsProtocol.js` from the `missals` array on
 the calendar's `/calendars` metadata, and sent as a `validateSource` message — `{action: "validateSource", target: {id: "sanctorale:roman:IT_1983"}}`.
+This is a Roman-tier family: a non-Roman calendar composes none of these, because its "missals" are its own temporale and sanctorale,
+which the `rite` argument already covers as `temporale:{rite}` / `sanctorale:{rite}` (see Rite Scoping above).
 No `validate` slug, `sourceFile` or `category` is built or sent for a missal check any more.
 
 Each missal id is composed together with its translation folder, `sanctorale:roman:{missal_id}:i18n` — see Calendar-Tier `:i18n`
@@ -452,14 +477,18 @@ nation:roman:{id}:i18n              widerregion:roman:{name}:i18n
 diocese:{rite}:{calendar_id}:i18n   sanctorale:roman:{missalId}:i18n
 ```
 
+The three `roman`-prefixed forms are reached only by a Roman calendar: a non-Roman scope arrives with `nation`, `widerRegion` and
+`missals` already empty (see Rite Scoping above), so its calendar-specific tier is the `diocese:` pair alone.
+
 The calendar-specific half is issue #61, landed after the #42 migration rather than during it: #42 deliberately held coverage constant so
 that a change in card counts would be a migration bug rather than intended new coverage. Do not reintroduce the omission, and do not read
 `inventoryIdsForCalendar()`'s old docblock (which described it as deliberate) from a stale checkout as current behaviour. `resources.js`
 never had the gap — it takes its whole list from `GET /validations`.
 
-**Cost.** One `validateSource` request and three cards per id — four for an id that also advertises `covers`. An Italian diocesan
+**Cost.** One `validateSource` request and three cards per id — four for an id that also advertises `covers`. A *Roman* Italian diocesan
 calendar's source-data phase went from 9 checks / 27 cards to 13 / 39 with this change, and to 27 / 99 once the lectionary corpus and the
-`covers` step landed; the General Roman rite-level scaffold from 8 / 24 to 11 / 33, and then to 22 / 79. This buys longer runs and more WebSocket traffic but
+`covers` step landed; the General Roman rite-level scaffold from 8 / 24 to 11 / 33, and then to 22 / 79. An *Ambrosian* Italian diocesan
+calendar is far smaller — 7 checks / 22 cards — since it carries no Roman tier at all (see Rite Scoping above). This buys longer runs and more WebSocket traffic but
 **no** extra API rate-limit exposure: `Health::validateSource()` resolves an inventory id to a filesystem path and reads it locally,
 unlike the calendar-data phase, which is where this repository's history of 429s actually comes from.
 

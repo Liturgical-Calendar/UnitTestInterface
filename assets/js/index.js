@@ -159,12 +159,13 @@ let ValidationsInventoryReady = false;
  * inventory in the first place.
  *
  * @param {object} scope
- * @param {string} scope.rite - The rite whose universal corpus is checked (see
- *   `inventoryIdsForCalendar()`: Roman for a national/diocesan calendar regardless of the
- *   calendar's own rite; the selected rite itself for a rite-level calendar).
+ * @param {string} scope.rite - The rite whose universal corpus is checked: always the calendar's own
+ *   rite, since that is the corpus the API generates it from.
  * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`; equal to
- *   `scope.rite` when there is no diocese.
- * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
+ *   `scope.rite` for every caller (see `inventoryIdsForCalendar()` for why it stays a separate
+ *   parameter).
+ * @param {?string} scope.nation - The nation code, or null when there is no national tier: a
+ *   rite-level calendar, or any non-Roman calendar, whose rite has no national layer at all.
  * @param {?string} scope.widerRegion - The nation's wider region, or null.
  * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
  * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.
@@ -1567,16 +1568,27 @@ const handleAppliesToOrFilter = ( unitTest, appliesToOrFilter ) => {
 
 /**
  * Builds source data checks for non-VA (non-Vatican) calendars.
- * Resolves the diocese-to-nation and nation-to-wider-region/missals metadata this page holds,
- * then delegates the actual check list to `buildSourceDataChecks()`.
+ *
+ * Two shapes, one per rite family, because the API generates the two kinds of calendar from
+ * disjoint corpora (see the comments on each branch):
+ *
+ * - **Roman** — a national calendar, or a Roman diocese: the Roman universal corpus, the nation, its
+ *   wider region and its missals, plus the diocese when there is one. A missing national calendar is
+ *   fatal here.
+ * - **Non-Roman** — an Ambrosian diocese: that rite's own corpus plus the diocese, and no national
+ *   tier at all, missing or otherwise.
  *
  * @param {string} calendarId - The calendar ID (national or diocesan).
  * @param {string} calendarCategory - The category: 'nationalcalendar' or 'diocesancalendar'.
- * @returns {Array|null} Array of source data check objects, or null if metadata is missing.
+ * @returns {Array|null} Array of source data check objects, or null when the metadata this page
+ *   holds contradicts the calendar it was asked about.
  */
 const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     let nation = calendarId;
     let dioceseId = null;
+    // A national calendar is Roman by definition (`RegionalDataParams`: "The {rite} rite has no
+    // national calendars"), so this only ever changes on the diocesan branch below.
+    let calendarRite = 'roman';
 
     // For diocesan calendars, find the parent nation
     if (calendarCategory !== 'nationalcalendar') {
@@ -1589,28 +1601,75 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         }
         nation = diocesanData.nation;
         dioceseId = calendarId;
+        // The diocese's own rite, not `currentRite`: which corpus a calendar is built from is a
+        // property of the calendar, not of the select's current state. The two agree today (the
+        // calendar select is rite-partitioned), which is precisely why reading the intrinsic one
+        // costs nothing and cannot be wrong later.
+        calendarRite = diocesanData.rite ?? 'roman';
+    }
+
+    // A non-Roman diocese is checked against its own rite's corpus and nothing else.
+    //
+    // `CalendarHandler::calculateAmbrosianCalendar()` reads exactly three things: the Ambrosian
+    // temporale, the Ambrosian sanctorale, and the diocese's own file. It never calls
+    // `calculateUniversalCalendar()` or `applyNationalCalendar()`, `loadDiocesanCalendarData()`
+    // deliberately leaves `NationalCalendar` null on this path, and `validateRiteCompatibility()`
+    // throws if it is set at all ("The Ambrosian rite has no national calendars"). So the national
+    // tier is absent by construction rather than merely missing, and so is the *Roman* universal
+    // corpus: no `decrees:roman`, no `temporale:roman`, no `lectionary:roman:*`.
+    //
+    // This scaffold is therefore the rite-level Ambrosian one plus the diocese, which is what the
+    // `ritecalendar` branch of `setupPage()` already builds for the rite on its own — the two agreed
+    // on nothing before, and the Ambrosian diocesan scaffold checked 26 items of which 19 named
+    // source data its calendar never reads.
+    if ('roman' !== calendarRite) {
+        return buildSourceDataChecks( {
+            rite: calendarRite,
+            // Equal to `rite` here, as for a rite-level calendar: the diocese belongs to the very
+            // rite whose corpus is being checked. It still has to be passed, because the diocese id
+            // must resolve to what the inventory advertises — `diocese:ambrosian:milano_it`; there
+            // is no `diocese:roman:milano_it`.
+            dioceseRite: calendarRite,
+            nation: null,
+            widerRegion: null,
+            // Not an omission: this rite's missals are its temporale and sanctorale, which `rite`
+            // already covers. `missals` is specifically the *Roman* `sanctorale:roman:{id}` family,
+            // which is why the rite-level branch of `setupPage()` passes `[]` here too.
+            missals: [],
+            dioceseId
+        } );
     }
 
     const nationalCalendarData = MetaData.national_calendars.find(
         nationalCalendar => nationalCalendar.calendar_id === nation
-    );
-    if (!nationalCalendarData) {
-        console.error('No national calendar metadata found for', nation);
+    ) ?? null;
+
+    // **A national tier is required under the Roman rite, and only there** — which is this branch,
+    // and both of its cases, because a national calendar is itself Roman by definition:
+    //
+    // - A *national* calendar's id came out of the very list being searched, so failing to find it
+    //   back means the metadata this page holds contradicts the select built from it.
+    // - A *Roman diocese* implies a national calendar in the API, not merely by convention:
+    //   `CalendarHandler::loadDiocesanCalendarData()` sets `NationalCalendar` to the diocese's
+    //   nation unconditionally on the Roman path, and `CalendarParams::validateNationalCalendar()`
+    //   rejects a nation absent from `national_calendars_keys`. A Roman diocese whose nation had no
+    //   national calendar could not have its calendar generated at all, so the metadata is wrong
+    //   rather than merely sparse, and saying so beats scaffolding a diocese the API cannot serve.
+    //
+    // components-js's own `CalendarSelect` enforces that same rule and throws outright — "a diocesan
+    // calendar under the `roman` rite declares nation `X`, but no national calendar exists for that
+    // nation … a metadata defect, not a recoverable runtime condition" — so this is a backstop
+    // rather than the first line of defence. It is not therefore dead: the library and this page
+    // fetch `/calendars` separately, so it is what catches the two disagreeing, which the library
+    // cannot see and which would otherwise scaffold a diocese with a silently empty national tier.
+    if (null === nationalCalendarData) {
+        console.error('No national calendar metadata found for', nation, '- required for', calendarId, 'under the Roman rite');
         return null;
     }
 
-    // National and diocesan calendars always start from the Roman universal corpus: national
-    // calendars are Roman by definition, and an Ambrosian diocese still inherits the Roman national
-    // calendar of its nation. Whether an Ambrosian diocese should instead inherit the Ambrosian rite
-    // corpus is a separate (pre-existing) design question — `rite: 'roman'` below is what preserves
-    // it, matching v1's behaviour exactly. `dioceseRite` is separate and is the calendar's own rite:
-    // a diocese id must resolve to what the inventory actually advertises (e.g.
-    // `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`). For a national
-    // calendar there is no diocese id, so `dioceseRite` is inert, but `currentRite` is always
-    // `'roman'` there anyway, since national calendars exist only under that rite.
     return buildSourceDataChecks( {
         rite: 'roman',
-        dioceseRite: currentRite,
+        dioceseRite: 'roman',
         nation,
         widerRegion: nationalCalendarData.wider_region,
         missals: nationalCalendarData.missals,
