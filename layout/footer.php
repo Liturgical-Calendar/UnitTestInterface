@@ -2,15 +2,6 @@
 // Note: dotenv is loaded in layout/head.php, no need to reload here
 
 include_once('layout/disclaimer.php');
-if (!defined('SIDEBAR') || true === SIDEBAR) {
-    ?>
-        </div>
-        <!-- End of Content Wrapper -->
-
-    </div>
-    <!-- End of Page Wrapper -->
-    <?php
-}
 ?>
     <!-- Bootstrap / sb-admin JavaScript-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"
@@ -22,6 +13,14 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
         integrity="sha512-6BTOlkauINO65nLhXhthZMtepgJSghyimIalb+crKRPhvhmsCdnIuGcVbR5/aQY2A+260iC1OPy1oCdB6pSSwQ=="
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
+
+<?php
+// The login modal ships on every page, not just admin.php. It has to follow the Bootstrap bundle
+// above (its script constructs `bootstrap.Modal` and `bootstrap.Toast`) and precede the page's own
+// module script below (which reads what it puts on `window`). `include_once` keeps a page that also
+// includes it directly from emitting it twice.
+include_once('components/login-modal.php');
+?>
 
     <!-- Global configuration (set on window for ES6 module access) -->
     <script>
@@ -66,10 +65,6 @@ if ($proxyEnabled) {
         });
     </script>
 <?php
-if ($pageName === 'admin') {
-    echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
-}
-
 // The two runner pages mount liturgy-components-js controls (issue #48). The import map must
 // precede the first module load, which is the page script emitted immediately below.
 //

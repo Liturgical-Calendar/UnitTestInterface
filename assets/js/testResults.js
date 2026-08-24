@@ -134,7 +134,14 @@ export const countByStatus = (descriptors) => ({
 /** Current UTC time as `YYYY-MM-DDTHH:MM:SSZ` (no milliseconds). */
 export const nowIsoStamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
-/** POST a completed run to the server. */
+/**
+ * POST a completed run to the server.
+ *
+ * A rejection carries the HTTP status on `err.status`. Callers need it to tell a declined save
+ * (401 — nobody is logged in, and results.php stores nothing anonymously) from a genuine failure;
+ * the run itself succeeded in the first case, so reporting it as a save failure misreads it.
+ * Parsing the status back out of the message string would be the fragile alternative.
+ */
 export const postRunResults = async (payload) => {
     const res = await fetch('results.php', {
         method: 'POST',
@@ -143,22 +150,93 @@ export const postRunResults = async (payload) => {
         body: JSON.stringify(payload),
     });
     if (!res.ok) {
-        throw new Error(`Save failed: ${res.status}`);
+        const err = new Error(`Save failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
     }
     return res.json();
 };
 
-/** Fetch run summaries filtered to a single run type, newest first. */
+/**
+ * Fetch run summaries filtered to a single run type, newest first.
+ *
+ * Rejects with `err.status` set, like {@link postRunResults}: a 401 here is the ordinary state of
+ * an anonymous visitor, not a fault worth logging.
+ */
 export const fetchRunSummaries = async (runType) => {
     const res = await fetch('results.php', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
     });
     if (!res.ok) {
-        throw new Error(`List failed: ${res.status}`);
+        const err = new Error(`List failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
     }
     const all = await res.json();
     return all.filter((r) => r.runType === runType);
+};
+
+/**
+ * Own one page's Past Runs dropdown: clearing it, and refilling it from results.php.
+ *
+ * Both runners want identical behaviour and differ only in which run type they list and how they
+ * label an option, so the shared half lives here — beside `fetchRunSummaries()`, which it calls —
+ * rather than in `common.js`, which holds generic DOM and string helpers with no results.php
+ * knowledge and would have to import from this module to do the same job.
+ *
+ * @param {object} config
+ * @param {HTMLSelectElement|null} config.select The dropdown, or null on a page without one
+ * @param {string} config.runType `'calendars'` or `'resources'`
+ * @param {(summary: object) => string} config.label Option text for one run summary
+ * @returns {{load: () => Promise<void>, clear: () => void}}
+ */
+export const createPastRunsList = ({ select, runType, label }) => {
+    // Bumped by every clear, so a load that was in flight when the list was cleared can tell that
+    // its results are no longer wanted. Without it a logout landing mid-fetch clears the list and
+    // the pending continuation then refills it, leaving the previous session's run filenames in a
+    // dropdown the logged-out user still has in their DOM.
+    let generation = 0;
+
+    const clear = () => {
+        generation++;
+        if (!select) {
+            return;
+        }
+        select.value = '';
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+    };
+
+    const load = async () => {
+        if (!select) {
+            return;
+        }
+        clear();
+        const loading = generation;
+        try {
+            const summaries = await fetchRunSummaries(runType);
+            if (loading !== generation) {
+                return;
+            }
+            for (const summary of summaries) {
+                const opt = document.createElement('option');
+                opt.value = summary.file;
+                opt.textContent = label(summary);
+                select.appendChild(opt);
+            }
+        } catch (err) {
+            // A 401 is the ordinary state of an anonymous visitor rather than a fault: results.php
+            // declines to list runs for anyone who is not logged in.
+            if (401 === err.status) {
+                return;
+            }
+            console.error('Could not load past runs', err);
+        }
+    };
+
+    return { load, clear };
 };
 
 /** Fetch a single stored run's full detail. */
@@ -168,7 +246,9 @@ export const fetchRunDetail = async (file) => {
         headers: { Accept: 'application/json' },
     });
     if (!res.ok) {
-        throw new Error(`Load failed: ${res.status}`);
+        const err = new Error(`Load failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
     }
     return res.json();
 };

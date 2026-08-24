@@ -8,10 +8,11 @@ import path from 'path';
  *
  * `API_HOST` describes the API **as the browser addresses it**. The proxy's fetch is server-side, so
  * wherever this app is served from a container those are two different addresses, and composing the
- * upstream from `API_HOST` reaches the container itself. `admin.php` already solves this by honouring
- * `API_INTERNAL_URL` and falling back to the browser-facing URL; these tests pin the proxy doing the
- * same, and pin the fallback staying byte-identical for a single-host deployment (which is every
- * deployment today, production included — so the fallback is the path that must not move).
+ * upstream from `API_HOST` reaches the container itself. LiturgicalCalendarFrontend already solves
+ * this by honouring `API_INTERNAL_URL` and falling back to the browser-facing URL; these tests pin
+ * the proxy doing the same, and pin the fallback staying byte-identical for a single-host deployment
+ * (which is every deployment today, production included — so the fallback is the path that must not
+ * move).
  *
  * ## Why two stub upstreams rather than the real API
  *

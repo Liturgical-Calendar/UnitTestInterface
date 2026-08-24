@@ -4,6 +4,7 @@ include_once("includes/I18n.php");
 
 use Dotenv\Dotenv;
 use LiturgicalCalendar\UnitTestInterface\I18n;
+use LiturgicalCalendar\UnitTestInterface\JwtAuth;
 
 // Load environment variables early so they're available in topnavbar.php
 $dotenv = Dotenv::createImmutable(
@@ -20,7 +21,15 @@ $dotenv->ifPresent('WS_HOST')->notEmpty();
 $dotenv->ifPresent('LITCAL_FRONTEND_URL')->notEmpty();
 // API_BASE_PATH can be empty for local development
 
-// Only create I18n if not already initialized (e.g., by admin.php for early API calls)
+// Authentication is a property of every page, not of admin.php. `topnavbar.php` and `footer.php`
+// both read `$isAuthenticated` when it happens to be set; setting it here is what makes it always
+// set, so the login button and the `data-requires-auth` regions render in the right state on first
+// paint instead of flashing the logged-out state until initPermissionUI() catches up.
+JwtAuth::init();
+$isAuthenticated = JwtAuth::isAuthenticated();
+
+// Only create I18n if not already initialized (a page may need it before including this file,
+// e.g. to make an early API call whose errors are shown translated)
 if (!isset($i18n)) {
     $i18n = new I18n();
 }
@@ -51,9 +60,6 @@ if (in_array($pageName, ['index', 'resources'], true)) {
 }
 if (file_exists("assets/css/{$pageName}.css")) {
     echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
-}
-if ($pageName === 'admin') {
-    echo "<link href=\"assets/css/multi-range-slider.css\" rel=\"stylesheet\">";
 }
 ?>
 </head>

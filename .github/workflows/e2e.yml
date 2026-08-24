@@ -148,33 +148,23 @@ jobs:
       - name: Type-check the specs
         run: npm run typecheck
 
-      # One exclusion, and it is evidence rather than a guess. Rehearsed against a stack configured
-      # exactly as this job configures one — both servers from the checkouts, a matching JWT secret
-      # on each side — 62 specs pass and 9 fail, all of them in `admin.spec.ts`.
+      # No exclusions. There used to be one — `admin.spec.ts`, whose 9 tests contradicted the
+      # project they ran under by describing an unauthenticated browser while the chromium project
+      # supplies authenticated `storageState`. That file was deleted with `admin.php` itself (#51),
+      # so there is nothing left to exclude and the whole suite runs.
       #
-      # They fail because the chromium project runs with authenticated `storageState`, while that
-      # file's "Unauthenticated State" describes assume a browser that has never logged in. The
-      # suite contradicts the project it runs under. `admin.php` is proposed for removal in #51 as
-      # superseded by admin-tests.php in LiturgicalCalendarFrontend, so the specs are excluded here
-      # rather than repaired in a CI change.
+      # One thing that fails on a developer's machine is still NOT excluded, because a fresh runner
+      # does not have it: `results-replay-resources.spec.ts` fails once fifty stored runs have
+      # filled the retention window, which prunes away the fixture it seeds.
       #
-      # Two other things that fail on a developer's machine are NOT excluded, because a fresh runner
-      # does not have them: the same admin specs additionally fatal against a containerised server
-      # whose log directory is read-only, and `results-replay-resources.spec.ts` fails once fifty
-      # stored runs have filled the retention window, which prunes away the fixture it seeds.
-      #
-      # The pattern matches the FILE, not a describe title: Playwright greps a string that includes
-      # the spec's path, so `admin\.spec\.ts` can only ever exclude that one file. A title pattern
-      # such as "Admin Page" happens to select the same 13 tests today, but would silently swallow
-      # any future spec that reused the words. Anything failing beyond this file is a finding to act
-      # on, not a line to add below.
+      # Anything failing here is a finding to act on, not a line to add below.
       - name: Run the suite
         env:
           # playwright.config.ts reads both: CI turns off `reuseExistingServer` so the job's own
           # servers are the ones under test, and API_REPO_PATH is where it starts the API from.
           CI: 'true'
           API_REPO_PATH: ${{ github.workspace }}/.api
-        run: npx playwright test --project=chromium --grep-invert 'admin\.spec\.ts'
+        run: npx playwright test --project=chromium
 
       - name: Upload the report
         if: ${{ !cancelled() }}

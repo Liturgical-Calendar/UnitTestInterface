@@ -22,34 +22,35 @@ on a responsive dashboard.
 - **Communication:** WebSocket (Ratchet-based server in LiturgicalCalendarAPI)
 - **i18n:** GNU gettext with 10+ language translations
 - **Code Quality:** PHP_CodeSniffer (PSR-12)
-- **Component Libraries:** `@liturgical-calendar/components-js` (ESM, `index.php` + `resources.php`);
-  liturgical-calendar/components (PHP, `admin.php` only)
+- **Component Libraries:** `@liturgical-calendar/components-js` (ESM, `index.php` + `resources.php`).
+  The PHP `liturgical-calendar/components` package was dropped when `admin.php`, its only consumer, was
+  archived — see `archive/README.md`.
 
 ## Project Structure
 
 ```text
 UnitTestInterface/
-├── index.php              # Main test runner UI
-├── admin.php              # Administrative interface
+├── index.php              # Main test runner UI (Calendars)
 ├── resources.php          # Resource testing interface
+├── results.php            # Authenticated store/list/fetch for Past Runs
 ├── includes/              # PHP includes
 │   ├── I18n.php          # Internationalization class
 │   └── pgettext.php      # Context-aware translation
 ├── layout/                # Layout templates
-│   ├── head.php          # HTML head, CSS/JS includes
-│   ├── topnavbar.php     # Navigation bar
-│   ├── sidebar.php       # Side navigation
-│   └── footer.php        # Footer
+│   ├── head.php          # HTML head, CSS/JS, resolves $isAuthenticated
+│   ├── topnavbar.php     # Navigation bar, login button / user menu
+│   └── footer.php        # Scripts, import map, login modal
 ├── components/            # UI components
-│   └── NewTestModal.php  # Test creation modal
+│   └── login-modal.php   # Login modal + the whole client-side auth UI
 ├── assets/
 │   ├── js/               # JavaScript files
-│   │   ├── admin.js      # Admin functionality
-│   │   ├── AssertionsBuilder.js # Test assertion builder
+│   │   ├── auth.js       # Auth API client (login, refresh, /auth/me)
 │   │   ├── common.js     # Shared utilities
 │   │   ├── index.js      # Main test runner logic
-│   │   └── resources.js  # Resource management
+│   │   ├── resources.js  # Resource management
+│   │   └── testResults.js # Run payloads + results.php helpers
 │   └── css/              # Stylesheets
+├── archive/               # Retired admin.php + its assets (archive/README.md)
 └── i18n/                  # Translation files
 ```
 
@@ -136,14 +137,6 @@ All markdown files must conform to `.markdownlint.yml`:
 
 - `locale` - User's locale for `Intl.DateTimeFormat` formatting
 - `LitcalEvents` - Array of liturgical events from API
-
-**Key Classes/Enums in `AssertionsBuilder.js`:**
-
-- `TestType` - Enum for test types (exactCorrespondence, exactCorrespondenceSince, etc.)
-- `AssertType` - Enum for assertion types (eventNotExists, eventExists AND hasExpectedDate)
-- `LitGrade` - Enum for liturgical grades (WEEKDAY through HIGHER_SOLEMNITY)
-- `AssertionsBuilder` - Builds HTML for test assertion UI
-- `Assertion` - Represents a single test assertion
 
 ## API Data Format
 
@@ -577,23 +570,35 @@ checked. Only the step component was ever phrased as a claim.
 - Access token read from the `litcal_access_token` HttpOnly cookie and verified
   server-side using `JWT_SECRET` / `JWT_ALGORITHM` (loaded via phpdotenv), which must
   match the API's JWT settings
-- Login handled by the client-side login modal (`components/login-modal.php`) against
-  the API; UI gated via `data-requires-auth` / `data-requires-no-auth` attributes and
-  `JwtAuth::isAuthenticated()`
+- `layout/head.php` resolves `$isAuthenticated` once per page, and `layout/footer.php`
+  emits `components/login-modal.php` on **every** page. Both used to be `admin.php`'s
+  alone, which is why the runner pages had no login button and no working Past Runs
+- Login handled by that modal against the API; UI gated via `data-requires-auth` /
+  `data-requires-no-auth` attributes and `JwtAuth::isAuthenticated()`. The modal
+  dispatches `auth:login` / `auth:logout` on `document`; both runners listen, to refill
+  and clear the Past Runs dropdown without a reload
+- `results.php` requires authentication on all three of its routes, so Past Runs and run
+  persistence are inert until the user logs in. The helpers in `assets/js/testResults.js`
+  attach the HTTP status to the errors they throw, and both runners treat a `401` as
+  "not logged in" rather than as a failure — an anonymous run is complete and unsaved,
+  not broken
 
 ## Key Files
 
-| File                             | Purpose                             |
-|----------------------------------|-------------------------------------|
-| `index.php`                      | Main test runner with results       |
-| `admin.php`                      | Admin interface                     |
-| `assets/js/index.js`             | WebSocket communication, test logic |
-| `assets/js/AssertionsBuilder.js` | Test assertion builder              |
-| `assets/js/wsProtocol.js`        | Shared WebSocket protocol helpers   |
-| `assets/js/wsClient.js`          | Shared socket lifecycle + reconnect |
-| `assets/js/wsRunner.js`          | Shared phase runner and send path   |
-| `assets/js/resources.js`         | Resources runner logic              |
-| `includes/I18n.php`              | Locale detection, gettext setup     |
+| File                          | Purpose                                    |
+|-------------------------------|--------------------------------------------|
+| `index.php`                   | Main test runner with results              |
+| `resources.php`               | Resource data test runner                  |
+| `results.php`                 | Authenticated Past Runs store/list/fetch   |
+| `assets/js/index.js`          | WebSocket communication, test logic        |
+| `assets/js/resources.js`      | Resources runner logic                     |
+| `assets/js/wsProtocol.js`     | Shared WebSocket protocol helpers          |
+| `assets/js/wsClient.js`       | Shared socket lifecycle + reconnect        |
+| `assets/js/wsRunner.js`       | Shared phase runner and send path          |
+| `assets/js/testResults.js`    | Run payloads and `results.php` helpers     |
+| `components/login-modal.php`  | Login modal + auth UI, on every page       |
+| `layout/footer.php`           | Shared scripts, import map, login modal    |
+| `includes/I18n.php`           | Locale detection, gettext setup            |
 
 ## Internationalization
 

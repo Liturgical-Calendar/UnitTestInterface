@@ -1,7 +1,6 @@
 <?php
 
 // phpcs:disable PSR1.Files.SideEffects
-define('SIDEBAR', false);
 include_once('layout/head.php');
 
 ?>
@@ -61,6 +60,14 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-white bg-secondary border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-save-unauthenticated">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-circle-info fa-fw"></i> <?php echo _("Run complete. Log in to save it to Past Runs."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
             <div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-load-failed">
                 <div class="d-flex">
                     <div class="toast-body">
@@ -114,7 +121,7 @@ include_once('layout/head.php');
                         <option value="JSON">JSON</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
+                <div class="col-12 col-md-4 col-lg-2 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth>
                     <label for="pastRunsSelect" class="form-label"><?php echo _("Past Runs"); ?></label>
                     <select id="pastRunsSelect" class="form-select form-select-sm">
                         <option value=""><?php echo _("— Live —"); ?></option>
