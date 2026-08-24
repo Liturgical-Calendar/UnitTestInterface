@@ -4,6 +4,7 @@ include_once("includes/I18n.php");
 
 use Dotenv\Dotenv;
 use LiturgicalCalendar\UnitTestInterface\I18n;
+use LiturgicalCalendar\UnitTestInterface\JwtAuth;
 
 // Load environment variables early so they're available in topnavbar.php
 $dotenv = Dotenv::createImmutable(
@@ -19,6 +20,13 @@ $dotenv->ifPresent('WS_PROTOCOL')->notEmpty()->allowedValues(['ws', 'wss']);
 $dotenv->ifPresent('WS_HOST')->notEmpty();
 $dotenv->ifPresent('LITCAL_FRONTEND_URL')->notEmpty();
 // API_BASE_PATH can be empty for local development
+
+// Authentication is a property of every page, not of admin.php. `topnavbar.php` and `footer.php`
+// both read `$isAuthenticated` when it happens to be set; setting it here is what makes it always
+// set, so the login button and the `data-requires-auth` regions render in the right state on first
+// paint instead of flashing the logged-out state until initPermissionUI() catches up.
+JwtAuth::init();
+$isAuthenticated = JwtAuth::isAuthenticated();
 
 // Only create I18n if not already initialized (e.g., by admin.php for early API calls)
 if (!isset($i18n)) {
