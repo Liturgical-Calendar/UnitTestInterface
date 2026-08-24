@@ -637,7 +637,6 @@ const IntlDTOptions = {
 };
 
 
-let MetaData = null;
 let UnitTests = null;
 let RomanMissals = null;
 let currentState;
@@ -1353,7 +1352,7 @@ const resetTestUI = () => {
 
 /**
  * Fetches the four datasets this page builds its scaffold and its checks from, and assigns
- * {@link MetaData}, {@link UnitTests}, {@link RomanMissals} and {@link ValidationsInventory}.
+ * {@link UnitTests}, {@link RomanMissals} and {@link ValidationsInventory}.
  *
  * **Settled independently, not as one `Promise.all`.** A single rejection there discarded all four
  * results at once: none of the globals was assigned, `setupPage()` never ran, and `.page-loader` —
@@ -1366,21 +1365,22 @@ const resetTestUI = () => {
  */
 const fetchMetadataAndTests = () => {
     return Promise.allSettled( [
-        fetchJson( apiFetchUrl( 'calendars' ) ),
         fetchJson( apiFetchUrl( 'tests' ) ),
         fetchJson( apiFetchUrl( 'missals' ) ),
         // `fetchValidations()` does its own fetch/parse/error-handling and resolves straight to the
         // inventory array — it is not a `Response`, so it must not go through `readJsonOrThrow()`.
         fetchValidations( apiFetchBase() )
-    ] ).then( ( [ metadataResult, testsResult, missalsResult, validationsResult ] ) => {
+    ] ).then( ( [ testsResult, missalsResult, validationsResult ] ) => {
         // Positional rather than shape-sniffed: with `allSettled` a dataset that failed has no shape
         // to sniff, and "which endpoint is missing" is exactly what the failure path has to say.
-        if ( 'fulfilled' === metadataResult.status && metadataResult.value?.hasOwnProperty( 'litcal_metadata' ) ) {
-            MetaData = metadataResult.value.litcal_metadata;
-        } else {
-            console.error( 'Could not load the calendars metadata:', metadataResult.reason ?? metadataResult.value );
-        }
-
+        //
+        // `/calendars` is deliberately absent. `mountCalendarControls()` awaits
+        // `ApiClient.init()`, which resolves an `ApiBase` and loads the calendar index — the same
+        // endpoint, fetched to completion before this function is even called. Fetching it again
+        // bought a second copy of one document and, worse, a second *authority*: this page used to
+        // ask `apiBase` which nation a diocese belonged to in one function and `MetaData` the same
+        // question forty lines away in another, so the two could disagree. See
+        // `buildNonVASourceDataChecks()`, which now reads the one the controls were built from.
         if ( 'fulfilled' === testsResult.status ) {
             const testsData = testsResult.value;
             if ( Array.isArray( testsData ) ) {
@@ -1407,10 +1407,18 @@ const fetchMetadataAndTests = () => {
             console.error( 'Could not load the validations inventory:', validationsResult.reason );
         }
 
-        // The three datasets `setupPage()` itself dereferences (`MetaData.diocesan_calendars`,
-        // `UnitTests.forEach`, `Object.values( RomanMissals )`). Without them there is no scaffold
-        // to render and calling it would throw; with them the page renders whatever it has.
-        const canRenderScaffold = null !== MetaData && null !== UnitTests && null !== RomanMissals;
+        // The two datasets `setupPage()` itself dereferences on every path (`UnitTests.forEach`,
+        // `Object.values( RomanMissals )`). Without them there is no scaffold to render and calling
+        // it would throw; with them the page renders whatever it has.
+        //
+        // Calendar metadata is deliberately not a condition here, and dropping it from the gate is
+        // not merely a consequence of dropping the fetch. `setupPage()` reaches it only on the
+        // national/diocesan branch, which requires a calendar to have been *selected*, which
+        // requires the controls `mountCalendarControls()` builds. When those fail to mount there is
+        // no select, `currentCalendarCategory` stays at its `"ritecalendar"` default, and the
+        // rite-level branch touches no calendar metadata at all — so gating the render on it would
+        // withhold the very scaffold the two "degrades cleanly" specs require to still appear.
+        const canRenderScaffold = null !== UnitTests && null !== RomanMissals;
 
         // JUDGEMENT CALL (#63): the inventory gates the *run*, not the *render*.
         //
@@ -1607,9 +1615,19 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
 
     // For diocesan calendars, find the parent nation
     if (calendarCategory !== 'nationalcalendar') {
-        const diocesanData = MetaData.diocesan_calendars.find(
-            diocesanCalendar => diocesanCalendar.calendar_id === calendarId
-        );
+        // `apiBase`, the index `ApiClient.init()` loaded to build the controls — the same source
+        // `resolveCalendarTargetFromControls()` asks the identical question of. Asking two copies
+        // of one document which nation a diocese belongs to is how they came to be able to
+        // disagree; there is one copy now, so they cannot.
+        // `metadata.diocesan_calendars` rather than the `diocesanCalendars()` accessor: that one
+        // takes a rite and *defaults to Roman*, and the rite is precisely what is being looked up
+        // here — filtering by it first would drop every Ambrosian diocese before the search. The
+        // raw index is the honest way to say "whatever rite this one is", and is exactly what the
+        // page's own `/calendars` copy used to be read for.
+        const diocesanData = apiBase
+            ?.metadata
+            ?.diocesan_calendars
+            .find( diocesanCalendar => diocesanCalendar.calendar_id === calendarId );
         if (!diocesanData) {
             console.error('No diocesan calendar metadata found for', calendarId);
             return null;
@@ -1655,9 +1673,11 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
         } );
     }
 
-    const nationalCalendarData = MetaData.national_calendars.find(
-        nationalCalendar => nationalCalendar.calendar_id === nation
-    ) ?? null;
+    // `NationalCalendar` from the library carries `wider_region` and `missals`, which is exactly and
+    // only what this branch reads — so the second copy bought nothing here either.
+    const nationalCalendarData = apiBase
+        ?.nationalCalendars()
+        .find( nationalCalendar => nationalCalendar.calendar_id === nation ) ?? null;
 
     // **A national tier is required under the Roman rite, and only there** — which is this branch,
     // and both of its cases, because a national calendar is itself Roman by definition:
@@ -1673,10 +1693,15 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
     //
     // components-js's own `CalendarSelect` enforces that same rule and throws outright — "a diocesan
     // calendar under the `roman` rite declares nation `X`, but no national calendar exists for that
-    // nation … a metadata defect, not a recoverable runtime condition" — so this is a backstop
-    // rather than the first line of defence. It is not therefore dead: the library and this page
-    // fetch `/calendars` separately, so it is what catches the two disagreeing, which the library
-    // cannot see and which would otherwise scaffold a diocese with a silently empty national tier.
+    // nation … a metadata defect, not a recoverable runtime condition".
+    //
+    // That used to leave this branch reachable, because the library and this page fetched
+    // `/calendars` separately and could therefore disagree; the spec that reached it doctored the
+    // page's fetch and left the library's alone. There is one fetch now, so the disagreement is
+    // gone and so is that spec. What remains is not ceremony: `nationalCalendarData` is read for
+    // `wider_region` and `missals` immediately below, so without this the contradiction would
+    // surface as a TypeError rather than a refusal. Kept as an assertion about a document this page
+    // no longer owns, not as a second opinion on the library's validation.
     if (null === nationalCalendarData) {
         console.error('No national calendar metadata found for', nation, '- required for', calendarId, 'under the Roman rite');
         return null;
