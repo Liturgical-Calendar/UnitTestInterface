@@ -79,7 +79,14 @@
  * @property {string} validate - A display/CSS label for this check, e.g. `"calendars-path"`,
  *   `"LitCalMetadata"`.
  * @property {string} sourceFile - The absolute API URL being checked.
- * @property {string} [responsetype] - Response format for the underlying request, when relevant.
+ * @property {"JSON"|"YML"} [responseFormat] - The representation to fetch the URL in, sent by the
+ *   server as an `Accept` header. Spelled `responseFormat`, not the legacy `responsetype`, which is
+ *   retired on this shape too now (API#885) and refused rather than ignored — it was accepted and
+ *   never read for as long as the server honoured no format at all.
+ *   **JSON and YML only, unlike {@link ValidateCalendarMessage}'s four.** `return_type` is a
+ *   `CalendarParams` property and so exists only on `/calendar`; every route a resource check
+ *   addresses negotiates on `Accept` alone, and all of them answer 406 to `application/xml` and
+ *   `text/calendar`. Absent means JSON.
  */
 
 /**
