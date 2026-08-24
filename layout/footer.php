@@ -23,6 +23,14 @@ if (!defined('SIDEBAR') || true === SIDEBAR) {
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 
+<?php
+// The login modal ships on every page, not just admin.php. It has to follow the Bootstrap bundle
+// above (its script constructs `bootstrap.Modal` and `bootstrap.Toast`) and precede the page's own
+// module script below (which reads what it puts on `window`). `include_once` keeps a page that also
+// includes it directly from emitting it twice.
+include_once('components/login-modal.php');
+?>
+
     <!-- Global configuration (set on window for ES6 module access) -->
     <script>
         window.LitCalConfig = Object.freeze({

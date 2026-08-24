@@ -23,6 +23,13 @@ test.describe('logged out', () => {
             expect(isAuth).toBe(false);
         });
     }
+
+    test('the runner page offers a login button', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#loginBtn')).toBeVisible();
+        await expect(page.locator('#loginModal')).toHaveCount(1);
+        await expect(page.locator('#userMenu')).toBeHidden();
+    });
 });
 
 test.describe('logged in', () => {
@@ -34,4 +41,10 @@ test.describe('logged in', () => {
             expect(isAuth).toBe(true);
         });
     }
+
+    test('the runner page offers the user menu, not a login button', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#userMenu')).toBeVisible();
+        await expect(page.locator('#loginBtn')).toBeHidden();
+    });
 });

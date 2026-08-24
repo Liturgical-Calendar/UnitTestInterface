@@ -140,9 +140,6 @@ try {
     die('Failed to fetch events data. Please try again later.');
 }
 
-// Signal that this page has the login modal (for topnavbar.php)
-define('HAS_LOGIN_MODAL', true);
-
 include_once 'layout/head.php';
 include_once 'layout/sidebar.php';
 ?>
