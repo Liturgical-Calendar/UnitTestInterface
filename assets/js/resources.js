@@ -910,15 +910,28 @@ let riteSelect = null;
  * @returns {Promise<void>}
  */
 const mountRiteSelect = async () => {
-    const baseUrl = apiFetchBase();
     /** @type {typeof import('@liturgical-calendar/components-js')} */
     let componentsJs;
     try {
         // The dynamic import is inside the try: a failed module load (CDN outage, blocked host,
-        // stale dev symlink) rejects here exactly like a failed ApiClient.init() call, instead of
-        // aborting evaluation of this whole file before this function even exists.
+        // stale dev symlink) rejects here, instead of aborting evaluation of this whole file
+        // before this function even exists.
+        //
+        // **No `ApiClient.init()`.** It used to be awaited here, and it is what made this page
+        // fetch `/calendars` twice: `init()` resolves an `ApiBase` and calls `load()` on it, which
+        // fetches the calendar index — a document this page then fetched again for itself in
+        // `loadAsyncData()`, and the only one either copy was for. `RiteSelect` needs none of it:
+        // it builds its options from the `Rite` enum (`Object.values(Rite)`), not from metadata,
+        // which is why dropping the call leaves the control mounting exactly as before with its
+        // labels intact. Verified by measuring: two `/calendars` requests per page load became one.
+        //
+        // Reusing the base instead of dropping it was the other way to reach one fetch, and is the
+        // wrong one *here*: it would make this page's metadata depend on the library having loaded,
+        // so a CDN failure would take the scaffold with it. Today the `#controls-load-failed` path
+        // still builds a full one under the default Roman rite, which the degradation spec pins.
+        // `index.php` is the opposite case and reuses its base — it has a `CalendarSelect`, so its
+        // metadata is the library's whether it likes it or not.
         componentsJs = await import( '@liturgical-calendar/components-js' );
-        await componentsJs.ApiClient.init( baseUrl );
     } catch ( err ) {
         // Same reasoning as index.js: an unmounted control must not look like an empty result set.
         console.error( 'Could not initialise the rite select', err );
