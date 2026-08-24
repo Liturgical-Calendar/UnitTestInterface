@@ -114,7 +114,7 @@ include_once('layout/head.php');
                         <option value="JSON">JSON</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
+                <div class="col-12 col-md-4 col-lg-2 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth>
                     <label for="pastRunsSelect" class="form-label"><?php echo _("Past Runs"); ?></label>
                     <select id="pastRunsSelect" class="form-select form-select-sm">
                         <option value=""><?php echo _("— Live —"); ?></option>

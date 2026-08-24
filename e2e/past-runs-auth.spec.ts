@@ -30,6 +30,22 @@ test.describe('logged out', () => {
         await expect(page.locator('#loginModal')).toHaveCount(1);
         await expect(page.locator('#userMenu')).toBeHidden();
     });
+
+    test('Past Runs is hidden', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#pastRunsSelect')).toBeHidden();
+    });
+
+    test('the server sends Past Runs already hidden', async ({ request }) => {
+        // Asserted against the raw HTML rather than the live DOM on purpose. initPermissionUI()
+        // hides the column too, and expect().toBeHidden() auto-retries, so a DOM assertion passes
+        // whether or not the server got it right — it just waits out the flash of visibility this
+        // gate exists to prevent.
+        const html = await (await request.get('/')).text();
+        const wrapper = html.match(/<div class="([^"]*)"[^>]*data-requires-auth>\s*<label for="pastRunsSelect"/);
+        expect(wrapper, 'the Past Runs wrapper should be present in the served markup').not.toBeNull();
+        expect(wrapper?.[1]).toContain('d-none');
+    });
 });
 
 test.describe('logged in', () => {
@@ -46,5 +62,17 @@ test.describe('logged in', () => {
         await page.goto('/');
         await expect(page.locator('#userMenu')).toBeVisible();
         await expect(page.locator('#loginBtn')).toBeHidden();
+    });
+
+    test('Past Runs is visible', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#pastRunsSelect')).toBeVisible();
+    });
+
+    test('the server sends Past Runs already visible', async ({ request }) => {
+        const html = await (await request.get('/')).text();
+        const wrapper = html.match(/<div class="([^"]*)"[^>]*data-requires-auth>\s*<label for="pastRunsSelect"/);
+        expect(wrapper, 'the Past Runs wrapper should be present in the served markup').not.toBeNull();
+        expect(wrapper?.[1]).not.toContain('d-none');
     });
 });
