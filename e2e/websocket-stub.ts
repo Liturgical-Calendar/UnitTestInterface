@@ -140,6 +140,7 @@ export const installReplyingWebSocketStub = async (
         stopAfterStep?: string | null;
         answerOnly?: string[] | null;
         rejectActions?: string[] | null;
+        responseFormats?: Record<string, string[]>;
     } = {}
 ): Promise<void> => {
     await serveThreeStepInventory(page);
@@ -148,9 +149,15 @@ export const installReplyingWebSocketStub = async (
     const stopAfterStep = options.stopAfterStep ?? null;
     const answerOnly = options.answerOnly ?? null;
     const rejectActions = options.rejectActions ?? null;
+    // Overridable so a spec can play a server that advertises nothing for an action — the
+    // disagreement case the pages warn about rather than silently emptying their select.
+    const responseFormats = options.responseFormats ?? {
+        validateCalendar: ['JSON', 'XML', 'ICS', 'YML'],
+        executeValidation: ['JSON', 'YML'],
+    };
 
     await page.addInitScript(
-        ({ protocol, omitComplete, stopAfterStep, answerOnly, rejectActions }) => {
+        ({ protocol, omitComplete, stopAfterStep, answerOnly, rejectActions, responseFormats }) => {
             const sent: string[] = [];
             (window as unknown as { __wsSent: string[] }).__wsSent = sent;
 
@@ -194,7 +201,12 @@ export const installReplyingWebSocketStub = async (
                                 capabilities: {
                                     rites: ['roman', 'ambrosian'],
                                     actions: ['executeValidation', 'validateCalendar', 'executeUnitTest', 'runTest', 'cancelRun', 'validateSource'],
-                                    responseFormats: ['JSON', 'XML', 'ICS', 'YML'],
+                                    // Per-action since API#886, and the two lists genuinely differ:
+                                    // /calendar serves all four, every route a resource check
+                                    // addresses answers 406 to XML and ICS. A stub that advertised
+                                    // one flat list could not exercise the difference the pages
+                                    // now build their format select from.
+                                    responseFormats,
                                     steps: ['exists', 'parses', 'validates', 'complete'],
                                     statuses: ['pass', 'fail'],
                                 },
@@ -312,7 +324,7 @@ export const installReplyingWebSocketStub = async (
 
             (window as unknown as { WebSocket: unknown }).WebSocket = ReplyingWebSocket;
         },
-        { protocol, omitComplete, stopAfterStep, answerOnly, rejectActions }
+        { protocol, omitComplete, stopAfterStep, answerOnly, rejectActions, responseFormats }
     );
 };
 
