@@ -64,6 +64,36 @@ test.describe('logged out', () => {
         expect(outcome).toBe('results-save-unauthenticated');
         await expect(page.locator('#results-save-unauthenticated')).toHaveCount(1);
     });
+
+    test('auth:login repopulates Past Runs without a reload', async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('domcontentloaded');
+        // Logged out, results.php answers 401, so only the "— Live —" placeholder is present.
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
+
+        // The endpoint is stubbed rather than logging in for real: the subject here is that the
+        // runner reacts to the event at all, not that the API authenticates.
+        await page.route('**/results.php', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([
+                    {
+                        file: 'calendars-2026-01-01T00-00-00Z.json',
+                        runType: 'calendars',
+                        timestamp: '2026-01-01T00:00:00Z',
+                        calendar: 'VA',
+                        counts: { successful: 3, failed: 0 },
+                    },
+                ]),
+            })
+        );
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:login')));
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(2);
+
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:logout')));
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
+    });
 });
 
 test.describe('logged in', () => {
