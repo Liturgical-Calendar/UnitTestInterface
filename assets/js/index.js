@@ -20,8 +20,8 @@ import {
     countByStatus,
     createResultCollector,
     nowIsoStamp,
+    createPastRunsList,
     postRunResults,
-    fetchRunSummaries,
     fetchRunDetail,
 } from './testResults.js';
 
@@ -2115,47 +2115,18 @@ document.querySelector('#startTestRunnerBtn').addEventListener('click', () => {
 const pastRunsSelect = document.querySelector('#pastRunsSelect');
 
 /**
- * Drop every stored-run option, keeping the "— Live —" placeholder that is the select's first
- * child in the server-rendered markup.
+ * The Past Runs dropdown. The clearing, the refill and the invalidation of a load that a
+ * clear has overtaken all live in testResults.js, beside the endpoint they speak to; only the
+ * run type and the option label are this page's own.
  */
-const clearPastRuns = () => {
-    if ( !pastRunsSelect ) {
-        return;
-    }
-    pastRunsSelect.value = '';
-    while ( pastRunsSelect.options.length > 1 ) {
-        pastRunsSelect.remove( 1 );
-    }
-};
-
-/**
- * Populate the past-runs dropdown from the server (calendars runs only).
- *
- * A rejection is expected rather than exceptional: results.php answers 401 to anyone who is not
- * logged in. The HTTP status is the authority on that, not `Auth`'s cached state, which is
- * populated asynchronously on DOMContentLoaded and may not have settled when this first runs.
- */
-const loadPastRuns = async () => {
-    if ( !pastRunsSelect ) {
-        return;
-    }
-    clearPastRuns();
-    try {
-        const summaries = await fetchRunSummaries( 'calendars' );
-        for ( const r of summaries ) {
-            const opt = document.createElement('option');
-            opt.value = r.file;
-            const dt = new Intl.DateTimeFormat(locale, IntlDTOptions).format(new Date(r.timestamp));
-            opt.textContent = `${dt} · ${r.calendar} · ✓${r.counts?.successful ?? 0} ✗${r.counts?.failed ?? 0}`;
-            pastRunsSelect.appendChild(opt);
-        }
-    } catch ( err ) {
-        if ( 401 === err.status ) {
-            return;
-        }
-        console.error( 'Could not load past runs', err );
-    }
-};
+const pastRuns = createPastRunsList( {
+    select: pastRunsSelect,
+    runType: 'calendars',
+    label: ( summary ) => {
+        const dt = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( new Date( summary.timestamp ) );
+        return `${dt} · ${summary.calendar} · ✓${summary.counts?.successful ?? 0} ✗${summary.counts?.failed ?? 0}`;
+    },
+} );
 
 /**
  * Replay a stored Calendars run onto the dashboard (no WebSocket/API traffic).
@@ -2270,15 +2241,15 @@ if ( pastRunsSelect ) {
             safeToastShow('#results-load-failed');
         });
     });
-    loadPastRuns();
+    pastRuns.load();
 
     // The login modal dispatches these on `document` after it has updated the navbar and the
     // `data-requires-auth` regions, so the column is already visible by the time we refill it.
     document.addEventListener( 'auth:login', () => {
-        loadPastRuns();
+        pastRuns.load();
     });
     document.addEventListener( 'auth:logout', () => {
-        clearPastRuns();
+        pastRuns.clear();
     });
 }
 

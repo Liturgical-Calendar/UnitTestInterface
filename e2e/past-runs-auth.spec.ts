@@ -100,6 +100,43 @@ test.describe('logged out', () => {
         await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:logout')));
         await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
     });
+
+    test('a logout landing mid-fetch does not leave the prior session\'s runs behind', async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('domcontentloaded');
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
+
+        // Hold the listing open so the logout below lands while the load is still in flight.
+        let release: () => void = () => {};
+        const held = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        await page.route('**/results.php', async (route) => {
+            await held;
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([
+                    {
+                        file: 'calendars-2026-01-01T00-00-00Z.json',
+                        runType: 'calendars',
+                        timestamp: '2026-01-01T00:00:00Z',
+                        calendar: 'VA',
+                        counts: { successful: 3, failed: 0 },
+                    },
+                ]),
+            });
+        });
+
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:login')));
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:logout')));
+        release();
+
+        // The in-flight load must not repopulate a list that has since been cleared: a logged-out
+        // page would otherwise keep the previous session's run filenames in a hidden dropdown.
+        await page.waitForTimeout(500);
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
+    });
 });
 
 test.describe('logged in', () => {

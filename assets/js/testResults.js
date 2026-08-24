@@ -177,6 +177,68 @@ export const fetchRunSummaries = async (runType) => {
     return all.filter((r) => r.runType === runType);
 };
 
+/**
+ * Own one page's Past Runs dropdown: clearing it, and refilling it from results.php.
+ *
+ * Both runners want identical behaviour and differ only in which run type they list and how they
+ * label an option, so the shared half lives here — beside `fetchRunSummaries()`, which it calls —
+ * rather than in `common.js`, which holds generic DOM and string helpers with no results.php
+ * knowledge and would have to import from this module to do the same job.
+ *
+ * @param {object} config
+ * @param {HTMLSelectElement|null} config.select The dropdown, or null on a page without one
+ * @param {string} config.runType `'calendars'` or `'resources'`
+ * @param {(summary: object) => string} config.label Option text for one run summary
+ * @returns {{load: () => Promise<void>, clear: () => void}}
+ */
+export const createPastRunsList = ({ select, runType, label }) => {
+    // Bumped by every clear, so a load that was in flight when the list was cleared can tell that
+    // its results are no longer wanted. Without it a logout landing mid-fetch clears the list and
+    // the pending continuation then refills it, leaving the previous session's run filenames in a
+    // dropdown the logged-out user still has in their DOM.
+    let generation = 0;
+
+    const clear = () => {
+        generation++;
+        if (!select) {
+            return;
+        }
+        select.value = '';
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+    };
+
+    const load = async () => {
+        if (!select) {
+            return;
+        }
+        clear();
+        const loading = generation;
+        try {
+            const summaries = await fetchRunSummaries(runType);
+            if (loading !== generation) {
+                return;
+            }
+            for (const summary of summaries) {
+                const opt = document.createElement('option');
+                opt.value = summary.file;
+                opt.textContent = label(summary);
+                select.appendChild(opt);
+            }
+        } catch (err) {
+            // A 401 is the ordinary state of an anonymous visitor rather than a fault: results.php
+            // declines to list runs for anyone who is not logged in.
+            if (401 === err.status) {
+                return;
+            }
+            console.error('Could not load past runs', err);
+        }
+    };
+
+    return { load, clear };
+};
+
 /** Fetch a single stored run's full detail. */
 export const fetchRunDetail = async (file) => {
     const res = await fetch(`results.php?file=${encodeURIComponent(file)}`, {
