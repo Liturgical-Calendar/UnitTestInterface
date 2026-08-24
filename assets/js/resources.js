@@ -1239,7 +1239,20 @@ const runTests = () => {
             resourceDataChecks.forEach( check => {
                 phaseRunner.sendMessage({
                     action: 'executeValidation',
-                    responsetype: currentResponseType,
+                    // `responseFormat`, not the retired `responsetype` — and the rename is the
+                    // smaller half of what changed. The server never *read* `responsetype` on this
+                    // action: every check was fetched under default content negotiation (JSON)
+                    // whatever this select said, while the `parses` card beside it was labelled with
+                    // the format the user had picked. A YAML run was a page of green cards claiming
+                    // to have parsed YAML over payloads that were all JSON.
+                    //
+                    // API#885 made the server honour it, as an `Accept` header — `return_type` is a
+                    // `CalendarParams` property and so exists only on `/calendar`, which is why
+                    // `?return_type=YML` on `/calendars` answers `200 application/json` and why
+                    // appending one here would have looked like a fix and changed nothing. The same
+                    // change retires `responsetype` on this action, so sending the old spelling now
+                    // earns a `protocolError` rather than being quietly ignored.
+                    responseFormat: currentResponseType,
                     ...check
                 });
             });
