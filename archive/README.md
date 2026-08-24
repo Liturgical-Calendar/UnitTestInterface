@@ -8,13 +8,16 @@ repository root, so the files here would not even resolve their own includes wit
 
 ## What is here
 
-| Path                             | Was                                                |
-|----------------------------------|----------------------------------------------------|
-| `admin.php`                      | The admin page itself                              |
-| `assets/js/admin.js`             | Its page script                                    |
-| `assets/js/AssertionsBuilder.js` | Test-assertion UI builder, imported only by `admin.js` |
-| `components/NewTestModal.php`    | Its "new test" modal                               |
-| `layout/sidebar.php`             | The sidebar, included only by `admin.php`          |
+| Path                                 | Was                                                    |
+|--------------------------------------|--------------------------------------------------------|
+| `admin.php`                          | The admin page itself                                  |
+| `assets/js/admin.js`                 | Its page script                                        |
+| `assets/js/AssertionsBuilder.js`     | Test-assertion UI builder, imported only by `admin.js` |
+| `assets/css/admin.css`               | Its stylesheet                                         |
+| `assets/css/multi-range-slider.css`  | Slider styles, loaded only by `admin.php`              |
+| `components/NewTestModal.php`        | Its "new test" modal                                   |
+| `layout/sidebar.php`                 | The sidebar, included only by `admin.php`              |
+| `e2e/fixtures.ts`                    | Playwright page-object for `admin.spec.ts`             |
 
 ## Why it was retired
 
