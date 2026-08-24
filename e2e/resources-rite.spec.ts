@@ -241,30 +241,48 @@ test('a rapid double rite change does not duplicate checks', async ({ page }) =>
     expect(Number(totals.source)).toBe(cardCounts.source);
 });
 
-test('a rite change is blocked for the duration of a run', async ({ page }) => {
+test('the dashboard-repainting controls are blocked for the duration of a run', async ({ page }) => {
     // Finding 3 (final review of #48): resetCheckListsForRite() wipes the rendered cards and
     // swaps both check lists mid-run without touching currentState, currentRunToken or the
     // response counters, and sends no cancelRun. In-flight frames keep arriving with a matching
     // runToken, paint nothing (their cards are gone), still increment the received counter, and
     // can trip the phase gate early — eventually storing a run of all-blue cards. Guarding this by
-    // disabling the rite select for the run's duration is simpler than teaching every counter and
+    // disabling the control for the run's duration is simpler than teaching every counter and
     // the run token to survive a mid-run swap, and it prevents the scenario outright.
+    //
+    // The guard covered only the rite select until the same three-control set landed on both pages:
+    // #APIResponseSelect calls setupPage() straight from its handler (the same scaffold rebuild by a
+    // shorter route, plus a currentResponseType that every later request carries, so one run would
+    // be half JSON and half YAML), and #pastRunsSelect repaints the whole dashboard from a stored
+    // run while the live one keeps painting underneath it *and* writes #startTestRunnerBtn.disabled
+    // directly — selecting "— Live —" sets it false, which during a run is the Stop button.
+    //
+    // Enumerated rather than asserted one at a time so a control added to the header is a visible
+    // omission here rather than a silent one.
+    const CONTROLS = ['#riteSelect', '#APIResponseSelect', '#pastRunsSelect'];
+
     await installWebSocketStub(page);
     await page.goto('/resources.php');
 
     const startBtn = page.locator('#startTestRunnerBtn');
     await expect(startBtn).toBeEnabled({ timeout: 20000 });
-    await expect(page.locator('#riteSelect')).toBeEnabled();
+    for (const sel of CONTROLS) {
+        await expect(page.locator(sel)).toBeEnabled();
+    }
 
     await startBtn.click();
     // The stub never replies, so the run parks after its first batch of requests — enough for the
-    // rite select to have been disabled by the run's start.
-    await expect(page.locator('#riteSelect')).toBeDisabled();
+    // controls to have been disabled by the run's start.
+    for (const sel of CONTROLS) {
+        await expect(page.locator(sel)).toBeDisabled();
+    }
 
-    // Stopping the run (same button, now in its stop role) must release the control again, so the
-    // page is genuinely idle afterwards rather than stuck with an un-selectable rite.
+    // Stopping the run (same button, now in its stop role) must release them again, so the
+    // page is genuinely idle afterwards rather than stuck with un-selectable controls.
     await startBtn.click();
-    await expect(page.locator('#riteSelect')).toBeEnabled();
+    for (const sel of CONTROLS) {
+        await expect(page.locator(sel)).toBeEnabled();
+    }
 });
 
 test('a rite change between runs clears the previous rite\'s counters and timers', async ({ page }) => {

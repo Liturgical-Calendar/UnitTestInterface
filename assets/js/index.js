@@ -1904,22 +1904,34 @@ const resolveCalendarTargetFromControls = () => {
 };
 
 /**
- * Disables (or re-enables) the controls that rebuild the scaffold, for a run's duration.
+ * Disables (or re-enables), for a run's duration, every control that can repaint the dashboard
+ * out from under it.
  *
- * The counterpart of `resources.js`'s `setRiteSelectDisabledForRun()`, and added for the same
+ * The counterpart of `resources.js`'s `setScaffoldControlsDisabledForRun()`, and added for the same
  * reason (final review of #48, finding 3) — this page simply had no equivalent, which is why #53
  * describes the Calendars runner as the easier of the two to hit: any calendar change triggers it,
  * not only a rite change.
  *
- * All three of these controls funnel into `setupPage()`, which rebuilds the scaffold, renarrows
- * `Years` and zeroes the counters. Mid-run that produces a stored run that contradicts itself:
- * `buildCalendarsPayload()` takes `counts` from the module counters but its results from
- * `resultCollector`, which no reset clears, so the run would be persisted claiming fewer successes
- * than it carries — and `scaffold.years` would record the *new* rite's range beside result
- * descriptors addressed at the old one's years, which replay then silently drops.
+ * **Two different hazards, one guard.**
  *
- * Disabling for the run's duration prevents the scenario outright rather than teaching every
- * counter, the year range and the run token to survive a mid-run swap.
+ * The rite, calendar and response-format selects funnel into `setupPage()`, which rebuilds the
+ * scaffold, renarrows `Years` and zeroes the counters. Mid-run that produces a stored run that
+ * contradicts itself: `buildCalendarsPayload()` takes `counts` from the module counters but its
+ * results from `resultCollector`, which no reset clears, so the run would be persisted claiming
+ * fewer successes than it carries — and `scaffold.years` would record the *new* rite's range beside
+ * result descriptors addressed at the old one's years, which replay then silently drops.
+ *
+ * The Past Runs select does something worse rather than something similar, which is why it belongs
+ * here even though it never calls `setupPage()`. Picking a stored run repaints the whole dashboard
+ * from `replayCalendarsRun()` while the live run keeps painting frames onto the cards underneath it,
+ * so the two interleave on one scaffold; and its handler *writes* `#startTestRunnerBtn.disabled`
+ * directly — selecting "— Live —" sets it to `false`, which during a run is the Stop button, so a
+ * mid-run change hands the run's own control back in the wrong state. It was left out when this
+ * function was written because the reason for the other three was phrased as "these rebuild the
+ * scaffold", and Past Runs does not.
+ *
+ * Disabling for the run's duration prevents both scenarios outright rather than teaching every
+ * counter, the year range, the run token and the replay path to survive a mid-run swap.
  *
  * @param {boolean} disabled
  * @returns {void}
@@ -1929,6 +1941,7 @@ const setScaffoldControlsDisabledForRun = ( disabled ) => {
         riteSelect?._domElement,
         calendarSelect?._domElement,
         document.querySelector('#APIResponseSelect'),
+        document.querySelector('#pastRunsSelect'),
     ].forEach( ( el ) => {
         if ( el ) {
             el.disabled = disabled;

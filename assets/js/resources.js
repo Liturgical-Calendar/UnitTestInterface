@@ -929,27 +929,50 @@ const mountRiteSelect = async () => {
 };
 
 /**
- * Disables (or re-enables) the rite select for the duration of a test run.
+ * Disables (or re-enables), for a run's duration, every control that can repaint the dashboard
+ * out from under it.
  *
- * A rite change during an active run is unsafe: `resetCheckListsForRite()` wipes the rendered
+ * Named and shaped to match `index.js`'s function of the same name. It covered only the rite select
+ * until then, which is why this page showed the defect the Calendars runner did not: its response
+ * format and Past Runs selects stayed live through a run.
+ *
+ * A **rite** change during an active run is unsafe: `resetCheckListsForRite()` wipes the rendered
  * cards, swaps both check lists and zeroes the result counters, but touches none of
  * `currentState`, the *response* counters or `currentRunToken`, and sends no `cancelRun`.
  * In-flight frames would keep arriving with a matching `runToken`, paint nothing (their cards are
  * gone), still increment the received counter, and could trip the `>=` phase gate early —
  * advancing to `JobsFinished` and storing a run of all-blue cards (final review of #48, finding 3).
  *
- * Disabling the control for the run's duration is simpler than teaching every counter and the run
- * token to survive a mid-run rite swap, and it prevents the scenario outright rather than merely
- * recovering from it after the fact — the control is only `#startTestRunnerBtn`'s exclusive
- * counterpart while a run owns the page.
+ * The **response format** select is the same hazard by a shorter route: its handler calls
+ * `setupPage()` directly, which rebuilds the scaffold and calls `resetTestUI()`, so a mid-run change
+ * leaves the run painting frames at cards that were replaced under it. It also changes
+ * `currentResponseType`, which every subsequent request carries — so one run would be half JSON and
+ * half YAML while reporting itself as whichever format happened to be selected when it was stored.
+ *
+ * The **Past Runs** select does something worse rather than something similar. Picking a stored run
+ * repaints the whole dashboard from `replayResourcesRun()` while the live run keeps painting onto
+ * the cards underneath it, so the two interleave on one scaffold; and its handler *writes*
+ * `#startTestRunnerBtn.disabled` directly — selecting "— Live —" sets it to `false`, which during a
+ * run is the Stop button, so a mid-run change hands the run's own control back in the wrong state.
+ *
+ * Disabling for the run's duration is simpler than teaching every counter, the run token and the
+ * replay path to survive a mid-run swap, and it prevents the scenarios outright rather than merely
+ * recovering from them after the fact — these controls are only `#startTestRunnerBtn`'s exclusive
+ * counterparts while a run owns the page.
  *
  * @param {boolean} disabled
  * @returns {void}
  */
-const setRiteSelectDisabledForRun = ( disabled ) => {
-    if ( riteSelect?._domElement ) {
-        riteSelect._domElement.disabled = disabled;
-    }
+const setScaffoldControlsDisabledForRun = ( disabled ) => {
+    [
+        riteSelect?._domElement,
+        document.querySelector('#APIResponseSelect'),
+        document.querySelector('#pastRunsSelect'),
+    ].forEach( ( el ) => {
+        if ( el ) {
+            el.disabled = disabled;
+        }
+    } );
 };
 
 /**
@@ -969,7 +992,7 @@ const setRiteSelectDisabledForRun = ( disabled ) => {
  * `buildScaffolding()` then refreshed the *denominators* from the new cards — so a Roman → Ambrosian
  * switch could show more successes than the new rite has checks (#53).
  *
- * Only ever reached between runs: `setRiteSelectDisabledForRun()` owns the control while a run is
+ * Only ever reached between runs: `setScaffoldControlsDisabledForRun()` owns the control while a run is
  * in flight, so this adds nothing to the mid-run path.
  *
  * @returns {void}
@@ -1276,7 +1299,7 @@ const runTests = () => {
             phaseRunner.clearWatchdog();
             safeToastShow('#tests-complete');
             currentRunToken = null;
-            setRiteSelectDisabledForRun( false );
+            setScaffoldControlsDisabledForRun( false );
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
@@ -1411,7 +1434,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
             console.warn( 'WebSocket readyState:', readyState );
         } else {
             currentRunToken = crypto.randomUUID();
-            setRiteSelectDisabledForRun( true );
+            setScaffoldControlsDisabledForRun( true );
             performance.mark( 'litcalTestRunnerStart' );
             const startBtnEl = document.querySelector('#startTestRunnerBtn');
             if (startBtnEl) {
@@ -1442,7 +1465,7 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         phaseRunner.endRun();
         currentState = TestState.Stopped;
         currentRunToken = null;
-        setRiteSelectDisabledForRun( false );
+        setScaffoldControlsDisabledForRun( false );
         const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
         if (spinIcon) {
             spinIcon.classList.remove('fa-spin');
