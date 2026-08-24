@@ -60,6 +60,58 @@ test('every request carries a distinct requestId', async ({ page }) => {
     expect(new Set(ids).size).toBe(ids.length);
 });
 
+test('a resource check names its response format with the property the server reads', async ({ page }) => {
+    // The rename is the smaller half of what changed. The server never *read* `responsetype` on
+    // `executeValidation`: every check was fetched under default content negotiation (JSON) whatever
+    // this page's Response Format select said, while the `parses` card beside it was labelled with
+    // the format the user had picked. A YAML run was a page of green cards claiming to have parsed
+    // YAML over thirty-odd payloads that were all JSON — a wrong-green manufactured by the interface
+    // whose job is to detect them.
+    //
+    // API#885 made the server honour it, as an `Accept` header, and retired `responsetype` on this
+    // action: the old spelling now earns a `protocolError` instead of being quietly ignored. So this
+    // asserts both halves — the new property is present and carries the selection, and the retired
+    // one is gone.
+    //
+    // What the *header* ends up being is the API's own test (`HealthResourceFormatTest` asserts on
+    // the queued request's Guzzle options, because a frame cannot tell "fetched as YAML" from
+    // "fetched as JSON and labelled YAML"). This page's job ends at sending the right property.
+    await installReplyingWebSocketStub(page);
+    await page.goto('/resources.php');
+
+    // Changed before the run starts: the handler calls setupPage(), which rebuilds the scaffold, and
+    // the select is disabled for a run's duration in any case.
+    await expect(page.locator('#startTestRunnerBtn')).toBeEnabled({ timeout: 20000 });
+    await page.selectOption('#APIResponseSelect', 'YML');
+    await runToCompletion(page);
+
+    const resourceChecks = (await validationRequests(page))
+        .filter((message) => message.action === 'executeValidation');
+
+    expect(resourceChecks.length).toBeGreaterThan(0);
+    for (const message of resourceChecks) {
+        expect(message.responseFormat).toBe('YML');
+        // Retired on this action now; sending it costs the whole check a protocolError.
+        expect(message).not.toHaveProperty('responsetype');
+    }
+});
+
+test('a resource check defaults to the JSON the select starts on', async ({ page }) => {
+    // The other half of the pair: the property is not merely present, it tracks the control. A test
+    // that only ever saw YML would pass just as well against a hardcoded literal.
+    await installReplyingWebSocketStub(page);
+    await page.goto('/resources.php');
+    await runToCompletion(page);
+
+    const resourceChecks = (await validationRequests(page))
+        .filter((message) => message.action === 'executeValidation');
+
+    expect(resourceChecks.length).toBeGreaterThan(0);
+    for (const message of resourceChecks) {
+        expect(message.responseFormat).toBe('JSON');
+    }
+});
+
 test('cards are painted even though the server addresses no card', async ({ page }) => {
     await installReplyingWebSocketStub(page);
     await page.goto('/resources.php');
