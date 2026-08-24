@@ -27,6 +27,18 @@ const selectRite = async (page: Page, rite: string) => {
     await waitForLiveScaffold(page);
 };
 
+/**
+ * The /validations inventory ids the source-data scaffold currently checks, one per check.
+ *
+ * sourceDataCheckTemplate() puts `item.id` in each check's caption `title`, so this reads the ids
+ * themselves rather than the card classes they are slugified into — exact, and directly comparable
+ * against what the API advertises.
+ */
+const checkIds = async (page: Page): Promise<string[]> =>
+    page.locator('.sourcedata-tests p span[title]').evaluateAll(
+        (els) => els.map((e) => e.getAttribute('title') ?? '')
+    );
+
 test('both controls mount, and the rite select defaults to Roman', async ({ page }) => {
     await page.goto('/');
     await waitForLiveScaffold(page);
@@ -212,6 +224,176 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
     // The Roman corpus is gone, not merely joined: an Ambrosian scaffold's universal corpus is
     // its own temporale/sanctorale, never the Roman decrees.
     expect(ambrosian.has('decrees-roman')).toBe(false);
+});
+
+test('a non-Roman diocese whose nation has no national calendar still builds a scaffold', async ({ page, request }) => {
+    // A diocese implies a national calendar under the Roman rite but not under a rite that has no
+    // national layer: `CalendarHandler::loadDiocesanCalendarData()` leaves `NationalCalendar` null
+    // for an Ambrosian diocese, and `validateRiteCompatibility()` throws if it is set.
+    // `lugano_ch` (Ambrosian, nation CH) is where that shows in the data today: the API ships no
+    // `nations/CH` calendar, so `/calendars` carries the diocese but advertises no
+    // `nation:roman:CH` inventory item. buildNonVASourceDataChecks() used to treat that as fatal
+    // for *any* non-rite calendar, so selecting Lugano logged "No national calendar metadata found
+    // for CH", bailed out of setupPage() before it rebuilt anything, and left the page under its
+    // loader showing the previously selected calendar's cards with the Start button refused.
+    //
+    // Derived from the live metadata rather than hardcoding lugano_ch, so this keeps testing the
+    // invariant ("a diocese of a rite with no national layer is checkable") rather than one row of
+    // the API's data. The Roman half of the same rule is pinned by the test below.
+    const metadata = (await (await request.get(`${apiBase}/calendars`)).json()).litcal_metadata;
+    const nations: string[] = metadata.national_calendars.map((n: { calendar_id: string }) => n.calendar_id);
+    const orphan = metadata.diocesan_calendars.find(
+        (d: { nation: string, rite: string }) => 'roman' !== d.rite && false === nations.includes(d.nation)
+    );
+    test.skip(undefined === orphan, 'every non-Roman diocese\'s nation has a national calendar');
+
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+            consoleErrors.push(msg.text());
+        }
+    });
+
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+    await selectRite(page, orphan.rite);
+    await page.selectOption('#APICalendarSelect', orphan.calendar_id);
+    await waitForLiveScaffold(page);
+
+    // The scaffold is the selected diocese's, not the previous calendar's...
+    const tokens = new Set<string>(
+        (await page.locator('.sourcedata-tests .card').evaluateAll((els) => els.map((e) => e.className)))
+            .flatMap((c: string) => c.split(/\s+/))
+    );
+    expect(tokens.has(`diocese-${orphan.rite}-${orphan.calendar_id}`.toLowerCase())).toBe(true);
+    // ...and the absent national tier is absent rather than composed into cards that cannot exist.
+    expect([...tokens].some((t) => t.startsWith(`nation-roman-${orphan.nation}`.toLowerCase()))).toBe(false);
+
+    // The page finished setting itself up: the loader came down and the run is offerable.
+    await expect(page.locator('.page-loader')).toBeHidden();
+    expect(consoleErrors.filter((t) => t.includes('No national calendar metadata found'))).toEqual([]);
+});
+
+test('a non-Roman diocesan scaffold is its rite\'s corpus plus the diocese, and nothing Roman', async ({ page, request }) => {
+    // An Ambrosian diocese inherits no Roman layer at all — not the national tier, and not the Roman
+    // universal corpus either. `CalendarHandler::calculateAmbrosianCalendar()` reads exactly three
+    // things: the Ambrosian temporale, the Ambrosian sanctorale, and the diocese's own file. It
+    // never calls `calculateUniversalCalendar()` or `applyNationalCalendar()`, and
+    // `validateRiteCompatibility()` throws if `NationalCalendar` is set for the rite at all.
+    //
+    // The scaffold used to be built with `rite: 'roman'` regardless, so `milano_it` checked 26 items
+    // of which 19 named source data its calendar never reads: `nation:roman:IT`,
+    // `widerregion:roman:Europe`, the IT missals, `temporale:roman`, `decrees:roman` and the whole
+    // ten-section `lectionary:roman:*` corpus.
+    //
+    // Stated as an equality against the rite-level scaffold rather than as a list of expected ids:
+    // the claim is precisely "the same corpus, plus this diocese", and a list would have to be
+    // re-edited every time the API adds a section to either rite.
+    const metadata = (await (await request.get(`${apiBase}/calendars`)).json()).litcal_metadata;
+    const nations: string[] = metadata.national_calendars.map((n: { calendar_id: string }) => n.calendar_id);
+    // Deliberately one whose nation *does* have a national calendar (an Italian Ambrosian diocese,
+    // not lugano_ch): that is the case the old code scaffolded a full Roman tier for, so it is the
+    // one that pins the change rather than merely re-testing the CH bail-out above.
+    const diocese = metadata.diocesan_calendars.find(
+        (d: { nation: string, rite: string }) => 'roman' !== d.rite && nations.includes(d.nation)
+    );
+    test.skip(undefined === diocese, 'no non-Roman diocese in a nation that has a national calendar');
+
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+    await selectRite(page, diocese.rite);
+    // Selecting a rite selects that rite's empty (rite-level) option, so this is the rite-level scaffold.
+    const riteLevel = new Set(await checkIds(page));
+    expect(riteLevel.size).toBeGreaterThan(1);
+
+    await page.selectOption('#APICalendarSelect', diocese.calendar_id);
+    // Polled rather than waited on a selector that is already present: the scaffold is rebuilt in
+    // place, so `waitForLiveScaffold()` would return on the *previous* one.
+    await expect.poll(async () => (await checkIds(page)).some((id) => id.startsWith(`diocese:${diocese.rite}:`)))
+        .toBe(true);
+    const diocesan = await checkIds(page);
+
+    // Nothing Roman anywhere in it.
+    expect(diocesan.filter((id) => id.includes(':roman'))).toEqual([]);
+    // What the diocese adds is the diocese, and only the diocese.
+    const added = diocesan.filter((id) => false === riteLevel.has(id));
+    expect(added.length).toBeGreaterThan(0);
+    expect(added.filter((id) => false === id.startsWith(`diocese:${diocese.rite}:${diocese.calendar_id}`))).toEqual([]);
+    // ...and it takes nothing away: the rite's own corpus is still checked beneath it.
+    expect([...riteLevel].filter((id) => false === diocesan.includes(id))).toEqual([]);
+});
+
+test('a Roman diocese whose national calendar is missing is refused, not scaffolded', async ({ page, request }) => {
+    // The other half of the same rule, and the reason the guard is keyed on the rite rather than
+    // dropped: under the Roman rite a diocese *does* imply a national calendar, in the API and not
+    // merely by convention. `CalendarHandler::loadDiocesanCalendarData()` sets `NationalCalendar` to
+    // the diocese's nation unconditionally on the Roman path, and
+    // `CalendarParams::validateNationalCalendar()` rejects a nation absent from
+    // `national_calendars_keys` — so a Roman diocese whose nation had no national calendar could not
+    // have its calendar generated at all. Metadata saying otherwise is wrong, and scaffolding a
+    // diocese the API cannot serve would be a run that reports on nothing.
+    //
+    // components-js's CalendarSelect enforces the same rule and throws outright ("this is a metadata
+    // defect, not a recoverable runtime condition"), which is what makes the state reachable here at
+    // all: the library and this page fetch `/calendars` separately, so the guard defends the case
+    // where the two fetches disagree — the library mounts from a consistent payload, and `MetaData`
+    // is then missing the nation. Failing only the fetches after the library's reproduces exactly
+    // that, and is the only way to reach the guard without the library refusing first.
+    const metadata = (await (await request.get(`${apiBase}/calendars`)).json()).litcal_metadata;
+    const nations: string[] = metadata.national_calendars.map((n: { calendar_id: string }) => n.calendar_id);
+    const victim = metadata.diocesan_calendars.find(
+        (d: { nation: string, rite: string }) => 'roman' === d.rite && nations.includes(d.nation)
+    );
+    test.skip(undefined === victim, 'no Roman diocese to withhold a national calendar from');
+
+    // mountCalendarControls() awaits ApiClient.init() strictly before fetchMetadataAndTests() runs,
+    // so request 1 is the library's and the rest are the page's own.
+    let calendarsRequestCount = 0;
+    await page.route('**/calendars', async (route) => {
+        calendarsRequestCount += 1;
+        if (calendarsRequestCount === 1) {
+            await route.continue();
+            return;
+        }
+        const response = await route.fetch();
+        const body = await response.json();
+        body.litcal_metadata.national_calendars = body.litcal_metadata.national_calendars.filter(
+            (n: { calendar_id: string }) => n.calendar_id !== victim.nation
+        );
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    });
+
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+            consoleErrors.push(msg.text());
+        }
+    });
+
+    await page.goto('/');
+    await waitForLiveScaffold(page);
+    await page.selectOption('#APICalendarSelect', victim.calendar_id);
+
+    // Said out loud, naming both the nation and the diocese that needed it...
+    await expect.poll(
+        () => consoleErrors.filter((t) => t.includes('No national calendar metadata found')),
+        { timeout: 10000 }
+    ).not.toEqual([]);
+    const reported = consoleErrors.filter((t) => t.includes('No national calendar metadata found'));
+    expect(reported.some((t) => t.includes(victim.nation) && t.includes(victim.calendar_id))).toBe(true);
+
+    // ...and refused rather than half-built: setupPage() bails above the scaffold rebuild, so no
+    // card for the diocese is ever drawn and the loader handleCalendarSelectChange() raised is never
+    // lowered — the page visibly does not offer a run over a diocese it cannot resolve a national
+    // tier for. (Deliberately not asserted through `#startTestRunnerBtn`: playwright.config.ts
+    // starts no WebSocket server, so that button is disabled here whatever setupPage() did, and the
+    // assertion would pass without exercising the guard at all.)
+    const tokens = new Set<string>(
+        (await page.locator('.sourcedata-tests .card').evaluateAll((els) => els.map((e) => e.className)))
+            .flatMap((c: string) => c.split(/\s+/))
+    );
+    expect(tokens.has(`diocese-roman-${victim.calendar_id}`.toLowerCase())).toBe(false);
+    await expect(page.locator('.page-loader')).toBeVisible();
 });
 
 test('an i18n folder card names its folder rather than "undefined"', async ({ page }) => {

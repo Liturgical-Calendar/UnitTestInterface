@@ -763,15 +763,22 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  * temporale and decrees, each with its `:i18n` translation folder; for any other rite (currently
  * only `'ambrosian'`) it is that rite's own temporale and sanctorale, each with its `:i18n` folder,
  * and no decrees (v1 never checked `MemorialsFromDecrees`, a Roman-only file, under Ambrosian).
- * `dioceseRite` separately qualifies the diocese id, because it can disagree with `rite`: a national
- * or diocesan calendar's universal corpus is always Roman — a national calendar is Roman by
- * definition, and an Ambrosian diocese still inherits the Roman national calendar of its nation
- * (a pre-existing behaviour and a pre-existing open design question, preserved here deliberately and
- * not resolved) — while the diocese's *own* id must be qualified by its actual rite, e.g.
- * `diocese:ambrosian:milano_it`; there is no `diocese:roman:milano_it`. A rite-level calendar has no
- * diocese id, so there `rite` and `dioceseRite` are simply the same selected rite. The wider-region,
- * nation and missal tiers stay hardcoded Roman regardless of either argument, for the same
- * inheritance reason.
+ * `dioceseRite` separately qualifies the diocese id, because the two arguments answer different
+ * questions: `rite` is *which corpus this calendar is generated from*, `dioceseRite` is *how the
+ * inventory spells this diocese's own id* — `diocese:ambrosian:milano_it`; there is no
+ * `diocese:roman:milano_it`. Every caller passes them equal today, and the wider-region, nation and
+ * missal tiers stay hardcoded Roman, which is consistent because those tiers exist only under the
+ * Roman rite: `RegionalDataParams` rejects a national or wider-region request under any other, and
+ * `CalendarParams::validateRiteCompatibility()` throws if `NationalCalendar` is set for the
+ * Ambrosian rite at all. So a non-Roman scope reaches here with `nation`, `widerRegion` and
+ * `missals` already empty, and the hardcoded Roman prefixes below are unreachable for it.
+ *
+ * They were *not* equal until the Ambrosian diocesan scaffold was corrected: `buildNonVASourceDataChecks()`
+ * used to pass `rite: 'roman'` with `dioceseRite: 'ambrosian'`, on the reading that an Ambrosian
+ * diocese inherits the Roman national calendar of its nation. `CalendarHandler::calculateAmbrosianCalendar()`
+ * reads no Roman source data whatsoever, so that scaffold checked 19 items an Ambrosian diocesan
+ * calendar never touches. The two parameters are kept distinct rather than collapsed because they
+ * remain distinct questions, and a rite that answered them differently would need both.
  *
  * **`:i18n` ids are included at every tier** — the universal corpus (temporale, decrees or the
  * rite's own sanctorale) *and* the calendar-specific tier (wider region, nation, missals, diocese).
@@ -801,10 +808,11 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  * @param {object} scope
  * @param {string} scope.rite - The rite whose universal corpus (temporale/decrees or
  *   temporale/sanctorale) is checked.
- * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`. Equal to `scope.rite`
- *   for a rite-level calendar; always the calendar's own rite (which may differ from `scope.rite`)
- *   for a diocesan calendar.
- * @param {?string} scope.nation - The nation code, or null for a rite-level calendar.
+ * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`, i.e. how the
+ *   inventory spells this diocese's id. Equal to `scope.rite` for every caller today; kept separate
+ *   because it answers a different question (see "Two rites, not one" above).
+ * @param {?string} scope.nation - The nation code, or null when there is no national tier: a
+ *   rite-level calendar, or any non-Roman calendar, whose rite has no national layer at all.
  * @param {?string} scope.widerRegion - The nation's wider region, or null.
  * @param {Array<string>} scope.missals - The nation's missal ids, e.g. `['IT_1983']`.
  * @param {?string} scope.dioceseId - The diocese calendar id, or null when not a diocesan calendar.

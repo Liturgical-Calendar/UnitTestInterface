@@ -59,10 +59,19 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
                 rite: 'roman', dioceseRite: 'roman', nation: 'IT', widerRegion: 'Europe',
                 missals: ['EDITIO_TYPICA_1970', 'IT_1983'], dioceseId: null,
             }),
-            // A national/diocesan calendar's universal corpus is always Roman (rite: 'roman'),
-            // even though this diocese's own rite — and therefore its diocese id — is Ambrosian.
-            diocesan: inventoryIdsForCalendar({
-                rite: 'roman', dioceseRite: 'ambrosian', nation: 'IT', widerRegion: 'Europe',
+            // A Roman diocese: the Roman universal corpus, its nation and wider region, then the
+            // diocese itself.
+            romanDiocesan: inventoryIdsForCalendar({
+                rite: 'roman', dioceseRite: 'roman', nation: 'IT', widerRegion: 'Europe',
+                missals: [], dioceseId: 'romamo_it',
+            }),
+            // An Ambrosian diocese: that rite's own corpus and the diocese, and no Roman tier of
+            // any kind. `CalendarHandler::calculateAmbrosianCalendar()` reads only the Ambrosian
+            // temporale, the Ambrosian sanctorale and the diocese's own file, so a scope with
+            // `rite: 'roman'` here — which is what `buildNonVASourceDataChecks()` used to pass —
+            // composes 19 ids naming source data the calendar never touches.
+            ambrosianDiocesan: inventoryIdsForCalendar({
+                rite: 'ambrosian', dioceseRite: 'ambrosian', nation: null, widerRegion: null,
                 missals: [], dioceseId: 'milano_it',
             }),
             // A rite-level calendar has no diocese id, so `rite` and `dioceseRite` are simply the
@@ -99,10 +108,8 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
         'sanctorale:roman:IT_1983:i18n',
         'sanctorale:roman:IT_1983:lectionary',
     ]);
-    // toEqual, not toContain: the diocese is qualified by its own rite while everything it inherits
-    // stays Roman-qualified — a wrong rite on either half, or an extra/missing id, must fail this.
-    // The diocese's i18n id is qualified by the same rite as the diocese itself.
-    expect(ids.diocesan).toEqual([
+    // toEqual, not toContain: an extra or missing id, or a wrong rite on any of them, must fail this.
+    expect(ids.romanDiocesan).toEqual([
         'temporale:roman',
         'temporale:roman:i18n',
         'decrees:roman',
@@ -113,10 +120,22 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
         'nation:roman:IT',
         'nation:roman:IT:i18n',
         'nation:roman:IT:lectionary',
+        'diocese:roman:romamo_it',
+        'diocese:roman:romamo_it:i18n',
+        'diocese:roman:romamo_it:lectionary',
+    ]);
+    // The Ambrosian diocesan scope is the Ambrosian rite-level scope plus the diocese, exactly.
+    expect(ids.ambrosianDiocesan).toEqual([
+        'temporale:ambrosian',
+        'temporale:ambrosian:i18n',
+        'sanctorale:ambrosian',
+        'sanctorale:ambrosian:i18n',
         'diocese:ambrosian:milano_it',
         'diocese:ambrosian:milano_it:i18n',
         'diocese:ambrosian:milano_it:lectionary',
     ]);
+    // Nothing Roman under it — not the national tier, and not the Roman universal corpus either.
+    expect(ids.ambrosianDiocesan.filter((id: string) => id.includes(':roman'))).toEqual([]);
     expect(ids.ambrosianRiteLevel).toEqual([
         'temporale:ambrosian',
         'temporale:ambrosian:i18n',
