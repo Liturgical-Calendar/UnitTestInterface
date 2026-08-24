@@ -101,8 +101,8 @@ include_once('layout/head.php');
                 <div class="col-6 col-md-4 col-lg-2">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
-                        <option data-responsetype="json" value="JSON">JSON</option>
-                        <option data-responsetype="yaml" value="YML">YAML</option>
+                        <option value="JSON">JSON</option>
+                        <option value="YML">YAML</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
