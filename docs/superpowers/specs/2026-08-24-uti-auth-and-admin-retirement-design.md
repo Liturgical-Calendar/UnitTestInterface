@@ -71,8 +71,8 @@ new "log in to save" toast, anything else keeps the existing `#results-save-fail
 finishing on a red failure toast is the misleading part — the run itself succeeded, and only its persistence
 was declined.
 
-`Auth` is imported as an ES module (`import { Auth } from './auth.js'`) where the runners need it, rather
-than reached for through the `window.Auth` global that `login-modal.php` sets for non-module consumers.
+The runners consult neither `Auth`'s cached state nor `window.LitCalConfig.isAuthenticated` for either
+decision. The HTTP status from `results.php` is the authority, and unlike a cache it cannot be stale.
 
 ### Part 3 — `admin.php` is archived
 
@@ -82,9 +82,12 @@ easy to forget.
 - `admin.php`, `assets/js/admin.js`, `assets/js/AssertionsBuilder.js` and `components/NewTestModal.php` move
   under `archive/`, preserving their relative layout. `archive/README.md` records why they are there, what
   is broken about them, and what reviving them would require.
-- Navigation is unlinked: the navbar gear item goes; the sidebar's admin entry goes and its brand link
-  moves from `/admin.php` to `/`. The sidebar has never linked `resources.php`, which would leave it with a
-  single entry — a Resources entry is added in the same pass.
+- Navigation is unlinked: the navbar's gear item goes. Nothing else needs adding — the navbar already
+  carries Calendars and Resources entries, which are the whole of the interface once admin is gone.
+- `layout/sidebar.php` is archived with it. Both runner pages `define('SIDEBAR', false)`, so `admin.php` was
+  its only consumer; with that gone the `SIDEBAR` constant, the navbar's sidebar-toggle button and
+  `layout/footer.php`'s wrapper-closing branch all describe a condition that can no longer be true, and are
+  removed rather than left as permanently-false branches.
 - `layout/footer.php` drops its `$pageName === 'admin'` Isotope branch.
 - `liturgical-calendar/components` is removed from `composer.json`. `admin.php` was its only consumer, and
   it is the package pinned at a version that cannot parse the current API.
