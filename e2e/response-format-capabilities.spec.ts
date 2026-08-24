@@ -103,4 +103,27 @@ test('a server advertising nothing for this action keeps the floor and says so',
 
     await expect.poll(() => warnings.filter((t) => t.includes('advertises no response formats'))).not.toEqual([]);
     await expect(page.locator('#APIResponseSelect')).toHaveValue('JSON');
+    // Reduced to the floor, not merely left holding it: the warning promises JSON is what is kept.
+    expect(await formatOptions(page)).toEqual(['JSON']);
+});
+
+test('an empty advertisement resets a selection an earlier server allowed', async ({ page }) => {
+    // CodeRabbit on #83. A reconnect clears the capabilities and repopulates from the new `hello`,
+    // so a server advertising nothing can follow one that advertised ['JSON','YML'] with YML
+    // selected. Leaving that selection would keep sending a format this server has said nothing
+    // about — and the narrowing branch already falls back, so the *less* informed case must too.
+    //
+    // Driven through two page loads rather than a real reconnect: the select is repopulated on every
+    // `hello`, so a second load with a different advertisement exercises the same code path with far
+    // less machinery than tearing down and restoring a socket.
+    await installReplyingWebSocketStub(page);
+    await page.goto('/resources.php');
+    await expect.poll(() => formatOptions(page)).toEqual(['JSON', 'YML']);
+    await page.selectOption('#APIResponseSelect', 'YML');
+    await expect(page.locator('#APIResponseSelect')).toHaveValue('YML');
+
+    await installReplyingWebSocketStub(page, { responseFormats: {} });
+    await page.goto('/resources.php');
+    await expect.poll(() => page.locator('#APIResponseSelect').inputValue()).toBe('JSON');
+    expect(await formatOptions(page)).toEqual(['JSON']);
 });

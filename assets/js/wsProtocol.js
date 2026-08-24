@@ -539,9 +539,24 @@ export const populateResponseFormatSelect = ( selectEl, action ) => {
     if ( false === Array.isArray( advertised ) || 0 === advertised.length ) {
         // Said out loud rather than silently left alone: an action this page sends that the server
         // advertises no formats for is a real disagreement, the same kind `buildSourceDataChecks()`
-        // warns about for an unadvertised inventory id. The floor already in the select stands.
+        // warns about for an unadvertised inventory id.
+        //
+        // Reduced to the floor rather than left as it stands, which is what this did at first. A
+        // reconnect clears the capabilities (`resetHello()` in `wsClient.js`) and repopulates from
+        // the new `hello`, so a server that advertises nothing can follow one that advertised
+        // `['JSON','YML']` with `YML` selected — and leaving that selection would keep sending a
+        // format this server has said nothing about. Falling back is what the *narrowing* branch
+        // below already does, and an absent advertisement is the less informed of the two cases, so
+        // it is the one where holding on is least defensible. The floor is the safe answer for the
+        // same reason it is the floor at all: JSON is what the API serves when nothing asks
+        // otherwise.
         console.warn( `The server advertises no response formats for "${action}"; keeping ${FALLBACK_RESPONSE_FORMAT}.` );
-        return selectEl.value || null;
+        const floor       = document.createElement( 'option' );
+        floor.value       = FALLBACK_RESPONSE_FORMAT;
+        floor.textContent = FALLBACK_RESPONSE_FORMAT;
+        selectEl.replaceChildren( floor );
+        selectEl.value = FALLBACK_RESPONSE_FORMAT;
+        return FALLBACK_RESPONSE_FORMAT;
     }
 
     const previous = selectEl.value;
