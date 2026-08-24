@@ -99,7 +99,7 @@ include_once('layout/head.php');
                 <!-- Rendered by liturgy-components-js; resources.js mounts it here (issue #48). -->
                 <div class="col-6 col-md-4 col-lg-2" id="riteSelectMount"></div>
                 <div class="col-6 col-md-4 col-lg-2">
-                    <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
+                    <label for="APIResponseSelect" class="form-label"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
                         <!-- The floor only. The real list is populated client-side from the
                              `hello` frame's `capabilities.responseFormats` for this page's action
@@ -112,7 +112,7 @@ include_once('layout/head.php');
                     </select>
                 </div>
                 <div class="col-12 col-md-4 col-lg-2" data-requires-auth>
-                    <label for="pastRunsSelect"><?php echo _("Past Runs"); ?></label>
+                    <label for="pastRunsSelect" class="form-label"><?php echo _("Past Runs"); ?></label>
                     <select id="pastRunsSelect" class="form-select form-select-sm">
                         <option value=""><?php echo _("— Live —"); ?></option>
                     </select>
