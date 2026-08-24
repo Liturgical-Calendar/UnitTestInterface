@@ -34,7 +34,9 @@ jobs:
           # new files (resources.php and components/login-modal.php were missed
           # for months, hiding 19 msgids from translators). Null-delimited so
           # paths containing spaces or other IFS characters cannot word-split.
-          git ls-files -z '*.php' | xargs -0 xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot
+          # archive/ is excluded: nothing there is served, so offering its strings
+          # to translators would be asking for work no user will ever see.
+          git ls-files -z '*.php' ':!archive' | xargs -0 xgettext --from-code=UTF-8 --add-comments='translators:' --keyword="pgettext:1c,2" -o i18n/litcal.pot
           echo "POT_LINES_CHANGED=$(git diff -U0 | grep '^[+|-][^+|-]' | grep -Ev '^[+-]"POT-Creation-Date' | wc -l)" >> $GITHUB_OUTPUT
 
       # push the output folder to your repo

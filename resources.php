@@ -1,7 +1,6 @@
 <?php
 
 // phpcs:disable PSR1.Files.SideEffects
-define('SIDEBAR', false);
 include_once('layout/head.php');
 
 ?>

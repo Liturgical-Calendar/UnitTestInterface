@@ -44,8 +44,9 @@
  * ## Where the request goes
  *
  * `API_HOST` and its siblings are the *browser's* address for the API. This fetch is server-side, so a
- * containerized deployment needs a different one — `API_INTERNAL_URL`, the same variable `admin.php`
- * reads for its own server-side calls. Unset, the composed `API_HOST` form is used exactly as before.
+ * containerized deployment needs a different one — `API_INTERNAL_URL`, the same variable
+ * LiturgicalCalendarFrontend reads for its own server-side calls. Unset, the composed `API_HOST` form
+ * is used exactly as before.
  * See the comment on the composition below, and issue #74 for how the two came to be conflated.
  */
 
@@ -158,14 +159,15 @@ $pathPart = '' === $basePath ? '/' : '/' . $basePath . '/';
 // The variables above describe the API as the **browser** addresses it — `layout/footer.php` hands
 // the same three to the page. This request is server-side, so wherever this app is served from a
 // container the two are different addresses and `localhost` here is the container, not the API.
-// `admin.php` already draws exactly this distinction with `API_INTERNAL_URL` (as does
-// LiturgicalCalendarFrontend for its own PHP->API calls), and the docker stack already sets that
-// variable on this service — so this honours the convention that exists rather than adding a second
-// one. Unset, everything composes exactly as it did before, which is the path every single-host
-// deployment takes, production included.
+// LiturgicalCalendarFrontend already draws exactly this distinction with `API_INTERNAL_URL` for its
+// own PHP->API calls, and the docker stack already sets that variable on this service — so this
+// honours the convention that exists rather than adding a second one. (This repository's `admin.php`
+// drew it too, until that page was archived; see archive/README.md.) Unset, everything composes
+// exactly as it did before, which is the path every single-host deployment takes, production
+// included.
 //
-// Read as a *complete base URL*, matching `admin.php`: whatever path it carries is the base path,
-// and `API_BASE_PATH` does not apply to it. One string to configure, so the two cannot disagree.
+// Read as a *complete base URL*: whatever path it carries is the base path, and `API_BASE_PATH` does
+// not apply to it. One string to configure, so the two cannot disagree.
 $internalUrl = trim((string) ($_ENV['API_INTERNAL_URL'] ?? ''));
 
 if ('' !== $internalUrl) {

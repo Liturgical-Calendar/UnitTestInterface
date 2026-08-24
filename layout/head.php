@@ -28,7 +28,8 @@ $dotenv->ifPresent('LITCAL_FRONTEND_URL')->notEmpty();
 JwtAuth::init();
 $isAuthenticated = JwtAuth::isAuthenticated();
 
-// Only create I18n if not already initialized (e.g., by admin.php for early API calls)
+// Only create I18n if not already initialized (a page may need it before including this file,
+// e.g. to make an early API call whose errors are shown translated)
 if (!isset($i18n)) {
     $i18n = new I18n();
 }
@@ -59,9 +60,6 @@ if (in_array($pageName, ['index', 'resources'], true)) {
 }
 if (file_exists("assets/css/{$pageName}.css")) {
     echo "<link href=\"assets/css/{$pageName}.css\" rel=\"stylesheet\">";
-}
-if ($pageName === 'admin') {
-    echo "<link href=\"assets/css/multi-range-slider.css\" rel=\"stylesheet\">";
 }
 ?>
 </head>

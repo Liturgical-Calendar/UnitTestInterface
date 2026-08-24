@@ -57,9 +57,11 @@ setup('authenticate', async ({ page }) => {
         throw new Error('TEST_USERNAME and TEST_PASSWORD must be set in environment variables');
     }
 
-    // First, navigate to the admin page to establish the browser context
+    // First, navigate to a page on the target origin to establish the browser context. (This was
+    // admin.php until that page was archived; any same-origin page does, because the login below is
+    // a bare fetch rather than a form submission.)
     // Use 'domcontentloaded' instead of 'networkidle' to avoid flakiness from polling/analytics
-    await page.goto(`${frontendUrl}/admin.php`);
+    await page.goto(`${frontendUrl}/`);
     await page.waitForLoadState('domcontentloaded');
 
     // Authenticate via fetch with credentials: 'include' to ensure HttpOnly cookies are set

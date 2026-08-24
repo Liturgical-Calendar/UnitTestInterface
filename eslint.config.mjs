@@ -18,13 +18,12 @@ export default [
             'assets/components-js/**',
             'playwright-report/**',
             'test-results/**',
-            // admin.js is excluded because admin.php is being retired (#51) as superseded by
-            // admin-tests.php in LiturgicalCalendarFrontend. Its five findings are small, but its
-            // e2e specs are excluded from CI too, so fixing them would mean unverified edits to a
-            // page nothing is watching and nobody intends to keep. It carries the only use of the
-            // `Isotope` global in this repository, which is why no such global is declared below.
-            // If the page survives after all, delete this line and fix what appears.
-            'assets/js/admin.js',
+            // admin.php was retired (#51, superseded by admin-tests.php in
+            // LiturgicalCalendarFrontend) and its assets moved under archive/. Nothing there is
+            // served or included, so linting it would mean acting on findings in code that does
+            // not run. It carries the only use of the `Isotope` global in this repository, which
+            // is why no such global is declared below. See archive/README.md.
+            'archive/**',
         ],
     },
     js.configs.recommended,

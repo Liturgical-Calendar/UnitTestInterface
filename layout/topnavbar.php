@@ -4,12 +4,6 @@
         <a class="navbar-brand text-danger ps-3" href="/">
             <i class="fas fa-cross me-2"></i><span class="d-none d-sm-inline">LitCal Accuracy Tests</span><span class="d-inline d-sm-none">LitCal</span>
         </a>
-        <?php if (!defined('SIDEBAR') || true === SIDEBAR) { ?>
-        <!-- Sidebar Toggle (Topbar) - only visible on lg+ screens where sidebar is shown -->
-        <button class="btn btn-link btn-sm d-none d-lg-inline-block sidebarToggle" id="sidebarToggle" title="<?php echo _('Toggle sidebar'); ?>">
-            <i class="fas fa-table-columns"></i>
-        </button>
-        <?php } ?>
         <!-- Mobile toggle button -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -92,19 +86,15 @@
                 </li>
                 <li class="vr mx-2 d-none d-lg-block"></li>
                 <?php
-                // Check if JwtAuth is available (set by admin.php or other pages that include it)
+                // `layout/head.php` resolves $isAuthenticated for every page; the isset() guard
+                // covers a page that renders this navbar without going through head.php.
                 $navbarIsAuth = isset($isAuthenticated) ? $isAuthenticated : false;
                 $navbarUsername = '';
                 if ($navbarIsAuth && class_exists('LiturgicalCalendar\UnitTestInterface\JwtAuth')) {
                     $navbarUsername = \LiturgicalCalendar\UnitTestInterface\JwtAuth::getUsername() ?? _('Admin');
                 }
                 ?>
-                <!-- Section 4: Admin gear + Login/User menu -->
-                <li class="nav-item">
-                    <a class="nav-link" href="/admin.php?apiVersion=<?php echo htmlspecialchars($navApiVersion); ?>" id="admin_url" title="<?php echo _("Accuracy Tests Admin"); ?>">
-                        <i class="fas fa-gear me-1"></i><span class="d-lg-none"><?php echo _("Admin"); ?></span>
-                    </a>
-                </li>
+                <!-- Section 4: Login/User menu -->
                 <li class="nav-item me-2 <?php echo $navbarIsAuth ? 'd-none' : ''; ?>" data-requires-no-auth>
                     <button class="btn btn-outline-primary btn-sm" id="loginBtn" title="<?php echo _('Login'); ?>">
                         <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>

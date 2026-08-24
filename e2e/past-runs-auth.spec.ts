@@ -12,6 +12,12 @@ import { test, expect } from '@playwright/test';
 
 const RUNNER_PAGES = ['/', '/resources.php'];
 
+test('admin.php is unlinked from the interface', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('a[href*="admin.php"]')).toHaveCount(0);
+    await expect(page.locator('#admin_url')).toHaveCount(0);
+});
+
 test.describe('logged out', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 

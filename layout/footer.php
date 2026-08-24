@@ -2,15 +2,6 @@
 // Note: dotenv is loaded in layout/head.php, no need to reload here
 
 include_once('layout/disclaimer.php');
-if (!defined('SIDEBAR') || true === SIDEBAR) {
-    ?>
-        </div>
-        <!-- End of Content Wrapper -->
-
-    </div>
-    <!-- End of Page Wrapper -->
-    <?php
-}
 ?>
     <!-- Bootstrap / sb-admin JavaScript-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"
@@ -74,10 +65,6 @@ if ($proxyEnabled) {
         });
     </script>
 <?php
-if ($pageName === 'admin') {
-    echo "<script src=\"https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js\"></script>";
-}
-
 // The two runner pages mount liturgy-components-js controls (issue #48). The import map must
 // precede the first module load, which is the page script emitted immediately below.
 //

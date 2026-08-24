@@ -7,7 +7,8 @@ dotenv.config({ path: path.resolve(__dirname, '.env.development') });
 
 /**
  * Playwright configuration for UnitTestInterface
- * Tests the admin.php JWT authentication and test management functionality
+ * Tests both runner pages, the shared WebSocket protocol, and the authenticated results.php
+ * endpoints behind Past Runs.
  */
 export default defineConfig({
     testDir: './e2e',
