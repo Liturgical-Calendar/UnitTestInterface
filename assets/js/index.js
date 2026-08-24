@@ -36,6 +36,7 @@ import {
     isConditionalInventoryId,
     idToCardClass,
     readHello,
+    populateResponseFormatSelect,
     STEP_CARD_CLASS,
     TEST_RUN_STEP_CARD_CLASS,
     stepsForCheck,
@@ -1059,6 +1060,20 @@ const handleWebSocketMessage = ( e ) => {
     }
 
     if ( null === parseError && readHello( responseData ) ) {
+        // The advertisement is only readable once `hello` has been read, and this is the one place
+        // that is true. `validateCalendar` is the action this page sends, which is what makes the
+        // per-action shape usable directly rather than needing a rule about which half applies here.
+        const format = populateResponseFormatSelect(
+            document.querySelector( '#APIResponseSelect' ),
+            'validateCalendar'
+        );
+        if ( null !== format && format !== currentResponseType ) {
+            // A format the server no longer offers was selected, so the select just moved. Follow it
+            // rather than leaving `currentResponseType` naming a format every request would fail on,
+            // and rebuild the scaffold so the cards are labelled with what will actually be sent.
+            currentResponseType = format;
+            setupPage();
+        }
         return;
     }
 

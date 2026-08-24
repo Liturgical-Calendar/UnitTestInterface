@@ -101,8 +101,14 @@ include_once('layout/head.php');
                 <div class="col-6 col-md-4 col-lg-2">
                     <label for="APIResponseSelect"><?php echo _("Response Format"); ?></label>
                     <select id="APIResponseSelect" class="form-select form-select-sm">
+                        <!-- The floor only. The real list is populated client-side from the
+                             `hello` frame's `capabilities.responseFormats` for this page's action
+                             (populateResponseFormatSelect() in assets/js/wsProtocol.js): the server
+                             is the authority on what it accepts, and the two pages accept different
+                             sets. A literal list here was the last hand-maintained mirror of the
+                             API's truth left in this repository. JSON is kept as a floor because
+                             something must be selectable before the socket connects. -->
                         <option value="JSON">JSON</option>
-                        <option value="YML">YAML</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-4 col-lg-2" data-requires-auth>

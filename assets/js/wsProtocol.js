@@ -492,6 +492,78 @@ export const negotiatedProtocol = () => ( serverProtocol === PROTOCOL_VERSION ? 
 export const capabilities = () => helloCapabilities;
 
 /**
+ * The response format every action accepts, and the only one this repository names literally.
+ *
+ * A floor, not a list — the same shape of literal as {@link FALLBACK_YEAR_LOWER_BOUND}, and correct
+ * for the same kind of reason rather than by luck: JSON is what the API serves when nothing asks
+ * otherwise, it appears in every action's advertised set, and it is already the module-scope default
+ * of `currentResponseType` on both runner pages. Something has to be selectable before `hello`
+ * arrives, because `resyncLiveStateFromDom()` reads the select back when a stored run is closed and
+ * an empty value would become `currentResponseType`.
+ *
+ * @type {string}
+ */
+export const FALLBACK_RESPONSE_FORMAT = 'JSON';
+
+/**
+ * Populate a response-format select from what the server advertised for one action.
+ *
+ * The list used to be written into `index.php` and `resources.php` as literal `<option>` elements —
+ * four on one page, two on the other — which is the same hand-maintained mirror of the API's truth
+ * that `UNIVERSAL_CHECKS` was before #42, and that went stale three times (#38, API#795, API#800).
+ * Since API#886 the server states it per action, and each page knows which action it sends, so there
+ * is no longer anything for this repository to keep in lockstep.
+ *
+ * **Per action, because the two pages genuinely differ.** `validateCalendar` addresses `/calendar`,
+ * which serves all four representations; `executeValidation` addresses every other route, and each
+ * of those answers 406 to `application/xml` and `text/calendar`. A flat advertisement could not have
+ * driven this without offering the Resources runner two formats it can only fail on.
+ *
+ * Being unusable before `hello` costs nothing: `ReadyToRunTests.check()` gates the run on
+ * `SocketReady`, so a page with no socket cannot start a run for this control to serve. That is why
+ * the select is built here rather than reconciled against server-rendered markup — the same reason
+ * the rite and calendar selects are built client-side (#48).
+ *
+ * The current selection survives if the server still offers it; otherwise the floor is selected, so
+ * a narrowed advertisement cannot leave a format selected that every check would fail on.
+ *
+ * @param {?HTMLSelectElement} selectEl - The select to populate; a null element is a no-op.
+ * @param {string} action - The action this page sends, e.g. `'validateCalendar'`.
+ * @returns {?string} The value selected afterwards, or null when nothing was populated.
+ */
+export const populateResponseFormatSelect = ( selectEl, action ) => {
+    if ( !selectEl ) {
+        return null;
+    }
+    const advertised = helloCapabilities?.responseFormats?.[ action ];
+    if ( false === Array.isArray( advertised ) || 0 === advertised.length ) {
+        // Said out loud rather than silently left alone: an action this page sends that the server
+        // advertises no formats for is a real disagreement, the same kind `buildSourceDataChecks()`
+        // warns about for an unadvertised inventory id. The floor already in the select stands.
+        console.warn( `The server advertises no response formats for "${action}"; keeping ${FALLBACK_RESPONSE_FORMAT}.` );
+        return selectEl.value || null;
+    }
+
+    const previous = selectEl.value;
+    selectEl.replaceChildren( ...advertised.map( ( format ) => {
+        const option       = document.createElement( 'option' );
+        option.value       = format;
+        // YML is the wire value; YAML is what the format is called. The two pages spelled this
+        // pairing out in their markup, and it is the one presentational fact the advertisement does
+        // not carry, so it stays here rather than being inferred from the value at every reader.
+        option.textContent = 'YML' === format ? 'YAML' : format;
+        return option;
+    } ) );
+    selectEl.value = advertised.includes( previous ) ? previous : FALLBACK_RESPONSE_FORMAT;
+    // A server advertising a set without the floor would otherwise leave `value` empty, which is the
+    // state `resyncLiveStateFromDom()` must never read.
+    if ( '' === selectEl.value ) {
+        selectEl.value = advertised[ 0 ];
+    }
+    return selectEl.value;
+};
+
+/**
  * Counter behind the {@link newRequestId} fallback, for contexts without `crypto.randomUUID`.
  * @type {number}
  */
