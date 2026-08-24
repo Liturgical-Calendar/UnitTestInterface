@@ -592,31 +592,42 @@ test('a rite change between runs clears the previous run\'s counters and timers'
     await startBtn.click();
 });
 
-test('the scaffold-rebuilding controls are blocked for the duration of a run', async ({ page }) => {
-    // resources.php has had this guard since #48 (setRiteSelectDisabledForRun); this page had no
+test('the dashboard-repainting controls are blocked for the duration of a run', async ({ page }) => {
+    // resources.php has had this guard since #48 (setScaffoldControlsDisabledForRun); this page had no
     // equivalent, which is why #53 calls the Calendars runner the easier of the two to hit. It
     // matters more now that setupPage() also renarrows `Years` and zeroes the counters: mid-run,
     // buildCalendarsPayload() would persist `counts` from the zeroed counters beside results from
     // resultCollector, which no reset clears, and a `scaffold.years` naming the new rite's range
     // beside descriptors addressed at the old one's years.
+    //
+    // #pastRunsSelect was omitted when this guard was written, because the reason for the other
+    // three was phrased as "these rebuild the scaffold" and Past Runs does not — it repaints the
+    // dashboard from a stored run while the live one keeps painting underneath it, and writes
+    // #startTestRunnerBtn.disabled directly (selecting "— Live —" sets it false, which during a run
+    // is the Stop button).
+    //
+    // Enumerated rather than asserted one at a time so a control added to the header is a visible
+    // omission here rather than a silent one.
+    const CONTROLS = ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect', '#pastRunsSelect'];
+
     await installWebSocketStub(page);
     await page.goto('/');
 
     const startBtn = page.locator('#startTestRunnerBtn');
     await expect(startBtn).toBeEnabled({ timeout: 20000 });
-    for (const sel of ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect']) {
+    for (const sel of CONTROLS) {
         await expect(page.locator(sel)).toBeEnabled();
     }
 
     // The stub never replies, so the run parks after its first request, still owning the page.
     await startBtn.click();
-    for (const sel of ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect']) {
+    for (const sel of CONTROLS) {
         await expect(page.locator(sel)).toBeDisabled();
     }
 
     // Stopping releases them again, so the page is genuinely idle rather than stuck.
     await startBtn.click();
-    for (const sel of ['#riteSelect', '#APICalendarSelect', '#APIResponseSelect']) {
+    for (const sel of CONTROLS) {
         await expect(page.locator(sel)).toBeEnabled();
     }
 });
