@@ -134,7 +134,14 @@ export const countByStatus = (descriptors) => ({
 /** Current UTC time as `YYYY-MM-DDTHH:MM:SSZ` (no milliseconds). */
 export const nowIsoStamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
-/** POST a completed run to the server. */
+/**
+ * POST a completed run to the server.
+ *
+ * A rejection carries the HTTP status on `err.status`. Callers need it to tell a declined save
+ * (401 — nobody is logged in, and results.php stores nothing anonymously) from a genuine failure;
+ * the run itself succeeded in the first case, so reporting it as a save failure misreads it.
+ * Parsing the status back out of the message string would be the fragile alternative.
+ */
 export const postRunResults = async (payload) => {
     const res = await fetch('results.php', {
         method: 'POST',
@@ -143,19 +150,28 @@ export const postRunResults = async (payload) => {
         body: JSON.stringify(payload),
     });
     if (!res.ok) {
-        throw new Error(`Save failed: ${res.status}`);
+        const err = new Error(`Save failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
     }
     return res.json();
 };
 
-/** Fetch run summaries filtered to a single run type, newest first. */
+/**
+ * Fetch run summaries filtered to a single run type, newest first.
+ *
+ * Rejects with `err.status` set, like {@link postRunResults}: a 401 here is the ordinary state of
+ * an anonymous visitor, not a fault worth logging.
+ */
 export const fetchRunSummaries = async (runType) => {
     const res = await fetch('results.php', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
     });
     if (!res.ok) {
-        throw new Error(`List failed: ${res.status}`);
+        const err = new Error(`List failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
     }
     const all = await res.json();
     return all.filter((r) => r.runType === runType);
@@ -168,7 +184,9 @@ export const fetchRunDetail = async (file) => {
         headers: { Accept: 'application/json' },
     });
     if (!res.ok) {
-        throw new Error(`Load failed: ${res.status}`);
+        const err = new Error(`Load failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
     }
     return res.json();
 };

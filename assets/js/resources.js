@@ -1350,6 +1350,13 @@ const runTests = () => {
             postRunResults( buildResourcesPayload() )
                 .then( () => safeToastShow('#results-saved') )
                 .catch( ( err ) => {
+                    // A 401 is not a failure of the run, nor of the save path: nobody is logged
+                    // in, and results.php declines to store an anonymous run. Reporting "could
+                    // not save" there reads as a defect in a run that actually succeeded.
+                    if ( 401 === err.status ) {
+                        safeToastShow('#results-save-unauthenticated');
+                        return;
+                    }
                     console.error( 'Failed to persist run results', err );
                     safeToastShow('#results-save-failed');
                 });

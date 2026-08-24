@@ -46,6 +46,24 @@ test.describe('logged out', () => {
         expect(wrapper, 'the Past Runs wrapper should be present in the served markup').not.toBeNull();
         expect(wrapper?.[1]).toContain('d-none');
     });
+
+    test('a declined save reports "log in to save", not a failure', async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('domcontentloaded');
+        const outcome = await page.evaluate(async () => {
+            const { postRunResults } = await import('/assets/js/testResults.js' as any);
+            try {
+                await postRunResults({ schemaVersion: 1, runType: 'calendars' });
+                return 'resolved';
+            } catch (err) {
+                return (err as { status?: number }).status === 401
+                    ? 'results-save-unauthenticated'
+                    : 'results-save-failed';
+            }
+        });
+        expect(outcome).toBe('results-save-unauthenticated');
+        await expect(page.locator('#results-save-unauthenticated')).toHaveCount(1);
+    });
 });
 
 test.describe('logged in', () => {
