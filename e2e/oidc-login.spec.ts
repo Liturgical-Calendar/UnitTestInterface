@@ -100,6 +100,34 @@ test.describe('logged out', () => {
             expect(setCookie).not.toContain('litcal_access_token=ey');
         });
     }
+
+    test('the provider accepts the logout request, not merely receives it', async ({ request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // Following the redirect is the whole point of this test. An earlier version asserted only that
+        // the logout URL CONTAINED a post_logout_redirect_uri, which it did — while Zitadel rejected the
+        // value with {"error":"invalid_request","error_description":"post_logout_redirect_uri invalid"},
+        // because a trailing slash was appended to an origin registered without one. A well-formed
+        // request that the provider refuses is still a broken logout.
+        const started = await request.get('/auth/logout.php', { maxRedirects: 0 });
+        expect(started.status()).toBe(302);
+
+        const logoutUrl = started.headers()['location'] ?? '';
+        const redirectUri = new URL(logoutUrl).searchParams.get('post_logout_redirect_uri');
+        expect(redirectUri, 'a post_logout_redirect_uri must be sent').toBeTruthy();
+        // Pinned because it is exactly what broke: setup-zitadel.sh registers the bare origin, and
+        // Zitadel matches this value exactly.
+        expect(redirectUri!.endsWith('/'), 'the registered origin carries no trailing slash').toBe(false);
+
+        const atProvider = await request.get(logoutUrl, { maxRedirects: 0 });
+        // Any 2xx or 3xx is acceptance — end_session normally answers 302 back to the application, but a
+        // provider is entitled to render a confirmation page instead. Asserting the whole successful range
+        // rather than "not 400" matters because the failure this test exists for is only one of the ways
+        // the request can be refused; a 401, 403 or 500 would otherwise read as a pass.
+        expect(atProvider.status(), 'the provider must accept the request').toBeGreaterThanOrEqual(200);
+        expect(atProvider.status(), 'the provider must accept the request').toBeLessThan(400);
+        expect(await atProvider.text()).not.toContain('invalid_request');
+    });
 });
 
 test.describe('without Zitadel configured', () => {

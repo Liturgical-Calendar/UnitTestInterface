@@ -31,8 +31,14 @@ $destination = '/';
 
 if (Client::isConfigured()) {
     try {
+        // No trailing slash. Zitadel matches post_logout_redirect_uri EXACTLY, and what is registered is
+        // the bare origin: scripts/setup-zitadel.sh registers `${ACCURACY_TESTS_URL}` after stripping any
+        // trailing slash, and LiturgicalCalendarFrontend's own auth/logout.php rtrim()s it for the same
+        // reason. Appending one here produced
+        //     {"error":"invalid_request","error_description":"post_logout_redirect_uri invalid"}
+        // so logout failed at the provider even though the request looked well-formed.
         $logoutUrl = Client::fromEnv(Session::redirectUri())
-            ->getLogoutUrl(is_string($idToken) ? $idToken : null, Session::origin() . '/');
+            ->getLogoutUrl(is_string($idToken) ? $idToken : null, Session::origin());
         if (is_string($logoutUrl)) {
             $destination = $logoutUrl;
         }
