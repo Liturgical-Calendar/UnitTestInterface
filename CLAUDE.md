@@ -566,22 +566,44 @@ checked. Only the step component was ever phrased as a claim.
 
 ## Authentication
 
-- JWT-based auth (`src/JwtAuth.php`), shared with the LiturgicalCalendarAPI
-- Access token read from the `litcal_access_token` HttpOnly cookie and verified
-  server-side using `JWT_SECRET` / `JWT_ALGORITHM` (loaded via phpdotenv), which must
-  match the API's JWT settings
-- `layout/head.php` resolves `$isAuthenticated` once per page, and `layout/footer.php`
-  emits `components/login-modal.php` on **every** page. Both used to be `admin.php`'s
-  alone, which is why the runner pages had no login button and no working Past Runs
-- Login handled by that modal against the API; UI gated via `data-requires-auth` /
-  `data-requires-no-auth` attributes and `JwtAuth::isAuthenticated()`. The modal
-  dispatches `auth:login` / `auth:logout` on `document`; both runners listen, to refill
-  and clear the Past Runs dropdown without a reload
-- `results.php` requires authentication on all three of its routes, so Past Runs and run
-  persistence are inert until the user logs in. The helpers in `assets/js/testResults.js`
-  attach the HTTP status to the errors they throw, and both runners treat a `401` as
-  "not logged in" rather than as a failure — an anonymous run is complete and unsaved,
-  not broken
+Two mechanisms, in that order of preference, mirroring the API's own `OidcAuthMiddleware`:
+
+1. **Zitadel OIDC** (preferred). UTI is an OIDC client in its own right, with its own Zitadel
+   registration — `scripts/setup-zitadel.sh` in LiturgicalCalendarAPI provisions it as
+   "LiturgicalCalendar Tests", with `http://localhost:${TESTS_PORT}/auth/callback.php` as its redirect
+   URI. Its own client matters because UTI may one day be served from a different host than the
+   Frontend, and cookies cannot be shared across registrable domains.
+2. **Legacy JWT** fallback, for a deployment with no Zitadel. Unglamorous and deliberately not invested
+   in; it is what the e2e suite still authenticates with, which is why no Zitadel dependency enters
+   UTI's CI.
+
+| File                                  | Role                                                          |
+|---------------------------------------|---------------------------------------------------------------|
+| `src/Oidc/Client.php`                 | PKCE, discovery, code exchange, logout URL. Validates nothing |
+| `src/Oidc/TokenValidator.php`         | Validates a Zitadel token against the provider's signing keys |
+| `src/Oidc/Session.php`                | PKCE session keys, `return_to` validation, cookie writing     |
+| `src/JwtAuth.php`                     | Resolves identity: Zitadel locally, else the API's `/auth/me` |
+| `auth/{login,callback,logout,me}.php` | The round trip, plus this app's own "who am I?"               |
+
+**`/auth/me` on the API does NOT accept Zitadel tokens.** `Router.php` pipes `OidcAuthMiddleware` only
+for an allow-list of auth sub-routes and `me` is not among them, so `MeHandler` verifies with the API's
+HS256 service alone. This is known, deliberate behaviour — LiturgicalCalendarFrontend's
+`e2e/rbac/support/actingAs.spec.ts` records it and validates locally for the same reason. It is why
+`TokenValidator` exists here at all, and why `auth/me.php` does: `assets/js/auth.js` used to ask the
+API's endpoint directly and would report a Zitadel-authenticated user as logged out.
+
+**The login control has two shapes.** `layout/head.php` sets `$oidcEnabled`; with Zitadel configured
+the navbar renders `#loginBtn` as a link into `/auth/login.php` and `components/login-modal.php`'s click
+handlers stand down, otherwise it stays a button that opens the legacy modal.
+
+**Cookies** (`litcal_access_token`, `litcal_refresh_token`, `litcal_id_token`) are written by
+`Oidc\Session` with exactly the attributes the API's `CookieHelper` uses, since the API reads them back.
+`COOKIE_DOMAIN` opts into cross-subdomain sharing.
+
+**`ZITADEL_INTERNAL_URL` is required in Docker.** Zitadel answers 404 to any request whose `Host` does
+not match its configured external domain, so back-channel calls sent to a container hostname carry the
+issuer's host — injected through a Guzzle handler stack, because Guzzle derives `Host` from the request
+URI and overwrites a default header.
 
 ## Key Files
 
