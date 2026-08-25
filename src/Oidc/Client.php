@@ -124,6 +124,21 @@ final class Client
     }
 
     /**
+     * Whether a USABLE organization id is configured — that is, one this client would actually send.
+     *
+     * Exposed so nothing has to restate the rule. `layout/head.php` publishes this to the page, and an
+     * e2e test asserts the implication "org id configured => org scope sent". A template repeating just
+     * the non-empty half of {@see self::normalizeOrgId()} would report true for a non-numeric value that
+     * this client correctly drops, and the test would then demand a scope that is rightly absent.
+     */
+    public static function isOrgScoped(): bool
+    {
+        return null !== self::normalizeOrgId(
+            isset($_ENV['ZITADEL_ORG_ID']) ? (string) $_ENV['ZITADEL_ORG_ID'] : null
+        );
+    }
+
+    /**
      * @throws RuntimeException If OIDC is not configured.
      */
     public static function fromEnv(string $redirectUri): self
