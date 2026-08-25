@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-24 21:29+0000\n"
+"POT-Creation-Date: 2026-08-25 05:23+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,8 @@ msgstr ""
 msgid "Session Expiring"
 msgstr ""
 
-#: components/login-modal.php:12 layout/topnavbar.php:108
-#: layout/topnavbar.php:109
+#: components/login-modal.php:12 layout/topnavbar.php:127
+#: layout/topnavbar.php:128 layout/topnavbar.php:131 layout/topnavbar.php:132
 msgid "Logout"
 msgstr ""
 
@@ -42,7 +42,7 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
-#: components/login-modal.php:40 components/login-modal.php:193
+#: components/login-modal.php:40 components/login-modal.php:201
 msgid "Show password"
 msgstr ""
 
@@ -54,8 +54,9 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: components/login-modal.php:56 components/login-modal.php:340
-#: layout/topnavbar.php:99 layout/topnavbar.php:100
+#: components/login-modal.php:56 components/login-modal.php:348
+#: layout/topnavbar.php:112 layout/topnavbar.php:113 layout/topnavbar.php:116
+#: layout/topnavbar.php:117
 msgid "Login"
 msgstr ""
 
@@ -63,39 +64,39 @@ msgstr ""
 msgid "Admin"
 msgstr ""
 
-#: components/login-modal.php:114
+#: components/login-modal.php:118
 msgid "Unable to verify authentication status. The server may be unavailable."
 msgstr ""
 
-#: components/login-modal.php:137 components/login-modal.php:565
+#: components/login-modal.php:145 components/login-modal.php:573
 msgid "Are you sure you want to logout?"
 msgstr ""
 
-#: components/login-modal.php:188
+#: components/login-modal.php:196
 msgid "Hide password"
 msgstr ""
 
-#: components/login-modal.php:295
+#: components/login-modal.php:303
 msgid "Please enter both username and password"
 msgstr ""
 
-#: components/login-modal.php:303
+#: components/login-modal.php:311
 msgid "Logging in…"
 msgstr ""
 
-#: components/login-modal.php:335
+#: components/login-modal.php:343
 msgid "Login failed. Please check your credentials."
 msgstr ""
 
-#: components/login-modal.php:451
+#: components/login-modal.php:459
 msgid "Your session will expire in less than {minutes} minute(s)."
 msgstr ""
 
-#: components/login-modal.php:506
+#: components/login-modal.php:514
 msgid "Extending..."
 msgstr ""
 
-#: components/login-modal.php:532
+#: components/login-modal.php:540
 msgid "Failed to extend session. Please login again."
 msgstr ""
 
