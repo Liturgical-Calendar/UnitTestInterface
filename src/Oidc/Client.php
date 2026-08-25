@@ -6,6 +6,9 @@ namespace LiturgicalCalendar\UnitTestInterface\Oidc;
 
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
 use RuntimeException;
 
 /**
@@ -277,7 +280,15 @@ final class Client
 
         $host = $this->hostHeader();
         if (null !== $host) {
-            $config['headers'] = ['Host' => $host];
+            // Injected through the handler stack rather than as a default header: Guzzle derives `Host`
+            // from the request URI, so a constructor default is overwritten before the request is sent and
+            // Zitadel answers 404. LiturgicalCalendarAPI's OidcAuthMiddleware does the same thing for the
+            // same reason when it fetches JWKS over the internal address.
+            $stack = HandlerStack::create();
+            $stack->push(Middleware::mapRequest(
+                static fn (RequestInterface $request): RequestInterface => $request->withHeader('Host', $host)
+            ));
+            $config['handler'] = $stack;
         }
 
         return new HttpClient($config);
