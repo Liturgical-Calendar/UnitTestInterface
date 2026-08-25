@@ -58,15 +58,19 @@ final class JwtSegments
             return null;
         }
 
-        $raw = $segments[$index];
-
-        // base64url alphabet only, and non-empty. See the class docblock for why this cannot be left to
-        // base64_decode()'s own checking.
-        if (1 !== preg_match('/^[A-Za-z0-9_-]+$/', $raw)) {
-            return null;
+        // Every segment is checked, not just the one being returned. base64url alphabet, non-empty. See
+        // the class docblock for why this cannot be left to base64_decode()'s own checking.
+        //
+        // Validating all three matters because a caller asking for the header learns nothing about the
+        // rest: `<valid header>.<garbage>.<garbage>` would otherwise yield a usable `kid` from something
+        // that is not a JWT at all, and TokenValidator acts on that `kid`.
+        foreach ($segments as $segment) {
+            if (1 !== preg_match('/^[A-Za-z0-9_-]+$/', $segment)) {
+                return null;
+            }
         }
 
-        $decoded = base64_decode(strtr($raw, '-_', '+/'), true);
+        $decoded = base64_decode(strtr($segments[$index], '-_', '+/'), true);
         if (false === $decoded || '' === $decoded) {
             return null;
         }

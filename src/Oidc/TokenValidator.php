@@ -48,6 +48,17 @@ final class TokenValidator
      */
     private const JWKS_MAX_STALE_SECONDS = 86400;
 
+    /**
+     * The shortest interval between two key-set refetches forced by an unknown key id.
+     *
+     * The rotation retry deliberately fires only for an unknown `kid`, but that is a guard on the REASON,
+     * not on the RATE: a stream of tokens each carrying a different unknown `kid` would otherwise cause one
+     * outbound request apiece, turning cheap junk into load on the provider. A genuine rotation is still
+     * picked up within this window, because the first such token refetches and every later one then finds
+     * the new key already cached.
+     */
+    private const JWKS_MIN_REFETCH_SECONDS = 60;
+
     private string $issuer;
     private ?string $internalUrl;
 
@@ -212,7 +223,11 @@ final class TokenValidator
     {
         $cacheFile = $this->cacheFile();
 
-        if (!$forceRefresh && null !== $cacheFile && is_file($cacheFile) && ( time() - (int) filemtime($cacheFile) ) < self::JWKS_TTL_SECONDS) {
+        // A forced refresh still respects a short cooldown, so an unknown key id cannot be used to drive
+        // unbounded traffic at the provider. See JWKS_MIN_REFETCH_SECONDS.
+        $ttl = $forceRefresh ? self::JWKS_MIN_REFETCH_SECONDS : self::JWKS_TTL_SECONDS;
+
+        if (null !== $cacheFile && is_file($cacheFile) && ( time() - (int) filemtime($cacheFile) ) < $ttl) {
             /** @var array<string, mixed>|null $cached */
             $cached = json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && isset($cached['keys'])) {
