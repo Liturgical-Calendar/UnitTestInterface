@@ -5,6 +5,7 @@ include_once("includes/I18n.php");
 use Dotenv\Dotenv;
 use LiturgicalCalendar\UnitTestInterface\I18n;
 use LiturgicalCalendar\UnitTestInterface\JwtAuth;
+use LiturgicalCalendar\UnitTestInterface\Oidc\Client as OidcClient;
 
 // Load environment variables early so they're available in topnavbar.php
 $dotenv = Dotenv::createImmutable(
@@ -27,6 +28,11 @@ $dotenv->ifPresent('LITCAL_FRONTEND_URL')->notEmpty();
 // paint instead of flashing the logged-out state until initPermissionUI() catches up.
 JwtAuth::init();
 $isAuthenticated = JwtAuth::isAuthenticated();
+
+// Whether this deployment has Zitadel at all. The login control redirects to the OIDC flow when it
+// does, and falls back to the legacy username/password modal when it does not — one visible button
+// whose destination depends on what is available, rather than two to keep in step.
+$oidcEnabled = OidcClient::isConfigured();
 
 // Only create I18n if not already initialized (a page may need it before including this file,
 // e.g. to make an early API call whose errors are shown translated)

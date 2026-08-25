@@ -95,19 +95,43 @@
                 }
                 ?>
                 <!-- Section 4: Login/User menu -->
+                <?php
+                // Two shapes for one control. With Zitadel configured this is a plain link into the OIDC
+                // flow — a full-page navigation, since the provider owns the next screen — and the login
+                // modal is not involved at all. Without it, the button keeps its old behaviour and
+                // components/login-modal.php opens the legacy username/password dialog.
+                $navbarOidc = isset($oidcEnabled) && $oidcEnabled;
+                // Come back to the page the user was actually on. Sanitised again on the far side, since a
+                // query string is caller-controlled wherever it arrives from.
+                $navbarReturnTo = '/auth/login.php?return_to=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/');
+                ?>
                 <li class="nav-item me-2 <?php echo $navbarIsAuth ? 'd-none' : ''; ?>" data-requires-no-auth>
+                    <?php if ($navbarOidc) { ?>
+                    <a class="btn btn-outline-primary btn-sm" id="loginBtn"
+                       href="<?php echo htmlspecialchars($navbarReturnTo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>"
+                       title="<?php echo _('Login'); ?>">
+                        <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
+                    </a>
+                    <?php } else { ?>
                     <button class="btn btn-outline-primary btn-sm" id="loginBtn" title="<?php echo _('Login'); ?>">
                         <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
                     </button>
+                    <?php } ?>
                 </li>
                 <li class="nav-item me-2 <?php echo $navbarIsAuth ? '' : 'd-none'; ?>" data-requires-auth>
                     <div class="btn-group" id="userMenu">
                         <span class="btn btn-outline-success btn-sm" id="userInfo">
                             <i class="fas fa-user me-1"></i><span id="username"><?php echo htmlspecialchars($navbarUsername); ?></span>
                         </span>
+                        <?php if ($navbarOidc) { ?>
+                        <a class="btn btn-outline-danger btn-sm" id="logoutBtn" href="/auth/logout.php" title="<?php echo _('Logout'); ?>">
+                            <i class="fas fa-sign-out-alt me-1"></i><span class="d-lg-none"><?php echo _('Logout'); ?></span>
+                        </a>
+                        <?php } else { ?>
                         <button class="btn btn-outline-danger btn-sm" id="logoutBtn" title="<?php echo _('Logout'); ?>">
                             <i class="fas fa-sign-out-alt me-1"></i><span class="d-lg-none"><?php echo _('Logout'); ?></span>
                         </button>
+                        <?php } ?>
                     </div>
                 </li>
             </ul>

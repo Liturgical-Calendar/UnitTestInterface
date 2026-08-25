@@ -8,6 +8,7 @@ declare global {
         LitCalConfig: {
             locale: string;
             isAuthenticated: boolean;
+            oidcEnabled: boolean;
         };
     }
 }
