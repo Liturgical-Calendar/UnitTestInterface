@@ -3,8 +3,9 @@
 /**
  * OIDC callback: exchange the authorization code for tokens and store them as HttpOnly cookies.
  *
- * The tokens are never inspected here. They go into the cookies the API reads, and `JwtAuth` asks the API
- * who the caller is — see that class for why this repository validates nothing itself.
+ * The tokens are not inspected here: they go straight into cookies, and deciding whether to trust one is
+ * `JwtAuth`'s job — it validates a Zitadel token against the provider's signing keys and falls back to the
+ * API's `/auth/me` for the legacy shape. See that class for why the work is split that way.
  */
 
 declare(strict_types=1);

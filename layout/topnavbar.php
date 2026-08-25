@@ -107,7 +107,9 @@
                 ?>
                 <li class="nav-item me-2 <?php echo $navbarIsAuth ? 'd-none' : ''; ?>" data-requires-no-auth>
                     <?php if ($navbarOidc) { ?>
-                    <a class="btn btn-outline-primary btn-sm" id="loginBtn" href="<?php echo htmlspecialchars($navbarReturnTo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" title="<?php echo _('Login'); ?>">
+                    <a class="btn btn-outline-primary btn-sm" id="loginBtn"
+                       href="<?php echo htmlspecialchars($navbarReturnTo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>"
+                       title="<?php echo _('Login'); ?>">
                         <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
                     </a>
                     <?php } else { ?>

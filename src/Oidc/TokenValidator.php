@@ -39,6 +39,15 @@ final class TokenValidator
     /** How long a fetched key set is trusted before being refetched. */
     private const JWKS_TTL_SECONDS = 3600;
 
+    /**
+     * The oldest a cached key set may be and still be used when the provider cannot be reached.
+     *
+     * Serving a stale set indefinitely would keep tokens signed by a revoked or compromised key valid for
+     * as long as the outage lasted. A day is long enough to ride out a provider blip without turning an
+     * availability problem into an unbounded security one.
+     */
+    private const JWKS_MAX_STALE_SECONDS = 86400;
+
     private string $issuer;
     private ?string $internalUrl;
 
@@ -91,10 +100,27 @@ final class TokenValidator
             return null;
         }
 
-        try {
-            $payload = JWT::decode($token, JWK::parseKeySet($jwks));
-        } catch (Throwable) {
-            // Expired, wrong algorithm, unknown key, malformed — all "not a token we accept".
+        $payload = self::decode($token, $jwks);
+
+        if (null === $payload) {
+            // One failure is worth retrying, and only one: a key id we have never seen. Zitadel rotates
+            // its signing keys, and a rotation inside the cache TTL would otherwise send every valid
+            // token down the legacy path — where the API rejects it — leaving users logged out for up to
+            // an hour with nothing in the logs to explain it.
+            //
+            // Deliberately NOT retried: a malformed token, an absent kid, a bad signature from a key we
+            // do hold, expiry, or an issuer or audience mismatch. Those are answers, not staleness, and
+            // refetching on them would let any junk token trigger an outbound request.
+            $kid = self::kidOf($token);
+            if (null !== $kid && !self::keySetHasKid($jwks, $kid)) {
+                $fresh = $this->keySet(true);
+                if (null !== $fresh) {
+                    $payload = self::decode($token, $fresh);
+                }
+            }
+        }
+
+        if (null === $payload) {
             return null;
         }
 
@@ -107,6 +133,60 @@ final class TokenValidator
         }
 
         return $payload;
+    }
+
+    /**
+     * Decode and signature-check, or null for anything that does not verify.
+     *
+     * @param array<string, mixed> $jwks
+     */
+    private static function decode(string $token, array $jwks): ?object
+    {
+        try {
+            return JWT::decode($token, JWK::parseKeySet($jwks));
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * The `kid` from a token's header, without trusting anything else in it.
+     */
+    private static function kidOf(string $token): ?string
+    {
+        $segments = explode('.', $token);
+        $decoded  = base64_decode(strtr($segments[0], '-_', '+/'), false);
+        if (false === $decoded) {
+            return null;
+        }
+
+        /** @var array<string, mixed>|null $header */
+        $header = json_decode($decoded, true);
+        if (!is_array($header)) {
+            return null;
+        }
+
+        $kid = $header['kid'] ?? null;
+        return is_string($kid) && '' !== $kid ? $kid : null;
+    }
+
+    /**
+     * @param array<string, mixed> $jwks
+     */
+    private static function keySetHasKid(array $jwks, string $kid): bool
+    {
+        $keys = $jwks['keys'] ?? null;
+        if (!is_array($keys)) {
+            return false;
+        }
+
+        foreach ($keys as $key) {
+            if (is_array($key) && ( $key['kid'] ?? null ) === $kid) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -135,11 +215,11 @@ final class TokenValidator
      *
      * @return array<string, mixed>|null
      */
-    private function keySet(): ?array
+    private function keySet(bool $forceRefresh = false): ?array
     {
         $cacheFile = $this->cacheFile();
 
-        if (null !== $cacheFile && is_file($cacheFile) && ( time() - (int) filemtime($cacheFile) ) < self::JWKS_TTL_SECONDS) {
+        if (!$forceRefresh && null !== $cacheFile && is_file($cacheFile) && ( time() - (int) filemtime($cacheFile) ) < self::JWKS_TTL_SECONDS) {
             /** @var array<string, mixed>|null $cached */
             $cached = json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && isset($cached['keys'])) {
@@ -155,12 +235,18 @@ final class TokenValidator
             ])->getBody();
         } catch (GuzzleException $e) {
             error_log('OIDC: could not fetch the signing keys: ' . $e->getMessage());
-            // Fall back to a stale cache rather than logging everyone out over a transient blip.
+            // Fall back to a stale cache rather than logging everyone out over a transient blip — but
+            // only up to JWKS_MAX_STALE_SECONDS, so a long outage cannot keep a revoked key usable.
             if (null !== $cacheFile && is_file($cacheFile)) {
-                /** @var array<string, mixed>|null $stale */
-                $stale = json_decode((string) file_get_contents($cacheFile), true);
-                if (is_array($stale) && isset($stale['keys'])) {
-                    return $stale;
+                $age = time() - (int) filemtime($cacheFile);
+                if ($age <= self::JWKS_MAX_STALE_SECONDS) {
+                    /** @var array<string, mixed>|null $stale */
+                    $stale = json_decode((string) file_get_contents($cacheFile), true);
+                    if (is_array($stale) && isset($stale['keys'])) {
+                        return $stale;
+                    }
+                } else {
+                    error_log('OIDC: cached signing keys are older than the maximum stale window; refusing to use them.');
                 }
             }
             return null;

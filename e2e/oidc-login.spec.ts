@@ -141,6 +141,21 @@ test.describe('logged in', () => {
         await expect(page.locator('#loginBtn')).toBeHidden();
     });
 
+    test('the session-expiry toast logs out through the OIDC endpoint too', async ({ page, request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+        await page.goto('/');
+        await expect.poll(() => page.evaluate(() => window.LitCalConfig?.oidcEnabled)).toBe(true);
+
+        // The navbar control is not the only way out. The expiry toast used to call Auth.logout(), which
+        // posts to the API and leaves the Zitadel session standing, so the next login would silently
+        // re-authenticate. Confirm the dialog and assert where it actually goes.
+        page.on('dialog', (d) => d.accept());
+        const navigation = page.waitForURL(/auth\/logout\.php|\/oidc\/v1\/end_session|localhost:3003\/$/, { timeout: 15000 });
+        await page.evaluate(() => document.getElementById('sessionExpiryLogout')?.click());
+        await navigation;
+        expect(page.url()).not.toContain('/auth/me');
+    });
+
     test('the logout control ends the provider session too', async ({ page, request }) => {
         test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
         await page.goto('/');

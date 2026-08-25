@@ -16,16 +16,15 @@ use RuntimeException;
  *
  * ## Why this is a quarter the size of LiturgicalCalendarFrontend's OidcClient
  *
- * This client never validates a token. It obtains one and hands it to the API, which is the enforcement
- * point: `OidcAuthMiddleware` reads `litcal_access_token` from the cookie, validates it RS256 against
- * Zitadel's JWKS, and falls back to the legacy HS256 shape. `JwtAuth` in this repository asks that API
- * `GET /auth/me` rather than decoding anything locally.
+ * **This class** never validates a token — it only obtains one. Validation lives next door in
+ * {@see TokenValidator}, which `JwtAuth` uses for a Zitadel token before falling back to the API's
+ * `/auth/me` for the legacy shape. Keeping the two apart is the point: acquiring a token and deciding
+ * whether to trust one are separate jobs with separate failure modes.
  *
- * So everything downstream of the code exchange — JWKS fetching and caching, signature and audience
- * checks, ID-token and userinfo parsing, role extraction — is absent here on purpose, not by oversight.
- * Adding it would mean maintaining a second validation path that could disagree with the API's, which is
- * the whole failure mode this design avoids. If you find yourself reaching for `CachedKeySet`, ask first
- * whether the API should be answering the question instead.
+ * So no signature or audience checking, no userinfo call, and no role mapping happens here. What is
+ * absent from this repository ENTIRELY is ID-token claim consumption beyond a display name — see
+ * `JwtAuth::displayName()` — and any second opinion about the legacy token, which only the API can
+ * verify because only the API holds that secret.
  *
  * ## Internal vs browser-facing URLs
  *

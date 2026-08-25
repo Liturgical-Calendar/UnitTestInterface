@@ -97,9 +97,16 @@ final class Session
 
         $returnTo = trim($returnTo);
 
-        // A protocol-relative URL (`//evil.example`) names another host without a scheme, and parse_url
-        // reports no host for it in some inputs — reject the shape outright.
-        if (str_starts_with($returnTo, '//')) {
+        // Two shapes parse_url() will not protect against, both rejected before it is consulted:
+        //
+        //   //evil.example   a protocol-relative URL, naming another host with no scheme;
+        //   /\evil.example   a backslash, which parse_url() reports as an ordinary path with NO host —
+        //                    but browsers normalise when following a Location header, so this reaches
+        //                    https://evil.example/ despite looking local. Verified against parse_url().
+        //
+        // A backslash has no legitimate use in a same-origin path here, so reject it wherever it appears
+        // rather than trying to work out which positions are dangerous.
+        if (str_starts_with($returnTo, '//') || str_contains($returnTo, '\\')) {
             return '/';
         }
 

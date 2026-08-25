@@ -571,6 +571,13 @@ async function handleExtendSession() {
  */
 async function handleSessionExpiryLogout() {
     if (confirm(<?php echo json_encode(_('Are you sure you want to logout?')); ?>)) {
+        // Under OIDC the local cookies are only half of it — the Zitadel session has to end too, or the
+        // next login silently re-authenticates. /auth/logout.php does both; Auth.logout() below posts to
+        // the API's endpoint, which knows nothing about the provider session.
+        if (oidcEnabled) {
+            window.location.href = '/auth/logout.php';
+            return;
+        }
         // Clear the auto-logout timeout
         if (sessionExpiryTimeout) {
             clearTimeout(sessionExpiryTimeout);
@@ -596,6 +603,12 @@ function handleAutoLogout() {
     hideSessionExpiryToast();
 
     console.warn('Session expired. Please login again.');
+
+    // Same reason as handleSessionExpiryLogout(): clearing local state is not enough under OIDC.
+    if (oidcEnabled) {
+        window.location.href = '/auth/logout.php';
+        return;
+    }
 
     Auth.clearTokens();
     Auth.stopAllTimers();
