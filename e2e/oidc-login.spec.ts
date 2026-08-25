@@ -120,7 +120,12 @@ test.describe('logged out', () => {
         expect(redirectUri!.endsWith('/'), 'the registered origin carries no trailing slash').toBe(false);
 
         const atProvider = await request.get(logoutUrl, { maxRedirects: 0 });
-        expect(atProvider.status(), 'the provider must accept the request').not.toBe(400);
+        // Any 2xx or 3xx is acceptance — end_session normally answers 302 back to the application, but a
+        // provider is entitled to render a confirmation page instead. Asserting the whole successful range
+        // rather than "not 400" matters because the failure this test exists for is only one of the ways
+        // the request can be refused; a 401, 403 or 500 would otherwise read as a pass.
+        expect(atProvider.status(), 'the provider must accept the request').toBeGreaterThanOrEqual(200);
+        expect(atProvider.status(), 'the provider must accept the request').toBeLessThan(400);
         expect(await atProvider.text()).not.toContain('invalid_request');
     });
 });
