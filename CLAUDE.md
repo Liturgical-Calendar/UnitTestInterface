@@ -600,6 +600,12 @@ handlers stand down, otherwise it stays a button that opens the legacy modal.
 `Oidc\Session` with exactly the attributes the API's `CookieHelper` uses, since the API reads them back.
 `COOKIE_DOMAIN` opts into cross-subdomain sharing.
 
+**`ZITADEL_ORG_ID` matters on a shared Zitadel instance.** It appends `urn:zitadel:iam:org:id:<id>`,
+forcing sign-in *and registration* into that org; without it the hosted login registers users into
+Zitadel's IAM-internal default org, where they have no email, show their user id as their username, and
+hold no roles. `urn:zitadel:iam:org:project:roles` is always requested — without it a login succeeds and
+the user simply arrives with no roles.
+
 **`ZITADEL_INTERNAL_URL` is required in Docker.** Zitadel answers 404 to any request whose `Host` does
 not match its configured external domain, so back-channel calls sent to a container hostname carry the
 issuer's host — injected through a Guzzle handler stack, because Guzzle derives `Host` from the request

@@ -70,6 +70,32 @@ test.describe('logged out', () => {
         expect(location).toMatch(/[?&]nonce=[^&]+/);
     });
 
+    test('the authorization request carries the Zitadel role scope', async ({ request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // Without urn:zitadel:iam:org:project:roles the login still succeeds, but the user arrives with
+        // no roles — which reads as a permissions bug rather than a missing scope. And when
+        // ZITADEL_ORG_ID is configured, urn:zitadel:iam:org:id:<id> must ride along too: without it
+        // Zitadel's hosted login registers new users into its IAM-internal default org, where they have
+        // no email on file, show their user id as their username, hold no roles, and are invisible to
+        // org-scoped admin APIs.
+        const res = await request.get('/auth/login.php', { maxRedirects: 0 });
+        const scope = new URL(res.headers()['location'] ?? '').searchParams.get('scope') ?? '';
+
+        expect(scope).toContain('openid');
+        expect(scope).toContain('offline_access');
+        expect(scope).toContain('urn:zitadel:iam:org:project:roles');
+
+        // The org scope is conditional on configuration, so assert the implication rather than presence:
+        // whenever an org id is set, the scope must be there.
+        const orgScoped = /urn:zitadel:iam:org:id:\d+/.test(scope);
+        const html = await (await request.get('/')).text();
+        const orgConfigured = /oidcOrgScoped:\s*true/.test(html);
+        if (orgConfigured) {
+            expect(orgScoped, 'an configured org id must appear as a scope').toBe(true);
+        }
+    });
+
     test('a hostile return_to is discarded without derailing the flow', async ({ request }) => {
         test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
         const res = await request.get('/auth/login.php?return_to=https%3A%2F%2Fevil.example%2Fx', { maxRedirects: 0 });

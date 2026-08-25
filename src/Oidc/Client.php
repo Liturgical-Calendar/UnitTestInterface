@@ -36,23 +36,79 @@ use RuntimeException;
  */
 final class Client
 {
-    /** Scopes requested unless a caller overrides them. `offline_access` is what yields a refresh token. */
-    public const DEFAULT_SCOPES = ['openid', 'profile', 'email', 'offline_access'];
+    /**
+     * Scopes requested unless a caller overrides them.
+     *
+     * `offline_access` is what yields a refresh token. `urn:zitadel:iam:org:project:roles` is what puts
+     * the project's roles in the token: without it a login can succeed while the user arrives with no
+     * roles at all, which reads like a permissions bug rather than a missing scope.
+     */
+    public const DEFAULT_SCOPES = [
+        'openid',
+        'profile',
+        'email',
+        'offline_access',
+        'urn:zitadel:iam:org:project:roles',
+    ];
 
     private string $issuer;
     private string $clientId;
     private string $redirectUri;
     private ?string $internalUrl;
 
+    /**
+     * The Zitadel organization to scope login and registration to.
+     *
+     * Strongly recommended on a shared instance. When set, `urn:zitadel:iam:org:id:<id>` is appended to
+     * every authorization request, forcing both sign-in AND new-user registration into that org. Without
+     * it Zitadel's hosted login lands a new registration in the IAM-internal default org, which carries no
+     * project roles — the user appears registered but has no email on file, shows their user id as their
+     * username, holds no roles, and is invisible to org-scoped admin APIs. That failure looks like a
+     * broken session rather than a missing scope, which is what makes it worth naming here.
+     */
+    private ?string $orgId;
+
     /** @var array<string, mixed>|null Discovery document, fetched at most once per instance. */
     private ?array $discovery = null;
 
-    public function __construct(string $issuer, string $clientId, string $redirectUri, ?string $internalUrl = null)
-    {
+    public function __construct(
+        string $issuer,
+        string $clientId,
+        string $redirectUri,
+        ?string $internalUrl = null,
+        ?string $orgId = null
+    ) {
         $this->issuer      = rtrim($issuer, '/');
         $this->clientId    = $clientId;
         $this->redirectUri = $redirectUri;
         $this->internalUrl = ( null !== $internalUrl && '' !== trim($internalUrl) ) ? rtrim(trim($internalUrl), '/') : null;
+        $this->orgId       = self::normalizeOrgId($orgId);
+    }
+
+    /**
+     * Trim, treat empty as unset, and reject anything non-numeric.
+     *
+     * Zitadel ids are snowflake-style decimal strings, so a non-digit value can only be a
+     * misconfiguration — and silently appending it would produce a malformed scope that Zitadel rejects
+     * with a far less helpful message than saying so here.
+     */
+    private static function normalizeOrgId(?string $orgId): ?string
+    {
+        if (null === $orgId) {
+            return null;
+        }
+
+        $trimmed = trim($orgId);
+        if ('' === $trimmed) {
+            return null;
+        }
+
+        if (1 !== preg_match('/^[0-9]+$/', $trimmed)) {
+            error_log('OIDC: ZITADEL_ORG_ID is not numeric and has been ignored: ' . $trimmed);
+            return null;
+        }
+
+        return $trimmed;
     }
 
     /**
@@ -80,7 +136,8 @@ final class Client
             trim((string) $_ENV['ZITADEL_ISSUER']),
             trim((string) $_ENV['ZITADEL_CLIENT_ID']),
             $redirectUri,
-            isset($_ENV['ZITADEL_INTERNAL_URL']) ? (string) $_ENV['ZITADEL_INTERNAL_URL'] : null
+            isset($_ENV['ZITADEL_INTERNAL_URL']) ? (string) $_ENV['ZITADEL_INTERNAL_URL'] : null,
+            isset($_ENV['ZITADEL_ORG_ID']) ? (string) $_ENV['ZITADEL_ORG_ID'] : null
         );
     }
 
@@ -115,11 +172,16 @@ final class Client
      */
     public function getAuthorizationUrl(string $state, string $nonce, string $codeChallenge, array $scopes = []): string
     {
+        $requested = [] === $scopes ? self::DEFAULT_SCOPES : $scopes;
+        if (null !== $this->orgId) {
+            $requested[] = 'urn:zitadel:iam:org:id:' . $this->orgId;
+        }
+
         $params = [
             'response_type'         => 'code',
             'client_id'             => $this->clientId,
             'redirect_uri'          => $this->redirectUri,
-            'scope'                 => implode(' ', [] === $scopes ? self::DEFAULT_SCOPES : $scopes),
+            'scope'                 => implode(' ', array_unique($requested)),
             'state'                 => $state,
             'nonce'                 => $nonce,
             'code_challenge'        => $codeChallenge,

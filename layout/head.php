@@ -33,6 +33,9 @@ $isAuthenticated = JwtAuth::isAuthenticated();
 // does, and falls back to the legacy username/password modal when it does not — one visible button
 // whose destination depends on what is available, rather than two to keep in step.
 $oidcEnabled = OidcClient::isConfigured();
+// Published so a test can assert the implication "org id configured => org scope sent" without
+// needing to know this deployment's configuration.
+$oidcOrgScoped = '' !== trim((string) ( $_ENV['ZITADEL_ORG_ID'] ?? '' ));
 
 // Only create I18n if not already initialized (a page may need it before including this file,
 // e.g. to make an early API call whose errors are shown translated)

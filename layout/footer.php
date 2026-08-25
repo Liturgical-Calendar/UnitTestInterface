@@ -62,7 +62,8 @@ if ($proxyEnabled) {
             riteSelectLabel: <?php echo json_encode(_('Liturgical Rite')); ?>,
             calendarSelectLabel: <?php echo json_encode(_('Liturgical Calendar')); ?>,
             isAuthenticated: <?php echo isset($isAuthenticated) ? ($isAuthenticated ? 'true' : 'false') : 'false'; ?>,
-            oidcEnabled: <?php echo isset($oidcEnabled) ? ($oidcEnabled ? 'true' : 'false') : 'false'; ?>
+            oidcEnabled: <?php echo isset($oidcEnabled) ? ($oidcEnabled ? 'true' : 'false') : 'false'; ?>,
+            oidcOrgScoped: <?php echo isset($oidcOrgScoped) ? ($oidcOrgScoped ? 'true' : 'false') : 'false'; ?>
         });
     </script>
 <?php
