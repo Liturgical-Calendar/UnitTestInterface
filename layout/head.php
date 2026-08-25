@@ -38,6 +38,12 @@ $oidcEnabled = OidcClient::isConfigured();
 // non-numeric org id, and a template checking only for non-emptiness would disagree with it.
 $oidcOrgScoped = OidcClient::isOrgScoped();
 
+// Whether this visitor may start a test run and store its results. Distinct from `$isAuthenticated`:
+// reading Past Runs is public now, so being logged in is no longer what the runner pages gate on —
+// holding one of JwtAuth::RUN_TESTS_ROLES is. Published so the Run Tests button renders disabled on
+// first paint rather than enabling and then failing at the POST.
+$canRunTests = JwtAuth::canRunTests();
+
 // Only create I18n if not already initialized (a page may need it before including this file,
 // e.g. to make an early API call whose errors are shown translated)
 if (!isset($i18n)) {

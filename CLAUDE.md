@@ -32,7 +32,7 @@ on a responsive dashboard.
 UnitTestInterface/
 ├── index.php              # Main test runner UI (Calendars)
 ├── resources.php          # Resource testing interface
-├── results.php            # Authenticated store/list/fetch for Past Runs
+├── results.php            # Past Runs: public list/fetch, role-gated store
 ├── includes/              # PHP includes
 │   ├── I18n.php          # Internationalization class
 │   └── pgettext.php      # Context-aware translation
@@ -611,13 +611,59 @@ not match its configured external domain, so back-channel calls sent to a contai
 issuer's host — injected through a Guzzle handler stack, because Guzzle derives `Host` from the request
 URI and overwrites a default header.
 
+### Reading Past Runs is Public; Running Tests is Not
+
+`results.php` gates per method, not per request. `GET` — both the listing and `?file=` detail — is **public**;
+`POST` requires authentication *and* one of `JwtAuth::RUN_TESTS_ROLES` (`admin`, `test_editor`). It used to be a
+single `isAuthenticated()` check above the method switch, which meant an anonymous visitor to what is otherwise a
+public test dashboard could not see a single stored run.
+
+Opening the read side was a deliberate trade, not an oversight: a stored run carries no credentials and no user
+identity, but it does reveal which calendars are failing validation and which API paths a run exercised. That is
+acceptable for a dashboard whose purpose is publishing test outcomes.
+
+**The write gate answers 401 and 403 distinctly**, because the remedy differs — 401 means nobody is logged in and
+logging in would help, 403 means someone is and it would not. Both runners branch on them separately
+(`#results-save-unauthenticated` vs `#results-save-forbidden`); reporting either as "could not save" would misread a
+run that actually succeeded.
+
+**`safeResultPath()` is now load-bearing** — it is all that stands between a public `?file=` and an arbitrary file
+read. Traversal is blocked by the character class rather than by the `basename()` check: `[0-9T\-Z]` admits no `.`,
+no `/` and no `\`, so `..` and an absolute path are unrepresentable. The `basename()` check is a deliberately
+redundant second line. The pattern carries the `D` modifier because PCRE's `$` otherwise also matches before a
+trailing newline.
+
+**One predicate, two consumers.** `JwtAuth::canRunTests()` is asked by `results.php` (which enforces it) and by
+`layout/head.php` (which publishes `$canRunTests` so the Run Tests button renders disabled on first paint rather
+than enabling and then failing at the POST). A `hasRole('admin') || hasRole('test_editor')` spelled out at each call
+site is exactly how the endpoint and the button would drift into disagreeing. `layout/footer.php` publishes the role
+list itself as `runTestsRoles` alongside the verdict, so `canRunTests()` in `common.js` can re-ask after an in-page
+legacy-modal login — which does not reload, leaving the server-rendered verdict stale — without a hardcoded copy of
+the list in JS.
+
+**Permission is not a readiness condition.** The role check is applied to `#startTestRunnerBtn.disabled` *beside*
+`ReadyToRunTests.check()`, never folded into it: `hidePageLoader()` is gated on `check()`, so a permission-aware
+`check()` would leave every anonymous visitor under the translucent page loader forever — the #63 failure mode,
+reintroduced. Readiness is a question about the page; permission is a question about the user. The Past Runs
+`change` handler applies the same predicate rather than writing `disabled = false`, since that branch is reachable
+while logged out now that the dropdown populates for everyone.
+
+The **UI gate is a courtesy, not the enforcement point**: `results.php` answers 403 regardless of what the page
+believes. Note also that starting a *run* is gated only client-side — the WebSocket server has no notion of these
+roles — so what the role actually protects is storing the result.
+
+**Untested case, knowingly.** "Authenticated but lacking the role" has no e2e coverage: the fixture user
+authenticates through the API's legacy service, whose `User` model defaults to `['admin']`, and covering the
+negative would mean seeding a second roleless Zitadel user. The positive and anonymous cases are covered; this gap
+was accepted rather than papered over with a test that looks like it covers the gate and does not.
+
 ## Key Files
 
 | File                          | Purpose                                    |
 |-------------------------------|--------------------------------------------|
 | `index.php`                   | Main test runner with results              |
 | `resources.php`               | Resource data test runner                  |
-| `results.php`                 | Authenticated Past Runs store/list/fetch   |
+| `results.php`                 | Past Runs: public read, role-gated write   |
 | `assets/js/index.js`          | WebSocket communication, test logic        |
 | `assets/js/resources.js`      | Resources runner logic                     |
 | `assets/js/wsProtocol.js`     | Shared WebSocket protocol helpers          |

@@ -5,6 +5,7 @@
  */
 
 import {
+    canRunTests,
     escapeHtmlAttr,
     escapeQuotesAndLinkifyUrls,
     fetchJson,
@@ -388,9 +389,18 @@ class ReadyToRunTests {
             console.warn('Start button not found');
             return;
         }
-        startBtn.disabled = !testsReady;
+        // Permission is deliberately NOT one of ReadyToRunTests' conditions, and this is the whole
+        // reason it is applied here instead. `hidePageLoader()` below is gated on `testsReady`, so
+        // folding "may this user run tests?" into check() would leave every anonymous visitor
+        // stuck under the translucent page loader forever — the #63 failure mode, reintroduced.
+        // Readiness is a question about the page; permission is a question about the user. The
+        // page finishes loading either way; only the button stays disabled.
+        const permitted = canRunTests();
+        startBtn.disabled = !testsReady || !permitted;
         startBtn.classList.remove('btn-secondary');
         startBtn.classList.add('btn-primary');
+        // A disabled control with no explanation reads as a bug rather than as a policy.
+        startBtn.title = permitted ? '' : startBtn.dataset.noPermissionTitle ?? '';
         const stopIcon = startBtn.querySelector('.fa-stop');
         if (stopIcon) {
             stopIcon.classList.remove('fa-stop');
@@ -1020,11 +1030,17 @@ const runTests = () => {
             postRunResults( buildCalendarsPayload() )
                 .then( () => safeToastShow('#results-saved') )
                 .catch( ( err ) => {
-                    // A 401 is not a failure of the run, nor of the save path: nobody is logged
-                    // in, and results.php declines to store an anonymous run. Reporting "could
-                    // not save" there reads as a defect in a run that actually succeeded.
+                    // Neither a 401 nor a 403 is a failure of the run, nor of the save path, so
+                    // neither is reported as "could not save" — that reads as a defect in a run
+                    // that actually succeeded. They are kept apart because the remedy differs:
+                    // 401 means nobody is logged in and logging in would help, 403 means someone
+                    // is and it would not.
                     if ( 401 === err.status ) {
                         safeToastShow('#results-save-unauthenticated');
+                        return;
+                    }
+                    if ( 403 === err.status ) {
+                        safeToastShow('#results-save-forbidden');
                         return;
                     }
                     console.error( 'Failed to persist run results', err );
@@ -2227,7 +2243,12 @@ if ( pastRunsSelect ) {
         const startBtn = document.querySelector('#startTestRunnerBtn');
         if ( e.target.value === '' ) {
             if ( startBtn ) {
-                startBtn.disabled = false;
+                // Not an unconditional `false`: leaving a replay re-enables the button only for
+                // someone permitted to run tests. The Past Runs dropdown is populated for anyone
+                // now that listing is public, so this branch is reachable while logged out — and
+                // writing `false` here would hand an anonymous visitor a live Run Tests button
+                // that the permission gate in tryEnableBtn() had correctly disabled.
+                startBtn.disabled = !canRunTests();
             }
             resetTestUI();
             resyncLiveStateFromDom();
@@ -2244,12 +2265,23 @@ if ( pastRunsSelect ) {
     pastRuns.load();
 
     // The login modal dispatches these on `document` after it has updated the navbar and the
-    // `data-requires-auth` regions, so the column is already visible by the time we refill it.
+    // `data-requires-auth` regions.
+    //
+    // Both events reload rather than one loading and the other clearing: listing stored runs is
+    // public, so a logged-out dropdown holds exactly what a fresh anonymous page load would show.
+    // `auth:logout` used to clear it, back when results.php answered 401 to an anonymous listing
+    // and leaving the names on screen would have been a leak.
+    //
+    // Each also re-evaluates the Run Tests button, because the login modal authenticates without
+    // reloading the page — so `LitCalConfig.canRunTests`, rendered by the server before the login,
+    // is stale from here on and `canRunTests()` has to re-ask `Auth`'s freshly populated roles.
     document.addEventListener( 'auth:login', () => {
         pastRuns.load();
+        ReadyToRunTests.tryEnableBtn();
     });
     document.addEventListener( 'auth:logout', () => {
-        pastRuns.clear();
+        pastRuns.load();
+        ReadyToRunTests.tryEnableBtn();
     });
 }
 

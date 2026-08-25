@@ -25,10 +25,53 @@ const sampleRun = {
 test.describe('unauthenticated', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
-    test('rejects unauthenticated requests with 401', async ({ request }) => {
+    // Reading stored runs is deliberately public: this is a public test dashboard, and the
+    // stored runs carry no credentials and no user identity. Writing is not — see the POST
+    // cases below. The two used to share one gate at the top of results.php.
+    test('lists runs without a session', async ({ request }) => {
         const res = await request.get('results.php');
+        expect(res.status()).toBe(200);
+        expect(Array.isArray(await res.json())).toBe(true);
+    });
+
+    test('loads one stored run without a session', async ({ request }) => {
+        // Seeded by an authenticated request in the shared `test` project below; if no run is
+        // stored yet there is nothing to read back, and the listing case above already covers
+        // the route being open.
+        const list = await request.get('results.php');
+        const summaries = await list.json();
+        test.skip(summaries.length === 0, 'no stored run to read back');
+        const detail = await request.get(`results.php?file=${encodeURIComponent(summaries[0].file)}`);
+        expect(detail.status()).toBe(200);
+        expect(await detail.json()).toHaveProperty('runType');
+    });
+
+    test('still refuses to store a run', async ({ request }) => {
+        const res = await request.post('results.php', {
+            headers: { 'Content-Type': 'application/json' },
+            data: sampleRun,
+        });
         expect(res.status()).toBe(401);
     });
+
+    // safeResultPath() is the only thing between a now-public `?file=` and an arbitrary file
+    // read, so the traversal cases are asserted without a session too.
+    for (const attempt of [
+        '..%2F..%2Fcomposer.json',
+        '..%2Fcomposer.json',
+        '%2Fetc%2Fpasswd',
+        'calendars-2026-01-01T00-00-00Z.json%00.png',
+        'calendars-..%2F..%2Fcomposer.json',
+        'results/../../composer.json',
+        'composer.json',
+    ]) {
+        test(`refuses \`?file=${attempt}\``, async ({ request }) => {
+            const res = await request.get(`results.php?file=${attempt}`);
+            // 400 (rejected by the pattern) or 404 (accepted shape, no such run) — never 200,
+            // and never the contents of a file outside the results directory.
+            expect([400, 404]).toContain(res.status());
+        });
+    }
 });
 
 test('rejects path traversal on load', async ({ request }) => {

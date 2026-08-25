@@ -21,12 +21,26 @@ test('admin.php is unlinked from the interface', async ({ page }) => {
 test.describe('logged out', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
+    // Everything a single anonymous page load can answer is asserted from one load per page.
+    // These pages fetch /validations, /calendars, /missals and more on load, and the API's rate
+    // limiter is shared across the whole suite — a test that opens a runner page just to read one
+    // boolean spends real budget, and the suite has a history of going red locally once it runs out.
     for (const target of RUNNER_PAGES) {
-        test(`${target} publishes isAuthenticated=false`, async ({ page }) => {
+        test(`${target} renders the anonymous state`, async ({ page }) => {
             await page.goto(target);
             await page.waitForLoadState('domcontentloaded');
-            const isAuth = await page.evaluate(() => window.LitCalConfig.isAuthenticated);
-            expect(isAuth).toBe(false);
+            expect(await page.evaluate(() => window.LitCalConfig.isAuthenticated)).toBe(false);
+            expect(await page.evaluate(() => window.LitCalConfig.canRunTests)).toBe(false);
+
+            // The page still finishes loading. Permission is not a readiness condition, so the
+            // loader must come down even though the button never enables — folding the role check
+            // into ReadyToRunTests.check() would have left an anonymous visitor stuck under it
+            // forever, which is the #63 failure mode.
+            await expect(page.locator('.page-loader')).toBeHidden({ timeout: 60_000 });
+            await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();
+
+            // Reading stored runs is public, so the dropdown is no longer an authenticated region.
+            await expect(page.locator('#pastRunsSelect')).toBeVisible();
         });
     }
 
@@ -37,20 +51,37 @@ test.describe('logged out', () => {
         await expect(page.locator('#userMenu')).toBeHidden();
     });
 
-    test('Past Runs is hidden', async ({ page }) => {
-        await page.goto('/');
-        await expect(page.locator('#pastRunsSelect')).toBeHidden();
+    test('the server does not gate the Past Runs wrapper on auth', async ({ request }) => {
+        // Asserted against the raw HTML rather than the live DOM on purpose: initPermissionUI()
+        // also acts on `data-requires-auth`, and a DOM assertion would pass whether or not the
+        // server got it right. The attribute has to be gone from the markup, not merely inert.
+        const html = await (await request.get('/')).text();
+        const wrapper = html.match(/<div class="([^"]*)"[^>]*>\s*<label for="pastRunsSelect"/);
+        expect(wrapper, 'the Past Runs wrapper should be present in the served markup').not.toBeNull();
+        expect(wrapper?.[1]).not.toContain('d-none');
+        expect(html).not.toMatch(/data-requires-auth>\s*<label for="pastRunsSelect"/);
     });
 
-    test('the server sends Past Runs already hidden', async ({ request }) => {
-        // Asserted against the raw HTML rather than the live DOM on purpose. initPermissionUI()
-        // hides the column too, and expect().toBeHidden() auto-retries, so a DOM assertion passes
-        // whether or not the server got it right — it just waits out the flash of visibility this
-        // gate exists to prevent.
-        const html = await (await request.get('/')).text();
-        const wrapper = html.match(/<div class="([^"]*)"[^>]*data-requires-auth>\s*<label for="pastRunsSelect"/);
-        expect(wrapper, 'the Past Runs wrapper should be present in the served markup').not.toBeNull();
-        expect(wrapper?.[1]).toContain('d-none');
+    test('the Past Runs dropdown populates while logged out', async ({ page }) => {
+        await page.route('**/results.php', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([
+                    {
+                        file: 'calendars-2026-01-01T00-00-00Z.json',
+                        runType: 'calendars',
+                        timestamp: '2026-01-01T00:00:00Z',
+                        calendar: 'VA',
+                        counts: { successful: 3, failed: 0 },
+                    },
+                ]),
+            })
+        );
+        await page.goto('/');
+        await page.waitForLoadState('domcontentloaded');
+        // Two options: the "— Live —" placeholder plus the one stored run.
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(2);
     });
 
     test('a declined save reports "log in to save", not a failure', async ({ page }) => {
@@ -72,13 +103,18 @@ test.describe('logged out', () => {
     });
 
     test('auth:login repopulates Past Runs without a reload', async ({ page }) => {
+        // Stubbed empty first. The listing is public now, so a real results.php would answer with
+        // whatever runs happen to be stored and the counts below would depend on the machine.
+        await page.route('**/results.php', (route) =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+        );
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
-        // Logged out, results.php answers 401, so only the "— Live —" placeholder is present.
         await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
 
         // The endpoint is stubbed rather than logging in for real: the subject here is that the
         // runner reacts to the event at all, not that the API authenticates.
+        await page.unroute('**/results.php');
         await page.route('**/results.php', (route) =>
             route.fulfill({
                 status: 200,
@@ -101,7 +137,12 @@ test.describe('logged out', () => {
         await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
     });
 
-    test('a logout landing mid-fetch does not leave the prior session\'s runs behind', async ({ page }) => {
+    test('a second load landing mid-fetch does not double up the dropdown', async ({ page }) => {
+        // Stubbed empty first, for the same reason as the spec above: the listing is public, so
+        // the page's own load would otherwise fill the dropdown from real stored runs.
+        await page.route('**/results.php', (route) =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+        );
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
         await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
@@ -111,6 +152,7 @@ test.describe('logged out', () => {
         const held = new Promise<void>((resolve) => {
             release = resolve;
         });
+        await page.unroute('**/results.php');
         await page.route('**/results.php', async (route) => {
             await held;
             await route.fulfill({
@@ -132,20 +174,33 @@ test.describe('logged out', () => {
         await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:logout')));
         release();
 
-        // The in-flight load must not repopulate a list that has since been cleared: a logged-out
-        // page would otherwise keep the previous session's run filenames in a hidden dropdown.
+        // Both events start a load, and the first is still in flight when the second clears the
+        // list — so the generation counter in createPastRunsList() has to make the first one drop
+        // its results. Without it both loads append and the dropdown ends up with the same run
+        // listed twice (3 options rather than 2).
+        //
+        // This spec used to assert the opposite count, for a reason that no longer holds: back
+        // when results.php answered 401 to an anonymous listing, `auth:logout` cleared the
+        // dropdown and the concern was a logged-out page keeping the previous session's run
+        // filenames on screen. Listing is public now, so logout reloads instead of clearing and
+        // there is no session-scoped data left to leak — but the race the counter guards is
+        // unchanged, so the guard is still worth pinning.
         await page.waitForTimeout(500);
-        await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(2);
     });
 });
 
 test.describe('logged in', () => {
     for (const target of RUNNER_PAGES) {
-        test(`${target} publishes isAuthenticated=true`, async ({ page }) => {
+        test(`${target} renders the permitted state`, async ({ page }) => {
+            // The e2e fixture user authenticates through the API's legacy service, whose User model
+            // defaults to `['admin']` — one of the roles JwtAuth::RUN_TESTS_ROLES names. The negative
+            // case (authenticated but lacking the role) is deliberately not covered: it would need a
+            // second seeded Zitadel user, and that gap is a known, accepted one.
             await page.goto(target);
             await page.waitForLoadState('domcontentloaded');
-            const isAuth = await page.evaluate(() => window.LitCalConfig.isAuthenticated);
-            expect(isAuth).toBe(true);
+            expect(await page.evaluate(() => window.LitCalConfig.isAuthenticated)).toBe(true);
+            expect(await page.evaluate(() => window.LitCalConfig.canRunTests)).toBe(true);
         });
     }
 
@@ -160,10 +215,13 @@ test.describe('logged in', () => {
         await expect(page.locator('#pastRunsSelect')).toBeVisible();
     });
 
-    test('the server sends Past Runs already visible', async ({ request }) => {
-        const html = await (await request.get('/')).text();
-        const wrapper = html.match(/<div class="([^"]*)"[^>]*data-requires-auth>\s*<label for="pastRunsSelect"/);
-        expect(wrapper, 'the Past Runs wrapper should be present in the served markup').not.toBeNull();
-        expect(wrapper?.[1]).not.toContain('d-none');
+    test('a permitted user may store a run', async ({ request }) => {
+        const res = await request.post('results.php', {
+            headers: { 'Content-Type': 'application/json' },
+            data: { schemaVersion: 1, runType: 'calendars' },
+        });
+        // 400 for the deliberately incomplete envelope — the point is that it got past the
+        // permission gate rather than answering 401 or 403.
+        expect(res.status()).toBe(400);
     });
 });

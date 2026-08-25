@@ -30,13 +30,31 @@ if (!is_dir(__DIR__ . '/logs') && !mkdir(__DIR__ . '/logs', 0775, true) && !is_d
 
 header('Content-Type: application/json');
 
-if (!JwtAuth::isAuthenticated()) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Authentication required']);
-    exit;
-}
-
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// Reading is public; writing is not. This used to be one `isAuthenticated()` gate covering every
+// method, which meant an anonymous visitor to a public test dashboard could not see any past run.
+//
+// What a stored run exposes was checked before opening it: no credentials and no user identity —
+// only which calendars are failing validation and which API paths a run exercised. That is
+// acceptable for a dashboard whose whole purpose is publishing test outcomes, and it is a
+// deliberate choice rather than an oversight.
+//
+// The write gate answers with two distinct statuses because the client handles them differently:
+// 401 means log in, 403 means logged in but not permitted, and telling an authorized-but-unroled
+// user to "log in" would send them round a loop that cannot help.
+if ($method === 'POST') {
+    if (!JwtAuth::isAuthenticated()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Authentication required']);
+        exit;
+    }
+    if (!JwtAuth::canRunTests()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'You do not have permission to store test runs']);
+        exit;
+    }
+}
 
 if ($method === 'GET') {
     $file = $_GET['file'] ?? null;
@@ -104,10 +122,22 @@ echo json_encode(['error' => 'Method not allowed']);
 /**
  * Resolve a client-supplied file name to a safe absolute path inside RESULTS_DIR,
  * or null if it fails validation (defends against path traversal).
+ *
+ * This is the only thing between a **public** `?file=` parameter and an arbitrary file read, so it
+ * is worth saying exactly what stops what. Traversal is blocked by the character class rather than
+ * by the `basename()` check: `[0-9T\-Z]` admits no `.`, no `/` and no `\`, so `..` and an absolute
+ * path are both unrepresentable, and a null byte fails it too. The `basename()` check is a second,
+ * redundant line rather than the load-bearing one — kept deliberately, since a later widening of
+ * the character class would otherwise silently remove the only defence.
+ *
+ * The `D` modifier matters here: without it PCRE's `$` also matches before a trailing newline, so
+ * `calendars-….json\n` passed this check. It resolved to a path that does not exist, so nothing
+ * could be read through it — but an allow-list that accepts a string it did not mean to accept is
+ * not one worth relying on, and this one is now reachable without a session.
  */
 function safeResultPath(string $file): ?string
 {
-    if (!preg_match('/^(calendars|resources)-[0-9T\-Z]+\.json$/', $file)) {
+    if (!preg_match('/^(calendars|resources)-[0-9T\-Z]+\.json$/D', $file)) {
         return null;
     }
     if (basename($file) !== $file) {
