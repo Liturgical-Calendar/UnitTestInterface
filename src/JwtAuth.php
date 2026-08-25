@@ -1,139 +1,150 @@
 <?php
 
 /**
- * JWT Authentication helper for server-side token verification.
+ * Server-side authentication state, resolved by asking the API.
  *
- * Validates JWT access tokens from HttpOnly cookies using the same
- * secret as the LiturgicalCalendarAPI. This enables PHP to verify
- * authentication state without client-side JavaScript.
+ * ## Why this does not verify anything itself
  *
- * Cookie name: litcal_access_token (set by API)
+ * It used to: it decoded the `litcal_access_token` cookie locally with `JWT::decode()` against a shared
+ * `JWT_SECRET`, and required `type === 'access'`. That only ever understood the API's own HS256 tokens, so
+ * once the project moved to Zitadel a perfectly valid RS256 access token — the one LiturgicalCalendarFrontend
+ * writes into that same cookie — failed to decode and the user read as anonymous.
+ *
+ * Rather than teach this class a second validation path, it now forwards the cookie to `GET /auth/me` and
+ * believes the answer. The API's `OidcAuthMiddleware` already reads that exact cookie, validates it RS256
+ * against Zitadel's JWKS, and falls back to the legacy HS256 shape — so delegation covers **both** token
+ * kinds, and the legacy fallback costs this repository nothing to keep working.
+ *
+ * There is deliberately no local-decode fallback for an unreachable API. This is a test interface *for*
+ * that API; if it is down there is nothing useful to do, and a second validation path that could disagree
+ * with the first is exactly the failure mode being removed. `JWT_SECRET` is no longer read.
+ *
+ * The public surface is unchanged, so `layout/head.php`, `layout/topnavbar.php` and `results.php` did not
+ * have to change with it.
  */
 
 namespace LiturgicalCalendar\UnitTestInterface;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-use Firebase\JWT\ExpiredException;
-use Firebase\JWT\SignatureInvalidException;
-use Firebase\JWT\BeforeValidException;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use RuntimeException;
 
 class JwtAuth
 {
     private const COOKIE_NAME = 'litcal_access_token';
-    private const DEFAULT_SECRET_PLACEHOLDER = 'change-this-to-match-api-jwt-secret';
+
+    /** How long to wait on /auth/me. Short: it gates page rendering. */
+    private const TIMEOUT_SECONDS = 5;
 
     /**
-     * @var string|null JWT secret key from environment
-     */
-    private static ?string $secret = null;
-
-    /**
-     * @var string JWT algorithm from environment (default: HS256)
-     */
-    private static string $algorithm = 'HS256';
-
-    /**
-     * @var object|null Cached decoded token payload
+     * @var object|null Cached identity for this request, shaped like the payload this class used to decode.
      */
     private static ?object $cachedPayload = null;
 
     /**
-     * @var bool Whether initialization has been attempted
+     * @var bool Whether the identity lookup has run. Distinct from the payload being non-null, so that an
+     *           anonymous request costs one HTTP call rather than one per caller.
      */
-    private static bool $initialized = false;
+    private static bool $resolved = false;
 
     /**
-     * Initialize JWT configuration from environment variables.
-     * Must be called after dotenv is loaded.
+     * Kept for call-site compatibility. Configuration is read lazily, so there is nothing to initialize.
      */
     public static function init(): void
     {
-        if (self::$initialized) {
-            return;
-        }
-
-        self::$secret = $_ENV['JWT_SECRET'] ?? null;
-        self::$algorithm = $_ENV['JWT_ALGORITHM'] ?? 'HS256';
-        self::$initialized = true;
     }
 
     /**
-     * Check if JWT configuration is available.
+     * True when the API this class delegates to can be addressed.
      *
-     * @return bool True if JWT_SECRET is configured
+     * @return bool
      */
     public static function isConfigured(): bool
     {
-        self::init();
-        return self::$secret !== null && self::$secret !== '' && self::$secret !== self::DEFAULT_SECRET_PLACEHOLDER;
+        try {
+            return '' !== ApiBase::resolve();
+        } catch (RuntimeException) {
+            return false;
+        }
     }
 
     /**
-     * Get the JWT access token from the HttpOnly cookie.
+     * Get the access token from the HttpOnly cookie.
      *
      * @return string|null The token or null if not present
      */
     public static function getToken(): ?string
     {
-        return $_COOKIE[self::COOKIE_NAME] ?? null;
+        $token = $_COOKIE[self::COOKIE_NAME] ?? null;
+        return is_string($token) && '' !== $token ? $token : null;
     }
 
     /**
-     * Verify and decode the JWT access token.
+     * Resolve the caller's identity, asking the API at most once per request.
      *
-     * @return object|null Decoded token payload or null if invalid/missing
+     * @return object|null An object carrying `sub`, `roles` and `exp`, or null when not authenticated.
      */
     public static function verifyToken(): ?object
     {
-        // Return cached result if available
-        if (self::$cachedPayload !== null) {
+        if (self::$resolved) {
             return self::$cachedPayload;
         }
 
-        self::init();
-
-        if (!self::isConfigured()) {
-            return null;
-        }
+        self::$resolved      = true;
+        self::$cachedPayload = null;
 
         $token = self::getToken();
-        if ($token === null) {
+        if (null === $token) {
             return null;
         }
 
         try {
-            $decoded = JWT::decode($token, new Key(self::$secret, self::$algorithm));
-
-            // Verify token type is 'access' (not 'refresh')
-            if (!isset($decoded->type) || $decoded->type !== 'access') {
-                return null;
-            }
-
-            self::$cachedPayload = $decoded;
-            return $decoded;
-        } catch (ExpiredException $e) {
-            // Token has expired
-            return null;
-        } catch (SignatureInvalidException $e) {
-            // Invalid signature
-            return null;
-        } catch (BeforeValidException $e) {
-            // Token not yet valid
-            return null;
-        } catch (\UnexpectedValueException $e) {
-            // Malformed token
-            return null;
-        } catch (\Exception $e) {
-            // Any other error
+            $base = ApiBase::resolve();
+        } catch (RuntimeException $e) {
+            error_log('JwtAuth: cannot resolve the API base URL: ' . $e->getMessage());
             return null;
         }
+
+        try {
+            $response = ( new Client(['timeout' => self::TIMEOUT_SECONDS, 'http_errors' => false]) )
+                ->get($base . '/auth/me', [
+                    'headers' => [
+                        'Accept' => 'application/json',
+                        // Forwarded rather than relying on a cookie jar: this is a server-to-server call
+                        // made on behalf of the browser, and the API reads this exact cookie name.
+                        'Cookie' => self::COOKIE_NAME . '=' . $token,
+                    ],
+                ]);
+        } catch (GuzzleException $e) {
+            // A transport failure is not an authorization decision, but it cannot be treated as success.
+            error_log('JwtAuth: /auth/me is unreachable: ' . $e->getMessage());
+            return null;
+        }
+
+        if (200 !== $response->getStatusCode()) {
+            return null;
+        }
+
+        /** @var array<string, mixed>|null $body */
+        $body = json_decode((string) $response->getBody(), true);
+        if (!is_array($body) || true !== ( $body['authenticated'] ?? false )) {
+            return null;
+        }
+
+        self::$cachedPayload = (object) [
+            // `sub` rather than `username` so getUsername() keeps working unchanged.
+            'sub'   => is_string($body['username'] ?? null) ? $body['username'] : null,
+            'roles' => is_array($body['roles'] ?? null) ? $body['roles'] : [],
+            'exp'   => is_int($body['exp'] ?? null) ? $body['exp'] : null,
+        ];
+
+        return self::$cachedPayload;
     }
 
     /**
      * Check if the current request is authenticated.
      *
-     * @return bool True if valid JWT token is present
+     * @return bool True if the API recognises the token
      */
     public static function isAuthenticated(): bool
     {
@@ -157,7 +168,7 @@ class JwtAuth
     /**
      * Get the authenticated user's roles.
      *
-     * @return array Array of role strings
+     * @return array<int, string> Array of role strings
      */
     public static function getRoles(): array
     {
@@ -194,10 +205,11 @@ class JwtAuth
     }
 
     /**
-     * Clear the cached payload (useful for testing).
+     * Clear the cached identity (useful for testing).
      */
     public static function clearCache(): void
     {
         self::$cachedPayload = null;
+        self::$resolved      = false;
     }
 }
