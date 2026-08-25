@@ -123,7 +123,7 @@ final class TokenValidator
             // do hold, expiry, or an issuer or audience mismatch. Those are answers, not staleness, and
             // refetching on them would let any junk token trigger an outbound request.
             $kid = self::kidOf($token);
-            if (null !== $kid && !self::keySetHasKid($jwks, $kid)) {
+            if (null !== $kid && !self::keySetHasKid($jwks, $kid) && $this->forcedRefreshAllowed()) {
                 $fresh = $this->keySet(true);
                 if (null !== $fresh) {
                     $payload = self::decode($token, $fresh);
@@ -223,11 +223,9 @@ final class TokenValidator
     {
         $cacheFile = $this->cacheFile();
 
-        // A forced refresh still respects a short cooldown, so an unknown key id cannot be used to drive
-        // unbounded traffic at the provider. See JWKS_MIN_REFETCH_SECONDS.
-        $ttl = $forceRefresh ? self::JWKS_MIN_REFETCH_SECONDS : self::JWKS_TTL_SECONDS;
-
-        if (null !== $cacheFile && is_file($cacheFile) && ( time() - (int) filemtime($cacheFile) ) < $ttl) {
+        // The rate bound on a forced refresh lives in forcedRefreshAllowed(), not here: it has to survive
+        // a FAILED fetch, and this file's mtime only advances on success.
+        if (!$forceRefresh && null !== $cacheFile && is_file($cacheFile) && ( time() - (int) filemtime($cacheFile) ) < self::JWKS_TTL_SECONDS) {
             /** @var array<string, mixed>|null $cached */
             $cached = json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && isset($cached['keys'])) {
@@ -278,17 +276,54 @@ final class TokenValidator
     }
 
     /**
+     * May an unknown key id force a refetch right now?
+     *
+     * Records the ATTEMPT before it is made, in a file of its own. Both details matter:
+     *
+     *  - before, and regardless of outcome, because a failed fetch must still count. The JWKS file's mtime
+     *    only advances on success, so hanging the cooldown off it fails open exactly when the provider is
+     *    unwell — an unknown key id would then retry on every request against a server already struggling.
+     *  - in a separate file, so recording an attempt never makes stale keys look freshly fetched.
+     */
+    private function forcedRefreshAllowed(): bool
+    {
+        $marker = $this->stateFile('refresh-attempt');
+
+        if (null === $marker) {
+            // Nowhere writable: the attempt cannot be remembered across requests, so the rate bound cannot
+            // be kept. Refuse rather than promise it — a rotation then costs at most one TTL of failed
+            // logins, which is exactly the behaviour that existed before this retry was added.
+            return false;
+        }
+
+        if (is_file($marker) && ( time() - (int) filemtime($marker) ) < self::JWKS_MIN_REFETCH_SECONDS) {
+            return false;
+        }
+
+        @touch($marker);
+        return true;
+    }
+
+    /**
      * Where to cache the key set, or null when nowhere is writable.
-     *
-     * Every filesystem call here is silenced and checked rather than trusted. The application directory
-     * is READ-ONLY in the container image, and an un-silenced mkdir() there prints a PHP warning — which,
-     * for a JSON endpoint, lands in the response body ahead of the payload and makes it unparseable. A
-     * corrupted response is far worse than an uncached fetch, and it fails in a place that looks nothing
-     * like the cause.
-     *
-     * Keyed by issuer, so moving the provider (or its port) cannot serve keys from the previous one.
      */
     private function cacheFile(): ?string
+    {
+        return $this->stateFile('jwks');
+    }
+
+    /**
+     * A per-issuer state file, or null when no candidate directory is writable.
+     *
+     * Every filesystem call here is silenced and checked rather than trusted. The application directory is
+     * READ-ONLY in the container image, and an un-silenced mkdir() there prints a PHP warning — which, for
+     * a JSON endpoint, lands in the response body ahead of the payload and makes it unparseable. A
+     * corrupted response is far worse than an uncached fetch, and it fails somewhere that looks nothing
+     * like the cause.
+     *
+     * Keyed by issuer, so moving the provider (or its port) cannot serve state from the previous one.
+     */
+    private function stateFile(string $kind): ?string
     {
         $candidates = [
             dirname(__DIR__, 2) . '/cache',
@@ -300,7 +335,7 @@ final class TokenValidator
                 continue;
             }
             if (is_writable($dir)) {
-                return $dir . '/jwks-' . hash('sha256', $this->issuer) . '.json';
+                return $dir . '/' . $kind . '-' . hash('sha256', $this->issuer) . '.json';
             }
         }
 
