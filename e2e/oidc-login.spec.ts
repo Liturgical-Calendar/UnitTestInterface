@@ -189,6 +189,44 @@ test.describe('logged in', () => {
         }
     });
 
+    test('logout rejects a hint whose payload only matches after invalid characters are dropped', async ({ browser, request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // PHP's base64_decode() in non-strict mode never fails: it silently discards characters outside
+        // the alphabet, so a corrupted payload still decodes to plausible JSON. This asserts the alphabet
+        // is checked BEFORE decoding — otherwise a mangled token whose azp happens to match would be
+        // forwarded to the provider as a hint.
+        //
+        // The client id is read from the live redirect rather than hardcoded, so the crafted azp really
+        // does match this deployment. Without that the test could pass for the wrong reason.
+        const started = await request.get('/auth/login.php', { maxRedirects: 0 });
+        const clientId = new URL(started.headers()['location'] ?? '').searchParams.get('client_id');
+        expect(clientId, 'the login redirect should name a client id').toBeTruthy();
+
+        const b64url = (o: unknown) =>
+            Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const header = b64url({ alg: 'RS256', typ: 'JWT' });
+        const payload = b64url({ azp: clientId });
+        const signature = b64url('signature');
+
+        const forwarded = async (idToken: string): Promise<boolean> => {
+            const ctx = await browser.newContext();
+            try {
+                await ctx.addCookies([{ name: 'litcal_id_token', value: idToken, domain: 'localhost', path: '/' }]);
+                const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
+                return (res.headers()['location'] ?? '').includes('id_token_hint=');
+            } finally {
+                await ctx.close();
+            }
+        };
+
+        // Control: the same payload, uncorrupted, IS forwarded — so the rejection below is attributable
+        // to the corruption and nothing else.
+        expect(await forwarded(`${header}.${payload}.${signature}`)).toBe(true);
+        expect(await forwarded(`${header}.${payload}!.${signature}`)).toBe(false);
+        expect(await forwarded(`${header}.${payload.slice(0, 4)}@${payload.slice(4)}.${signature}`)).toBe(false);
+    });
+
     test('the logout control ends the provider session too', async ({ page, request }) => {
         test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
         await page.goto('/');

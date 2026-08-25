@@ -154,15 +154,8 @@ final class TokenValidator
      */
     private static function kidOf(string $token): ?string
     {
-        $segments = explode('.', $token);
-        $decoded  = base64_decode(strtr($segments[0], '-_', '+/'), false);
-        if (false === $decoded) {
-            return null;
-        }
-
-        /** @var array<string, mixed>|null $header */
-        $header = json_decode($decoded, true);
-        if (!is_array($header)) {
+        $header = JwtSegments::header($token);
+        if (null === $header) {
             return null;
         }
 

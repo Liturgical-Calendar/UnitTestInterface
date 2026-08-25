@@ -212,19 +212,8 @@ final class Client
      */
     private function wasIssuedToThisClient(string $idToken): bool
     {
-        $segments = explode('.', $idToken);
-        if (3 !== count($segments)) {
-            return false;
-        }
-
-        $decoded = base64_decode(strtr($segments[1], '-_', '+/'), false);
-        if (false === $decoded) {
-            return false;
-        }
-
-        /** @var array<string, mixed>|null $claims */
-        $claims = json_decode($decoded, true);
-        if (!is_array($claims)) {
+        $claims = JwtSegments::payload($idToken);
+        if (null === $claims) {
             return false;
         }
 
