@@ -156,6 +156,77 @@ test.describe('logged in', () => {
         expect(page.url()).not.toContain('/auth/me');
     });
 
+    test('logout drops an id_token_hint minted for another client', async ({ browser, request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // Where sibling sites share a cookie domain, the id token in our cookie is often theirs: a user
+        // who logged in on the frontend arrives here already authenticated, carrying the frontend's token.
+        // Forwarding that alongside our own client_id makes Zitadel refuse the whole request with
+        // "client_id does not match azp of id_token_hint", and the user cannot log out at all.
+        const b64url = (o: unknown) =>
+            Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const foreignIdToken = [
+            b64url({ alg: 'RS256', typ: 'JWT' }),
+            b64url({ azp: 'some-other-clients-id', aud: ['some-other-clients-id'] }),
+            b64url('signature'),
+        ].join('.');
+
+        const ctx = await browser.newContext();
+        await ctx.addCookies([
+            { name: 'litcal_id_token', value: foreignIdToken, domain: 'localhost', path: '/' },
+        ]);
+        try {
+            const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
+            const location = res.headers()['location'] ?? '';
+
+            expect(location, 'logout must still reach the provider').toContain('end_session');
+            expect(location, 'a foreign hint must not be forwarded').not.toContain('id_token_hint=');
+            // client_id is still needed: it is what lets the provider validate post_logout_redirect_uri.
+            expect(location).toContain('client_id=');
+            expect(location).toContain('post_logout_redirect_uri=');
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    test('logout rejects a hint whose payload only matches after invalid characters are dropped', async ({ browser, request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // PHP's base64_decode() in non-strict mode never fails: it silently discards characters outside
+        // the alphabet, so a corrupted payload still decodes to plausible JSON. This asserts the alphabet
+        // is checked BEFORE decoding — otherwise a mangled token whose azp happens to match would be
+        // forwarded to the provider as a hint.
+        //
+        // The client id is read from the live redirect rather than hardcoded, so the crafted azp really
+        // does match this deployment. Without that the test could pass for the wrong reason.
+        const started = await request.get('/auth/login.php', { maxRedirects: 0 });
+        const clientId = new URL(started.headers()['location'] ?? '').searchParams.get('client_id');
+        expect(clientId, 'the login redirect should name a client id').toBeTruthy();
+
+        const b64url = (o: unknown) =>
+            Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const header = b64url({ alg: 'RS256', typ: 'JWT' });
+        const payload = b64url({ azp: clientId });
+        const signature = b64url('signature');
+
+        const forwarded = async (idToken: string): Promise<boolean> => {
+            const ctx = await browser.newContext();
+            try {
+                await ctx.addCookies([{ name: 'litcal_id_token', value: idToken, domain: 'localhost', path: '/' }]);
+                const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
+                return (res.headers()['location'] ?? '').includes('id_token_hint=');
+            } finally {
+                await ctx.close();
+            }
+        };
+
+        // Control: the same payload, uncorrupted, IS forwarded — so the rejection below is attributable
+        // to the corruption and nothing else.
+        expect(await forwarded(`${header}.${payload}.${signature}`)).toBe(true);
+        expect(await forwarded(`${header}.${payload}!.${signature}`)).toBe(false);
+        expect(await forwarded(`${header}.${payload.slice(0, 4)}@${payload.slice(4)}.${signature}`)).toBe(false);
+    });
+
     test('the logout control ends the provider session too', async ({ page, request }) => {
         test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
         await page.goto('/');

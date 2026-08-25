@@ -167,6 +167,17 @@ final class Client
     /**
      * RP-initiated logout. Returns null when the provider advertises no end-session endpoint, which is the
      * caller's cue to simply drop its own cookies.
+     *
+     * The `id_token_hint` is forwarded ONLY when this client is the one it was minted for. Where sibling
+     * sites share a cookie domain, the ID token in our cookie is frequently theirs: a user who logged in
+     * on the frontend arrives here already authenticated, carrying the frontend's token. Passing that
+     * alongside our own `client_id` makes Zitadel refuse the whole request —
+     *
+     *     {"error":"invalid_request","error_description":"client_id does not match azp of id_token_hint"}
+     *
+     * — and the user cannot log out at all. Dropping the hint costs only the provider's certainty about
+     * which session to end; it still has the browser's own session cookie, and `client_id` still lets it
+     * validate `post_logout_redirect_uri` against this application.
      */
     public function getLogoutUrl(?string $idTokenHint = null, ?string $postLogoutRedirectUri = null): ?string
     {
@@ -176,7 +187,7 @@ final class Client
         }
 
         $params = [];
-        if (null !== $idTokenHint && '' !== $idTokenHint) {
+        if (null !== $idTokenHint && '' !== $idTokenHint && $this->wasIssuedToThisClient($idTokenHint)) {
             $params['id_token_hint'] = $idTokenHint;
         }
         if (null !== $postLogoutRedirectUri && '' !== $postLogoutRedirectUri) {
@@ -187,6 +198,32 @@ final class Client
         return [] === $params
             ? $endpoint
             : $endpoint . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
+     * Whether an ID token names this client as its authorized party.
+     *
+     * The claim is read without verifying the signature, deliberately: the answer is only used to decide
+     * whether to hand the token back to the provider that issued it, which then verifies it properly.
+     * Nothing here trusts the contents — a forged `azp` would buy an attacker a hint Zitadel rejects.
+     *
+     * `azp` is required whenever the audience has more than one value; where it is absent, a single-valued
+     * `aud` carries the same meaning.
+     */
+    private function wasIssuedToThisClient(string $idToken): bool
+    {
+        $claims = JwtSegments::payload($idToken);
+        if (null === $claims) {
+            return false;
+        }
+
+        $azp = $claims['azp'] ?? null;
+        if (is_string($azp) && '' !== $azp) {
+            return $azp === $this->clientId;
+        }
+
+        $aud = $claims['aud'] ?? null;
+        return is_string($aud) && $aud === $this->clientId;
     }
 
     public function getIssuer(): string
