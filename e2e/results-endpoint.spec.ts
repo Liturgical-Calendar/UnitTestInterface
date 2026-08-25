@@ -74,6 +74,24 @@ test.describe('unauthenticated', () => {
     }
 });
 
+test('the listing never advertises a run that cannot be loaded', async ({ request }) => {
+    // The globs listRuns() uses are broader than safeResultPath()'s allow-list: `calendars-foo.json`
+    // matches `calendars-*.json` but is not loadable. Such a file must not reach the listing, or the
+    // dropdown offers an entry whose `?file=` answers 400 — and, now that listing is public, the
+    // names of unrelated files in the directory would be published.
+    const list = await request.get('results.php');
+    expect(list.status()).toBe(200);
+    const summaries = await list.json() as { file: string }[];
+
+    // Every listed name must be one the detail route accepts. Asserted against the pattern rather
+    // than by fetching each: the listing can hold up to RETENTION_PER_TYPE * 2 entries, and this
+    // suite shares the API's rate-limit budget.
+    for (const summary of summaries) {
+        expect(summary.file, `${summary.file} is listed but safeResultPath() would reject it`)
+            .toMatch(/^(calendars|resources)-[0-9TZ-]+\.json$/);
+    }
+});
+
 test('rejects path traversal on load', async ({ request }) => {
     const res = await request.get('results.php?file=..%2F..%2Fcomposer.json');
     expect(res.status()).toBe(400);

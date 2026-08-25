@@ -181,13 +181,21 @@ function validateRun(array $d): ?string
 function listRuns(): array
 {
     $out = [];
-    // Only list files whose names safeResultPath() would accept on load —
-    // anything else (legacy or foreign .json files) would list but never load.
+    // The globs are broader than safeResultPath()'s allow-list — `calendars-foo.json` and
+    // `calendars-….backup.json` both match `calendars-*.json` but neither is loadable — so each
+    // name is put back through safeResultPath() rather than trusted because it matched a glob.
+    // Without that the listing advertises runs that `?file=` then refuses with a 400, which is a
+    // confusing dead end for a caller and, now that listing is public, publishes the names of
+    // whatever else happens to sit in the directory. A comment here used to claim the globs
+    // already had this property; they never did.
     $paths = array_merge(
         glob(RESULTS_DIR . '/calendars-*.json') ?: [],
         glob(RESULTS_DIR . '/resources-*.json') ?: []
     );
     foreach ($paths as $path) {
+        if (safeResultPath(basename($path)) === null) {
+            continue;
+        }
         $data = json_decode((string) file_get_contents($path), true);
         if (!is_array($data)) {
             continue;
