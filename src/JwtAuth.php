@@ -10,14 +10,22 @@
  * once the project moved to Zitadel a perfectly valid RS256 access token — the one LiturgicalCalendarFrontend
  * writes into that same cookie — failed to decode and the user read as anonymous.
  *
- * Rather than teach this class a second validation path, it now forwards the cookie to `GET /auth/me` and
- * believes the answer. The API's `OidcAuthMiddleware` already reads that exact cookie, validates it RS256
- * against Zitadel's JWKS, and falls back to the legacy HS256 shape — so delegation covers **both** token
- * kinds, and the legacy fallback costs this repository nothing to keep working.
+ * It now resolves identity in two steps, mirroring the API's own OidcAuthMiddleware:
  *
- * There is deliberately no local-decode fallback for an unreachable API. This is a test interface *for*
- * that API; if it is down there is nothing useful to do, and a second validation path that could disagree
- * with the first is exactly the failure mode being removed. `JWT_SECRET` is no longer read.
+ *   1. **Zitadel token** — validated here by {@see TokenValidator}, against the provider's published
+ *      signing keys.
+ *   2. **Anything else** — forwarded to the API's `GET /auth/me`, which understands the legacy HS256
+ *      token this interface used to issue.
+ *
+ * Step 1 is local reluctantly. The design for this migration assumed `/auth/me` could answer for both
+ * kinds, since `OidcAuthMiddleware` reads the same cookie and tries Zitadel then legacy. That holds for
+ * the routes the middleware is piped for, and `/auth/me` is not one of them — it verifies with the API's
+ * HS256 service alone, so a valid Zitadel token comes back `401 Invalid or expired token`. That is known,
+ * deliberate behaviour: LiturgicalCalendarFrontend's `e2e/rbac/support/actingAs.spec.ts` records it, and
+ * that project validates locally for the same reason. Changing shared API semantics was the alternative,
+ * and is a larger decision than this migration.
+ *
+ * `JWT_SECRET` is no longer read here: the legacy token is verified by the API, which owns that secret.
  *
  * The public surface is unchanged, so `layout/head.php`, `layout/topnavbar.php` and `results.php` did not
  * have to change with it.
@@ -27,11 +35,13 @@ namespace LiturgicalCalendar\UnitTestInterface;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use LiturgicalCalendar\UnitTestInterface\Oidc\TokenValidator;
 use RuntimeException;
 
 class JwtAuth
 {
     private const COOKIE_NAME = 'litcal_access_token';
+    private const ID_TOKEN_COOKIE = 'litcal_id_token';
 
     /** How long to wait on /auth/me. Short: it gates page rendering. */
     private const TIMEOUT_SECONDS = 5;
@@ -98,6 +108,21 @@ class JwtAuth
             return null;
         }
 
+        // A Zitadel token is validated here, because the API's /auth/me does not accept one.
+        $validator = TokenValidator::fromEnv();
+        if (null !== $validator) {
+            $payload = $validator->validate($token);
+            if (null !== $payload) {
+                self::$cachedPayload = (object) [
+                    'sub'   => self::displayName($validator, $payload),
+                    'roles' => self::zitadelRoles($payload),
+                    'exp'   => isset($payload->exp) && is_int($payload->exp) ? $payload->exp : null,
+                ];
+                return self::$cachedPayload;
+            }
+        }
+
+        // Not a Zitadel token (or not one for us): let the API answer, which covers the legacy shape.
         try {
             $base = ApiBase::resolve();
         } catch (RuntimeException $e) {
@@ -202,6 +227,68 @@ class JwtAuth
             return null;
         }
         return $payload->exp ?? null;
+    }
+
+    /**
+     * A name worth showing in the navbar.
+     *
+     * Zitadel's ACCESS token carries only the opaque `sub` — the profile claims live in the ID token, which
+     * `auth/callback.php` stored alongside it. So fall back to that, validated the same way rather than
+     * merely decoded: it is a token, and reading claims out of an unverified one is a habit worth not
+     * forming even where the value is only displayed.
+     */
+    private static function displayName(TokenValidator $validator, object $accessPayload): ?string
+    {
+        $fromAccess = self::firstClaim($accessPayload, ['preferred_username', 'email', 'name']);
+        if (null !== $fromAccess) {
+            return $fromAccess;
+        }
+
+        $idToken = $_COOKIE[self::ID_TOKEN_COOKIE] ?? null;
+        if (is_string($idToken) && '' !== $idToken) {
+            $idPayload = $validator->validate($idToken);
+            if (null !== $idPayload) {
+                $fromId = self::firstClaim($idPayload, ['preferred_username', 'email', 'name']);
+                if (null !== $fromId) {
+                    return $fromId;
+                }
+            }
+        }
+
+        $sub = $accessPayload->sub ?? null;
+        return is_string($sub) ? $sub : null;
+    }
+
+    /**
+     * @param array<int, string> $claims
+     */
+    private static function firstClaim(object $payload, array $claims): ?string
+    {
+        foreach ($claims as $claim) {
+            $value = $payload->{$claim} ?? null;
+            if (is_string($value) && '' !== $value) {
+                return $value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Zitadel publishes project roles as an object keyed by role name, e.g.
+     * `{"admin": {"<org id>": "<domain>"}}` — so the role names are the keys, not the values.
+     *
+     * @return array<int, string>
+     */
+    private static function zitadelRoles(object $payload): array
+    {
+        $claim = $payload->{'urn:zitadel:iam:org:project:roles'} ?? null;
+        if (is_object($claim)) {
+            return array_values(array_filter(array_keys((array) $claim), 'is_string'));
+        }
+        if (is_array($claim)) {
+            return array_values(array_filter($claim, 'is_string'));
+        }
+        return [];
     }
 
     /**

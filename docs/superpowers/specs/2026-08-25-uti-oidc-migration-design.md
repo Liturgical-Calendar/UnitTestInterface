@@ -1,7 +1,7 @@
 # UTI OIDC migration: Zitadel login for the test interface
 
 Date: 2026-08-25
-Status: approved
+Status: approved (amended 2026-08-25 during implementation — see Correction)
 
 ## Problem
 
@@ -30,21 +30,41 @@ discovery, PKCE, the authorization URL, the code exchange, the logout URL. It ne
 `validateIdToken`, `validateToken`, `getUserInfo`, `extractRolesFromToken`, `extractUserFromIdToken`,
 `getIdTokenExpiry`, or the `CachedKeySet` JWKS machinery behind them.
 
-The reason is the decisive architectural finding of this investigation:
+## Correction (made during implementation)
 
-> **The API is already the enforcement point, and it accepts the cookie.**
-> `OidcAuthMiddleware::extractToken()` reads `litcal_access_token` from the **cookie** first (falling back
-> to a Bearer header), then runs `tryOidcValidation()` — RS256 against Zitadel's JWKS — and
-> `tryJwtFallback()` for a legacy HS256 token. Verified live: `GET /auth/me` with that cookie returns
-> `200 {authenticated, exp, roles, username}`, and `401` without it.
+The design below originally claimed UTI need not validate anything, because `GET /auth/me` would answer
+for both token kinds. **That was wrong, and the error is worth recording.**
 
-So UTI does not need to validate anything. It needs to *obtain* a token and then *ask* the API who the
-caller is. That removes the entire cryptographic surface — JWKS fetching, key caching, audience and
-signature checks — from this repository, and it removes `JWT_SECRET` from UTI's configuration.
+The reasoning was: `OidcAuthMiddleware::extractToken()` reads `litcal_access_token` from the cookie and
+tries `tryOidcValidation()` (RS256 via JWKS) then `tryJwtFallback()` (legacy HS256). That much is true.
+The unjustified step was generalising it to `/auth/me`. `Router.php` pipes that middleware only for an
+explicit allow-list of auth sub-routes — `access-requests`, `email-verification`, `notifications`,
+`admin-scopes`, `test-scopes`, `dashboard-scopes` — and **`me` is not among them**. `MeHandler` verifies
+with the API's own HS256 service alone, so a valid Zitadel token returns `401 Invalid or expired token`.
 
-It also delivers the legacy fallback for free: because the API's middleware tries Zitadel and then legacy,
-**UTI stops caring which kind of token it is holding**. That is a better fallback than anything this
-repository could maintain itself, and it needs no test coverage here.
+The original evidence was consistent with both readings: `/auth/me` did return `200` for a legacy token,
+which is all that could be tested before a real Zitadel token existed. The first genuine round trip
+produced one, and it was rejected.
+
+This is known, deliberate behaviour rather than a defect to route around quietly.
+LiturgicalCalendarFrontend's `e2e/rbac/support/actingAs.spec.ts` states it outright — *"the API's
+/auth/me is HS256/admin-only and rejects Zitadel OIDC tokens"* — and that project validates locally in
+its own `auth/me.php` for exactly this reason. Changing shared API auth semantics is a larger decision
+than this migration, and `phpunit_tests/Handlers/Auth/MeHandlerTest.php` pins the current message.
+
+**Revised approach, mirroring the API's own middleware shape:**
+
+1. A **Zitadel token** is validated in UTI by `src/Oidc/TokenValidator.php`, against the provider's
+   published signing keys (`JWK::parseKeySet()` plus a small file cache — no `symfony/cache` dependency).
+2. **Anything else** is forwarded to `GET /auth/me`, which understands the legacy token.
+
+So UTI does gain a cryptographic surface after all, roughly 200 lines of it. The sizing conclusion below
+still holds in its essentials — UTI needs no ID-token parsing beyond a display name, no userinfo call, no
+role mapping beyond Zitadel's roles claim — but "no crypto in UTI" was overstated. `JWT_SECRET` is still
+removed from this repository: the legacy token is verified by the API, which owns that secret.
+
+UTI also gains its own `auth/me.php`, because the client-side `assets/js/auth.js` asked the API's
+`/auth/me` directly and would otherwise report a Zitadel-authenticated user as logged out.
 
 **Decision: build a small client inside UTI (~250 lines), do not extract a package.** The quarter UTI needs
 is the simple, stable quarter; the complex security-sensitive parts are exactly the ones it delegates.

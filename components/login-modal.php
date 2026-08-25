@@ -70,6 +70,10 @@ const i18n = {
     admin: <?php echo json_encode(_('Admin')); ?>
 };
 
+// When true this page's login and logout controls are links into the OIDC endpoints rather than
+// modal triggers, so the handlers below must not claim their clicks.
+const oidcEnabled = Boolean(window.LitCalConfig?.oidcEnabled);
+
 // Module-scoped variables to avoid global pollution
 let loginModal = null;
 let loginSuccessCallback = null;
@@ -122,17 +126,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize navbar UI based on current auth state (login button vs user menu)
     updateNavbarAuthUI();
 
-    // Login button click handler
+    // Login button click handler.
+    //
+    // Skipped entirely when OIDC is configured: layout/topnavbar.php then renders #loginBtn as a link
+    // into /auth/login.php, and attaching this would both open the modal and follow the link.
     const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
+    if (loginBtn && !oidcEnabled) {
         loginBtn.addEventListener('click', () => {
             showLoginModal();
         });
     }
 
-    // Logout button click handler
+    // Logout button click handler. Skipped under OIDC for the same reason as the login button: logging
+    // out then has to end the session at Zitadel too, which /auth/logout.php does with a redirect.
     const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
+    if (logoutBtn && !oidcEnabled) {
         logoutBtn.addEventListener('click', async () => {
             if (confirm(<?php echo json_encode(_('Are you sure you want to logout?')); ?>)) {
                 // Clear session expiry timeout to avoid confusing auto-logout message

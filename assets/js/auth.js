@@ -26,6 +26,20 @@ const getBaseUrl = () => {
     return `${hostWithPort}${basePath}`;
 };
 
+/**
+ * Where to ask about the current session.
+ *
+ * Under OIDC this must be this application's own endpoint rather than the API's: the API's /auth/me
+ * verifies with its legacy HS256 service and rejects Zitadel tokens, so asking it would report a
+ * Zitadel-authenticated user as logged out. auth/me.php publishes what JwtAuth resolved, which handles
+ * both kinds — see src/JwtAuth.php.
+ *
+ * @returns {string} An absolute or same-origin URL.
+ */
+const authMeEndpoint = () => (
+    window.LitCalConfig?.oidcEnabled ? '/auth/me.php' : `${getBaseUrl()}/auth/me`
+);
+
 const Auth = {
     /**
      * Cached authentication state from /auth/me endpoint
@@ -236,9 +250,12 @@ const Auth = {
             return { authenticated: false, error: true };
         }
 
-        const baseUrl = getBaseUrl();
         try {
-            const response = await fetch(`${baseUrl}/auth/me`, {
+            // Same-origin when OIDC is configured: the API's /auth/me verifies with its legacy HS256
+            // service and rejects Zitadel tokens, so asking it would report a Zitadel-authenticated user
+            // as logged out. This app's own auth/me.php publishes what JwtAuth resolved, which handles
+            // both kinds — see src/JwtAuth.php.
+            const response = await fetch(authMeEndpoint(), {
                 method: 'GET',
                 credentials: 'include', // Include cookies for cross-origin requests
                 headers: {
