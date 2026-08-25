@@ -156,6 +156,39 @@ test.describe('logged in', () => {
         expect(page.url()).not.toContain('/auth/me');
     });
 
+    test('logout drops an id_token_hint minted for another client', async ({ browser, request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // Where sibling sites share a cookie domain, the id token in our cookie is often theirs: a user
+        // who logged in on the frontend arrives here already authenticated, carrying the frontend's token.
+        // Forwarding that alongside our own client_id makes Zitadel refuse the whole request with
+        // "client_id does not match azp of id_token_hint", and the user cannot log out at all.
+        const b64url = (o: unknown) =>
+            Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const foreignIdToken = [
+            b64url({ alg: 'RS256', typ: 'JWT' }),
+            b64url({ azp: 'some-other-clients-id', aud: ['some-other-clients-id'] }),
+            b64url('signature'),
+        ].join('.');
+
+        const ctx = await browser.newContext();
+        await ctx.addCookies([
+            { name: 'litcal_id_token', value: foreignIdToken, domain: 'localhost', path: '/' },
+        ]);
+        try {
+            const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
+            const location = res.headers()['location'] ?? '';
+
+            expect(location, 'logout must still reach the provider').toContain('end_session');
+            expect(location, 'a foreign hint must not be forwarded').not.toContain('id_token_hint=');
+            // client_id is still needed: it is what lets the provider validate post_logout_redirect_uri.
+            expect(location).toContain('client_id=');
+            expect(location).toContain('post_logout_redirect_uri=');
+        } finally {
+            await ctx.close();
+        }
+    });
+
     test('the logout control ends the provider session too', async ({ page, request }) => {
         test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
         await page.goto('/');
