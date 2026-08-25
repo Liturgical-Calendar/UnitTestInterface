@@ -102,39 +102,41 @@ test.describe('logged out', () => {
         await expect(page.locator('#results-save-unauthenticated')).toHaveCount(1);
     });
 
-    test('auth:login repopulates Past Runs without a reload', async ({ page }) => {
-        // Stubbed empty first. The listing is public now, so a real results.php would answer with
-        // whatever runs happen to be stored and the counts below would depend on the machine.
+    test('both auth events refill Past Runs without a reload', async ({ page }) => {
+        // One stub whose answer is swapped between events, so every assertion below observes a
+        // *re-fetch* rather than whatever the dropdown happened to be holding. Stubbed rather than
+        // logging in for real: the subject is that the runner reacts to the events at all, not that
+        // the API authenticates — and a real results.php would answer with whatever runs happen to
+        // be stored on the machine, which is not something to write counts against.
+        let runs: unknown[] = [];
         await page.route('**/results.php', (route) =>
-            route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(runs) })
         );
+        const run = (file: string) => ({
+            file,
+            runType: 'calendars',
+            timestamp: '2026-01-01T00:00:00Z',
+            calendar: 'VA',
+            counts: { successful: 3, failed: 0 },
+        });
+
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
         await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
 
-        // The endpoint is stubbed rather than logging in for real: the subject here is that the
-        // runner reacts to the event at all, not that the API authenticates.
-        await page.unroute('**/results.php');
-        await page.route('**/results.php', (route) =>
-            route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify([
-                    {
-                        file: 'calendars-2026-01-01T00-00-00Z.json',
-                        runType: 'calendars',
-                        timestamp: '2026-01-01T00:00:00Z',
-                        calendar: 'VA',
-                        counts: { successful: 3, failed: 0 },
-                    },
-                ]),
-            })
-        );
+        runs = [run('calendars-2026-01-01T00-00-00Z.json')];
         await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:login')));
         await expect(page.locator('#pastRunsSelect option')).toHaveCount(2);
 
+        // Logout *reloads* rather than clearing, because listing is public — so the count settles
+        // at the placeholder plus whatever the endpoint now returns. Asserting 1 here would be
+        // asserting the transient state `load()` passes through between clearing and refilling,
+        // which is a race that passes or fails on timing; it went flaky in CI for exactly that
+        // reason. A third run is served so the assertion cannot be satisfied by the two options
+        // that were already on screen.
+        runs = [run('calendars-2026-01-01T00-00-00Z.json'), run('calendars-2026-01-02T00-00-00Z.json')];
         await page.evaluate(() => document.dispatchEvent(new CustomEvent('auth:logout')));
-        await expect(page.locator('#pastRunsSelect option')).toHaveCount(1);
+        await expect(page.locator('#pastRunsSelect option')).toHaveCount(3);
     });
 
     test('a second load landing mid-fetch does not double up the dropdown', async ({ page }) => {
