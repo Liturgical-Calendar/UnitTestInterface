@@ -9,6 +9,7 @@ declare global {
             locale: string;
             isAuthenticated: boolean;
             oidcEnabled: boolean;
+            oidcOrgScoped: boolean;
         };
     }
 }
