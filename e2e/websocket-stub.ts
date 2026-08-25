@@ -119,16 +119,43 @@ export const sentFrames = (page: Page): Promise<string[]> =>
  */
 export const serveThreeStepInventory = async (page: Page): Promise<void> => {
     await page.route('**/validations', async (route) => {
-        const response = await route.fetch();
+        // This handler proxies upstream, so it is asynchronous and can still be awaiting the API
+        // when the test ends. Playwright then tears the context down underneath it and reports
+        // `route.fetch: Target page, context or browser has been closed` as a failure of whichever
+        // test happened to be last — a flake with nothing to do with what that test asserts.
+        //
+        // The race is latent rather than new: it needs the upstream fetch to be slow enough to
+        // outlive the test, so it only shows up when the API is under load (a bigger suite, or a
+        // rate-limited API answering slowly). Left alone it surfaces as an occasional red in an
+        // unrelated spec, which is the least actionable kind of failure this suite can produce.
+        //
+        // A page that has gone away is not a failure to report, so bail quietly. Anything else
+        // still throws: this must not become a blanket catch that hides a genuinely broken stub.
+        let response;
+        try {
+            response = await route.fetch();
+        } catch (err) {
+            if (page.isClosed() || /closed/i.test(String(err))) {
+                return;
+            }
+            throw err;
+        }
         const body = await response.json() as { litcal_validations?: { steps: string[] }[] };
         const items = (body.litcal_validations ?? []).map(
             (item) => ({ ...item, steps: ['exists', 'parses', 'validates'] })
         );
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({ ...body, litcal_validations: items }),
-        });
+        try {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ ...body, litcal_validations: items }),
+            });
+        } catch (err) {
+            if (page.isClosed() || /closed/i.test(String(err))) {
+                return;
+            }
+            throw err;
+        }
     });
 };
 
