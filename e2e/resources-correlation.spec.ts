@@ -1,5 +1,10 @@
 import { test, expect, Page } from '@playwright/test';
-import { deliverLateFrame, installReplyingWebSocketStub, sentFrames } from './websocket-stub';
+import { deliverLateFrame, dropStubRoutes, installReplyingWebSocketStub, sentFrames } from './websocket-stub';
+
+// Abort the stub's in-flight `/validations` handler before the context is torn down,
+// so a slow upstream fetch cannot be reported as a failure of this file's last test.
+// See dropStubRoutes() in websocket-stub.ts.
+test.afterEach(dropStubRoutes);
 
 /**
  * The Resources runner attributes frames by `requestId` and ends phases on the terminal frame (#42).

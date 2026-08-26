@@ -1,5 +1,10 @@
 import { test, expect, Page, APIRequestContext } from '@playwright/test';
-import { installReplyingWebSocketStub } from './websocket-stub';
+import { dropStubRoutes, installReplyingWebSocketStub } from './websocket-stub';
+
+// Abort the stub's in-flight `/validations` handler before the context is torn down,
+// so a slow upstream fetch cannot be reported as a failure of this file's last test.
+// See dropStubRoutes() in websocket-stub.ts.
+test.afterEach(dropStubRoutes);
 
 /**
  * The card scaffold must render exactly the steps the `/validations` inventory advertises (#62).
