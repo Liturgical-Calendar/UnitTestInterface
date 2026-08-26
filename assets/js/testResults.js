@@ -138,9 +138,10 @@ export const nowIsoStamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z'
  * POST a completed run to the server.
  *
  * A rejection carries the HTTP status on `err.status`. Callers need it to tell a declined save
- * (401 — nobody is logged in, and results.php stores nothing anonymously) from a genuine failure;
- * the run itself succeeded in the first case, so reporting it as a save failure misreads it.
- * Parsing the status back out of the message string would be the fragile alternative.
+ * from a genuine failure — the run itself succeeded in the declined case, so reporting it as a save
+ * failure misreads it — and to tell the two declinals apart: 401 (nobody is logged in) from 403
+ * (logged in, but not holding one of the roles results.php requires to store a run). Parsing the
+ * status back out of the message string would be the fragile alternative.
  */
 export const postRunResults = async (payload) => {
     const res = await fetch('results.php', {
@@ -160,8 +161,8 @@ export const postRunResults = async (payload) => {
 /**
  * Fetch run summaries filtered to a single run type, newest first.
  *
- * Rejects with `err.status` set, like {@link postRunResults}: a 401 here is the ordinary state of
- * an anonymous visitor, not a fault worth logging.
+ * Rejects with `err.status` set, like {@link postRunResults}. Unlike the save path, no status is
+ * ordinary here: listing stored runs is public, so any rejection is a fault worth surfacing.
  */
 export const fetchRunSummaries = async (runType) => {
     const res = await fetch('results.php', {
@@ -227,11 +228,11 @@ export const createPastRunsList = ({ select, runType, label }) => {
                 select.appendChild(opt);
             }
         } catch (err) {
-            // A 401 is the ordinary state of an anonymous visitor rather than a fault: results.php
-            // declines to list runs for anyone who is not logged in.
-            if (401 === err.status) {
-                return;
-            }
+            // Every failure is now worth reporting, 401 included. This used to swallow a 401 as
+            // the ordinary state of an anonymous visitor, which it was while results.php gated
+            // listing on authentication. Listing is public now, so a 401 means something is
+            // genuinely wrong — a misconfigured deployment, or a gate that came back — and
+            // silently showing an empty dropdown would hide it.
             console.error('Could not load past runs', err);
         }
     };

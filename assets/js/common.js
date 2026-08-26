@@ -221,6 +221,39 @@ const handleLanguageChange = (event) => {
     location.reload();
 };
 
+/**
+ * Whether this visitor may start a test run and store its results.
+ *
+ * Two sources, in that order, because the answer has to survive an in-page login:
+ *
+ *  1. `Auth`'s cached `/auth/me` roles, once that cache is populated. This is what makes the legacy
+ *     modal login path work — it authenticates without reloading, so the server-rendered verdict
+ *     below is stale from the moment the modal closes.
+ *  2. `LitCalConfig.canRunTests`, the server's verdict at page render. It is the only answer
+ *     available on first paint, before `/auth/me` has been asked.
+ *
+ * The role list is read from `LitCalConfig.runTestsRoles`, which `layout/footer.php` publishes from
+ * `JwtAuth::RUN_TESTS_ROLES` — the same constant `results.php` enforces. Spelling the roles out here
+ * instead would let the button and the endpoint drift into disagreeing about who is permitted, which
+ * is the whole reason that predicate is named on the server side rather than inlined.
+ *
+ * This gates a *button*, not the data: `results.php` is the enforcement point and answers 403
+ * regardless of what the page believes.
+ *
+ * @returns {boolean}
+ */
+export const canRunTests = () => {
+    const config = window.LitCalConfig ?? {};
+    const roles = Array.isArray(config.runTestsRoles) ? config.runTestsRoles : [];
+    const auth = window.Auth;
+    // `isAuthenticatedCached()` returns null until /auth/me has answered; only then are the cached
+    // roles meaningful, and until then the server's own verdict is the better answer.
+    if (auth && roles.length > 0 && null !== auth.isAuthenticatedCached?.()) {
+        return roles.some((role) => auth.hasRole(role));
+    }
+    return true === config.canRunTests;
+};
+
 // Initialize language dropdown handlers when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Get all elements with class 'dropdown-item' that are children of the element with ID 'langChoicesDropdownItems'

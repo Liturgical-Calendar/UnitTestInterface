@@ -1,5 +1,8 @@
 <?php
+
 // Note: dotenv is loaded in layout/head.php, no need to reload here
+
+use LiturgicalCalendar\UnitTestInterface\JwtAuth;
 
 include_once('layout/disclaimer.php');
 ?>
@@ -63,7 +66,12 @@ if ($proxyEnabled) {
             calendarSelectLabel: <?php echo json_encode(_('Liturgical Calendar')); ?>,
             isAuthenticated: <?php echo isset($isAuthenticated) ? ($isAuthenticated ? 'true' : 'false') : 'false'; ?>,
             oidcEnabled: <?php echo isset($oidcEnabled) ? ($oidcEnabled ? 'true' : 'false') : 'false'; ?>,
-            oidcOrgScoped: <?php echo isset($oidcOrgScoped) ? ($oidcOrgScoped ? 'true' : 'false') : 'false'; ?>
+            oidcOrgScoped: <?php echo isset($oidcOrgScoped) ? ($oidcOrgScoped ? 'true' : 'false') : 'false'; ?>,
+            canRunTests: <?php echo isset($canRunTests) ? ($canRunTests ? 'true' : 'false') : 'false'; ?>,
+            // The role list itself, not just the verdict, so a client-side re-evaluation after an
+            // in-page login (the legacy modal path, which does not reload) asks the same question
+            // the server will ask at the POST. A hardcoded copy in JS is how the two would drift.
+            runTestsRoles: <?php echo json_encode(JwtAuth::RUN_TESTS_ROLES); ?>
         });
     </script>
 <?php

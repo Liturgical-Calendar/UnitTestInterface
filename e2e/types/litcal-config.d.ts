@@ -9,6 +9,7 @@ declare global {
             locale: string;
             isAuthenticated: boolean;
             oidcEnabled: boolean;
+            canRunTests: boolean;
             oidcOrgScoped: boolean;
         };
     }

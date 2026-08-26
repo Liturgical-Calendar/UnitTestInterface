@@ -1,5 +1,10 @@
 import { test, expect, Page } from '@playwright/test';
-import { installReplyingWebSocketStub } from './websocket-stub';
+import { dropStubRoutes, installReplyingWebSocketStub } from './websocket-stub';
+
+// Abort the stub's in-flight `/validations` handler before the context is torn down,
+// so a slow upstream fetch cannot be reported as a failure of this file's last test.
+// See dropStubRoutes() in websocket-stub.ts.
+test.afterEach(dropStubRoutes);
 
 /**
  * The response-format select is built from what the server advertises, not from a list in this repo.

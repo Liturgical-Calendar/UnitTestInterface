@@ -68,6 +68,14 @@ include_once('layout/head.php');
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-white bg-secondary border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-save-forbidden">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-circle-info fa-fw"></i> <?php echo _("Run complete. You do not have permission to save it to Past Runs."); ?>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
             <div class="toast align-items-center text-white bg-warning border-0 p-3 shadow" aria-live="assertive" role="alert" id="results-load-failed">
                 <div class="d-flex">
                     <div class="toast-body">
@@ -118,15 +126,21 @@ include_once('layout/head.php');
                         <option value="JSON">JSON</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-4 col-lg-2 <?php echo $isAuthenticated ? '' : 'd-none'; ?>" data-requires-auth>
+                <!-- Not gated on auth: reading stored runs is public (see results.php). The
+                     permission gate moved to #startTestRunnerBtn, which is what actually writes. -->
+                <div class="col-12 col-md-4 col-lg-2">
                     <label for="pastRunsSelect" class="form-label"><?php echo _("Past Runs"); ?></label>
                     <select id="pastRunsSelect" class="form-select form-select-sm">
                         <option value=""><?php echo _("— Live —"); ?></option>
                     </select>
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
+                    <!-- `data-no-permission-title` is applied as the `title` by tryEnableBtn()
+                         when the visitor lacks one of JwtAuth::RUN_TESTS_ROLES, so a disabled
+                         button reads as a policy rather than as a bug. -->
                     <button id="startTestRunnerBtn" type="button"
                             class="btn btn-primary w-100" disabled
+                            data-no-permission-title="<?php echo htmlspecialchars(_("You do not have permission to run tests."), ENT_QUOTES); ?>"
                     ><i class="fa fa-rotate fa-fw d-inline-block"></i> <span id="startTestRunnerBtnLbl"><?php
                         echo _("Run Tests");
                     ?></span></button>

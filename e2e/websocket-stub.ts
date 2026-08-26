@@ -132,6 +132,34 @@ export const serveThreeStepInventory = async (page: Page): Promise<void> => {
     });
 };
 
+/**
+ * `test.afterEach(dropStubRoutes)` — required in every spec that installs the stub.
+ *
+ * {@link serveThreeStepInventory} proxies `/validations` upstream, so its handler is asynchronous
+ * and can still be awaiting the API when a test ends. Playwright then tears the context down
+ * underneath it and reports `route.fetch: Target page, context or browser has been closed` against
+ * whichever test happened to be last — a flake with nothing to do with what that test asserts.
+ * `response-format-capabilities.spec.ts:110` is where it landed most recently.
+ *
+ * The race is latent rather than new: it needs the upstream fetch to be slow enough to outlive the
+ * test, so it appears only when the API answers slowly — a bigger suite, or a rate-limited one.
+ *
+ * `unrouteAll` runs in `afterEach`, before fixture teardown closes the context, and
+ * `behavior: 'ignoreErrors'` tells Playwright to abort the in-flight handlers and swallow their
+ * rejections rather than bill them to the test. That removes the race at its source.
+ *
+ * **Do not replace this with a `try`/`catch` inside the handler.** That was tried, and the only
+ * guard that actually works there is matching the error's message text: measured against a real
+ * teardown, `page.isClosed()` is still `false` at the moment `route.fetch()` rejects, so an
+ * `isClosed()` guard rethrows and the flake returns. Matching on message text is worse — a genuine
+ * upstream failure whose message merely contains "closed" would be silently swallowed, turning the
+ * stub's own breakage into a green test. Aborting the handlers deterministically avoids having to
+ * classify the error at all.
+ */
+export const dropStubRoutes = async ({ page }: { page: Page }): Promise<void> => {
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+};
+
 export const installReplyingWebSocketStub = async (
     page: Page,
     options: {

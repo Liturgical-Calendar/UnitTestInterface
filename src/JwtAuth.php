@@ -43,6 +43,19 @@ class JwtAuth
     private const COOKIE_NAME = 'litcal_access_token';
     private const ID_TOKEN_COOKIE = 'litcal_id_token';
 
+    /**
+     * The roles permitted to start a test run and to store its results.
+     *
+     * Public because two places have to agree on the answer — `results.php`, which enforces it,
+     * and `layout/head.php`, which publishes it so the Run Tests button can render in the right
+     * state on first paint. They ask {@see canRunTests()} rather than repeating the list, and the
+     * constant is published to the client too so a client-side re-evaluation after an in-page
+     * login cannot drift from what the server will actually accept.
+     *
+     * @var array<int, string>
+     */
+    public const RUN_TESTS_ROLES = ['admin', 'test_editor'];
+
     /** How long to wait on /auth/me. Short: it gates page rendering. */
     private const TIMEOUT_SECONDS = 5;
 
@@ -213,6 +226,29 @@ class JwtAuth
     public static function hasRole(string $role): bool
     {
         return in_array($role, self::getRoles(), true);
+    }
+
+    /**
+     * Whether the caller may start a test run and store its results.
+     *
+     * A named predicate rather than a role test spelled out at each call site: `results.php` and
+     * the page render must not be able to disagree about who is permitted, and a scattered
+     * `hasRole('admin') || hasRole('test_editor')` is exactly how they would drift apart.
+     *
+     * Note this is a *permission* question, distinct from the *authentication* question
+     * {@see isAuthenticated()} answers. `results.php` needs both, and answers them with different
+     * statuses: 401 when nobody is logged in, 403 when someone is but may not write.
+     *
+     * @return bool
+     */
+    public static function canRunTests(): bool
+    {
+        foreach (self::RUN_TESTS_ROLES as $role) {
+            if (self::hasRole($role)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
