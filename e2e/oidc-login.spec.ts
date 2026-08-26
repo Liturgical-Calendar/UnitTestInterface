@@ -281,6 +281,44 @@ test.describe('logged in', () => {
         expect(await forwarded(`${header}.${payload.slice(0, 4)}@${payload.slice(4)}.${signature}`)).toBe(false);
     });
 
+    test('logout rejects a hint whose azp is present but empty', async ({ browser, request }) => {
+        test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
+
+        // The single-valued `aud` fallback is licensed only by `azp` being ABSENT. A token carrying
+        // `azp: ""` has an authorized party that is not us, so it must be refused rather than allowed to
+        // fall through to a matching `aud` — which is what happened while the check coerced the value
+        // (`is_string($azp) && '' !== $azp`) instead of testing presence. CodeRabbit on Frontend #480.
+        const started = await request.get('/auth/login.php', { maxRedirects: 0 });
+        const clientId = new URL(started.headers()['location'] ?? '').searchParams.get('client_id');
+        expect(clientId, 'the login redirect should name a client id').toBeTruthy();
+
+        const b64url = (o: unknown) =>
+            Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const header = b64url({ alg: 'RS256', typ: 'JWT' });
+        const signature = b64url('signature');
+
+        const forwarded = async (claims: unknown): Promise<boolean> => {
+            const ctx = await browser.newContext();
+            try {
+                await ctx.addCookies([
+                    { name: 'litcal_id_token', value: `${header}.${b64url(claims)}.${signature}`, domain: 'localhost', path: '/' },
+                ]);
+                const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
+                return (res.headers()['location'] ?? '').includes('id_token_hint=');
+            } finally {
+                await ctx.close();
+            }
+        };
+
+        // Control: with azp genuinely absent, a single-valued aud DOES stand in for it — so the
+        // rejections below are attributable to the invalid azp and not to the fallback being broken.
+        expect(await forwarded({ aud: clientId })).toBe(true);
+
+        expect(await forwarded({ azp: '', aud: clientId })).toBe(false);
+        expect(await forwarded({ azp: null, aud: clientId })).toBe(false);
+        expect(await forwarded({ azp: 12345, aud: clientId })).toBe(false);
+    });
+
     test('the logout control ends the provider session too', async ({ page, request }) => {
         test.skip(!(await oidcIsEnabled(request)), 'Zitadel is not configured in this environment');
         await page.goto('/');

@@ -294,9 +294,14 @@ final class Client
             return false;
         }
 
-        $azp = $claims['azp'] ?? null;
-        if (is_string($azp) && '' !== $azp) {
-            return $azp === $this->clientId;
+        // Presence is tested with array_key_exists() rather than by coercing the value, because the
+        // fallback below is licensed only by `azp` being ABSENT. A token carrying `azp: ""` (or null, or
+        // a non-string) has an authorized party that simply is not us, and letting it fall through to a
+        // matching single-valued `aud` would forward a hint on a token we cannot show is ours -- which is
+        // the failure this guard exists to prevent.
+        if (array_key_exists('azp', $claims)) {
+            $azp = $claims['azp'];
+            return is_string($azp) && '' !== $azp && $azp === $this->clientId;
         }
 
         $aud = $claims['aud'] ?? null;
