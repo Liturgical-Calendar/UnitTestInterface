@@ -205,6 +205,11 @@ function listRuns(): array
             'timestamp'    => $data['timestamp'] ?? null,
             'runType'      => $data['runType'] ?? null,
             'calendar'     => $data['calendar'] ?? null,
+            // Projected so a dropdown label can name the rite a run was made under. It is not
+            // inferable from `calendar`: a diocese id says nothing about its rite, and the Resources
+            // runner has no calendar at all. Absent from runs stored before either runner recorded
+            // it, which the clients read as Roman — which is what those runs were.
+            'rite'         => $data['rite'] ?? null,
             'responseType' => $data['responseType'] ?? null,
             'counts'       => $data['counts'] ?? null,
             'duration'     => $data['duration'] ?? null,

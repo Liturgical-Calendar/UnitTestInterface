@@ -73,17 +73,21 @@ test('replays a stored calendars run onto the dashboard', async ({ page, request
     await expect(page.locator('#startTestRunnerBtn')).toBeDisabled();
 });
 
-test('restores live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
-    // Seed a run for Italy (1 sourceDataCheck) — deliberately different from the live General Roman
-    // scaffold, which is larger. After replay, currentSelectedCalendar is clobbered to 'IT' and the
-    // scaffold shows only that 1 check. Returning to "— Live —" must re-sync state from the DOM
-    // controls and rebuild the scaffold via setupPage(), restoring the live layout.
+test('rebuilds a live scaffold when returning to "— Live —" after a replay', async ({ page, request }) => {
+    // Seed a run for Italy (1 sourceDataCheck) — deliberately smaller than any live scaffold, so
+    // "the replayed cards are still on screen" is distinguishable from "a live scaffold was rebuilt".
     //
-    // The live count is *measured* before the replay rather than written down. It was hardcoded to
-    // 11 — metadata, temporale + i18n, decrees + i18n, and the three editio typica missals with
-    // their i18n folders — and #61 part 2 moved it to 22 by adding the rite's lectionary corpus.
-    // What this test is about is that returning to Live restores whatever the live scaffold was, so
-    // pinning the number here only bought a second place to edit whenever coverage changes.
+    // **Which** live scaffold changed with the replay-control sync, and this test changed with it.
+    // It used to assert the General Roman one, because a replay left the controls alone and
+    // returning to Live re-derived state from the untouched selects. `syncControlsToStoredRun()`
+    // now points them at the run being shown, so leaving a replay lands on that run's calendar —
+    // the deliberate consequence of having the controls describe what is on screen, and the reason
+    // nothing stashes a pre-replay selection. What the test is really about is unchanged: the
+    // replayed scaffold must be replaced by a live one built from the controls, not left standing.
+    //
+    // Counts stay measured rather than written down. The live General Roman figure was once
+    // hardcoded to 11 and #61 part 2 moved it to 22; pinning a number here only ever bought a
+    // second place to edit whenever coverage changed.
     // As above, the timestamp is supplied by seedStoredRun() rather than hardcoded.
     const run = {
         schemaVersion: 1,
@@ -119,9 +123,25 @@ test('restores live scaffold when returning to "— Live —" after a replay', a
     await page.selectOption('#pastRunsSelect', file);
     await expect(page.locator('.sourcedata-tests > div')).toHaveCount(1);
 
-    // Return to "— Live —" — resyncLiveStateFromDom() must rebuild the live scaffold
+    // The controls describe the run while it is on screen, and are inert for as long as it is.
+    await expect(page.locator('#APICalendarSelect')).toHaveValue('IT');
+    await expect(page.locator('#APICalendarSelect')).toBeDisabled();
+    await expect(page.locator('#riteSelect')).toBeDisabled();
+    await expect(page.locator('#APIResponseSelect')).toBeDisabled();
+
+    // Return to "— Live —" — resyncLiveStateFromDom() must rebuild a live scaffold from the controls
     await page.selectOption('#pastRunsSelect', '');
-    await expect(page.locator('.sourcedata-tests > div')).toHaveCount(liveCheckCount);
-    // .currentSelectedCalendar cells must reflect the live dropdown value ('roman'), not 'IT'
-    await expect(page.locator('.currentSelectedCalendar').first()).toContainText('roman');
+    // Rebuilt, not left standing: the replayed scaffold was 1 check and every live one is larger.
+    // The exact figure is Italy's live coverage, which is not this test's subject.
+    await expect
+        .poll(() => page.locator('.sourcedata-tests > div').count(), { timeout: 30_000 })
+        .toBeGreaterThan(1);
+    // Italy, because that is what the controls now read — not the General Roman calendar this
+    // assertion named before the sync landed.
+    await expect(page.locator('#APICalendarSelect')).toHaveValue('IT');
+    await expect(page.locator('.currentSelectedCalendar').first()).toContainText('IT');
+    // And handed back, since this user may run tests.
+    await expect(page.locator('#APICalendarSelect')).toBeEnabled();
+    await expect(page.locator('#riteSelect')).toBeEnabled();
+    await expect(page.locator('#APIResponseSelect')).toBeEnabled();
 });

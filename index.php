@@ -118,7 +118,10 @@ include_once('layout/head.php');
                 <div class="col-6 col-md-4 col-lg-2" id="calendarSelectMount"></div>
                 <div class="col-6 col-md-4 col-lg-2">
                     <label for="APIResponseSelect" class="form-label"><?php echo _("Response Format"); ?></label>
-                    <select id="APIResponseSelect" class="form-select form-select-sm">
+                    <!-- Rendered disabled, like #startTestRunnerBtn above and for the same reason:
+                         applyControlAvailability() enables it once the page knows whether this user
+                         may run tests, so it never flashes enabled and then withdraws. -->
+                    <select id="APIResponseSelect" class="form-select form-select-sm" disabled>
                         <!-- The floor only. The real list is populated client-side from the
                              `hello` frame's `capabilities.responseFormats` for this page's action
                              (populateResponseFormatSelect() in assets/js/wsProtocol.js): the server
