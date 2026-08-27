@@ -47,7 +47,6 @@ interface AuthCheckResult {
  * Playwright's storageState captures cookies, persisting them across test runs.
  */
 setup('authenticate', async ({ page }) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003';
     // Use URL class for validation and proper encoding
     const apiUrl = new URL(`${process.env.API_PROTOCOL || 'http'}://${process.env.API_HOST || 'localhost'}:${process.env.API_PORT || '8000'}`).origin;
     const username = process.env.TEST_USERNAME;
@@ -61,7 +60,13 @@ setup('authenticate', async ({ page }) => {
     // admin.php until that page was archived; any same-origin page does, because the login below is
     // a bare fetch rather than a form submission.)
     // Use 'domcontentloaded' instead of 'networkidle' to avoid flakiness from polling/analytics
-    await page.goto(`${frontendUrl}/`);
+    // Relative, so the origin is whatever `playwright.config.ts` resolved as `baseURL` — and there is
+    // no second default here to drift from it. It did drift: this file said `localhost:3003` while the
+    // config said `127.0.0.1:3003`, which would have logged in on one host and run the tests on
+    // another. The cookie the login sets is host-only on a loopback host, so it would simply never
+    // have been sent, and every spec would have run anonymously against a WebSocket server that,
+    // since LiturgicalCalendarAPI#894, refuses anonymous callers.
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     // Authenticate via fetch with credentials: 'include' to ensure HttpOnly cookies are set
