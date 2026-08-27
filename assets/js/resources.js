@@ -535,6 +535,14 @@ const handleWebSocketMessage = ( e ) => {
             currentResponseType = format;
             setupPage();
         }
+        // The permission the frame just delivered has to be acted on here, because `hello` arrives
+        // *after* the `onOpen` callback that set `SocketReady` and last touched the button — so
+        // without this the server's verdict would be read only on the next unrelated repaint, and an
+        // anonymous visitor would keep a button the server will refuse. Both controls are refreshed:
+        // `canRunTests()` now answers from `caller.permissions`, and these are the two places that
+        // ask it. Matches the shape in index.js.
+        ReadyToRunTests.tryEnableBtn();
+        applyControlAvailability();
         return;
     }
 

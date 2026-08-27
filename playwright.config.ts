@@ -26,8 +26,18 @@ export default defineConfig({
     ],
     /* Shared settings for all the projects below */
     use: {
-        /* Base URL for the frontend */
-        baseURL: process.env.FRONTEND_URL || 'http://localhost:3003',
+        /*
+         * Base URL for the frontend.
+         *
+         * `127.0.0.1` rather than `localhost`, and it has to match `WS_HOST` below. Since
+         * LiturgicalCalendarAPI#894 the WebSocket server reads its caller from the
+         * `litcal_access_token` cookie on the handshake, and on a loopback host that cookie carries
+         * no Domain attribute — browsers reject one for `localhost` and `127.0.0.1` alike — so it is
+         * sent only to the exact host that set it. Serving the page from `localhost` while the socket
+         * listens on `127.0.0.1` means the handshake arrives with no credential, every visitor reads
+         * as anonymous, and the run controls stay disabled however well the HTTP session is doing.
+         */
+        baseURL: process.env.FRONTEND_URL || 'http://127.0.0.1:3003',
 
         /* Collect trace when retrying the failed test */
         trace: 'on-first-retry',
@@ -129,8 +139,8 @@ export default defineConfig({
             // which surfaces as an intermittent "Execution context was destroyed" rather than as
             // anything that names the real cause. Anyone serving this app by hand wants the same
             // (see README).
-            command: `PHP_CLI_SERVER_WORKERS=6 php -S ${new URL(process.env.FRONTEND_URL || 'http://localhost:3003').host}`,
-            url: process.env.FRONTEND_URL || 'http://localhost:3003',
+            command: `PHP_CLI_SERVER_WORKERS=6 php -S ${new URL(process.env.FRONTEND_URL || 'http://127.0.0.1:3003').host}`,
+            url: process.env.FRONTEND_URL || 'http://127.0.0.1:3003',
             reuseExistingServer: !process.env.CI,
             timeout: 60 * 1000,
             stdout: 'pipe',

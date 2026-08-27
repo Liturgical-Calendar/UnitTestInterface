@@ -715,8 +715,42 @@ reintroduced. Readiness is a question about the page; permission is a question a
 governs the rite, calendar and response-format selects — see **The Controls Describe What Is On Screen** below.
 
 The **UI gate is a courtesy, not the enforcement point**: `results.php` answers 403 regardless of what the page
-believes. Note also that starting a *run* is gated only client-side — the WebSocket server has no notion of these
-roles — so what the role actually protects is storing the result.
+believes.
+
+**Starting a run is now gated server-side too** (LiturgicalCalendarAPI#894). It used to be gated *only* here, and
+that sentence used to end "so what the role actually protects is storing the result" — removing `disabled` in
+devtools, or never loading the page at all, started a full run against the public WebSocket server. It no longer
+does: `Health` identifies the caller from the `litcal_access_token` cookie on the handshake and refuses
+`validateSource`, `executeValidation`, `validateCalendar`, `runTest` and `cancelRun` with `not_authenticated` or
+`insufficient_role`.
+
+**The `hello` frame now carries the answer, so this client stops deciding.** `caller.permissions.runTests` is the
+verdict of the same `TestRunPolicy` object that refuses the actions, so a button rendered from it cannot disagree
+with what a click would achieve — which is the drift the three-way split between this repo's role list, the API's
+policy and the WebSocket server was always going to produce. `serverPermitsRunningTests()` in `wsProtocol.js` is
+**tri-state**: `true`/`false` are the server's verdict, and `null` means it did not give one — either `hello` has
+not arrived yet, or the server predates #894. `canRunTests()` reads `null` as "fall back to the two older sources",
+never as `false`; reading it as `false` would disable the button against every older server, including the one CI
+builds from `#development` until that change ships.
+
+Because `hello` arrives *after* the `onOpen` callback that last touched the button, both runner pages re-run
+`ReadyToRunTests.tryEnableBtn()` and `applyControlAvailability()` when they consume it. Without that the verdict
+would land too late to be acted on.
+
+**The connection itself is still open to anyone, deliberately.** The API issue proposed closing the handshake; both
+runner pages call `wsClient.connect()` unconditionally at module load, with a reconnect timer, so an anonymous
+visitor who is only replaying past runs would have been put into a connect/close/reconnect loop with a red status
+badge. Refusing per action closes the abuse vector — the dispatched work — while anonymous replay keeps working.
+
+**`WS_HOST` must be the same host string the page is served from.** Not a preference — the credential is a cookie,
+and on a loopback host it is written with no `Domain` attribute, because browsers reject one for `localhost` and
+`127.0.0.1` alike. A host-only cookie goes only to the exact host that set it, and `localhost` and `127.0.0.1` are
+different hosts to a browser however they resolve. Serve the page from `localhost` while the socket listens on
+`127.0.0.1` and the handshake arrives with no credential at all: every visitor reads as anonymous, the run controls
+stay disabled, and `/auth/me` cheerfully reports the session is fine — which is what makes it confusing rather than
+obvious. `127.0.0.1` is the side to standardise on, because it is an explicit IPv4 literal and cannot resolve to
+`::1` on a host offering both, which is the *other* way this socket breaks. Production is unaffected: the API and
+the test server share a registrable domain and the cookie is `COOKIE_DOMAIN`-scoped across it.
 
 **Untested case, knowingly.** "Authenticated but lacking the role" has no e2e coverage: the fixture user
 authenticates through the API's legacy service, whose `User` model defaults to `['admin']`, and covering the
