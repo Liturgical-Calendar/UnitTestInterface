@@ -794,6 +794,17 @@ rite or response format; `e2e/response-format-capabilities.spec.ts` already pins
 route. The **calendar** select is deliberately exempt: `''` is its rite-level option, a meaningful value, so a
 missing option falls back to it and warns rather than being restored.
 
+**An absent `rite` on a stored run means unknown, not Roman.** `resources.php`'s dropdown label read
+`summary.rite ?? 'roman'`, justified as "runs stored before it was recorded were Roman" — which holds on
+`index.php`, whose stored runs predate the rite dimension entirely, and is **false** on `resources.php`,
+which has carried a `RiteSelect` far longer than `buildResourcesPayload()` has recorded the result. A
+production run proved it: genuinely Ambrosian (18 of its 23 check URLs were `/ambrosian/`) and announced
+in the dropdown as roman. A default that invents a fact is not a default. The label now says
+`rite unrecorded`, and `syncControlsToStoredRun()` leaves the rite select alone rather than pointing it
+at a rite the run never claimed — "Roman Rite" above a scaffold of Ambrosian cards being the precise
+untruth that sync exists to prevent. `index.js`'s label was already safe: with no `rite` it shows the
+calendar alone and claims nothing.
+
 **Nothing stashes a pre-replay selection**, so leaving a replay lands on that run's rite and calendar rather than on
 what was selected before it. `resyncLiveStateFromDom()` reads the controls, and the controls describe what is on
 screen — so the dashboard a user returns to matches the controls they can see. Which calendar that is follows from

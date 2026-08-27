@@ -1655,6 +1655,14 @@ document.querySelector('#APIResponseSelect')?.addEventListener('change', ( ev ) 
     ReadyToRunTests.tryEnableBtn();
 });
 
+/**
+ * Shown in place of a rite for a run stored before this page recorded one.
+ *
+ * A literal rather than a translated string on purpose: it sits in a dropdown option beside machine
+ * values like `roman` and `ambrosian`, and a localized word there would read as a third rite.
+ */
+const RITE_UNRECORDED = 'rite unrecorded';
+
 const pastRunsSelect = document.querySelector('#pastRunsSelect');
 
 /**
@@ -1668,8 +1676,19 @@ const pastRuns = createPastRunsList( {
     label: ( summary ) => {
         const dt = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( new Date( summary.timestamp ) );
         // This page has no calendar, so the rite is the only thing distinguishing two runs made
-        // moments apart. Runs stored before it was recorded were Roman.
-        return `${dt} · ${summary.rite ?? 'roman'} · ✓${summary.counts?.successful ?? 0} ✗${summary.counts?.failed ?? 0}`;
+        // moments apart — which is exactly why an absent one must not be filled in.
+        //
+        // It read `summary.rite ?? 'roman'`, justified as "runs stored before it was recorded were
+        // Roman". That holds on index.php, whose stored runs predate the rite dimension entirely. It
+        // is false here: this page has carried a RiteSelect for far longer than its payload has
+        // recorded the result, so an unlabelled run is of *unknown* rite, not a Roman one. A stored
+        // Ambrosian run on production proved it — 18 of its 23 check URLs were `/ambrosian/` while
+        // the dropdown announced it as roman.
+        //
+        // A default that invents a fact is not a default; it is the wrong-green this interface
+        // exists to catch. Say the rite is unrecorded instead.
+        const rite = summary.rite ?? RITE_UNRECORDED;
+        return `${dt} · ${rite} · ✓${summary.counts?.successful ?? 0} ✗${summary.counts?.failed ?? 0}`;
     },
 } );
 
@@ -1697,8 +1716,17 @@ const pastRuns = createPastRunsList( {
 const syncControlsToStoredRun = ( run ) => {
     suppressControlChangeHandlers = true;
     try {
-        // Runs stored before this page recorded a rite have none; they were all Roman.
-        selectExistingValue( riteSelect?._domElement, run.rite ?? 'roman', 'rite' );
+        // Left alone when the run records no rite, rather than set to Roman. Pointing the select at a
+        // rite the run never claimed is the same fabrication the dropdown label used to commit, and
+        // here it is worse: the select would read "Roman Rite" directly above a scaffold of Ambrosian
+        // cards, which is the precise untruth this whole sync exists to prevent. Leaving it shows the
+        // user's own selection — still not the run's rite, but not a claim about it either, and the
+        // dropdown says `unrecorded` beside it.
+        if ( undefined !== run.rite && null !== run.rite ) {
+            selectExistingValue( riteSelect?._domElement, run.rite, 'rite' );
+        } else {
+            console.warn( 'Stored run records no rite; leaving the rite select as it was. It was saved before this page recorded one, so its rite is unknown rather than Roman.' );
+        }
         if ( run.responseType ) {
             selectExistingValue(
                 document.querySelector('#APIResponseSelect'),
