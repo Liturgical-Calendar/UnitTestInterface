@@ -742,16 +742,6 @@ runner pages call `wsClient.connect()` unconditionally at module load, with a re
 visitor who is only replaying past runs would have been put into a connect/close/reconnect loop with a red status
 badge. Refusing per action closes the abuse vector — the dispatched work — while anonymous replay keeps working.
 
-**`WS_HOST` must be the same host string the page is served from.** Not a preference — the credential is a cookie,
-and on a loopback host it is written with no `Domain` attribute, because browsers reject one for `localhost` and
-`127.0.0.1` alike. A host-only cookie goes only to the exact host that set it, and `localhost` and `127.0.0.1` are
-different hosts to a browser however they resolve. Serve the page from `localhost` while the socket listens on
-`127.0.0.1` and the handshake arrives with no credential at all: every visitor reads as anonymous, the run controls
-stay disabled, and `/auth/me` cheerfully reports the session is fine — which is what makes it confusing rather than
-obvious. `127.0.0.1` is the side to standardise on, because it is an explicit IPv4 literal and cannot resolve to
-`::1` on a host offering both, which is the *other* way this socket breaks. Production is unaffected: the API and
-the test server share a registrable domain and the cookie is `COOKIE_DOMAIN`-scoped across it.
-
 **Untested case, knowingly.** "Authenticated but lacking the role" has no e2e coverage: the fixture user
 authenticates through the API's legacy service, whose `User` model defaults to `['admin']`, and covering the
 negative would mean seeding a second roleless Zitadel user. The positive and anonymous cases are covered; this gap
