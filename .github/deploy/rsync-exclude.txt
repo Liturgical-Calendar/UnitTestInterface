@@ -37,10 +37,13 @@ phpcs.xml
 .markdownlint.yml
 Dockerfile
 
-# --- Node / Bun (only used for E2E tests + markdown linting) ---
+# --- Node (only used for E2E tests + markdown linting) ---
+# package-lock.json belongs here beside package.json: it was omitted while
+# `bun.lock` held this slot, so the lockfile shipped to production even though
+# nothing there runs npm. Nothing on the server reads any of these.
 node_modules/
 package.json
-bun.lock
+package-lock.json
 
 # --- Project meta files ---
 CLAUDE.md
