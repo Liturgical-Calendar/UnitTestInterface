@@ -684,6 +684,15 @@ own `change`; `suppressControlChangeHandlers` is what stops both events reaching
 rebuilding the live scaffold over the stored one. The Resources page assigns its values and dispatches nothing: its
 rite listener calls `loadAsyncData()`, an asynchronous rediscovery that would land after the replay had painted.
 
+**A stored value the select cannot hold is refused, not blanked.** A native `<select>` silently becomes `''` when
+handed a value it has no option for, and a stored run carries the rite and response format that were selected when
+it *ran* — which need not be what the server advertises today. `selectExistingValue()` in `common.js` restores the
+previous value and warns instead. That matters because `resyncLiveStateFromDom()` reads these selects back when a
+replay is closed, so a blank would become `currentRite` / `currentResponseType` and go on the wire as the next run's
+rite or response format; `e2e/response-format-capabilities.spec.ts` already pins the same hazard arriving by another
+route. The **calendar** select is deliberately exempt: `''` is its rite-level option, a meaningful value, so a
+missing option falls back to it and warns rather than being restored.
+
 **Nothing stashes a pre-replay selection**, so leaving a replay lands on that run's rite and calendar rather than on
 what was selected before it. `resyncLiveStateFromDom()` reads the controls, and the controls describe what is on
 screen — so the dashboard a user returns to matches the controls they can see. Which calendar that is follows from

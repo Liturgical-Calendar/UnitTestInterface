@@ -18,6 +18,41 @@ export const escapeHtmlAttr = (str) => {
 };
 
 /**
+ * Assign a value to a `<select>`, keeping whatever it already held if no option matches.
+ *
+ * A native select refuses a value it has no option for and silently becomes `''`. That is fine
+ * where the empty option means something (the Calendars page's rite-level calendar) and dangerous
+ * where it does not: the runner pages read their rite and response-format selects back into
+ * `currentRite` / `currentResponseType` when a replay is closed, so a refused assignment would put
+ * an empty string on the wire as the rite or the response format of the next run. The e2e suite
+ * already pins the same hazard arriving by a different route — see "before hello, and without a
+ * socket, JSON is still selectable" in `e2e/response-format-capabilities.spec.ts`.
+ *
+ * Restoring the previous value rather than leaving the blank is what makes this safe to call with
+ * a value from a stored run, whose vintage may not match what the server advertises today.
+ *
+ * @param {HTMLSelectElement|null} el The select, or null when the page has no such control.
+ * @param {string} value The value to select.
+ * @param {string} context What is being restored, for the warning. e.g. "response format".
+ * @returns {boolean} True when the value took; false when it was refused and the previous one kept.
+ */
+export const selectExistingValue = (el, value, context) => {
+    if (!el) {
+        return false;
+    }
+    const previous = el.value;
+    el.value = value;
+    if (el.value === value) {
+        return true;
+    }
+    el.value = previous;
+    console.warn(
+        `Stored run names ${context} "${value}", which this select has no option for; keeping "${previous}".`
+    );
+    return false;
+};
+
+/**
  * Escapes HTML special characters and converts URLs to clickable links.
  * First escapes all HTML to prevent XSS, then safely linkifies URLs.
  * @param {string} str - The string to process.

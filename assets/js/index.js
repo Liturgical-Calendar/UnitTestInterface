@@ -12,6 +12,7 @@ import {
     hidePageLoader,
     safeCollapseShow,
     safeToastShow,
+    selectExistingValue,
     updateText,
     slugify,
 } from './common.js';
@@ -2250,9 +2251,12 @@ const pastRuns = createPastRunsList( {
  * @returns {void}
  */
 const syncControlsToStoredRun = ( run ) => {
-    const responseEl = document.querySelector('#APIResponseSelect');
-    if ( responseEl && run.responseType ) {
-        responseEl.value = run.responseType;
+    if ( run.responseType ) {
+        selectExistingValue(
+            document.querySelector('#APIResponseSelect'),
+            run.responseType,
+            'response format'
+        );
     }
     if ( !riteSelect || !calendarSelect ) {
         return;
@@ -2262,8 +2266,10 @@ const syncControlsToStoredRun = ( run ) => {
         const riteEl = riteSelect._domElement;
         // Runs stored before the rite dimension existed have no `rite`; they were all Roman.
         const rite = run.rite ?? 'roman';
-        if ( riteEl.value !== rite ) {
-            riteEl.value = rite;
+        // Dispatched only when the value actually took: a refused rite leaves the select on its
+        // previous one, and telling the library to rebuild the calendar options for a rite that is
+        // not selected would narrow them to a rite the page is not on.
+        if ( riteEl.value !== rite && selectExistingValue( riteEl, rite, 'rite' ) ) {
             riteEl.dispatchEvent( new Event( 'change' ) );
         }
         const calendarEl = calendarSelect._domElement;
@@ -2271,7 +2277,10 @@ const syncControlsToStoredRun = ( run ) => {
         calendarEl.value = wanted;
         if ( calendarEl.value !== wanted ) {
             console.warn(
-                `Stored run names calendar "${wanted}" under rite "${rite}", which the calendar select has no option for; leaving it on the rite-level calendar. The replayed cards are unaffected.`
+                // `riteEl.value`, not `rite`: if the rite itself was refused above, the select is
+                // still on its previous one, and naming the rite we wanted would misreport which
+                // option set was actually searched.
+                `Stored run names calendar "${wanted}" under rite "${riteEl.value}", which the calendar select has no option for; leaving it on the rite-level calendar. The replayed cards are unaffected.`
             );
         }
     } finally {

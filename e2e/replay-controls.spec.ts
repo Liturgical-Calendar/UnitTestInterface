@@ -136,6 +136,44 @@ test.describe('logged out', () => {
 });
 
 test.describe('logged in', () => {
+    test('a stored format the server no longer offers keeps a valid one selected', async ({ page }) => {
+        // CodeRabbit on #94. A stored run carries the format that *was* selected when it ran, and a
+        // native select silently becomes `''` when handed a value it has no option for. That blank
+        // is not inert here: `resyncLiveStateFromDom()` reads this select back when the replay is
+        // closed, so `currentResponseType` would become `''` and every subsequent run would put an
+        // empty response format on the wire. The suite already pins the same hazard arriving by
+        // another route — see "before hello, and without a socket, JSON is still selectable".
+        //
+        // Driven on resources.php, whose action advertises only JSON and YML, with a stored run
+        // claiming ICS: a format that page's select never holds an option for.
+        // Every console message, not only those typed 'warning': Playwright has spelled that type
+        // both 'warning' and 'warn' across versions, and the text is what this test is about.
+        const messages: string[] = [];
+        page.on('console', (m) => messages.push(m.text()));
+
+        const file = await stubStoredRun(page, { ...RESOURCES_RUN, responseType: 'ICS' });
+        await page.goto('/resources.php');
+        await expect(page.locator('.page-loader')).toBeHidden({ timeout: 60_000 });
+        const before = await page.locator('#APIResponseSelect').inputValue();
+
+        await page.selectOption('#pastRunsSelect', file);
+
+        // Kept, not blanked — and said out loud rather than silently tolerated.
+        await expect(page.locator('#APIResponseSelect')).toHaveValue(before);
+        await expect
+            .poll(() => messages.filter((t) => t.includes('response format') && t.includes('ICS')).length)
+            .toBeGreaterThan(0);
+
+        // Returning to live is where a blank would have been read into `currentResponseType` and
+        // gone on the wire. Asserted as the intended end state rather than as the discriminator:
+        // the warning above is what actually distinguishes the guard running from a bare assignment,
+        // since a `hello` arriving in between can repopulate the select and hide a transient blank.
+        await page.selectOption('#pastRunsSelect', '');
+        await expect(page.locator('#APIResponseSelect')).toHaveValue(before);
+        expect(await page.evaluate(() => (document.querySelector('#APIResponseSelect') as HTMLSelectElement).value))
+            .not.toBe('');
+    });
+
     test('a Calendars replay sets the controls to the run and holds them inert', async ({ page }) => {
         const file = await stubStoredRun(page, CALENDARS_RUN);
         await page.goto('/');

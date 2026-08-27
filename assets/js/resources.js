@@ -6,6 +6,7 @@
 
 import {
     canRunTests,
+    selectExistingValue,
     escapeQuotesAndLinkifyUrls,
     hidePageLoader,
     safeCollapseShow,
@@ -1688,14 +1689,14 @@ const pastRuns = createPastRunsList( {
 const syncControlsToStoredRun = ( run ) => {
     suppressControlChangeHandlers = true;
     try {
-        const riteEl = riteSelect?._domElement;
         // Runs stored before this page recorded a rite have none; they were all Roman.
-        if ( riteEl ) {
-            riteEl.value = run.rite ?? 'roman';
-        }
-        const responseEl = document.querySelector('#APIResponseSelect');
-        if ( responseEl && run.responseType ) {
-            responseEl.value = run.responseType;
+        selectExistingValue( riteSelect?._domElement, run.rite ?? 'roman', 'rite' );
+        if ( run.responseType ) {
+            selectExistingValue(
+                document.querySelector('#APIResponseSelect'),
+                run.responseType,
+                'response format'
+            );
         }
     } finally {
         suppressControlChangeHandlers = false;
