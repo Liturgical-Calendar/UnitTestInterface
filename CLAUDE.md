@@ -583,7 +583,8 @@ Two mechanisms, in that order of preference, mirroring the API's own `OidcAuthMi
 | `src/Oidc/TokenValidator.php`         | Validates a Zitadel token against the provider's signing keys |
 | `src/Oidc/Session.php`                | PKCE session keys, `return_to` validation, cookie writing     |
 | `src/JwtAuth.php`                     | Resolves identity: Zitadel locally, else the API's `/auth/me` |
-| `auth/{login,callback,logout,me}.php` | The round trip, plus this app's own "who am I?"               |
+| `auth/{login,callback,logout}.php`    | The round trip                                                |
+| `auth/{me,refresh}.php`               | This app's own "who am I?" and "renew me"                     |
 
 **`/auth/me` on the API does NOT accept Zitadel tokens.** `Router.php` pipes `OidcAuthMiddleware` only
 for an allow-list of auth sub-routes and `me` is not among them, so `MeHandler` verifies with the API's
@@ -591,6 +592,46 @@ HS256 service alone. This is known, deliberate behaviour — LiturgicalCalendarF
 `e2e/rbac/support/actingAs.spec.ts` records it and validates locally for the same reason. It is why
 `TokenValidator` exists here at all, and why `auth/me.php` does: `assets/js/auth.js` used to ask the
 API's endpoint directly and would report a Zitadel-authenticated user as logged out.
+
+**The same is true of `/auth/refresh`, and `auth/refresh.php` is its answer** (#93). `auth.js` consulted
+`oidcEnabled` for identity but not for renewal, so a Zitadel session was resolved locally and then
+renewed against the API's legacy HS256 endpoint, which answers 400. The session simply expired with no
+renewal; the most expensive place it landed was the end of a test run, where the terminal
+`postRunResults()` then got a 401 and the run was not stored. `authMeEndpoint()` and
+`authRefreshEndpoint()` now sit beside each other in `auth.js` — any future "where do I ask about the
+session?" belongs there too, since one branch answering for identity while another path assumed the API
+is precisely how these diverged.
+
+**A failed renewal is two different facts, and conflating them ends live sessions.** `auth/refresh.php`
+answers **401** when the session is over (no refresh token, or one the provider refused — `Oidc\Client::refreshTokens()`
+returns null for a 4xx from the token endpoint) and **502** when the provider could not be reached,
+leaving the cookies alone in that case. `isDefinitiveRefreshFailure()` in `auth.js` is the client half:
+any **4xx** is final, anything else is transient and the auto-refresh timer retries — it runs every
+minute over the last five before expiry. The predicate is a range rather than a bare `401` because the
+two refresh endpoints disagree on the code for the same fact: ours says 401, the API's legacy one says
+400. Testing for 401 alone would leave every non-Zitadel deployment retrying a session that had ended.
+Before this, the catch cleared the cached session on *any* thrown error, so one failed DNS lookup
+discarded a session that was still valid.
+
+On a definitive failure `auth.js` dispatches `auth:session-expired`, which `components/login-modal.php`
+turns into a logged-out navbar, a re-evaluated Run Tests button (via `auth:logout`) and the
+`#sessionExpiredToast`. Deliberately **not** a redirect, unlike `handleAutoLogout()`: that one sends an
+OIDC user to `/auth/logout.php` to end the provider session as well, which is right when a live session
+is being given up — here the provider has already refused the token, so there is no session left to end
+and navigating away from the user's work would accomplish nothing.
+
+**`auth/refresh.php` is POST-only**, unlike `auth/me.php` and `auth/logout.php` beside it, because it
+changes state: the provider rotates the refresh token and the new one must replace the stored one, or
+the next renewal fails. The auth cookies are `SameSite=Lax`, which withholds them from a cross-site POST
+but sends them on a cross-site top-level GET navigation — so accepting GET would let a third-party page
+force a rotation in the victim's browser simply by linking there.
+
+**Untested branch, knowingly.** The 200 path — a valid refresh token exchanged and the three cookies
+rewritten — has no e2e coverage, because the fixture user authenticates through the API's legacy service
+and holds no Zitadel refresh token. What *is* covered is that the back-channel call genuinely reaches
+Zitadel: posting the fixture's legacy token returns `refresh_rejected`, which is reachable only from a
+4xx at the token endpoint, so discovery, the `ZITADEL_INTERNAL_URL` `Host` header and the form encoding
+are all exercised. The cookie writing mirrors `auth/callback.php` line for line.
 
 **The login control has two shapes.** `layout/head.php` sets `$oidcEnabled`; with Zitadel configured
 the navbar renders `#loginBtn` as a link into `/auth/login.php` and `components/login-modal.php`'s click

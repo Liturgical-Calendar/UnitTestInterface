@@ -40,6 +40,51 @@ const authMeEndpoint = () => (
     window.LitCalConfig?.oidcEnabled ? '/auth/me.php' : `${getBaseUrl()}/auth/me`
 );
 
+/**
+ * Where to renew the current session.
+ *
+ * The sibling of {@link authMeEndpoint}, and it exists because for a long time it did not (issue #93).
+ * `oidcEnabled` was consulted for identity but not for renewal, so a Zitadel session was resolved locally
+ * and then renewed against the API's legacy HS256 `/auth/refresh` — which knows nothing about it and
+ * answers 400. The session expired with no renewal and the user was silently logged out; the most
+ * expensive place it landed was the end of a test run, where the terminal `postRunResults()` then got a
+ * 401 and the run was not stored.
+ *
+ * Any future "where do I ask about the session?" belongs beside these two, not inlined at a call site.
+ * One branch answering for identity while another path assumed the API is exactly how they diverged.
+ *
+ * @returns {string} An absolute or same-origin URL.
+ */
+const authRefreshEndpoint = () => (
+    window.LitCalConfig?.oidcEnabled ? '/auth/refresh.php' : `${getBaseUrl()}/auth/refresh`
+);
+
+/**
+ * Did a failed refresh settle the question, or is it worth trying again?
+ *
+ * Any 4xx is the server's verdict on what we sent — a missing, expired, revoked or already-rotated
+ * refresh token — and no amount of retrying changes it. Anything else (a 5xx, `auth/refresh.php`'s own
+ * 502 for an unreachable provider, or a network fault that produced no response at all) is transient,
+ * and the auto-refresh timer runs every minute over the last five before expiry, so it has several more
+ * chances to succeed against a session that is still perfectly valid.
+ *
+ * The range rather than a bare `401` because the two refresh endpoints disagree on which code to use:
+ * `auth/refresh.php` answers 401, while the API's legacy HS256 endpoint answers **400** for the same
+ * fact. Testing for 401 alone would leave every legacy deployment retrying a session that is over.
+ *
+ * One predicate, two readers — `_doRefreshToken()` decides whether to drop the cached state, and
+ * `startAutoRefresh()` decides whether to announce the session as expired. Those two must never
+ * disagree: clearing the cache while still believing the session might come back leaves an
+ * authenticated-looking page over nothing.
+ *
+ * @param {unknown} error An error thrown by the refresh path, possibly carrying a `status`.
+ * @returns {boolean} True when the session is over and retrying cannot help.
+ */
+const isDefinitiveRefreshFailure = (error) => {
+    const status = error?.status;
+    return Number.isInteger(status) && status >= 400 && status < 500;
+};
+
 const Auth = {
     /**
      * Cached authentication state from /auth/me endpoint
@@ -307,13 +352,16 @@ const Auth = {
      * @throws {Error} When refresh fails
      */
     async _doRefreshToken() {
-        if (!this._validateBaseUrl('_doRefreshToken')) {
+        // Only the legacy path needs the API's base URL. Under OIDC the endpoint is same-origin, and
+        // requiring a configured API host to renew a Zitadel session would be a dependency it has not had
+        // since auth/refresh.php existed.
+        const oidc = Boolean(window.LitCalConfig?.oidcEnabled);
+        if (!oidc && !this._validateBaseUrl('_doRefreshToken')) {
             throw new Error('API base URL is not configured');
         }
 
-        const baseUrl = getBaseUrl();
         try {
-            const response = await fetch(`${baseUrl}/auth/refresh`, {
+            const response = await fetch(authRefreshEndpoint(), {
                 method: 'POST',
                 credentials: 'include', // Include cookies for cross-origin requests
                 headers: {
@@ -328,13 +376,19 @@ const Auth = {
                 if (text) {
                     try {
                         const error = JSON.parse(text);
-                        message = error.message || message;
+                        message = error.message || error.error || message;
                     } catch {
                         // Response wasn't JSON, use raw text
                         message = text;
                     }
                 }
-                throw new Error(message);
+                const err = new Error(message);
+                // The status is what tells a caller whether to give up; see
+                // {@link isDefinitiveRefreshFailure}. Parsing it back out of the message string would be
+                // the fragile alternative — `postRunResults()` in testResults.js carries it the same way
+                // and for the same reason.
+                err.status = response.status;
+                throw err;
             }
 
             // If logout started during the refresh, don't update cache
@@ -347,7 +401,11 @@ const Auth = {
 
             return true;
         } catch (error) {
-            if (!this._isLoggingOut) {
+            // Cleared only when the failure settles the question. This used to clear on *any* thrown
+            // error, so one unreachable provider or dropped connection discarded a session that was
+            // still valid and had minutes left to retry in. A transient failure leaves the cache alone
+            // and the error propagates for the caller to decide about.
+            if (!this._isLoggingOut && isDefinitiveRefreshFailure(error)) {
                 this.clearTokens();
             }
             throw error;
@@ -419,7 +477,21 @@ const Auth = {
                     console.log('Token refreshed automatically');
                 }
             } catch (error) {
-                console.error('Auto-refresh failed:', error);
+                // A definitive rejection ends the session, and saying nothing would leave an
+                // authenticated-looking navbar and an enabled Run Tests button above a session that no
+                // longer exists — the user would find out at the end of a run, when the terminal
+                // postRunResults() came back 401 and the run was not stored. The timers stop because
+                // there is nothing left to renew, and the page is told so it can catch up.
+                if (isDefinitiveRefreshFailure(error)) {
+                    console.warn('Session could not be renewed; treating it as expired.', error);
+                    this.stopAllTimers();
+                    document.dispatchEvent(new CustomEvent('auth:session-expired'));
+                    return;
+                }
+                // Transient. The access token has not expired yet — this runs every minute over the
+                // last five — so the right response is to let the next tick try again, not to end a
+                // session that is still valid.
+                console.error('Auto-refresh failed; will retry before expiry:', error);
             }
         }, checkInterval);
     },

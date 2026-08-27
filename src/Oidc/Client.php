@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LiturgicalCalendar\UnitTestInterface\Oidc;
 
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -230,6 +231,63 @@ final class Client
             ]);
         } catch (GuzzleException $e) {
             throw new RuntimeException('Token exchange failed: ' . $e->getMessage(), 0, $e);
+        }
+
+        /** @var array<string, mixed>|null $decoded */
+        $decoded = json_decode((string) $response->getBody(), true);
+        if (!is_array($decoded)) {
+            throw new RuntimeException('Token endpoint returned a non-JSON body.');
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Spend a refresh token for a fresh set of tokens.
+     *
+     * `offline_access` is in {@see self::DEFAULT_SCOPES} precisely so this is possible, but nothing spent
+     * the resulting token until issue #93: the browser's auto-refresh called the **API's** legacy HS256
+     * `/auth/refresh`, which knows nothing about a Zitadel session and answers 400, so an OIDC session
+     * simply expired with no renewal.
+     *
+     * **Null and an exception mean different things, and the caller must keep them apart.** Null is the
+     * provider refusing the token — expired, revoked, already rotated — and the session is over, so the
+     * only correct response is to drop the cookies and treat the user as logged out. An exception is the
+     * provider being unreachable, which is transient and must NOT end a session that is still valid: the
+     * browser retries every minute for the last five before expiry, and turning one failed DNS lookup
+     * into a logout would throw away a working session. The same discrimination is why `getLogoutUrl()`
+     * returns null rather than throwing when there is no end-session endpoint.
+     *
+     * No `client_secret`: this is a public PKCE client, exactly as {@see self::exchangeCode()} is. No
+     * `scope` either — omitting it asks the provider for the scopes the refresh token already carries,
+     * and naming a subset here would quietly narrow a session on every renewal.
+     *
+     * Zitadel rotates refresh tokens, so the response normally carries a **new** one that must replace
+     * the stored one; a provider with rotation disabled returns none, and the caller keeps what it has.
+     *
+     * @param string $refreshToken The stored refresh token.
+     * @return array<string, mixed>|null The token response, or null when the provider refused the token.
+     * @throws RuntimeException When the provider could not be reached, or answered with a non-JSON body.
+     */
+    public function refreshTokens(string $refreshToken): ?array
+    {
+        $endpoint = $this->backChannelEndpoint('token_endpoint', '/oauth/v2/token');
+
+        try {
+            $response = $this->httpClient()->post($endpoint, [
+                'form_params' => [
+                    'grant_type'    => 'refresh_token',
+                    'refresh_token' => $refreshToken,
+                    'client_id'     => $this->clientId,
+                ],
+                'headers'     => ['Accept' => 'application/json'],
+            ]);
+        } catch (ClientException $e) {
+            // A 4xx from the token endpoint is the provider's verdict on the token itself
+            // (`invalid_grant` for an expired, revoked or already-rotated one), not a fault on our side.
+            return null;
+        } catch (GuzzleException $e) {
+            throw new RuntimeException('Token refresh failed: ' . $e->getMessage(), 0, $e);
         }
 
         /** @var array<string, mixed>|null $decoded */

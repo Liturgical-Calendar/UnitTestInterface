@@ -19,6 +19,29 @@
     </div>
 </div>
 
+<!-- Session Expired Toast.
+     Distinct from "Session Expiring" above, because the two offer different things: that one is a
+     warning with time left to Extend, this one is the aftermath of a renewal that was definitively
+     refused, where there is nothing left to extend. Raised from `auth:session-expired`, which
+     assets/js/auth.js dispatches when auth/refresh.php answers 401. -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="sessionExpiredToast" class="toast bg-white text-dark border-danger" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+        <div class="toast-header bg-danger text-white">
+            <i class="fas fa-circle-exclamation me-2"></i>
+            <strong class="me-auto"><?php echo _('Session Expired'); ?></strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="<?php echo htmlspecialchars(_('Close'), ENT_QUOTES); ?>"></button>
+        </div>
+        <div class="toast-body bg-white text-dark">
+            <p class="mb-3"><?php echo _('Your session has expired. Please log in again.'); ?></p>
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-sm btn-primary" id="sessionExpiredLogin">
+                    <i class="fas fa-sign-in-alt me-1"></i><?php echo _('Login'); ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Login Modal for JWT Authentication -->
 <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -617,6 +640,48 @@ function handleAutoLogout() {
     initPermissionUI();
     document.dispatchEvent(new CustomEvent('auth:logout'));
 }
+
+/**
+ * React to a session that could not be renewed.
+ *
+ * `assets/js/auth.js` dispatches `auth:session-expired` when auth/refresh.php answers 401 — no refresh
+ * token, or one the provider refused. It has already cleared the cached state and stopped its timers;
+ * what is left is the part it cannot do from a module with no view of this page's UI.
+ *
+ * **Deliberately not a redirect**, unlike {@see handleAutoLogout}. That one sends an OIDC user to
+ * /auth/logout.php to end the provider session as well, which is right when a live session is being
+ * given up. Here the provider has already refused the token, so there is no session left to end — and
+ * navigating away from a page the user is working on to accomplish nothing would be the worse trade.
+ * auth/refresh.php has already dropped the cookies.
+ */
+function handleSessionExpired() {
+    hideSessionExpiryToast();
+    if (sessionExpiryTimeout) {
+        clearTimeout(sessionExpiryTimeout);
+        sessionExpiryTimeout = null;
+    }
+
+    updateNavbarAuthUI();
+    initPermissionUI();
+    document.dispatchEvent(new CustomEvent('auth:logout'));
+
+    const toastElement = document.getElementById('sessionExpiredToast');
+    if (toastElement && typeof bootstrap !== 'undefined') {
+        bootstrap.Toast.getOrCreateInstance(toastElement).show();
+    }
+}
+
+document.addEventListener('auth:session-expired', handleSessionExpired);
+
+document.getElementById('sessionExpiredLogin')?.addEventListener('click', () => {
+    // The same two shapes the navbar's own login control has: a link into the provider round trip when
+    // Zitadel is configured, the legacy modal otherwise. See layout/topnavbar.php.
+    if (oidcEnabled) {
+        window.location.href = '/auth/login.php?return_to=' + encodeURIComponent(window.location.pathname + window.location.search);
+        return;
+    }
+    showLoginModal();
+});
 
 /**
  * Expiry warning callback
