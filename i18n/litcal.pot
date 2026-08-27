@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-27 10:42+0000\n"
+"POT-Creation-Date: 2026-08-27 13:30+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,73 +30,91 @@ msgstr ""
 msgid "Extend Session"
 msgstr ""
 
-#: components/login-modal.php:27
-msgid "Administrator Login"
+#: components/login-modal.php:31
+msgid "Session Expired"
 msgstr ""
 
-#: components/login-modal.php:33
-msgid "Username"
+#: components/login-modal.php:32
+msgid "Close"
 msgstr ""
 
-#: components/login-modal.php:37
-msgid "Password"
+#: components/login-modal.php:35
+msgid "Your session has expired. Please log in again."
 msgstr ""
 
-#: components/login-modal.php:40 components/login-modal.php:201
-msgid "Show password"
-msgstr ""
-
-#: components/login-modal.php:47
-msgid "Remember me"
-msgstr ""
-
-#: components/login-modal.php:55
-msgid "Cancel"
-msgstr ""
-
-#: components/login-modal.php:56 components/login-modal.php:348
-#: layout/topnavbar.php:112 layout/topnavbar.php:113 layout/topnavbar.php:116
-#: layout/topnavbar.php:117
+#: components/login-modal.php:38 components/login-modal.php:79
+#: components/login-modal.php:371 layout/topnavbar.php:112
+#: layout/topnavbar.php:113 layout/topnavbar.php:116 layout/topnavbar.php:117
 msgid "Login"
 msgstr ""
 
-#: components/login-modal.php:70 layout/topnavbar.php:94
+#: components/login-modal.php:50
+msgid "Administrator Login"
+msgstr ""
+
+#: components/login-modal.php:56
+msgid "Username"
+msgstr ""
+
+#: components/login-modal.php:60
+msgid "Password"
+msgstr ""
+
+#: components/login-modal.php:63 components/login-modal.php:224
+msgid "Show password"
+msgstr ""
+
+#: components/login-modal.php:70
+msgid "Remember me"
+msgstr ""
+
+#: components/login-modal.php:78
+msgid "Cancel"
+msgstr ""
+
+#: components/login-modal.php:93 layout/topnavbar.php:94
 msgid "Admin"
 msgstr ""
 
-#: components/login-modal.php:118
+#: components/login-modal.php:141
 msgid "Unable to verify authentication status. The server may be unavailable."
 msgstr ""
 
-#: components/login-modal.php:145 components/login-modal.php:573
+#: components/login-modal.php:168 components/login-modal.php:616
 msgid "Are you sure you want to logout?"
 msgstr ""
 
-#: components/login-modal.php:196
+#: components/login-modal.php:219
 msgid "Hide password"
 msgstr ""
 
-#: components/login-modal.php:303
+#: components/login-modal.php:326
 msgid "Please enter both username and password"
 msgstr ""
 
-#: components/login-modal.php:311
+#: components/login-modal.php:334
 msgid "Logging in…"
 msgstr ""
 
-#: components/login-modal.php:343
+#: components/login-modal.php:366
 msgid "Login failed. Please check your credentials."
 msgstr ""
 
-#: components/login-modal.php:459
+#: components/login-modal.php:482
 msgid "Your session will expire in less than {minutes} minute(s)."
 msgstr ""
 
-#: components/login-modal.php:514
+#: components/login-modal.php:537
 msgid "Extending..."
 msgstr ""
 
-#: components/login-modal.php:540
+#: components/login-modal.php:570
+msgid ""
+"Could not reach the server just now. Your session is still active and this "
+"will retry automatically."
+msgstr ""
+
+#: components/login-modal.php:583
 msgid "Failed to extend session. Please login again."
 msgstr ""
 
