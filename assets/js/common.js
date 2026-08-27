@@ -3,6 +3,12 @@
  * @module common
  */
 
+// The only import this module has, and it earns it: `canRunTests()` below now defers to the
+// WebSocket server's own verdict, and that verdict lives with the frame that carries it. `wsProtocol`
+// imports nothing, so this stays a one-way edge, and it has no import-time side effects — pages that
+// never open a socket simply see a null verdict and fall back.
+import { serverPermitsRunningTests } from './wsProtocol.js';
+
 /**
  * Escapes HTML special characters for safe use in HTML attributes.
  * @param {string} str - The string to escape.
@@ -259,13 +265,25 @@ const handleLanguageChange = (event) => {
 /**
  * Whether this visitor may start a test run and store its results.
  *
- * Two sources, in that order, because the answer has to survive an in-page login:
+ * Three sources, in this order, because the answer has to survive both an in-page login and a
+ * disagreement between this page and the server that actually enforces the rule:
  *
+ *  0. **The WebSocket server's own verdict**, carried on the `hello` frame's `caller.permissions`
+ *     since LiturgicalCalendarAPI#894. It wins outright when present, because it is the answer of
+ *     the same `TestRunPolicy` object that refuses the actions — so a button rendered from it cannot
+ *     disagree with what a click would achieve. Null before `hello` arrives, and null for ever
+ *     against a server predating that change, in which case the two older sources still apply.
  *  1. `Auth`'s cached `/auth/me` roles, once that cache is populated. This is what makes the legacy
  *     modal login path work — it authenticates without reloading, so the server-rendered verdict
  *     below is stale from the moment the modal closes.
  *  2. `LitCalConfig.canRunTests`, the server's verdict at page render. It is the only answer
  *     available on first paint, before `/auth/me` has been asked.
+ *
+ * Sources 1 and 2 were, until #894, the *whole* of the answer, and this file's own CLAUDE.md
+ * recorded the consequence: the gate was client-side only, so removing `disabled` in devtools — or
+ * never loading the page at all — started a run regardless. They are kept because they are still the
+ * best available answer before `hello`, and the only one against an older server; they are no longer
+ * the last word.
  *
  * The role list is read from `LitCalConfig.runTestsRoles`, which `layout/footer.php` publishes from
  * `JwtAuth::RUN_TESTS_ROLES` — the same constant `results.php` enforces. Spelling the roles out here
@@ -278,6 +296,14 @@ const handleLanguageChange = (event) => {
  * @returns {boolean}
  */
 export const canRunTests = () => {
+    // The enforcing server's own answer, when it has given one. Deliberately ahead of everything
+    // else: the two sources below describe what this page believes about the visitor, while this one
+    // is what the server will actually do.
+    const served = serverPermitsRunningTests();
+    if (null !== served) {
+        return served;
+    }
+
     const config = window.LitCalConfig ?? {};
     const roles = Array.isArray(config.runTestsRoles) ? config.runTestsRoles : [];
     const auth = window.Auth;

@@ -440,6 +440,24 @@ let helloCapabilities = null;
 let serverProtocol = null;
 
 /**
+ * What the server said about *this connection's caller*, or null if it said nothing.
+ *
+ * Distinct from {@link helloCapabilities} for the same reason the frame keeps them apart:
+ * `capabilities` answers what the server can be asked for and is derived from its own enums, while
+ * this is per-connection and derived from the credential on the handshake.
+ *
+ * Null is a real and expected state, not an error — a server predating LiturgicalCalendarAPI#894
+ * sends no `caller` at all, and this client has to keep working against one.
+ *
+ * The frame also carries `caller.authenticated`, which is deliberately not exposed: nothing reads it
+ * yet, and distinguishing "log in" from "ask for a role" in the button's tooltip would mean a second
+ * translated string rather than a second accessor. It is here when that is wanted.
+ *
+ * @type {?object}
+ */
+let helloCaller = null;
+
+/**
  * Read a server `hello` frame, remembering what it advertised.
  *
  * Returns false for anything that is not one, so a caller can use it as the first branch of its
@@ -459,7 +477,8 @@ export const readHello = ( frame ) => {
     }
     serverProtocol = Number.isInteger( frame.protocol ) ? frame.protocol : null;
     helloCapabilities = ( frame.capabilities && 'object' === typeof frame.capabilities ) ? frame.capabilities : null;
-    console.info( `Server speaks protocol ${serverProtocol}.`, helloCapabilities );
+    helloCaller = ( frame.caller && 'object' === typeof frame.caller ) ? frame.caller : null;
+    console.info( `Server speaks protocol ${serverProtocol}.`, helloCapabilities, helloCaller );
     return true;
 };
 
@@ -471,6 +490,9 @@ export const readHello = ( frame ) => {
 export const resetHello = () => {
     helloCapabilities = null;
     serverProtocol = null;
+    // Cleared with the rest, and it matters more than the others: a stale `true` here would leave
+    // the run button enabled against a connection whose caller has not been identified.
+    helloCaller = null;
 };
 
 /**
@@ -490,6 +512,28 @@ export const negotiatedProtocol = () => ( serverProtocol === PROTOCOL_VERSION ? 
  * @returns {?object}
  */
 export const capabilities = () => helloCapabilities;
+
+/**
+ * Whether the server says this connection's caller may start a validation run.
+ *
+ * **Tri-state, and the third state is the point.** `true` and `false` are the server's verdict;
+ * `null` means it did not express one — either because `hello` has not arrived yet, or because the
+ * server predates LiturgicalCalendarAPI#894 and has no opinion to express. A caller must not read
+ * `null` as `false`, or this page would disable its own run button against every server older than
+ * that change, including the one CI builds from `#development` until it lands.
+ *
+ * Why ask the server at all, when this page already knows the visitor's roles: because knowing them
+ * is not the same as agreeing about them. The role list, the API's `TestRunPolicy` and this client
+ * used to be three places that had to say the same thing, and the WebSocket server enforced its own
+ * — so a disabled button was a courtesy, not a gate, and a re-enabled one got a run anyway. Now the
+ * server answers and this client reports; there is nothing left to drift.
+ *
+ * @returns {?boolean}
+ */
+export const serverPermitsRunningTests = () => {
+    const permitted = helloCaller?.permissions?.runTests;
+    return 'boolean' === typeof permitted ? permitted : null;
+};
 
 /**
  * The response format every action accepts, and the only one this repository names literally.
