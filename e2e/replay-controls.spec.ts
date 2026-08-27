@@ -205,6 +205,36 @@ test.describe('logged in', () => {
         await expect(page.locator('#APICalendarSelect')).toHaveValue('IT');
     });
 
+    test('a run that recorded no rite is labelled unrecorded, not roman', async ({ page }) => {
+        // A real production run caused this: stored before `buildResourcesPayload()` recorded a rite,
+        // it was genuinely Ambrosian — 18 of its 23 check URLs were `/ambrosian/` — while the dropdown
+        // announced it as roman, because the label read `summary.rite ?? 'roman'`. That default was
+        // justified as "runs stored before it was recorded were Roman", which holds on index.php and
+        // is false here: this page has carried a RiteSelect far longer than its payload has recorded
+        // the result, so an unlabelled run is of *unknown* rite.
+        const { rite, ...noRite } = RESOURCES_RUN;
+        void rite;
+        const warnings: string[] = [];
+        page.on('console', (m) => warnings.push(m.text()));
+
+        const file = await stubStoredRun(page, noRite);
+        await page.goto('/resources.php');
+        await expect(page.locator('.page-loader')).toBeHidden({ timeout: 60_000 });
+        const riteBefore = await page.locator('#riteSelect').inputValue();
+
+        const label = await page.locator('#pastRunsSelect option').nth(1).textContent();
+        expect(label, 'an unrecorded rite must not be reported as roman').not.toContain('roman');
+        expect(label).toContain('unrecorded');
+
+        await page.selectOption('#pastRunsSelect', file);
+        // And the select is left as it was rather than being pointed at a rite the run never claimed —
+        // "Roman Rite" above a scaffold of Ambrosian cards is the untruth the sync exists to prevent.
+        await expect(page.locator('#riteSelect')).toHaveValue(riteBefore);
+        await expect
+            .poll(() => warnings.filter((t) => t.includes('records no rite')).length)
+            .toBeGreaterThan(0);
+    });
+
     test('a Resources replay renders each card from the stored run, not from the live path map', async ({ page }) => {
         const errors: string[] = [];
         page.on('console', (m) => { if (m.type() === 'error') { errors.push(m.text()); } });
