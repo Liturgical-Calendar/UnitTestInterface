@@ -105,6 +105,19 @@ jobs:
       # own `?? 'https://litcal.johnromanodorazio.com'` supplies the real address, and head.php's
       # `ifPresent(...)->notEmpty()` is satisfied by absence. Naming the URL here instead would put a
       # second copy of it in a second repository file to keep in step.
+      # **All three origins share one host string, and that is load-bearing, not tidiness.**
+      # Since LiturgicalCalendarAPI#894 the WebSocket server identifies its caller from the
+      # `litcal_access_token` cookie on the handshake, and on localhost that cookie is written with no
+      # Domain attribute — `CookieHelper::getCookieDomain()` returns '' for both `localhost` and
+      # `127.0.0.1`, because browsers reject a Domain on either. A host-only cookie is sent only to
+      # the exact host that set it, and `localhost` and `127.0.0.1` are different hosts to a browser
+      # however they resolve. So a page served from `localhost` sends nothing to a socket on
+      # `127.0.0.1`, the server reads every visitor as anonymous, and the run controls stay disabled
+      # even though `/auth/me` says the session is fine. That is exactly how this first failed.
+      #
+      # `127.0.0.1` rather than `localhost` for all three: it is an explicit IPv4 literal, so it
+      # cannot resolve to `::1` on a host that offers both — the failure the WS server hits when it
+      # binds IPv4 and the browser prefers IPv6.
       - name: Write the environment both sides read
         run: |
           set -euo pipefail
@@ -116,14 +129,14 @@ jobs:
           WS_HOST=127.0.0.1
           WS_PORT=8082
           API_PROTOCOL=http
-          API_HOST=localhost
+          API_HOST=127.0.0.1
           API_PORT=8000
           API_BASE_PATH=
           JWT_SECRET=${JWT_SECRET}
           JWT_ALGORITHM=HS256
           TEST_USERNAME=admin
           TEST_PASSWORD=password
-          FRONTEND_URL=http://localhost:3003
+          FRONTEND_URL=http://127.0.0.1:3003
           EOF
 
           # ADMIN_PASSWORD_HASH is deliberately absent: under APP_ENV=development the API accepts
@@ -132,7 +145,7 @@ jobs:
           cat > .api/.env.local <<EOF
           APP_ENV=development
           API_PROTOCOL=http
-          API_HOST=localhost
+          API_HOST=127.0.0.1
           API_PORT=8000
           API_BASE_PATH=
           JWT_SECRET=${JWT_SECRET}
