@@ -15,10 +15,12 @@
  *   200  renewed; the cookies are rewritten
  *   401  the session is over — no refresh token, or the provider refused the one we hold. Cookies are
  *        cleared, and the client should stop retrying and show a logged-out UI.
- *   502  the provider could not be reached. Cookies are LEFT ALONE and the client should retry, because
- *        a session that is still perfectly valid must not be ended by one failed DNS lookup.
+ *   503  the provider could not be reached, or declined to answer just now (a 429 or 408 — this
+ *        repository has a documented history of rate limits). Cookies are LEFT ALONE and the client
+ *        should retry, because a session that is still perfectly valid must not be ended by one failed
+ *        DNS lookup or one throttled request.
  *
- * Collapsing 502 into 401 would be the tempting simplification and the wrong one: the browser retries
+ * Collapsing 503 into 401 would be the tempting simplification and the wrong one: the browser retries
  * every minute over the last five before expiry, so a transient fault has several chances to resolve —
  * but only if it is not mistaken for a verdict on the token.
  *
@@ -76,10 +78,11 @@ if (!is_string($refreshToken) || '' === $refreshToken) {
 try {
     $tokens = Client::fromEnv(Session::redirectUri())->refreshTokens($refreshToken);
 } catch (Throwable $e) {
-    // Unreachable provider. Say so distinctly and keep the cookies: see the status contract above.
-    error_log('OIDC token refresh could not reach the provider: ' . $e->getMessage());
-    http_response_code(502);
-    echo json_encode(['error' => 'provider_unreachable']);
+    // The provider could not be reached, or would not answer this request now. Either way it is not a
+    // verdict on the token, so say so distinctly and keep the cookies: see the status contract above.
+    error_log('OIDC token refresh did not complete: ' . $e->getMessage());
+    http_response_code(503);
+    echo json_encode(['error' => 'provider_unavailable']);
     exit;
 }
 

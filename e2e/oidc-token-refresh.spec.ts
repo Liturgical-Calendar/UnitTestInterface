@@ -87,7 +87,7 @@ test('renewal is attempted against the endpoint that matches the session kind', 
     const requested: string[] = [];
     await page.route('**/auth/refresh*', (route) => {
         requested.push(new URL(route.request().url()).pathname);
-        return route.fulfill({ status: 502, contentType: 'application/json', body: '{}' });
+        return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
     });
     await page.goto('/');
 
@@ -126,14 +126,72 @@ test('renewal is attempted against the endpoint that matches the session kind', 
 test.describe('a failure that settles the question, and one that does not', () => {
     test('an unreachable provider leaves the session alone and retries later', async ({ page }) => {
         await page.goto('/');
-        const result = await refreshAgainst(page, 502, { error: 'provider_unreachable' });
+        const result = await refreshAgainst(page, 503, { error: 'provider_unavailable' });
 
         expect(result.before, 'the fixture user should start authenticated').toBe(true);
-        expect(result.thrownStatus).toBe(502);
+        expect(result.thrownStatus).toBe(503);
         // The whole point. This used to clear on *any* thrown error, so one failed DNS lookup discarded
         // a session that was still valid with minutes left to retry in.
         expect(result.after, 'a transient failure must not end the session').toBe(true);
         expect(result.expired, 'and must not announce it as expired').toBe(false);
+    });
+
+    test('a rate-limited renewal is not a refusal', async ({ page }) => {
+        // CodeRabbit on #95. `http_errors` makes Guzzle raise ClientException for *every* 4xx, and the
+        // client-side predicate was a flat 4xx range, so a 429 — which this repository sees routinely,
+        // see the /validations note in CLAUDE.md — would have cleared the cookies and announced the
+        // session as expired. A 429 is about the request's timing, not about the token.
+        await page.goto('/');
+        const result = await refreshAgainst(page, 429, { error: 'rate_limited' });
+
+        expect(result.before).toBe(true);
+        expect(result.thrownStatus).toBe(429);
+        expect(result.after, 'a throttled request must not end a valid session').toBe(true);
+        expect(result.expired, 'and must not announce it as expired').toBe(false);
+    });
+
+    test('a request timeout is not a refusal either', async ({ page }) => {
+        await page.goto('/');
+        const result = await refreshAgainst(page, 408, { error: 'timeout' });
+
+        expect(result.after, '408 is about timing, like 429').toBe(true);
+        expect(result.expired).toBe(false);
+    });
+
+    test('the Extend Session button does not log out over a transient failure', async ({ page }) => {
+        // CodeRabbit on #95. `_doRefreshToken()` preserves the cache for a transient failure and then
+        // rethrows — and `handleExtendSession()` caught *every* error and ran the full logout sequence,
+        // undoing that at the one moment the user had explicitly asked to stay signed in. Worse, it
+        // stops all timers, so it also removed the automatic retry that would have renewed the session
+        // moments later.
+        await page.route('**/auth/refresh*', (route) =>
+            route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"provider_unavailable"}' })
+        );
+        await page.goto('/');
+
+        const result = await page.evaluate(async () => {
+            const { Auth } = await import('/assets/js/auth.js' as never) as { Auth: Record<string, never> };
+            const auth = Auth as unknown as { updateAuthCache(): Promise<unknown>; isAuthenticated(): boolean };
+            await auth.updateAuthCache();
+            let loggedOut = false;
+            document.addEventListener('auth:logout', () => { loggedOut = true; }, { once: true });
+            // Clicked programmatically: the button lives inside a toast that is only shown near expiry,
+            // and this test is about the handler, not about how the toast becomes visible.
+            document.getElementById('sessionExpiryExtend')?.click();
+            // The handler awaits a fetch and then a 1.5s delay on its terminal path; wait past both so a
+            // logout that *did* happen cannot be missed.
+            await new Promise((resolve) => setTimeout(resolve, 2500));
+            return {
+                loggedOut,
+                stillAuthenticated: auth.isAuthenticated(),
+                message: document.getElementById('sessionExpiryMessage')?.textContent ?? '',
+            };
+        });
+
+        expect(result.loggedOut, 'a transient failure must not trigger the logout sequence').toBe(false);
+        expect(result.stillAuthenticated, 'the session is still valid and must survive').toBe(true);
+        // And the user is told what actually happened, rather than "please login again".
+        expect(result.message).toContain('still active');
     });
 
     test('a refusal ends the session', async ({ page }) => {

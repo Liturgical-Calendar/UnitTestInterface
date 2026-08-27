@@ -62,15 +62,22 @@ const authRefreshEndpoint = () => (
 /**
  * Did a failed refresh settle the question, or is it worth trying again?
  *
- * Any 4xx is the server's verdict on what we sent — a missing, expired, revoked or already-rotated
- * refresh token — and no amount of retrying changes it. Anything else (a 5xx, `auth/refresh.php`'s own
- * 502 for an unreachable provider, or a network fault that produced no response at all) is transient,
- * and the auto-refresh timer runs every minute over the last five before expiry, so it has several more
+ * Most 4xx answers are the server's verdict on what we sent — a missing, expired, revoked or
+ * already-rotated refresh token — and no amount of retrying changes that. Anything else (a 5xx,
+ * `auth/refresh.php`'s own 503, or a network fault that produced no response at all) is transient, and
+ * the auto-refresh timer runs every minute over the last five before expiry, so it has several more
  * chances to succeed against a session that is still perfectly valid.
  *
- * The range rather than a bare `401` because the two refresh endpoints disagree on which code to use:
+ * A range rather than a bare `401` because the two refresh endpoints disagree on which code to use:
  * `auth/refresh.php` answers 401, while the API's legacy HS256 endpoint answers **400** for the same
  * fact. Testing for 401 alone would leave every legacy deployment retrying a session that is over.
+ *
+ * **With two exceptions, because not every 4xx is about what we sent.** A 429 and a 408 are about the
+ * request's *timing*, and this repository has a documented history of rate limits — see the
+ * `/validations` note in CLAUDE.md — so a throttled renewal ending a valid session is a live scenario
+ * rather than a theoretical one. `Oidc\Client::TRANSIENT_STATUSES` excludes the same two on the server
+ * side, and the two lists must stay in step: the browser deciding a failure is final while the server
+ * says try again later is exactly the disagreement this pairing exists to prevent.
  *
  * One predicate, two readers — `_doRefreshToken()` decides whether to drop the cached state, and
  * `startAutoRefresh()` decides whether to announce the session as expired. Those two must never
@@ -80,9 +87,14 @@ const authRefreshEndpoint = () => (
  * @param {unknown} error An error thrown by the refresh path, possibly carrying a `status`.
  * @returns {boolean} True when the session is over and retrying cannot help.
  */
+const TRANSIENT_REFRESH_STATUSES = [408, 429];
+
 const isDefinitiveRefreshFailure = (error) => {
     const status = error?.status;
-    return Number.isInteger(status) && status >= 400 && status < 500;
+    if (!Number.isInteger(status) || status < 400 || status >= 500) {
+        return false;
+    }
+    return !TRANSIENT_REFRESH_STATUSES.includes(status);
 };
 
 const Auth = {
@@ -606,4 +618,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Export for ES6 module usage
-export { Auth, getBaseUrl };
+export { Auth, getBaseUrl, isDefinitiveRefreshFailure };

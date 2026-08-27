@@ -52,6 +52,18 @@ final class Client
         'urn:zitadel:iam:org:project:roles',
     ];
 
+    /**
+     * 4xx statuses that are about the *request's timing*, not its content.
+     *
+     * `http_errors` makes Guzzle raise `ClientException` for every 4xx alike, and treating them all as the
+     * provider's verdict on the token would let a rate limit end a valid session. This repository has a
+     * documented history of 429s — see the `/validations` note in CLAUDE.md — so that is a live scenario
+     * here, not a theoretical one. `isDefinitiveRefreshFailure()` in assets/js/auth.js excludes the same
+     * two statuses, and the two lists must stay in step: the browser deciding a failure is final while the
+     * server says try again later is precisely the disagreement this pairing exists to prevent.
+     */
+    private const TRANSIENT_STATUSES = [408, 429];
+
     private string $issuer;
     private string $clientId;
     private string $redirectUri;
@@ -253,7 +265,8 @@ final class Client
      * **Null and an exception mean different things, and the caller must keep them apart.** Null is the
      * provider refusing the token — expired, revoked, already rotated — and the session is over, so the
      * only correct response is to drop the cookies and treat the user as logged out. An exception is the
-     * provider being unreachable, which is transient and must NOT end a session that is still valid: the
+     * provider being unreachable *or* declining to answer just now (see self::TRANSIENT_STATUSES), which
+     * is transient and must NOT end a session that is still valid: the
      * browser retries every minute for the last five before expiry, and turning one failed DNS lookup
      * into a logout would throw away a working session. The same discrimination is why `getLogoutUrl()`
      * returns null rather than throwing when there is no end-session endpoint.
@@ -283,8 +296,13 @@ final class Client
                 'headers'     => ['Accept' => 'application/json'],
             ]);
         } catch (ClientException $e) {
-            // A 4xx from the token endpoint is the provider's verdict on the token itself
-            // (`invalid_grant` for an expired, revoked or already-rotated one), not a fault on our side.
+            // Most 4xx answers from the token endpoint are the provider's verdict on the token itself
+            // (`invalid_grant` for an expired, revoked or already-rotated one), and the session is over.
+            // A timing 4xx is not: see self::TRANSIENT_STATUSES.
+            $status = $e->getResponse()->getStatusCode();
+            if (in_array($status, self::TRANSIENT_STATUSES, true)) {
+                throw new RuntimeException('Token refresh was throttled or timed out (HTTP ' . $status . ').', 0, $e);
+            }
             return null;
         } catch (GuzzleException $e) {
             throw new RuntimeException('Token refresh failed: ' . $e->getMessage(), 0, $e);

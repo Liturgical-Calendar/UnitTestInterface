@@ -83,7 +83,7 @@
 </div>
 
 <script type="module">
-import { Auth } from '/assets/js/auth.js';
+import { Auth, isDefinitiveRefreshFailure } from '/assets/js/auth.js';
 
 // Make Auth available globally for non-module scripts
 window.Auth = Auth;
@@ -557,8 +557,28 @@ async function handleExtendSession() {
     } catch (error) {
         console.error('Failed to extend session:', error);
 
-        // Show error to user before logout
         const messageElement = document.getElementById('sessionExpiryMessage');
+
+        // A transient failure is not grounds for logging anyone out, and this branch used to do exactly
+        // that: every error fell through to `clearTokens()` and the full logout sequence below, so one
+        // unreachable provider or one rate-limited request turned a *still valid* session into a
+        // logged-out page — and, because it also stops the timers, removed the automatic retry that
+        // would have renewed it moments later. The session survives, the warning toast stays up with
+        // its own deadline running, and the timers are restarted so the next attempt happens on its own.
+        if (!isDefinitiveRefreshFailure(error)) {
+            if (messageElement) {
+                messageElement.textContent = <?php echo json_encode(_('Could not reach the server just now. Your session is still active and this will retry automatically.')); ?>;
+            }
+            // The button is restored by this function's own `finally`, which a `return` still runs.
+            // `startSessionExpiryWarning()` guards on `Auth.isAuthenticated()`, which is still true
+            // precisely because the transient failure left the cached session alone — so the warning
+            // and its auto-logout deadline come back, rather than the session silently losing them.
+            Auth.startAutoRefresh();
+            startSessionExpiryWarning();
+            return;
+        }
+
+        // Show error to user before logout
         if (messageElement) {
             messageElement.textContent = <?php echo json_encode(_('Failed to extend session. Please login again.')); ?>;
         }
