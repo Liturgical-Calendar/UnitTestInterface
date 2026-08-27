@@ -2,6 +2,26 @@ import { test, expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 
 /**
+ * Where the suite serves the app from, derived rather than spelled out.
+ *
+ * These specs used to say `localhost` literally, in URL assertions and in `addCookies({domain})`
+ * alike. That silently coupled them to one spelling of the loopback host, and the coupling bit as
+ * soon as the origins had to be aligned: since LiturgicalCalendarAPI#894 the WebSocket server reads
+ * its caller from a cookie on the handshake, and a host-only cookie set for `localhost` is never
+ * sent to `127.0.0.1` — so page, API and socket must agree on one host string, and `playwright.config.ts`
+ * settles which.
+ *
+ * A hardcoded cookie `domain` is the worse half of the two: a URL assertion fails loudly when the
+ * host moves, while a cookie planted on the wrong domain is simply never sent, and the spec goes on
+ * to assert the *absence* of an effect it never arranged.
+ */
+const APP_ORIGIN = new URL(process.env.FRONTEND_URL || 'http://127.0.0.1:3003');
+/** Host without port — what a cookie is scoped to. */
+const APP_HOST = APP_ORIGIN.hostname;
+/** Host with port — what a URL contains. */
+const APP_AUTHORITY = APP_ORIGIN.host;
+
+/**
  * UTI is an OIDC client in its own right — it has its own Zitadel registration ("LiturgicalCalendar
  * Tests") rather than borrowing the Frontend's, so it keeps working if the two are ever served from
  * different hosts.
@@ -54,7 +74,7 @@ test.describe('logged out', () => {
 
         await page.locator('#loginBtn').click();
         await page.waitForURL(/\/oauth\/v2\/authorize|\/ui\/v2\/login/, { timeout: 15000 });
-        expect(page.url()).not.toContain('localhost:3003');
+        expect(page.url()).not.toContain(APP_AUTHORITY);
     });
 
     test('auth/login.php redirects to the issuer with PKCE', async ({ request }) => {
@@ -173,7 +193,7 @@ test.describe('without Zitadel configured', () => {
         await page.goto('/');
         await page.locator('#loginBtn').click();
         await expect(page.locator('#loginModal')).toBeVisible();
-        expect(page.url()).toContain('localhost');
+        expect(page.url()).toContain(APP_HOST);
     });
 
     test('auth/login.php refuses rather than half-starting a flow it cannot finish', async ({ request }) => {
@@ -204,7 +224,11 @@ test.describe('logged in', () => {
         // posts to the API and leaves the Zitadel session standing, so the next login would silently
         // re-authenticate. Confirm the dialog and assert where it actually goes.
         page.on('dialog', (d) => d.accept());
-        const navigation = page.waitForURL(/auth\/logout\.php|\/oidc\/v1\/end_session|localhost:3003\/$/, { timeout: 15000 });
+        const appRoot = new RegExp(`${APP_AUTHORITY.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/$`);
+        const navigation = page.waitForURL(
+            (url) => /auth\/logout\.php|\/oidc\/v1\/end_session/.test(url.href) || appRoot.test(url.href),
+            { timeout: 15000 }
+        );
         await page.evaluate(() => document.getElementById('sessionExpiryLogout')?.click());
         await navigation;
         expect(page.url()).not.toContain('/auth/me');
@@ -227,7 +251,7 @@ test.describe('logged in', () => {
 
         const ctx = await browser.newContext();
         await ctx.addCookies([
-            { name: 'litcal_id_token', value: foreignIdToken, domain: 'localhost', path: '/' },
+            { name: 'litcal_id_token', value: foreignIdToken, domain: APP_HOST, path: '/' },
         ]);
         try {
             const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
@@ -266,7 +290,7 @@ test.describe('logged in', () => {
         const forwarded = async (idToken: string): Promise<boolean> => {
             const ctx = await browser.newContext();
             try {
-                await ctx.addCookies([{ name: 'litcal_id_token', value: idToken, domain: 'localhost', path: '/' }]);
+                await ctx.addCookies([{ name: 'litcal_id_token', value: idToken, domain: APP_HOST, path: '/' }]);
                 const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
                 return (res.headers()['location'] ?? '').includes('id_token_hint=');
             } finally {
@@ -301,7 +325,7 @@ test.describe('logged in', () => {
             const ctx = await browser.newContext();
             try {
                 await ctx.addCookies([
-                    { name: 'litcal_id_token', value: `${header}.${b64url(claims)}.${signature}`, domain: 'localhost', path: '/' },
+                    { name: 'litcal_id_token', value: `${header}.${b64url(claims)}.${signature}`, domain: APP_HOST, path: '/' },
                 ]);
                 const res = await ctx.request.get('/auth/logout.php', { maxRedirects: 0 });
                 return (res.headers()['location'] ?? '').includes('id_token_hint=');
