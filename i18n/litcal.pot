@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 10:15+0000\n"
+"POT-Creation-Date: 2026-08-27 10:42+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -152,53 +152,53 @@ msgstr ""
 msgid "Response Format"
 msgstr ""
 
-#: index.php:135 resources.php:132
+#: index.php:138 resources.php:135
 msgid "Past Runs"
 msgstr ""
 
-#: index.php:137 resources.php:134
+#: index.php:140 resources.php:137
 msgid "— Live —"
 msgstr ""
 
-#: index.php:146 resources.php:143
+#: index.php:149 resources.php:146
 msgid "You do not have permission to run tests."
 msgstr ""
 
-#: index.php:148 resources.php:145
+#: index.php:151 resources.php:148
 msgid "Run Tests"
-msgstr ""
-
-#: index.php:154 index.php:178 index.php:215 index.php:245 resources.php:151
-#: resources.php:177 resources.php:205
-msgid "Successful:"
 msgstr ""
 
 #: index.php:157 index.php:181 index.php:218 index.php:248 resources.php:154
 #: resources.php:180 resources.php:208
+msgid "Successful:"
+msgstr ""
+
+#: index.php:160 index.php:184 index.php:221 index.php:251 resources.php:157
+#: resources.php:183 resources.php:211
 msgid "Failed:"
 msgstr ""
 
-#: index.php:161 index.php:185 index.php:222 index.php:252 resources.php:158
-#: resources.php:184 resources.php:212
+#: index.php:164 index.php:188 index.php:225 index.php:255 resources.php:161
+#: resources.php:187 resources.php:215
 #, php-format
 msgid "Time (%s):"
 msgstr ""
 
-#: index.php:174
+#: index.php:177
 msgid "VALIDATE SOURCE DATA"
 msgstr ""
 
 #. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
-#: index.php:206
+#: index.php:209
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
 msgstr ""
 
-#: index.php:240
+#: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr ""
 
-#: index.php:273 resources.php:232
+#: index.php:276 resources.php:235
 msgid "Loading…"
 msgstr ""
 
@@ -230,10 +230,10 @@ msgstr ""
 msgid "WebSocket connection status"
 msgstr ""
 
-#: resources.php:172
+#: resources.php:175
 msgid "API Paths"
 msgstr ""
 
-#: resources.php:201
+#: resources.php:204
 msgid "Source data"
 msgstr ""
