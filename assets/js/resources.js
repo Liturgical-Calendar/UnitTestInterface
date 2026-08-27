@@ -6,6 +6,7 @@
 
 import {
     canRunTests,
+    selectExistingValue,
     escapeQuotesAndLinkifyUrls,
     hidePageLoader,
     safeCollapseShow,
@@ -124,7 +125,12 @@ class ReadyToRunTests {
         // folding the role check into check() would leave an anonymous visitor under the page
         // loader forever (#63). Readiness is about the page; permission is about the user.
         const permitted = canRunTests();
-        startBtn.disabled = !testsReady || !permitted;
+        // A replay owns the dashboard while it is on screen, so the control that would repaint it
+        // stays out of reach — the same condition `applyControlAvailability()` applies to the
+        // scaffold controls, applied here too so no path reaching this function during a replay can
+        // hand the button back. Like `permitted`, and for the same #63 reason, it is not one of
+        // `check()`'s conditions.
+        startBtn.disabled = !testsReady || !permitted || replayOnScreen;
         startBtn.classList.remove('btn-secondary');
         startBtn.classList.add('btn-primary');
         // A disabled control with no explanation reads as a bug rather than as a policy.
@@ -140,6 +146,10 @@ class ReadyToRunTests {
         if (testsReady) {
             hidePageLoader();
         }
+        // The scaffold controls answer to permission and to whether a replay is on screen, exactly
+        // as the button just did. Settled here so the two cannot disagree: every path that
+        // re-evaluates the button re-evaluates them.
+        applyControlAvailability();
     }
 }
 
@@ -408,13 +418,34 @@ const CARD_ICON = '<svg class="svg-inline--fa fa-circle-question fa-fw" aria-hid
  * `steps` and takes `stepsForCheck()`'s fallback — the same fallback `beginPhase()` registers it
  * with, which is what keeps the cards drawn here and the cards bound there the same set (#62).
  *
+ * **The path is handed in rather than read from `resourcePaths`.** It used to be looked up here, and
+ * that was sound only for the live caller, which passes the keys *of* that very map. Replay passes
+ * keys from a **stored** run, and nothing keeps those in the live map: `resetCheckListsForRite()`
+ * deletes every `data-path-*`, `events-path-*` and `missals-path-*` entry on a rite change and
+ * discovery rebuilds them for the new rite, so after switching to Ambrosian not one of a stored
+ * Roman run's per-nation keys is still there. A miss yielded `undefined`, and `escapeHtmlAttr()`
+ * threw on it — mid-`forEach`, after the container had already been emptied, leaving a half-built
+ * scaffold and stale counts. The URL replay needs was in the stored descriptor's `sourceFile` all
+ * along; it was simply being discarded. `sourceTemplate()` never had the bug because it reads
+ * everything off the item it is given, which is now true here too.
+ *
+ * Not fixed by defaulting a missing path to `''`: that would trade a loud crash for a scaffold of
+ * cards labelled with nothing, which is the silent-wrong-answer failure this interface exists to
+ * catch rather than commit.
+ *
+ * One visible consequence, accepted deliberately: a live card is labelled with `resourcePaths`'
+ * relative path (`/calendars`) while a replayed one carries the stored `sourceFile`, which is the
+ * absolute URL the run actually requested (`http://…:8000/calendars`). Normalising the two would
+ * mean discarding the one part of a stored label that says *which API* that run was measured
+ * against, which is worth more here than matching the live page's shorter spelling.
+ *
  * @param {string} resource The name of the resource.
  * @param {number} idx The index of the resource.
+ * @param {string} path The URL or path this check addresses.
  * @returns {string} The HTML template for the resource.
  */
-const resourceTemplate = (resource, idx) => {
+const resourceTemplate = (resource, idx, path) => {
     const resourceSlug = slugify(resource);
-    const path = resourcePaths[resource];
     return `<div class="col-1 ${idx === 0 || idx % 11 === 0 ? 'offset-1' : ''}">
     <div class="text-center mt-1 mb-0 bg-secondary text-white"><span title="${escapeHtmlAttr(path)}" class="text-break d-inline-block w-75">${escapeHtmlAttr(path)}</span></div>
 ${stepCardsHtml({
@@ -726,16 +757,18 @@ const IntlDTOptions = {
 /**
  * Renders the empty (bg-info) card scaffolding for both Resources phases.
  * Used by the live setup and by replay so the same template code is shared.
- * @param {{resourceDataChecks: string[], sourceDataChecks: Array<object>}} cfg
- *   resourceDataChecks — array of resource key strings (keys of the resourcePaths map).
- *   sourceDataChecks   — array of sourceDataCheck objects with validate/sourceFile/sourceFolder.
+ * @param {{resourceDataChecks: Array<{key: string, path: string}>, sourceDataChecks: Array<object>}} cfg
+ *   resourceDataChecks — resource checks as `{key, path}` pairs. A pair rather than a bare key so
+ *                        that replay can supply the stored run's own `sourceFile`; see
+ *                        {@link resourceTemplate}.
+ *   sourceDataChecks   — array of inventory items, or of stored `{validate, sourceFile|sourceFolder}`.
  */
 const buildScaffolding = ( cfg ) => {
     const resourceContainer = document.querySelector('#resourceDataTests .resourcedata-tests');
     if ( resourceContainer ) {
         resourceContainer.innerHTML = '';
-        cfg.resourceDataChecks.forEach( ( resourceKey, idx ) => {
-            resourceContainer.insertAdjacentHTML('beforeend', resourceTemplate( resourceKey, idx ));
+        cfg.resourceDataChecks.forEach( ( { key, path }, idx ) => {
+            resourceContainer.insertAdjacentHTML('beforeend', resourceTemplate( key, idx, path ));
         } );
     }
     const sourceContainer = document.querySelector('#sourceDataTests .sourcedata-tests');
@@ -770,7 +803,10 @@ const setupPage = () => {
             startTestRunnerBtnLbl = btnLblEl.textContent;
         }
     }
-    buildScaffolding({ resourceDataChecks: Object.keys(resourcePaths), sourceDataChecks });
+    buildScaffolding({
+        resourceDataChecks: Object.entries( resourcePaths ).map( ( [ key, path ] ) => ({ key, path }) ),
+        sourceDataChecks
+    });
     ReadyToRunTests.PageReady = true;
     ReadyToRunTests.tryEnableBtn();
     wsClient.connect();
@@ -958,6 +994,11 @@ const mountRiteSelect = async () => {
     riteSelect.appendTo( '#riteSelectMount' );
 
     riteSelect._domElement.addEventListener( 'change', ( ev ) => {
+        // A replay writes these controls to describe the run it is painting; it is not a user
+        // asking for a different scaffold. See {@link suppressControlChangeHandlers}.
+        if ( suppressControlChangeHandlers ) {
+            return;
+        }
         currentRite = ev.target.value;
         resetCheckListsForRite();
         loadAsyncData();
@@ -965,50 +1006,89 @@ const mountRiteSelect = async () => {
 };
 
 /**
- * Disables (or re-enables), for a run's duration, every control that can repaint the dashboard
- * out from under it.
+ * True while a run owns the page, from the moment it starts until it completes or is stopped.
+ */
+let runInFlight = false;
+
+/**
+ * True while the dashboard is painted from a stored run rather than from a live one.
  *
- * Named and shaped to match `index.js`'s function of the same name. It covered only the rite select
- * until then, which is why this page showed the defect the Calendars runner did not: its response
- * format and Past Runs selects stayed live through a run.
+ * Deliberately not derived from `#pastRunsSelect.value`: `pastRuns.load()` clears the select on
+ * every refill, so a login or logout while a replay is on screen drops that value to `''` without
+ * changing a single card, and reading it would then report "live" over somebody else's run.
+ */
+let replayOnScreen = false;
+
+/**
+ * True while {@link replayResourcesRun} is writing the controls to match a stored run.
  *
- * A **rite** change during an active run is unsafe: `resetCheckListsForRite()` wipes the rendered
- * cards, swaps both check lists and zeroes the result counters, but touches none of
- * `currentState`, the *response* counters or `currentRunToken`, and sends no `cancelRun`.
- * In-flight frames would keep arriving with a matching `runToken`, paint nothing (their cards are
- * gone), still increment the received counter, and could trip the `>=` phase gate early —
- * advancing to `JobsFinished` and storing a run of all-blue cards (final review of #48, finding 3).
+ * Unlike the Calendars page, nothing here needs a `change` dispatched to make a value selectable —
+ * there is no linked `CalendarSelect` whose options have to be rebuilt for the rite — so the values
+ * are simply assigned and no handler runs at all. The flag is kept because the rite select's own
+ * listener calls `loadAsyncData()`, an **asynchronous** rediscovery that would land after the replay
+ * had painted and rebuild the scaffold out from under it; anything that later has cause to dispatch
+ * here must be able to say it is not a user asking for a different scaffold.
+ */
+let suppressControlChangeHandlers = false;
+
+/**
+ * Sets whether the rite, response-format and Past Runs controls accept input.
  *
- * The **response format** select is the same hazard by a shorter route: its handler calls
- * `setupPage()` directly, which rebuilds the scaffold and calls `resetTestUI()`, so a mid-run change
- * leaves the run painting frames at cards that were replaced under it. It also changes
- * `currentResponseType`, which every subsequent request carries — so one run would be half JSON and
- * half YAML while reporting itself as whichever format happened to be selected when it was stored.
+ * Replaces the earlier `setScaffoldControlsDisabledForRun( disabled )`, which took the answer as a
+ * parameter. Three independent conditions decide it now, so it is derived here from all three at
+ * once rather than written by whichever caller fired last:
  *
- * The **Past Runs** select does something worse rather than something similar. Picking a stored run
- * repaints the whole dashboard from `replayResourcesRun()` while the live run keeps painting onto
- * the cards underneath it, so the two interleave on one scaffold; and its handler *writes*
- * `#startTestRunnerBtn.disabled` directly — selecting "— Live —" sets it to `false`, which during a
- * run is the Stop button, so a mid-run change hands the run's own control back in the wrong state.
+ * ```text
+ * scaffold controls enabled  <=>  canRunTests() && no replay on screen && no run in flight
+ * ```
  *
- * Disabling for the run's duration is simpler than teaching every counter, the run token and the
- * replay path to survive a mid-run swap, and it prevents the scenarios outright rather than merely
- * recovering from them after the fact — these controls are only `#startTestRunnerBtn`'s exclusive
- * counterparts while a run owns the page.
+ * **A run in flight.** A rite change mid-run is unsafe: `resetCheckListsForRite()` wipes the
+ * rendered cards, swaps both check lists and zeroes the result counters, but touches none of
+ * `currentState`, the response counters or `currentRunToken`, and sends no `cancelRun`. In-flight
+ * frames would keep arriving with a matching `runToken`, paint nothing, still increment the received
+ * counter, and could trip the phase gate early — storing a run of all-blue cards (final review of
+ * #48, finding 3). The response format is the same hazard by a shorter route: its handler calls
+ * `setupPage()` directly, and it also changes `currentResponseType`, which every subsequent request
+ * carries, so one run would be half JSON and half YAML while reporting itself as one of them.
  *
- * @param {boolean} disabled
+ * **A replay on screen.** The controls describe what the dashboard is showing, and
+ * `replayResourcesRun()` now sets them to the stored run's rite and response format. Leaving them
+ * live would offer edits to a description of something the user cannot change, and the first such
+ * edit would rebuild the live scaffold underneath the replayed cards.
+ *
+ * **No permission to run.** These are inputs to a run, so they aim nothing for someone who cannot
+ * start one. Asked here rather than inside `ReadyToRunTests.check()` for the #63 reason:
+ * `hidePageLoader()` is gated on `check()`, so folding permission into readiness would strand every
+ * anonymous visitor under the translucent page loader. Readiness is about the page; permission is
+ * about the user.
+ *
+ * **Past Runs answers to the first condition only.** Reading stored runs is public, so it stays
+ * available to an anonymous visitor and during a replay — replaying is how someone who cannot run
+ * tests sees a scaffold for another rite at all. It is disabled during a run, where picking a stored
+ * run would repaint the dashboard while the run keeps painting frames onto the cards underneath it.
+ *
  * @returns {void}
  */
-const setScaffoldControlsDisabledForRun = ( disabled ) => {
+const applyControlAvailability = () => {
+    const permitted = canRunTests();
+    const disabled = runInFlight || replayOnScreen || !permitted;
+    // Reuses the start button's own explanation rather than adding a second translated string for
+    // the same policy: a disabled control with no explanation reads as a bug rather than as a
+    // policy. Only the permission case earns one — the other two are evident from the page.
+    const noPermissionTitle = document.querySelector('#startTestRunnerBtn')?.dataset?.noPermissionTitle ?? '';
     [
         riteSelect?._domElement,
         document.querySelector('#APIResponseSelect'),
-        document.querySelector('#pastRunsSelect'),
     ].forEach( ( el ) => {
         if ( el ) {
             el.disabled = disabled;
+            el.title = permitted ? '' : noPermissionTitle;
         }
     } );
+    const pastRunsEl = document.querySelector('#pastRunsSelect');
+    if ( pastRunsEl ) {
+        pastRunsEl.disabled = runInFlight;
+    }
 };
 
 /**
@@ -1028,7 +1108,7 @@ const setScaffoldControlsDisabledForRun = ( disabled ) => {
  * `buildScaffolding()` then refreshed the *denominators* from the new cards — so a Roman → Ambrosian
  * switch could show more successes than the new rite has checks (#53).
  *
- * Only ever reached between runs: `setScaffoldControlsDisabledForRun()` owns the control while a run is
+ * Only ever reached between runs: `applyControlAvailability()` owns the control while a run is
  * in flight, so this adds nothing to the mid-run path.
  *
  * @returns {void}
@@ -1348,7 +1428,8 @@ const runTests = () => {
             phaseRunner.clearWatchdog();
             safeToastShow('#tests-complete');
             currentRunToken = null;
-            setScaffoldControlsDisabledForRun( false );
+            runInFlight = false;
+            applyControlAvailability();
             const spinIcon = document.querySelector('.fa-spin');
             if (spinIcon) {
                 spinIcon.classList.remove('fa-spin', 'fa-rotate');
@@ -1460,8 +1541,14 @@ const buildResourcesPayload = () => {
         schemaVersion: 1,
         timestamp: nowIsoStamp(),
         runType: 'resources',
+        // This page runs against no single calendar, so `calendar` stays null — the field exists for
+        // the Calendars runner's envelope. `rite` and `responseType` were null and absent until
+        // replay had to point the controls back at the run being shown: a stored run that does not
+        // record what it was run under cannot be described by them. Runs stored before this take
+        // `?? 'roman'` on read, which is what they were.
         calendar: null,
-        responseType: null,
+        rite: currentRite,
+        responseType: currentResponseType,
         duration: measureDuration( 'litcalTestRunner' ),
         counts: { successful: successfulTests, failed: failedTests },
         timings: {
@@ -1496,7 +1583,8 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
             console.warn( 'WebSocket readyState:', readyState );
         } else {
             currentRunToken = crypto.randomUUID();
-            setScaffoldControlsDisabledForRun( true );
+            runInFlight = true;
+            applyControlAvailability();
             performance.mark( 'litcalTestRunnerStart' );
             const startBtnEl = document.querySelector('#startTestRunnerBtn');
             if (startBtnEl) {
@@ -1527,7 +1615,8 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
         phaseRunner.endRun();
         currentState = TestState.Stopped;
         currentRunToken = null;
-        setScaffoldControlsDisabledForRun( false );
+        runInFlight = false;
+        applyControlAvailability();
         const spinIcon = document.querySelector('#startTestRunnerBtn .fa-spin');
         if (spinIcon) {
             spinIcon.classList.remove('fa-spin');
@@ -1542,6 +1631,10 @@ document.querySelector('#startTestRunnerBtn')?.addEventListener('click', () => {
 });
 
 document.querySelector('#APIResponseSelect')?.addEventListener('change', ( ev ) => {
+    // See {@link suppressControlChangeHandlers}.
+    if ( suppressControlChangeHandlers ) {
+        return;
+    }
     const pageLoader = document.querySelector('.page-loader');
     if (pageLoader) {
         pageLoader.style.display = 'block';
@@ -1566,7 +1659,9 @@ const pastRuns = createPastRunsList( {
     runType: 'resources',
     label: ( summary ) => {
         const dt = new Intl.DateTimeFormat( locale, IntlDTOptions ).format( new Date( summary.timestamp ) );
-        return `${dt} · ✓${summary.counts?.successful ?? 0} ✗${summary.counts?.failed ?? 0}`;
+        // This page has no calendar, so the rite is the only thing distinguishing two runs made
+        // moments apart. Runs stored before it was recorded were Roman.
+        return `${dt} · ${summary.rite ?? 'roman'} · ✓${summary.counts?.successful ?? 0} ✗${summary.counts?.failed ?? 0}`;
     },
 } );
 
@@ -1574,10 +1669,47 @@ const pastRuns = createPastRunsList( {
  * Replay a stored Resources run onto the dashboard (no WebSocket/API traffic).
  * @param {string} file
  */
+/**
+ * Points the rite and response-format controls at the run being replayed.
+ *
+ * The controls describe what the dashboard is showing; leaving them on the user's own selection
+ * while a stored run is painted over the page makes the page assert something untrue. They are
+ * disabled for the duration by {@link applyControlAvailability}, so setting them labels the replay
+ * rather than inviting an edit.
+ *
+ * **Nothing is dispatched.** Assigning `value` fires no event, and that is the whole intent here:
+ * the rite select's own listener calls `loadAsyncData()`, an asynchronous rediscovery that would
+ * land after the replay had painted and rebuild the scaffold out from under it. The Calendars page
+ * does dispatch its rite change, but only because a linked `CalendarSelect` has to rebuild its
+ * options synchronously before a calendar can be selected at all; this page has no such dependent.
+ *
+ * @param {object} run The stored run envelope, as returned by `fetchRunDetail()`.
+ * @returns {void}
+ */
+const syncControlsToStoredRun = ( run ) => {
+    suppressControlChangeHandlers = true;
+    try {
+        // Runs stored before this page recorded a rite have none; they were all Roman.
+        selectExistingValue( riteSelect?._domElement, run.rite ?? 'roman', 'rite' );
+        if ( run.responseType ) {
+            selectExistingValue(
+                document.querySelector('#APIResponseSelect'),
+                run.responseType,
+                'response format'
+            );
+        }
+    } finally {
+        suppressControlChangeHandlers = false;
+    }
+};
+
 const replayResourcesRun = async ( file ) => {
     const run = await fetchRunDetail( file );
+    syncControlsToStoredRun( run );
     buildScaffolding({
-        resourceDataChecks: run.scaffold.resourceDataChecks.map( ( d ) => d.validate ),
+        // `sourceFile` is the URL the stored run actually checked, and it is the only source for it:
+        // the live `resourcePaths` map holds the *current* rite's discovery, not this run's.
+        resourceDataChecks: run.scaffold.resourceDataChecks.map( ( d ) => ({ key: d.validate, path: d.sourceFile }) ),
         sourceDataChecks: run.scaffold.sourceDataChecks,
     });
     [ ...run.apiPathResults, ...run.sourceDataResults ].forEach( ( d ) => {
@@ -1597,28 +1729,57 @@ const replayResourcesRun = async ( file ) => {
     updateText('totalSourceDataTestsTime', MsToTimeString( run.timings.sourceData ));
 };
 
+/**
+ * Returns the dashboard to live state after a replay, and settles every control for it.
+ *
+ * The scaffold is stale after a replay (built from stored data), and — since
+ * `syncControlsToStoredRun()` pointed the rite and response-format selects at that run — so are the
+ * module vars that describe the live page. Both are re-derived here from the controls, which means
+ * leaving a replay lands on that run's rite and format rather than on whatever was selected before
+ * it. That is the deliberate consequence of having the controls describe what is on screen, and the
+ * reason no pre-replay selection is stashed: the dashboard the user returns to matches the controls
+ * they can see.
+ *
+ * Two callers, and the second is why this is a function rather than three lines in the handler:
+ * selecting "— Live —", and an `auth:login` / `auth:logout` that refills the Past Runs dropdown and
+ * clears its value in doing so.
+ *
+ * @returns {void}
+ */
+const returnToLiveView = () => {
+    replayOnScreen = false;
+    const responseEl = document.querySelector('#APIResponseSelect');
+    if ( responseEl ) {
+        currentResponseType = responseEl.value;
+    }
+    const riteEl = riteSelect?._domElement;
+    if ( riteEl && riteEl.value !== currentRite ) {
+        // The rite is the one control whose live rebuild is asynchronous — `resetCheckListsForRite()`
+        // followed by a fresh `loadAsyncData()` discovery. Handing it back to the select's own
+        // listener runs exactly that path instead of a second copy of it that could drift from it.
+        riteEl.dispatchEvent( new Event( 'change' ) );
+    } else {
+        setupPage();
+    }
+    resetTestUI();
+    ReadyToRunTests.tryEnableBtn();
+};
+
 if ( pastRunsSelect ) {
     pastRunsSelect.addEventListener('change', ( e ) => {
-        const startBtn = document.querySelector('#startTestRunnerBtn');
+        // Neither branch writes `#startTestRunnerBtn.disabled` or any select's `disabled` itself.
+        // Both go through `tryEnableBtn()`, which settles the button from readiness, permission and
+        // whether a replay is on screen, and ends by settling the scaffold controls from the last
+        // two. Writing them here is what let this handler and the permission gate disagree.
         if ( e.target.value === '' ) {
-            if ( startBtn ) {
-                // Not an unconditional `false`: leaving a replay re-enables the button only for
-                // someone permitted to run tests. The Past Runs dropdown is populated for anyone
-                // now that listing is public, so this branch is reachable while logged out — and
-                // writing `false` here would hand an anonymous visitor a live Run Tests button
-                // that the permission gate in tryEnableBtn() had correctly disabled.
-                startBtn.disabled = !canRunTests();
-            }
-            // replayResourcesRun() does not mutate module vars, so no state resync is
-            // needed, but the scaffold is stale (built from replay data). Rebuild it
-            // from the live consts (resourcePaths / sourceDataChecks) before resetting UI.
-            setupPage();
-            resetTestUI();
+            returnToLiveView();
             return;
         }
-        if ( startBtn ) {
-            startBtn.disabled = true;
-        }
+        // Set and applied before the await, so the controls are already inert while the run is
+        // being fetched. It stays set if the fetch or the paint then fails: the dropdown still names
+        // that run, and the dashboard is not live either way.
+        replayOnScreen = true;
+        ReadyToRunTests.tryEnableBtn();
         replayResourcesRun( e.target.value ).catch( ( err ) => {
             console.error( 'Replay failed', err );
             safeToastShow('#results-load-failed');
@@ -1637,14 +1798,21 @@ if ( pastRunsSelect ) {
     // Each also re-evaluates the Run Tests button, because the login modal authenticates without
     // reloading the page — so `LitCalConfig.canRunTests`, rendered by the server before the login,
     // is stale from here on and `canRunTests()` has to re-ask `Auth`'s freshly populated roles.
-    document.addEventListener( 'auth:login', () => {
+    //
+    // `pastRuns.load()` clears the select as it refills, so a replay that was on screen is no longer
+    // named by any control. Returning to live rather than leaving it painted keeps the dropdown and
+    // the dashboard telling the same story; when nothing was being replayed this costs nothing and a
+    // completed live run's results stay on screen, which is why it is conditional.
+    const onAuthChange = () => {
         pastRuns.load();
+        if ( replayOnScreen ) {
+            returnToLiveView();
+            return;
+        }
         ReadyToRunTests.tryEnableBtn();
-    });
-    document.addEventListener( 'auth:logout', () => {
-        pastRuns.load();
-        ReadyToRunTests.tryEnableBtn();
-    });
+    };
+    document.addEventListener( 'auth:login', onAuthChange );
+    document.addEventListener( 'auth:logout', onAuthChange );
 }
 
 // Store tooltips so we can hide them later

@@ -644,9 +644,8 @@ the list in JS.
 **Permission is not a readiness condition.** The role check is applied to `#startTestRunnerBtn.disabled` *beside*
 `ReadyToRunTests.check()`, never folded into it: `hidePageLoader()` is gated on `check()`, so a permission-aware
 `check()` would leave every anonymous visitor under the translucent page loader forever — the #63 failure mode,
-reintroduced. Readiness is a question about the page; permission is a question about the user. The Past Runs
-`change` handler applies the same predicate rather than writing `disabled = false`, since that branch is reachable
-while logged out now that the dropdown populates for everyone.
+reintroduced. Readiness is a question about the page; permission is a question about the user. The same separation
+governs the rite, calendar and response-format selects — see **The Controls Describe What Is On Screen** below.
 
 The **UI gate is a courtesy, not the enforcement point**: `results.php` answers 403 regardless of what the page
 believes. Note also that starting a *run* is gated only client-side — the WebSocket server has no notion of these
@@ -656,6 +655,66 @@ roles — so what the role actually protects is storing the result.
 authenticates through the API's legacy service, whose `User` model defaults to `['admin']`, and covering the
 negative would mean seeding a second roleless Zitadel user. The positive and anonymous cases are covered; this gap
 was accepted rather than papered over with a test that looks like it covers the gate and does not.
+
+### The Controls Describe What Is On Screen
+
+The rite, calendar and response-format selects on both runner pages answer to one predicate, derived in each page's
+`applyControlAvailability()` from all three of its inputs at once rather than written by whichever caller fired last:
+
+```text
+enabled  <=>  canRunTests() && no replay on screen && no run in flight
+```
+
+Each condition has its own reason. **A run in flight**: these selects funnel into `setupPage()`, which rebuilds the
+scaffold, renarrows `Years` and zeroes the counters, so a mid-run change stores a run that contradicts itself.
+**No permission**: they are inputs to a run, and aim nothing for someone who cannot start one — applied beside
+`ReadyToRunTests.check()`, never inside it, for the #63 reason above. **A replay on screen**: they describe the
+stored run being shown. `#pastRunsSelect` answers to the first condition only, since reading stored runs is public
+and replaying one is how a visitor who cannot run tests sees any other calendar's scaffold at all.
+
+That third condition is why `replayCalendarsRun()` and `replayResourcesRun()` call `syncControlsToStoredRun()`
+before they paint. A rite select reading "Ambrosian Rite" above a Roman run's cards is the class of untruth this
+interface exists to detect. A disabled select still displays its value, so setting it labels the replay rather than
+inviting an edit, and no separate caption is needed.
+
+**Only the Calendars page dispatches its rite change**, and only because a linked `CalendarSelect` must rebuild its
+option set before that run's calendar is selectable at all — a value with no option silently becomes `''`.
+`CalendarSelect#applyLinkedRite()` does that rebuild synchronously from already-loaded metadata, then dispatches its
+own `change`; `suppressControlChangeHandlers` is what stops both events reaching `handleCalendarSelectChange()` and
+rebuilding the live scaffold over the stored one. The Resources page assigns its values and dispatches nothing: its
+rite listener calls `loadAsyncData()`, an asynchronous rediscovery that would land after the replay had painted.
+
+**A stored value the select cannot hold is refused, not blanked.** A native `<select>` silently becomes `''` when
+handed a value it has no option for, and a stored run carries the rite and response format that were selected when
+it *ran* — which need not be what the server advertises today. `selectExistingValue()` in `common.js` restores the
+previous value and warns instead. That matters because `resyncLiveStateFromDom()` reads these selects back when a
+replay is closed, so a blank would become `currentRite` / `currentResponseType` and go on the wire as the next run's
+rite or response format; `e2e/response-format-capabilities.spec.ts` already pins the same hazard arriving by another
+route. The **calendar** select is deliberately exempt: `''` is its rite-level option, a meaningful value, so a
+missing option falls back to it and warns rather than being restored.
+
+**Nothing stashes a pre-replay selection**, so leaving a replay lands on that run's rite and calendar rather than on
+what was selected before it. `resyncLiveStateFromDom()` reads the controls, and the controls describe what is on
+screen — so the dashboard a user returns to matches the controls they can see. Which calendar that is follows from
+that property; it is not itself the property being kept. `e2e/results-replay.spec.ts` asserted the older behaviour
+(returning to Live rebuilt the General Roman scaffold) and was updated with the change, not worked around.
+
+**`replayOnScreen` is module state, not `#pastRunsSelect.value`.** `pastRuns.load()` clears the select on every
+refill, so a login or logout while a replay is on screen drops that value to `''` without changing a single card;
+reading it would report "live" and hand back controls that repaint somebody else's run. The `auth:login` /
+`auth:logout` handlers return to live in that case rather than leaving the dropdown and the dashboard disagreeing.
+
+**A stored run is replayed from its own descriptors, never from live module state.** `resourceTemplate()` used to
+resolve each card's URL from the live `resourcePaths` map — sound for the live caller, which passes the keys *of*
+that map, and wrong for replay, which passes keys from a stored run. `resetCheckListsForRite()` deletes every
+`data-path-*`, `events-path-*` and `missals-path-*` entry on a rite change, so after switching to Ambrosian not one
+of a stored Roman run's per-nation keys was still there; the miss yielded `undefined`, `escapeHtmlAttr()` threw on
+it, and `buildScaffolding()` died mid-`forEach` after the container had already been emptied — a half-built
+scaffold, stale counts and the `#results-load-failed` toast. The URL was in the descriptor's `sourceFile` all
+along. `sourceTemplate()` never had the bug because it reads everything off the item it is handed. Do not
+reintroduce a lookup into live state from either template, and do not paper over a missing value with `?? ''`:
+that trades a loud crash for a scaffold of cards labelled with nothing, which is the silent wrong answer this
+interface exists to catch rather than commit.
 
 ## Key Files
 
