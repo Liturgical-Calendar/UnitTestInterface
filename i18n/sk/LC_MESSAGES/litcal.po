@@ -1,15 +1,15 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
+# "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025, 2026.
 # OpenAI <noreply-mt-openai@weblate.org>, 2025, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-27 13:30+0000\n"
-"PO-Revision-Date: 2026-08-29 11:05+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2026-08-29 14:08+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/sk/>\n"
 "Language: sk\n"
@@ -42,7 +42,7 @@ msgstr "Zavrieť"
 
 #: components/login-modal.php:35
 msgid "Your session has expired. Please log in again."
-msgstr "Vaša relácia vypršala. Prosím, prihláste sa znova."
+msgstr "Tvoja relácia vypršala. Prihlás sa znova."
 
 #: components/login-modal.php:38 components/login-modal.php:79
 #: components/login-modal.php:371 layout/topnavbar.php:112
@@ -84,7 +84,7 @@ msgstr "Nepodarilo sa overiť stav autentifikácie. Server môže byť nedostupn
 
 #: components/login-modal.php:168 components/login-modal.php:616
 msgid "Are you sure you want to logout?"
-msgstr "Ste si istý, že sa chcete odhlásiť?"
+msgstr "Si si istý, že sa chceš odhlásiť?"
 
 #: components/login-modal.php:219
 msgid "Hide password"
@@ -92,7 +92,7 @@ msgstr "Skryť heslo"
 
 #: components/login-modal.php:326
 msgid "Please enter both username and password"
-msgstr "Zadajte prosím používateľské meno aj heslo"
+msgstr "Zadaj prosím používateľské meno aj heslo"
 
 #: components/login-modal.php:334
 msgid "Logging in…"
@@ -100,11 +100,11 @@ msgstr "Prihlasovanie…"
 
 #: components/login-modal.php:366
 msgid "Login failed. Please check your credentials."
-msgstr "Prihlásenie zlyhalo. Skontrolujte si prihlasovacie údaje."
+msgstr "Prihlásenie zlyhalo. Skontroluj si prihlasovacie údaje."
 
 #: components/login-modal.php:482
 msgid "Your session will expire in less than {minutes} minute(s)."
-msgstr "Vaša relácia vyprší za menej ako {minutes} minútu (minút)."
+msgstr "Tvoja relácia vyprší za menej ako {minutes} minútu (minút)."
 
 #: components/login-modal.php:537
 msgid "Extending..."
@@ -115,12 +115,12 @@ msgid ""
 "Could not reach the server just now. Your session is still active and this "
 "will retry automatically."
 msgstr ""
-"Teraz sa nepodarilo pripojiť k serveru. Vaša relácia je stále aktívna a "
+"Teraz sa nepodarilo pripojiť k serveru. Tvoja relácia je stále aktívna a "
 "skúsi sa to znova automaticky."
 
 #: components/login-modal.php:583
 msgid "Failed to extend session. Please login again."
-msgstr "Nedalo sa predĺžiť reláciu. Prosím, prihláste sa znovu."
+msgstr "Nedalo sa predĺžiť reláciu. Prihlás sa znovu."
 
 #: index.php:17 resources.php:17
 msgid ""
@@ -153,13 +153,12 @@ msgstr "Nepodarilo sa uložiť výsledky spustenia."
 #: index.php:66 resources.php:66
 msgid "Run complete. Log in to save it to Past Runs."
 msgstr ""
-"Spustenie dokončené. Prihláste sa na uloženie do Predchádzajúcich spustení."
+"Spustenie dokončené. Prihlás sa na uloženie do Predchádzajúcich spustení."
 
 #: index.php:74 resources.php:74
 msgid "Run complete. You do not have permission to save it to Past Runs."
 msgstr ""
-"Spustenie dokončené. Nemáte oprávnenie uložiť to do Predchádzajúcich "
-"spustení."
+"Spustenie dokončené. Nemáš oprávnenie uložiť to do Predchádzajúcich spustení."
 
 #: index.php:82 resources.php:82
 msgid "Could not load run results."
@@ -175,7 +174,7 @@ msgid ""
 "started. Try reloading the page."
 msgstr ""
 "Nepodarilo sa načítať zoznam kontrol z rozhrania API, preto nie je možné "
-"spustiť test. Skúste obnoviť stránku."
+"spustiť test. Skús obnoviť stránku."
 
 #: index.php:120 resources.php:117
 msgid "Response Format"
@@ -221,7 +220,7 @@ msgstr "OVERIŤ ZDROJOVÉ ÚDAJE"
 #: index.php:209
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
-msgstr "SKONTROLUJTE ÚDAJE V KALENDÁRI PRE ROKY OD %1$s DO %2$s"
+msgstr "SKONTROLOVAŤ ÚDAJE V KALENDÁRI PRE ROKY OD %1$s DO %2$s"
 
 #: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
