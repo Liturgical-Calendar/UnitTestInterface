@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
-# OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# OpenAI <noreply-mt-openai@weblate.org>, 2025, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-27 13:30+0000\n"
-"PO-Revision-Date: 2025-12-15 17:15+0000\n"
+"PO-Revision-Date: 2026-08-29 11:05+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Slovak <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/sk/>\n"
@@ -17,11 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 5.13.3\n"
+"X-Generator: Weblate 5.15.2\n"
 
 #: components/login-modal.php:6
 msgid "Session Expiring"
-msgstr ""
+msgstr "Relácia vyprší"
 
 #: components/login-modal.php:12 layout/topnavbar.php:127
 #: layout/topnavbar.php:128 layout/topnavbar.php:131 layout/topnavbar.php:132
@@ -30,11 +30,11 @@ msgstr "Odhlásenie"
 
 #: components/login-modal.php:15
 msgid "Extend Session"
-msgstr ""
+msgstr "Predĺžiť reláciu"
 
 #: components/login-modal.php:31
 msgid "Session Expired"
-msgstr ""
+msgstr "Relácia vypršala"
 
 #: components/login-modal.php:32
 msgid "Close"
@@ -42,7 +42,7 @@ msgstr "Zavrieť"
 
 #: components/login-modal.php:35
 msgid "Your session has expired. Please log in again."
-msgstr ""
+msgstr "Vaša relácia vypršala. Prosím, prihláste sa znova."
 
 #: components/login-modal.php:38 components/login-modal.php:79
 #: components/login-modal.php:371 layout/topnavbar.php:112
@@ -52,27 +52,27 @@ msgstr "Prihlásenie"
 
 #: components/login-modal.php:50
 msgid "Administrator Login"
-msgstr ""
+msgstr "Prihlásenie správcu"
 
 #: components/login-modal.php:56
 msgid "Username"
-msgstr ""
+msgstr "Používateľské meno"
 
 #: components/login-modal.php:60
 msgid "Password"
-msgstr ""
+msgstr "Heslo"
 
 #: components/login-modal.php:63 components/login-modal.php:224
 msgid "Show password"
-msgstr ""
+msgstr "Zobraziť heslo"
 
 #: components/login-modal.php:70
 msgid "Remember me"
-msgstr ""
+msgstr "Pamätaj si ma"
 
 #: components/login-modal.php:78
 msgid "Cancel"
-msgstr ""
+msgstr "Zrušiť"
 
 #: components/login-modal.php:93 layout/topnavbar.php:94
 msgid "Admin"
@@ -80,45 +80,47 @@ msgstr "Správa"
 
 #: components/login-modal.php:141
 msgid "Unable to verify authentication status. The server may be unavailable."
-msgstr ""
+msgstr "Nepodarilo sa overiť stav autentifikácie. Server môže byť nedostupný."
 
 #: components/login-modal.php:168 components/login-modal.php:616
 msgid "Are you sure you want to logout?"
-msgstr ""
+msgstr "Ste si istý, že sa chcete odhlásiť?"
 
 #: components/login-modal.php:219
 msgid "Hide password"
-msgstr ""
+msgstr "Skryť heslo"
 
 #: components/login-modal.php:326
 msgid "Please enter both username and password"
-msgstr ""
+msgstr "Zadajte prosím používateľské meno aj heslo"
 
 #: components/login-modal.php:334
 msgid "Logging in…"
-msgstr ""
+msgstr "Prihlasovanie…"
 
 #: components/login-modal.php:366
 msgid "Login failed. Please check your credentials."
-msgstr ""
+msgstr "Prihlásenie zlyhalo. Skontrolujte si prihlasovacie údaje."
 
 #: components/login-modal.php:482
 msgid "Your session will expire in less than {minutes} minute(s)."
-msgstr ""
+msgstr "Vaša relácia vyprší za menej ako {minutes} minútu (minút)."
 
 #: components/login-modal.php:537
 msgid "Extending..."
-msgstr ""
+msgstr "Predlžovanie..."
 
 #: components/login-modal.php:570
 msgid ""
 "Could not reach the server just now. Your session is still active and this "
 "will retry automatically."
 msgstr ""
+"Teraz sa nepodarilo pripojiť k serveru. Vaša relácia je stále aktívna a "
+"skúsi sa to znova automaticky."
 
 #: components/login-modal.php:583
 msgid "Failed to extend session. Please login again."
-msgstr ""
+msgstr "Nedalo sa predĺžiť reláciu. Prosím, prihláste sa znovu."
 
 #: index.php:17 resources.php:17
 msgid ""
@@ -151,26 +153,29 @@ msgstr "Nepodarilo sa uložiť výsledky spustenia."
 #: index.php:66 resources.php:66
 msgid "Run complete. Log in to save it to Past Runs."
 msgstr ""
+"Spustenie dokončené. Prihláste sa na uloženie do Predchádzajúcich spustení."
 
 #: index.php:74 resources.php:74
 msgid "Run complete. You do not have permission to save it to Past Runs."
 msgstr ""
+"Spustenie dokončené. Nemáte oprávnenie uložiť to do Predchádzajúcich "
+"spustení."
 
 #: index.php:82 resources.php:82
 msgid "Could not load run results."
 msgstr "Nepodarilo sa načítať výsledky spustenia."
 
 #: index.php:90 resources.php:90
-#, fuzzy
-#| msgid "Could not load run results."
 msgid "Could not load the calendar controls."
-msgstr "Nepodarilo sa načítať výsledky spustenia."
+msgstr "Nemožno načítať ovládacie prvky kalendára."
 
 #: index.php:101 resources.php:101
 msgid ""
 "Could not load the list of checks from the API, so no test run can be "
 "started. Try reloading the page."
 msgstr ""
+"Nepodarilo sa načítať zoznam kontrol z rozhrania API, preto nie je možné "
+"spustiť test. Skúste obnoviť stránku."
 
 #: index.php:120 resources.php:117
 msgid "Response Format"
@@ -185,10 +190,8 @@ msgid "— Live —"
 msgstr "— Naživo —"
 
 #: index.php:149 resources.php:146
-#, fuzzy
-#| msgid "Could not save run results."
 msgid "You do not have permission to run tests."
-msgstr "Nepodarilo sa uložiť výsledky spustenia."
+msgstr "Nemáš povolenie na vykonávanie testov."
 
 #: index.php:151 resources.php:148
 msgid "Run Tests"
@@ -216,10 +219,9 @@ msgstr "OVERIŤ ZDROJOVÉ ÚDAJE"
 
 #. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
 #: index.php:209
-#, fuzzy, php-format
-#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+#, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
-msgstr "OVERIŤ ÚDAJE O KALENDÁRI NA ROKY OD 1970 DO %s"
+msgstr "SKONTROLUJTE ÚDAJE V KALENDÁRI PRE ROKY OD %1$s DO %2$s"
 
 #: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
@@ -230,10 +232,8 @@ msgid "Loading…"
 msgstr "Načítava sa…"
 
 #: layout/footer.php:65
-#, fuzzy
-#| msgid "Liturgical Calendar"
 msgid "Liturgical Rite"
-msgstr "Liturgický kalendár"
+msgstr "Liturgický obrad"
 
 #: layout/footer.php:66
 msgid "Liturgical Calendar"
@@ -261,11 +261,11 @@ msgstr "Stav pripojenia WebSocket"
 
 #: resources.php:175
 msgid "API Paths"
-msgstr ""
+msgstr "Cesty API"
 
 #: resources.php:204
 msgid "Source data"
-msgstr ""
+msgstr "Zdrojové údaje"
 
 #~ msgid "General Roman"
 #~ msgstr "Všeobecný rímsky"
