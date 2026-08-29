@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025.
-# OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# OpenAI <noreply-mt-openai@weblate.org>, 2025, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-27 13:30+0000\n"
-"PO-Revision-Date: 2025-12-15 17:15+0000\n"
+"PO-Revision-Date: 2026-08-29 11:05+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Portuguese <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/pt/>\n"
@@ -17,11 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.13.3\n"
+"X-Generator: Weblate 5.15.2\n"
 
 #: components/login-modal.php:6
 msgid "Session Expiring"
-msgstr ""
+msgstr "Sessão prestes a expirar"
 
 #: components/login-modal.php:12 layout/topnavbar.php:127
 #: layout/topnavbar.php:128 layout/topnavbar.php:131 layout/topnavbar.php:132
@@ -30,11 +30,11 @@ msgstr "Sair"
 
 #: components/login-modal.php:15
 msgid "Extend Session"
-msgstr ""
+msgstr "Estender sessão"
 
 #: components/login-modal.php:31
 msgid "Session Expired"
-msgstr ""
+msgstr "Sessão expirada"
 
 #: components/login-modal.php:32
 msgid "Close"
@@ -42,7 +42,7 @@ msgstr "Fechar"
 
 #: components/login-modal.php:35
 msgid "Your session has expired. Please log in again."
-msgstr ""
+msgstr "Sua sessão expirou. Faça login novamente."
 
 #: components/login-modal.php:38 components/login-modal.php:79
 #: components/login-modal.php:371 layout/topnavbar.php:112
@@ -52,27 +52,27 @@ msgstr "Entrar"
 
 #: components/login-modal.php:50
 msgid "Administrator Login"
-msgstr ""
+msgstr "Login de administrador"
 
 #: components/login-modal.php:56
 msgid "Username"
-msgstr ""
+msgstr "Nome de usuário"
 
 #: components/login-modal.php:60
 msgid "Password"
-msgstr ""
+msgstr "Senha"
 
 #: components/login-modal.php:63 components/login-modal.php:224
 msgid "Show password"
-msgstr ""
+msgstr "Mostrar senha"
 
 #: components/login-modal.php:70
 msgid "Remember me"
-msgstr ""
+msgstr "Lembrar de mim"
 
 #: components/login-modal.php:78
 msgid "Cancel"
-msgstr ""
+msgstr "Cancelar"
 
 #: components/login-modal.php:93 layout/topnavbar.php:94
 msgid "Admin"
@@ -81,44 +81,48 @@ msgstr "Admin"
 #: components/login-modal.php:141
 msgid "Unable to verify authentication status. The server may be unavailable."
 msgstr ""
+"Não foi possível verificar o status de autenticação. O servidor pode estar "
+"indisponível."
 
 #: components/login-modal.php:168 components/login-modal.php:616
 msgid "Are you sure you want to logout?"
-msgstr ""
+msgstr "Tem certeza de que deseja sair?"
 
 #: components/login-modal.php:219
 msgid "Hide password"
-msgstr ""
+msgstr "Ocultar senha"
 
 #: components/login-modal.php:326
 msgid "Please enter both username and password"
-msgstr ""
+msgstr "Por favor, insira nome de usuário e senha"
 
 #: components/login-modal.php:334
 msgid "Logging in…"
-msgstr ""
+msgstr "Entrando…"
 
 #: components/login-modal.php:366
 msgid "Login failed. Please check your credentials."
-msgstr ""
+msgstr "Falha no login. Por favor, verifique suas credenciais."
 
 #: components/login-modal.php:482
 msgid "Your session will expire in less than {minutes} minute(s)."
-msgstr ""
+msgstr "Sua sessão expirará em menos de {minutes} minuto(s)."
 
 #: components/login-modal.php:537
 msgid "Extending..."
-msgstr ""
+msgstr "Estendendo..."
 
 #: components/login-modal.php:570
 msgid ""
 "Could not reach the server just now. Your session is still active and this "
 "will retry automatically."
 msgstr ""
+"Não foi possível acessar o servidor agora. Sua sessão ainda está ativa e "
+"isso será tentado novamente automaticamente."
 
 #: components/login-modal.php:583
 msgid "Failed to extend session. Please login again."
-msgstr ""
+msgstr "Falha ao estender a sessão. Por favor, faça login novamente."
 
 #: index.php:17 resources.php:17
 msgid ""
@@ -150,27 +154,29 @@ msgstr "Não foi possível guardar os resultados da execução."
 
 #: index.php:66 resources.php:66
 msgid "Run complete. Log in to save it to Past Runs."
-msgstr ""
+msgstr "Execução concluída. Faça login para salvá-la em Execuções Anteriores."
 
 #: index.php:74 resources.php:74
 msgid "Run complete. You do not have permission to save it to Past Runs."
 msgstr ""
+"Execução concluída. Você não tem permissão para salvá-la em Execuções "
+"Anteriores."
 
 #: index.php:82 resources.php:82
 msgid "Could not load run results."
 msgstr "Não foi possível carregar os resultados da execução."
 
 #: index.php:90 resources.php:90
-#, fuzzy
-#| msgid "Could not load run results."
 msgid "Could not load the calendar controls."
-msgstr "Não foi possível carregar os resultados da execução."
+msgstr "Não foi possível carregar os controles do calendário."
 
 #: index.php:101 resources.php:101
 msgid ""
 "Could not load the list of checks from the API, so no test run can be "
 "started. Try reloading the page."
 msgstr ""
+"Não foi possível carregar a lista de verificações da API, então nenhum teste "
+"pode ser iniciado. Tente recarregar a página."
 
 #: index.php:120 resources.php:117
 msgid "Response Format"
@@ -185,10 +191,8 @@ msgid "— Live —"
 msgstr "— Ao vivo —"
 
 #: index.php:149 resources.php:146
-#, fuzzy
-#| msgid "Could not save run results."
 msgid "You do not have permission to run tests."
-msgstr "Não foi possível guardar os resultados da execução."
+msgstr "Você não tem permissão para executar testes."
 
 #: index.php:151 resources.php:148
 msgid "Run Tests"
@@ -216,10 +220,9 @@ msgstr "VALIDAR DADOS DE ORIGEM"
 
 #. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
 #: index.php:209
-#, fuzzy, php-format
-#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+#, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
-msgstr "VALIDAR DADOS DO CALENDÁRIO PARA ANOS DE 1970 ATÉ %s"
+msgstr "VALIDAR DADOS DO CALENDÁRIO PARA OS ANOS DE %1$s ATÉ %2$s"
 
 #: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
@@ -230,10 +233,8 @@ msgid "Loading…"
 msgstr "Carregando…"
 
 #: layout/footer.php:65
-#, fuzzy
-#| msgid "Liturgical Calendar"
 msgid "Liturgical Rite"
-msgstr "Calendário Litúrgico"
+msgstr "Rito Litúrgico"
 
 #: layout/footer.php:66
 msgid "Liturgical Calendar"
@@ -261,11 +262,11 @@ msgstr "Status da conexão WebSocket"
 
 #: resources.php:175
 msgid "API Paths"
-msgstr ""
+msgstr "Caminhos da API"
 
 #: resources.php:204
 msgid "Source data"
-msgstr ""
+msgstr "Dados de origem"
 
 #~ msgid "General Roman"
 #~ msgstr "Geral Romano"
