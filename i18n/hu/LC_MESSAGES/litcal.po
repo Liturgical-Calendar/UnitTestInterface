@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-15 16:19+0000\n"
+"POT-Creation-Date: 2026-08-27 13:30+0000\n"
 "PO-Revision-Date: 2025-12-15 17:15+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Hungarian <https://translate.johnromanodorazio.com/projects/"
@@ -19,7 +19,108 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.13.3\n"
 
-#: index.php:15
+#: components/login-modal.php:6
+msgid "Session Expiring"
+msgstr ""
+
+#: components/login-modal.php:12 layout/topnavbar.php:127
+#: layout/topnavbar.php:128 layout/topnavbar.php:131 layout/topnavbar.php:132
+msgid "Logout"
+msgstr "Kijelentkezés"
+
+#: components/login-modal.php:15
+msgid "Extend Session"
+msgstr ""
+
+#: components/login-modal.php:31
+msgid "Session Expired"
+msgstr ""
+
+#: components/login-modal.php:32
+msgid "Close"
+msgstr "Bezárás"
+
+#: components/login-modal.php:35
+msgid "Your session has expired. Please log in again."
+msgstr ""
+
+#: components/login-modal.php:38 components/login-modal.php:79
+#: components/login-modal.php:371 layout/topnavbar.php:112
+#: layout/topnavbar.php:113 layout/topnavbar.php:116 layout/topnavbar.php:117
+msgid "Login"
+msgstr "Bejelentkezés"
+
+#: components/login-modal.php:50
+msgid "Administrator Login"
+msgstr ""
+
+#: components/login-modal.php:56
+msgid "Username"
+msgstr ""
+
+#: components/login-modal.php:60
+msgid "Password"
+msgstr ""
+
+#: components/login-modal.php:63 components/login-modal.php:224
+msgid "Show password"
+msgstr ""
+
+#: components/login-modal.php:70
+msgid "Remember me"
+msgstr ""
+
+#: components/login-modal.php:78
+msgid "Cancel"
+msgstr ""
+
+#: components/login-modal.php:93 layout/topnavbar.php:94
+msgid "Admin"
+msgstr "Admin"
+
+#: components/login-modal.php:141
+msgid "Unable to verify authentication status. The server may be unavailable."
+msgstr ""
+
+#: components/login-modal.php:168 components/login-modal.php:616
+msgid "Are you sure you want to logout?"
+msgstr ""
+
+#: components/login-modal.php:219
+msgid "Hide password"
+msgstr ""
+
+#: components/login-modal.php:326
+msgid "Please enter both username and password"
+msgstr ""
+
+#: components/login-modal.php:334
+msgid "Logging in…"
+msgstr ""
+
+#: components/login-modal.php:366
+msgid "Login failed. Please check your credentials."
+msgstr ""
+
+#: components/login-modal.php:482
+msgid "Your session will expire in less than {minutes} minute(s)."
+msgstr ""
+
+#: components/login-modal.php:537
+msgid "Extending..."
+msgstr ""
+
+#: components/login-modal.php:570
+msgid ""
+"Could not reach the server just now. Your session is still active and this "
+"will retry automatically."
+msgstr ""
+
+#: components/login-modal.php:583
+msgid "Failed to extend session. Please login again."
+msgstr ""
+
+#: index.php:17 resources.php:17
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
@@ -27,379 +128,362 @@ msgstr ""
 "Hiba történt a szerverhez való csatlakozás megnyitásakor a websocket "
 "keresztül. Talán a szerver offline?"
 
-#: index.php:24
+#: index.php:26 resources.php:26
 msgid "WebSocket connected successfully!"
 msgstr "A WebSocket sikeresen csatlakozott!"
 
-#: index.php:32
+#: index.php:34 resources.php:34
 msgid "WebSocket connection closed."
 msgstr "A WebSocket kapcsolat megszakadt."
 
-#: index.php:40
+#: index.php:42 resources.php:42
 msgid "All tests complete!"
 msgstr "Minden teszt befejeződött!"
 
-#: index.php:54
-msgid "Liturgical Calendar"
-msgstr "Liturgikus Naptár"
+#: index.php:50 resources.php:50
+msgid "Run results saved."
+msgstr "A futtatás eredményei elmentve."
 
-#: index.php:56
-msgid "General Roman"
-msgstr "Általános Római"
+#: index.php:58 resources.php:58
+msgid "Could not save run results."
+msgstr "Nem sikerült menteni a futtatás eredményeit."
 
-#: index.php:60
+#: index.php:66 resources.php:66
+msgid "Run complete. Log in to save it to Past Runs."
+msgstr ""
+
+#: index.php:74 resources.php:74
+msgid "Run complete. You do not have permission to save it to Past Runs."
+msgstr ""
+
+#: index.php:82 resources.php:82
+msgid "Could not load run results."
+msgstr "Nem sikerült betölteni a futtatás eredményeit."
+
+#: index.php:90 resources.php:90
+#, fuzzy
+#| msgid "Could not load run results."
+msgid "Could not load the calendar controls."
+msgstr "Nem sikerült betölteni a futtatás eredményeit."
+
+#: index.php:101 resources.php:101
+msgid ""
+"Could not load the list of checks from the API, so no test run can be "
+"started. Try reloading the page."
+msgstr ""
+
+#: index.php:120 resources.php:117
 msgid "Response Format"
 msgstr "Válasz formátum"
 
-#: index.php:72
+#: index.php:138 resources.php:135
+msgid "Past Runs"
+msgstr "Korábbi futtatások"
+
+#: index.php:140 resources.php:137
+msgid "— Live —"
+msgstr "— Élő —"
+
+#: index.php:149 resources.php:146
+#, fuzzy
+#| msgid "Could not save run results."
+msgid "You do not have permission to run tests."
+msgstr "Nem sikerült menteni a futtatás eredményeit."
+
+#: index.php:151 resources.php:148
 msgid "Run Tests"
 msgstr "Teszteket futtat"
 
-#: index.php:78 index.php:102 index.php:138 index.php:168
+#: index.php:157 index.php:181 index.php:218 index.php:248 resources.php:154
+#: resources.php:180 resources.php:208
 msgid "Successful:"
 msgstr "Sikeres:"
 
-#: index.php:81 index.php:105 index.php:141 index.php:171
+#: index.php:160 index.php:184 index.php:221 index.php:251 resources.php:157
+#: resources.php:183 resources.php:211
 msgid "Failed:"
 msgstr "Sikertelen:"
 
-#: index.php:85 index.php:109 index.php:145 index.php:175
+#: index.php:164 index.php:188 index.php:225 index.php:255 resources.php:161
+#: resources.php:187 resources.php:215
 #, php-format
 msgid "Time (%s):"
 msgstr "Idő (%s):"
 
-#: index.php:98
+#: index.php:177
 msgid "VALIDATE SOURCE DATA"
 msgstr "ÉRVÉNYESÍTSE A FORRÁSADATOKAT"
 
-#. translators: %s: <span class="yearMax"></span>
-#: index.php:130
-#, php-format
-msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+#. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
+#: index.php:209
+#, fuzzy, php-format
+#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
 msgstr "Érvényesítse a naptári adatokat az 1970 és %s közötti évekre"
 
-#: index.php:163
+#: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "VÉGREHAJTSA A PONTOSSÁGI TESZTEKET ADOTT ESEMÉNYEKRE"
 
-#: index.php:196
+#: index.php:276 resources.php:235
 msgid "Loading…"
 msgstr "Betöltés…"
 
-#: admin.php:138
-msgid "Define a Liturgical Accuracy Test"
-msgstr "Határozz meg egy Liturgikus Pontossági Tesztet"
+#: layout/footer.php:65
+#, fuzzy
+#| msgid "Liturgical Calendar"
+msgid "Liturgical Rite"
+msgstr "Liturgikus Naptár"
 
-#: admin.php:140
-msgid ""
-"In order to verify that the liturgical calendar data produced by the API is "
-"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
-"that events were / were not created in the calendar, or that they have "
-"expected dates from year to year."
-msgstr ""
-"Annak érdekében, hogy ellenőrizzük, a liturgikus naptár adatai az API által "
-"pontosak-e, létrehozhatunk Liturgikus Pontossági Teszteket, amelyek lehetővé "
-"teszik számunkra, hogy ellenőrizzük, létrejöttek-e események a naptárban, "
-"vagy hogy várható dátumokkal rendelkeznek-e évről évre."
+#: layout/footer.php:66
+msgid "Liturgical Calendar"
+msgstr "Liturgikus Naptár"
 
-#: admin.php:145
-msgid "Edit an existing test"
-msgstr "Létező teszt szerkesztése"
-
-#: admin.php:158
-msgid "Create a New Test"
-msgstr "Új teszt létrehozása"
-
-#: admin.php:167
-msgid "Calendar to test"
-msgstr "Tesztelendő naptár"
-
-#: admin.php:175
-msgid "Test Type"
-msgstr "Teszttípus"
-
-#: admin.php:180
-msgid ""
-"In the span of years for which we are making an assertion, we assert that "
-"the liturgical event should exist, and should fall on an expected date (date "
-"can optionally be defined differently for each given year)"
-msgstr ""
-"Az általunk vizsgált évek során azt állítjuk, hogy a liturgikus eseménynek "
-"léteznie kell, és a várt időpontban kell megtörténnie (adott évre egyénileg "
-"is meghatározható a dátum)"
-
-#: admin.php:182
-msgid "Exact date"
-msgstr "Pontos dátum"
-
-#: admin.php:187
-msgid ""
-"When a liturgical event should only exist after a certain year, we assert "
-"that for a certain span of years before such year the liturgical event "
-"should not exist, while for a certain span of years after such year the "
-"liturgical event should exist and should fall on an expected date (date can "
-"optionally be defined differently for each given year)."
-msgstr ""
-"Amikor egy liturgikus eseménynek csak egy bizonyos év után kell léteznie, "
-"azt állítjuk, hogy bizonyos évek alatt az esemény nem létezhet, míg az adott "
-"év után az eseménynek léteznie kell és a várt napon kell lennie (a dátum "
-"külön megadható minden egyes évre)."
-
-#: admin.php:189
-msgid "Exact date since year"
-msgstr "Pontos dátum évtől kezdve"
-
-#: admin.php:194
-msgid ""
-"When a liturgical event should no longer exist after a certain year, we "
-"assert that for a certain span of years before such year the liturgical "
-"event should fall on an expected date (date can optionally be defined "
-"differently for each given year), while for a certain span of years after "
-"such year the liturgical event should not exist."
-msgstr ""
-"Amikor egy liturgikus eseménynek egy bizonyos év után már nem kell léteznie, "
-"azt állítjuk, hogy bizonyos évek alatt az eseménynek a várt napon kell "
-"lennie (a dátum külön megadható minden egyes évre), míg az adott év után az "
-"esemény nem létezhet."
-
-#: admin.php:196
-msgid "Exact date until year"
-msgstr "Pontos dátum évig"
-
-#: admin.php:201
-msgid ""
-"When a liturgical event is expected to be overridden in various years for "
-"whatever reason, we assert that it should exist in certain given years on an "
-"expected date (date can optionally be defined differently for each given "
-"year), and that it should not exist for other given years."
-msgstr ""
-"Amikor várható, hogy egy liturgikus eseményt különböző években bármilyen "
-"okból elnyomnak, kijelentjük, hogy bizonyos megadott években egy várható "
-"dátumon (az egyes megadott évekre külön is definiálható) kell léteznie, és "
-"hogy más megadott években nem létezhet."
-
-#: admin.php:203
-msgid "Variable existence by year"
-msgstr "Változó létezése évenként"
-
-#: admin.php:207
-msgid "Please login to create or edit tests."
-msgstr "Kérem, jelentkezzen be tesztek létrehozásához vagy szerkesztéséhez."
-
-#: admin.php:219 admin.php:220
-msgid "Name of Test"
-msgstr "Teszt neve"
-
-#: admin.php:229 components/NewTestModal.php:30
-msgid "Description"
-msgstr "Leírás"
-
-#: admin.php:234
-msgid "Per year assertions"
-msgstr "Évenkénti állítások"
-
-#: admin.php:245
-msgid "Login to view and edit test details."
-msgstr ""
-"Jelentkezzen be a tesztek részleteinek megtekintéséhez és szerkesztéséhez."
-
-#: admin.php:249
-msgid "Save Accuracy Test"
-msgstr "Pontossági Teszt Mentése"
-
-#: admin.php:266
-msgid "Add or Edit Comment"
-msgstr "Megjegyzés hozzáadása vagy szerkesztése"
-
-#: admin.php:271
-msgid "Comment"
-msgstr "Megjegyzés"
-
-#: admin.php:272
-msgid "This test is significant because…"
-msgstr "Ez a teszt jelentős, mert…"
-
-#: admin.php:276
-msgid "Save"
-msgstr "Mentés"
-
-#: layout/topnavbar.php:9
-msgid "Toggle sidebar"
-msgstr "Oldalsáv váltása"
-
-#: layout/topnavbar.php:23
+#: layout/topnavbar.php:17
 msgid "Calendars"
 msgstr "Naptárak"
 
-#: layout/topnavbar.php:28
+#: layout/topnavbar.php:22
 msgid "Resources"
 msgstr "Erőforrások"
 
-#: layout/topnavbar.php:34
+#: layout/topnavbar.php:28
 msgid "API Version"
 msgstr "API verzió"
 
-#: layout/topnavbar.php:49 layout/topnavbar.php:50
+#: layout/topnavbar.php:45 layout/topnavbar.php:46
 msgid "LitCal Project"
 msgstr "LitCal Projekt"
 
-#: layout/topnavbar.php:64
+#: layout/topnavbar.php:60
 msgid "WebSocket connection status"
 msgstr "WebSocket kapcsolat állapota"
 
-#: layout/topnavbar.php:97 layout/topnavbar.php:105
-msgid "Admin"
-msgstr "Admin"
-
-#: layout/topnavbar.php:104 layout/sidebar.php:23
-msgid "Accuracy Tests Admin"
-msgstr "Pontossági Tesztek Admin"
-
-#: layout/topnavbar.php:109 layout/topnavbar.php:110
-msgid "Login"
-msgstr "Bejelentkezés"
-
-#: layout/topnavbar.php:118 layout/topnavbar.php:119
-msgid "Logout"
-msgstr "Kijelentkezés"
-
-#: layout/sidebar.php:13
-msgid "Catholic Liturgical Calendar"
-msgstr "Katolikus liturgikus naptár"
-
-#: layout/sidebar.php:19
-msgid "Accuracy Tests Runner"
-msgstr "Pontossági Tesztek Futtatója"
-
-#: components/NewTestModal.php:6
-msgid "Exact Correspondence Test"
-msgstr "Pontosan megfelelő teszt"
-
-#: components/NewTestModal.php:22
-msgid "Choose the liturgical event for which you would like to create a test"
+#: resources.php:175
+msgid "API Paths"
 msgstr ""
-"Válaszd ki a liturgikus eseményt, amelyhez tesztet szeretnél létrehozni"
 
-#: components/NewTestModal.php:26
-msgid ""
-"This liturgical event does not seem to exist? Please choose from a value in "
-"the list."
+#: resources.php:204
+msgid "Source data"
 msgstr ""
-"Úgy tűnik, hogy ez a liturgikus esemény nem létezik. Kérjük, válasszon egy "
-"értéket a listából."
 
-#: components/NewTestModal.php:37
-msgid "Years to test"
-msgstr "Évek teszteléshez"
+#~ msgid "General Roman"
+#~ msgstr "Általános Római"
 
-#: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid "First choose the range of years that we will be testing."
-msgstr "Először válaszd ki a tesztelendő évek tartományát."
+#~ msgid "Define a Liturgical Accuracy Test"
+#~ msgstr "Határozz meg egy Liturgikus Pontossági Tesztet"
 
-#: components/NewTestModal.php:43
-msgid ""
-"This range should include a few years before the year in which the "
-"liturgical event should start to exist."
-msgstr ""
-"Ez a tartomány tartalmazzon néhány évet azelőtt, hogy a liturgikus "
-"eseménynek léteznie kellene."
+#~ msgid ""
+#~ "In order to verify that the liturgical calendar data produced by the API "
+#~ "is accurate, we can create Liturgical Accuracy Tests that allow us to "
+#~ "verify that events were / were not created in the calendar, or that they "
+#~ "have expected dates from year to year."
+#~ msgstr ""
+#~ "Annak érdekében, hogy ellenőrizzük, a liturgikus naptár adatai az API "
+#~ "által pontosak-e, létrehozhatunk Liturgikus Pontossági Teszteket, amelyek "
+#~ "lehetővé teszik számunkra, hogy ellenőrizzük, létrejöttek-e események a "
+#~ "naptárban, vagy hogy várható dátumokkal rendelkeznek-e évről évre."
 
-#: components/NewTestModal.php:46
-msgid ""
-"This range should include a few years after the year in which the liturgical "
-"event should cease to exist."
-msgstr ""
-"Ez a tartomány tartalmazzon néhány évet azután, hogy a liturgikus esemény "
-"létezése megszűnik."
+#~ msgid "Edit an existing test"
+#~ msgstr "Létező teszt szerkesztése"
 
-#: components/NewTestModal.php:49
-msgid "You can then remove any years that won't be needed."
-msgstr "Ezután eltávolíthatod azokat az éveket, amelyekre nem lesz szükség."
+#~ msgid "Create a New Test"
+#~ msgstr "Új teszt létrehozása"
 
-#: components/NewTestModal.php:53
-msgid ""
-"Finally, set the year from which the liturgical event should exist by "
-"clicking on the hammer icon inside one of the years in the range."
-msgstr ""
-"Végül állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie "
-"kell, a tartomány egyik évében lévő kalapács ikonra kattintva."
+#~ msgid "Calendar to test"
+#~ msgstr "Tesztelendő naptár"
 
-#: components/NewTestModal.php:59
-msgid ""
-"Finally, set the year until which the liturgical event should exist by "
-"clicking on the hammer icon inside one of the years in the range."
-msgstr ""
-"Végül állítsd be azt az évet, amelyig a liturgikus eseménynek léteznie kell, "
-"a tartomány egyik évében lévő kalapács ikonra kattintva."
+#~ msgid "Test Type"
+#~ msgstr "Teszttípus"
 
-#: components/NewTestModal.php:65
-msgid ""
-"Finally, set the years in which the liturgical event shouldn't exist by "
-"clicking on the hammer icon inside the years in the range."
-msgstr ""
-"Végül állítsd be azokat az éveket, amikor a liturgikus eseménynek nem szabad "
-"léteznie, a tartomány éveiben lévő kalapács ikonra kattintva."
+#~ msgid ""
+#~ "In the span of years for which we are making an assertion, we assert that "
+#~ "the liturgical event should exist, and should fall on an expected date "
+#~ "(date can optionally be defined differently for each given year)"
+#~ msgstr ""
+#~ "Az általunk vizsgált évek során azt állítjuk, hogy a liturgikus "
+#~ "eseménynek léteznie kell, és a várt időpontban kell megtörténnie (adott "
+#~ "évre egyénileg is meghatározható a dátum)"
 
-#: components/NewTestModal.php:88
-msgid "Please set the year from which the liturgical event should exist."
-msgstr ""
-"Állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie kell."
+#~ msgid "Exact date"
+#~ msgstr "Pontos dátum"
 
-#: components/NewTestModal.php:91
-msgid "Please set the year until which the liturgical event should exist."
-msgstr "Állítsd be azt az évet, amelyig a liturgikus eseménynek léteznie kell."
+#~ msgid ""
+#~ "When a liturgical event should only exist after a certain year, we assert "
+#~ "that for a certain span of years before such year the liturgical event "
+#~ "should not exist, while for a certain span of years after such year the "
+#~ "liturgical event should exist and should fall on an expected date (date "
+#~ "can optionally be defined differently for each given year)."
+#~ msgstr ""
+#~ "Amikor egy liturgikus eseménynek csak egy bizonyos év után kell léteznie, "
+#~ "azt állítjuk, hogy bizonyos évek alatt az esemény nem létezhet, míg az "
+#~ "adott év után az eseménynek léteznie kell és a várt napon kell lennie (a "
+#~ "dátum külön megadható minden egyes évre)."
 
-#: components/NewTestModal.php:94
-msgid "Please set the years in which the liturgical event should not exist."
-msgstr ""
-"Állítsd be az éveket, amelyekben a liturgikus eseménynek nem szabad léteznie."
+#~ msgid "Exact date since year"
+#~ msgstr "Pontos dátum évtől kezdve"
 
-#: components/NewTestModal.php:100
-msgid "Set the base date for this liturgical event."
-msgstr "Állítsd be ennek a liturgikus eseménynek az alapdátumát."
+#~ msgid ""
+#~ "When a liturgical event should no longer exist after a certain year, we "
+#~ "assert that for a certain span of years before such year the liturgical "
+#~ "event should fall on an expected date (date can optionally be defined "
+#~ "differently for each given year), while for a certain span of years after "
+#~ "such year the liturgical event should not exist."
+#~ msgstr ""
+#~ "Amikor egy liturgikus eseménynek egy bizonyos év után már nem kell "
+#~ "léteznie, azt állítjuk, hogy bizonyos évek alatt az eseménynek a várt "
+#~ "napon kell lennie (a dátum külön megadható minden egyes évre), míg az "
+#~ "adott év után az esemény nem létezhet."
 
-#: components/NewTestModal.php:103
-msgid ""
-"If the liturgical event is mobile rather than fixed, set the date for the "
-"first year you are testing against. In any case you will later be able to "
-"adjust the date for each year if needed."
-msgstr ""
-"Ha a liturgikus esemény mozgó, nem pedig állandó, állítsd be az első év "
-"dátumát, amely ellen tesztelsz. Mindenesetre később módosíthatod az adott év "
-"dátumát, ha szükséges."
+#~ msgid "Exact date until year"
+#~ msgstr "Pontos dátum évig"
 
-#: components/NewTestModal.php:108
-msgid "The date input cannot be empty."
-msgstr "A dátum bevitel nem lehet üres."
+#~ msgid ""
+#~ "When a liturgical event is expected to be overridden in various years for "
+#~ "whatever reason, we assert that it should exist in certain given years on "
+#~ "an expected date (date can optionally be defined differently for each "
+#~ "given year), and that it should not exist for other given years."
+#~ msgstr ""
+#~ "Amikor várható, hogy egy liturgikus eseményt különböző években bármilyen "
+#~ "okból elnyomnak, kijelentjük, hogy bizonyos megadott években egy várható "
+#~ "dátumon (az egyes megadott évekre külön is definiálható) kell léteznie, "
+#~ "és hogy más megadott években nem létezhet."
 
-#: components/NewTestModal.php:126
-msgid "Close"
-msgstr "Bezárás"
+#~ msgid "Variable existence by year"
+#~ msgstr "Változó létezése évenként"
 
-#: components/NewTestModal.php:127
-msgid "Create test"
-msgstr "Teszt létrehozása"
+#~ msgid "Please login to create or edit tests."
+#~ msgstr "Kérem, jelentkezzen be tesztek létrehozásához vagy szerkesztéséhez."
 
+#~ msgid "Name of Test"
+#~ msgstr "Teszt neve"
 
-#: index.php:48 resources.php:48
-msgid "Run results saved."
-msgstr "A futtatás eredményei elmentve."
+#~ msgid "Description"
+#~ msgstr "Leírás"
 
-#: index.php:56 resources.php:56
-msgid "Could not save run results."
-msgstr "Nem sikerült menteni a futtatás eredményeit."
+#~ msgid "Per year assertions"
+#~ msgstr "Évenkénti állítások"
 
-#: index.php:64 resources.php:64
-msgid "Could not load run results."
-msgstr "Nem sikerült betölteni a futtatás eredményeit."
+#~ msgid "Login to view and edit test details."
+#~ msgstr ""
+#~ "Jelentkezzen be a tesztek részleteinek megtekintéséhez és szerkesztéséhez."
 
-#: index.php:85 resources.php:77
-msgid "Past Runs"
-msgstr "Korábbi futtatások"
+#~ msgid "Save Accuracy Test"
+#~ msgstr "Pontossági Teszt Mentése"
 
-#: index.php:87 resources.php:79
-msgid "— Live —"
-msgstr "— Élő —"
+#~ msgid "Add or Edit Comment"
+#~ msgstr "Megjegyzés hozzáadása vagy szerkesztése"
+
+#~ msgid "Comment"
+#~ msgstr "Megjegyzés"
+
+#~ msgid "This test is significant because…"
+#~ msgstr "Ez a teszt jelentős, mert…"
+
+#~ msgid "Save"
+#~ msgstr "Mentés"
+
+#~ msgid "Toggle sidebar"
+#~ msgstr "Oldalsáv váltása"
+
+#~ msgid "Accuracy Tests Admin"
+#~ msgstr "Pontossági Tesztek Admin"
+
+#~ msgid "Catholic Liturgical Calendar"
+#~ msgstr "Katolikus liturgikus naptár"
+
+#~ msgid "Accuracy Tests Runner"
+#~ msgstr "Pontossági Tesztek Futtatója"
+
+#~ msgid "Exact Correspondence Test"
+#~ msgstr "Pontosan megfelelő teszt"
+
+#~ msgid ""
+#~ "Choose the liturgical event for which you would like to create a test"
+#~ msgstr ""
+#~ "Válaszd ki a liturgikus eseményt, amelyhez tesztet szeretnél létrehozni"
+
+#~ msgid ""
+#~ "This liturgical event does not seem to exist? Please choose from a value "
+#~ "in the list."
+#~ msgstr ""
+#~ "Úgy tűnik, hogy ez a liturgikus esemény nem létezik. Kérjük, válasszon "
+#~ "egy értéket a listából."
+
+#~ msgid "Years to test"
+#~ msgstr "Évek teszteléshez"
+
+#~ msgid "First choose the range of years that we will be testing."
+#~ msgstr "Először válaszd ki a tesztelendő évek tartományát."
+
+#~ msgid ""
+#~ "This range should include a few years before the year in which the "
+#~ "liturgical event should start to exist."
+#~ msgstr ""
+#~ "Ez a tartomány tartalmazzon néhány évet azelőtt, hogy a liturgikus "
+#~ "eseménynek léteznie kellene."
+
+#~ msgid ""
+#~ "This range should include a few years after the year in which the "
+#~ "liturgical event should cease to exist."
+#~ msgstr ""
+#~ "Ez a tartomány tartalmazzon néhány évet azután, hogy a liturgikus esemény "
+#~ "létezése megszűnik."
+
+#~ msgid "You can then remove any years that won't be needed."
+#~ msgstr "Ezután eltávolíthatod azokat az éveket, amelyekre nem lesz szükség."
+
+#~ msgid ""
+#~ "Finally, set the year from which the liturgical event should exist by "
+#~ "clicking on the hammer icon inside one of the years in the range."
+#~ msgstr ""
+#~ "Végül állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie "
+#~ "kell, a tartomány egyik évében lévő kalapács ikonra kattintva."
+
+#~ msgid ""
+#~ "Finally, set the year until which the liturgical event should exist by "
+#~ "clicking on the hammer icon inside one of the years in the range."
+#~ msgstr ""
+#~ "Végül állítsd be azt az évet, amelyig a liturgikus eseménynek léteznie "
+#~ "kell, a tartomány egyik évében lévő kalapács ikonra kattintva."
+
+#~ msgid ""
+#~ "Finally, set the years in which the liturgical event shouldn't exist by "
+#~ "clicking on the hammer icon inside the years in the range."
+#~ msgstr ""
+#~ "Végül állítsd be azokat az éveket, amikor a liturgikus eseménynek nem "
+#~ "szabad léteznie, a tartomány éveiben lévő kalapács ikonra kattintva."
+
+#~ msgid "Please set the year from which the liturgical event should exist."
+#~ msgstr ""
+#~ "Állítsd be azt az évet, amelytől a liturgikus eseménynek léteznie kell."
+
+#~ msgid "Please set the year until which the liturgical event should exist."
+#~ msgstr ""
+#~ "Állítsd be azt az évet, amelyig a liturgikus eseménynek léteznie kell."
+
+#~ msgid "Please set the years in which the liturgical event should not exist."
+#~ msgstr ""
+#~ "Állítsd be az éveket, amelyekben a liturgikus eseménynek nem szabad "
+#~ "léteznie."
+
+#~ msgid "Set the base date for this liturgical event."
+#~ msgstr "Állítsd be ennek a liturgikus eseménynek az alapdátumát."
+
+#~ msgid ""
+#~ "If the liturgical event is mobile rather than fixed, set the date for the "
+#~ "first year you are testing against. In any case you will later be able to "
+#~ "adjust the date for each year if needed."
+#~ msgstr ""
+#~ "Ha a liturgikus esemény mozgó, nem pedig állandó, állítsd be az első év "
+#~ "dátumát, amely ellen tesztelsz. Mindenesetre később módosíthatod az adott "
+#~ "év dátumát, ha szükséges."
+
+#~ msgid "The date input cannot be empty."
+#~ msgstr "A dátum bevitel nem lehet üres."
+
+#~ msgid "Create test"
+#~ msgstr "Teszt létrehozása"
 
 #~ msgid "Websocket"
 #~ msgstr "Websocket"

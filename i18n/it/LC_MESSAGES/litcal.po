@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-15 16:19+0000\n"
+"POT-Creation-Date: 2026-08-27 13:30+0000\n"
 "PO-Revision-Date: 2025-12-17 16:22+0000\n"
 "Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -19,7 +19,108 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.13.3\n"
 
-#: index.php:15
+#: components/login-modal.php:6
+msgid "Session Expiring"
+msgstr ""
+
+#: components/login-modal.php:12 layout/topnavbar.php:127
+#: layout/topnavbar.php:128 layout/topnavbar.php:131 layout/topnavbar.php:132
+msgid "Logout"
+msgstr "Esci"
+
+#: components/login-modal.php:15
+msgid "Extend Session"
+msgstr ""
+
+#: components/login-modal.php:31
+msgid "Session Expired"
+msgstr ""
+
+#: components/login-modal.php:32
+msgid "Close"
+msgstr "Chiudi"
+
+#: components/login-modal.php:35
+msgid "Your session has expired. Please log in again."
+msgstr ""
+
+#: components/login-modal.php:38 components/login-modal.php:79
+#: components/login-modal.php:371 layout/topnavbar.php:112
+#: layout/topnavbar.php:113 layout/topnavbar.php:116 layout/topnavbar.php:117
+msgid "Login"
+msgstr "Accedi"
+
+#: components/login-modal.php:50
+msgid "Administrator Login"
+msgstr ""
+
+#: components/login-modal.php:56
+msgid "Username"
+msgstr ""
+
+#: components/login-modal.php:60
+msgid "Password"
+msgstr ""
+
+#: components/login-modal.php:63 components/login-modal.php:224
+msgid "Show password"
+msgstr ""
+
+#: components/login-modal.php:70
+msgid "Remember me"
+msgstr ""
+
+#: components/login-modal.php:78
+msgid "Cancel"
+msgstr ""
+
+#: components/login-modal.php:93 layout/topnavbar.php:94
+msgid "Admin"
+msgstr "Amministrazione"
+
+#: components/login-modal.php:141
+msgid "Unable to verify authentication status. The server may be unavailable."
+msgstr ""
+
+#: components/login-modal.php:168 components/login-modal.php:616
+msgid "Are you sure you want to logout?"
+msgstr ""
+
+#: components/login-modal.php:219
+msgid "Hide password"
+msgstr ""
+
+#: components/login-modal.php:326
+msgid "Please enter both username and password"
+msgstr ""
+
+#: components/login-modal.php:334
+msgid "Logging in…"
+msgstr ""
+
+#: components/login-modal.php:366
+msgid "Login failed. Please check your credentials."
+msgstr ""
+
+#: components/login-modal.php:482
+msgid "Your session will expire in less than {minutes} minute(s)."
+msgstr ""
+
+#: components/login-modal.php:537
+msgid "Extending..."
+msgstr ""
+
+#: components/login-modal.php:570
+msgid ""
+"Could not reach the server just now. Your session is still active and this "
+"will retry automatically."
+msgstr ""
+
+#: components/login-modal.php:583
+msgid "Failed to extend session. Please login again."
+msgstr ""
+
+#: index.php:17 resources.php:17
 msgid ""
 "There was an error opening the connection to the server over the websocket. "
 "Perhaps the server is offline?"
@@ -27,382 +128,364 @@ msgstr ""
 "Si è verificato un errore nell'apertura della connessione al server tramite "
 "websocket. Forse il server è offline?"
 
-#: index.php:24
+#: index.php:26 resources.php:26
 msgid "WebSocket connected successfully!"
 msgstr "Connessione WebSocket avvenuta con successo!"
 
-#: index.php:32
+#: index.php:34 resources.php:34
 msgid "WebSocket connection closed."
 msgstr "Connessione WebSocket chiusa."
 
-#: index.php:40
+#: index.php:42 resources.php:42
 msgid "All tests complete!"
 msgstr "Tutti i test completati!"
 
-#: index.php:54
-msgid "Liturgical Calendar"
-msgstr "Calendario Liturgico"
+#: index.php:50 resources.php:50
+msgid "Run results saved."
+msgstr "Risultati dell'esecuzione salvati."
 
-#: index.php:56
-msgid "General Roman"
-msgstr "Romano Generale"
+#: index.php:58 resources.php:58
+msgid "Could not save run results."
+msgstr "Impossibile salvare i risultati dell'esecuzione."
 
-#: index.php:60
+#: index.php:66 resources.php:66
+msgid "Run complete. Log in to save it to Past Runs."
+msgstr ""
+
+#: index.php:74 resources.php:74
+msgid "Run complete. You do not have permission to save it to Past Runs."
+msgstr ""
+
+#: index.php:82 resources.php:82
+msgid "Could not load run results."
+msgstr "Impossibile caricare i risultati dell'esecuzione."
+
+#: index.php:90 resources.php:90
+#, fuzzy
+#| msgid "Could not load run results."
+msgid "Could not load the calendar controls."
+msgstr "Impossibile caricare i risultati dell'esecuzione."
+
+#: index.php:101 resources.php:101
+msgid ""
+"Could not load the list of checks from the API, so no test run can be "
+"started. Try reloading the page."
+msgstr ""
+
+#: index.php:120 resources.php:117
 msgid "Response Format"
 msgstr "Formato di risposta"
 
-#: index.php:72
+#: index.php:138 resources.php:135
+msgid "Past Runs"
+msgstr "Esecuzioni precedenti"
+
+#: index.php:140 resources.php:137
+msgid "— Live —"
+msgstr "— Live —"
+
+#: index.php:149 resources.php:146
+#, fuzzy
+#| msgid "Could not save run results."
+msgid "You do not have permission to run tests."
+msgstr "Impossibile salvare i risultati dell'esecuzione."
+
+#: index.php:151 resources.php:148
 msgid "Run Tests"
 msgstr "Esegui i test"
 
-#: index.php:78 index.php:102 index.php:138 index.php:168
+#: index.php:157 index.php:181 index.php:218 index.php:248 resources.php:154
+#: resources.php:180 resources.php:208
 msgid "Successful:"
 msgstr "Riusciti:"
 
-#: index.php:81 index.php:105 index.php:141 index.php:171
+#: index.php:160 index.php:184 index.php:221 index.php:251 resources.php:157
+#: resources.php:183 resources.php:211
 msgid "Failed:"
 msgstr "Falliti:"
 
-#: index.php:85 index.php:109 index.php:145 index.php:175
+#: index.php:164 index.php:188 index.php:225 index.php:255 resources.php:161
+#: resources.php:187 resources.php:215
 #, php-format
 msgid "Time (%s):"
 msgstr "Tempo (%s):"
 
-#: index.php:98
+#: index.php:177
 msgid "VALIDATE SOURCE DATA"
 msgstr "VALIDA I DATI DI ORIGINE"
 
-#. translators: %s: <span class="yearMax"></span>
-#: index.php:130
-#, php-format
-msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+#. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
+#: index.php:209
+#, fuzzy, php-format
+#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
 msgstr "CONVALIDA I DATI DEL CALENDARIO PER GLI ANNI DAL 1970 FINO AL %s"
 
-#: index.php:163
+#: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
 msgstr "ESEGUI TEST DI PRECISIONE PER EVENTI SPECIFICI"
 
-#: index.php:196
+#: index.php:276 resources.php:235
 msgid "Loading…"
 msgstr "Caricamento…"
 
-#: admin.php:138
-msgid "Define a Liturgical Accuracy Test"
-msgstr "Definire un Test di Accuratezza Liturgica"
+#: layout/footer.php:65
+#, fuzzy
+#| msgid "Liturgical Calendar"
+msgid "Liturgical Rite"
+msgstr "Calendario Liturgico"
 
-#: admin.php:140
-msgid ""
-"In order to verify that the liturgical calendar data produced by the API is "
-"accurate, we can create Liturgical Accuracy Tests that allow us to verify "
-"that events were / were not created in the calendar, or that they have "
-"expected dates from year to year."
-msgstr ""
-"Per verificare che i dati del calendario liturgico prodotti dall'API siano "
-"accurati, possiamo creare Test di Accuratezza Liturgica che ci permettono di "
-"verificare che gli eventi siano stati o non siano stati creati nel "
-"calendario, o che abbiano date previste di anno in anno."
+#: layout/footer.php:66
+msgid "Liturgical Calendar"
+msgstr "Calendario Liturgico"
 
-#: admin.php:145
-msgid "Edit an existing test"
-msgstr "Modifica test esistente"
-
-#: admin.php:158
-msgid "Create a New Test"
-msgstr "Crea un nuovo test"
-
-#: admin.php:167
-msgid "Calendar to test"
-msgstr "Calendario da testare"
-
-#: admin.php:175
-msgid "Test Type"
-msgstr "Tipo di test"
-
-#: admin.php:180
-msgid ""
-"In the span of years for which we are making an assertion, we assert that "
-"the liturgical event should exist, and should fall on an expected date (date "
-"can optionally be defined differently for each given year)"
-msgstr ""
-"Nel periodo di anni per cui stiamo facendo un'affermazione, affermiamo che "
-"l'evento liturgico dovrebbe esistere e dovrebbe cadere in una data prevista "
-"(la data può essere definita diversamente per ogni anno dato)"
-
-#: admin.php:182
-msgid "Exact date"
-msgstr "Data esatta"
-
-#: admin.php:187
-msgid ""
-"When a liturgical event should only exist after a certain year, we assert "
-"that for a certain span of years before such year the liturgical event "
-"should not exist, while for a certain span of years after such year the "
-"liturgical event should exist and should fall on an expected date (date can "
-"optionally be defined differently for each given year)."
-msgstr ""
-"Quando un evento liturgico dovrebbe esistere solo dopo un certo anno, si "
-"asserisce che per un certo intervallo di anni prima di tale anno l'evento "
-"liturgico non dovrebbe esistere, mentre per un certo intervallo di anni dopo "
-"tale anno l'evento liturgico dovrebbe esistere e dovrebbe cadere in una data "
-"prevista (la data può essere definita opzionalmente in modo diverso per "
-"ciascun anno)."
-
-#: admin.php:189
-msgid "Exact date since year"
-msgstr "Data esatta dall'anno"
-
-#: admin.php:194
-msgid ""
-"When a liturgical event should no longer exist after a certain year, we "
-"assert that for a certain span of years before such year the liturgical "
-"event should fall on an expected date (date can optionally be defined "
-"differently for each given year), while for a certain span of years after "
-"such year the liturgical event should not exist."
-msgstr ""
-"Quando un evento liturgico non dovrebbe più esistere dopo un certo anno, "
-"affermiamo che per un certo periodo di anni prima di tale anno l'evento "
-"liturgico dovrebbe cadere in una data prevista (la data può essere definita "
-"diversamente per ogni anno dato), mentre per un certo periodo di anni dopo "
-"tale anno l'evento liturgico non dovrebbe esistere."
-
-#: admin.php:196
-msgid "Exact date until year"
-msgstr "Data esatta fino all'anno"
-
-#: admin.php:201
-msgid ""
-"When a liturgical event is expected to be overridden in various years for "
-"whatever reason, we assert that it should exist in certain given years on an "
-"expected date (date can optionally be defined differently for each given "
-"year), and that it should not exist for other given years."
-msgstr ""
-"Quando ci si aspetta che un evento liturgico venga superato in diversi anni "
-"per qualsiasi motivo, affermiamo che dovrebbe esistere in determinati anni "
-"in una data prevista "
-"(la data può essere definita in modo diverso per ciascun anno indicato) e "
-"che non dovrebbe esistere per altri anni indicati."
-
-#: admin.php:203
-msgid "Variable existence by year"
-msgstr "Esistenza variabile per anno"
-
-#: admin.php:207
-msgid "Please login to create or edit tests."
-msgstr "Accedi per creare o modificare i test."
-
-#: admin.php:219 admin.php:220
-msgid "Name of Test"
-msgstr "Nome del test"
-
-#: admin.php:229 components/NewTestModal.php:30
-msgid "Description"
-msgstr "Descrizione"
-
-#: admin.php:234
-msgid "Per year assertions"
-msgstr "Asserzioni per anno"
-
-#: admin.php:245
-msgid "Login to view and edit test details."
-msgstr "Accedi per visualizzare e modificare i dettagli del test."
-
-#: admin.php:249
-msgid "Save Accuracy Test"
-msgstr "Salva Test di Accuratezza"
-
-#: admin.php:266
-msgid "Add or Edit Comment"
-msgstr "Aggiungi o modifica commento"
-
-#: admin.php:271
-msgid "Comment"
-msgstr "Commento"
-
-#: admin.php:272
-msgid "This test is significant because…"
-msgstr "Questo test è significativo perché…"
-
-#: admin.php:276
-msgid "Save"
-msgstr "Salva"
-
-#: layout/topnavbar.php:9
-msgid "Toggle sidebar"
-msgstr "Mostra/nascondi barra laterale"
-
-#: layout/topnavbar.php:23
+#: layout/topnavbar.php:17
 msgid "Calendars"
 msgstr "Calendari"
 
-#: layout/topnavbar.php:28
+#: layout/topnavbar.php:22
 msgid "Resources"
 msgstr "Risorse"
 
-#: layout/topnavbar.php:34
+#: layout/topnavbar.php:28
 msgid "API Version"
 msgstr "Versione API"
 
-#: layout/topnavbar.php:49 layout/topnavbar.php:50
+#: layout/topnavbar.php:45 layout/topnavbar.php:46
 msgid "LitCal Project"
 msgstr "Progetto LitCal"
 
-#: layout/topnavbar.php:64
+#: layout/topnavbar.php:60
 msgid "WebSocket connection status"
 msgstr "Stato della connessione WebSocket"
 
-#: layout/topnavbar.php:97 layout/topnavbar.php:105
-msgid "Admin"
-msgstr "Amministrazione"
-
-#: layout/topnavbar.php:104 layout/sidebar.php:23
-msgid "Accuracy Tests Admin"
-msgstr "Amministrazione Test di Accuratezza"
-
-#: layout/topnavbar.php:109 layout/topnavbar.php:110
-msgid "Login"
-msgstr "Accedi"
-
-#: layout/topnavbar.php:118 layout/topnavbar.php:119
-msgid "Logout"
-msgstr "Esci"
-
-#: layout/sidebar.php:13
-msgid "Catholic Liturgical Calendar"
-msgstr "Calendario Liturgico Cattolico"
-
-#: layout/sidebar.php:19
-msgid "Accuracy Tests Runner"
-msgstr "Esecuzione Test di Accuratezza"
-
-#: components/NewTestModal.php:6
-msgid "Exact Correspondence Test"
-msgstr "Test di corrispondenza esatta"
-
-#: components/NewTestModal.php:22
-msgid "Choose the liturgical event for which you would like to create a test"
-msgstr "Scegli l'evento liturgico per il quale desideri creare un test"
-
-#: components/NewTestModal.php:26
-msgid ""
-"This liturgical event does not seem to exist? Please choose from a value in "
-"the list."
+#: resources.php:175
+msgid "API Paths"
 msgstr ""
-"Questo evento liturgico non sembra esistere. Scegli un valore dalla lista."
 
-#: components/NewTestModal.php:37
-msgid "Years to test"
-msgstr "Anni da testare"
-
-#: components/NewTestModal.php:41 components/NewTestModal.php:71
-msgid "First choose the range of years that we will be testing."
-msgstr "Prima scegli l'intervallo di anni che testeremo."
-
-#: components/NewTestModal.php:43
-msgid ""
-"This range should include a few years before the year in which the "
-"liturgical event should start to exist."
+#: resources.php:204
+msgid "Source data"
 msgstr ""
-"Questo intervallo dovrebbe includere alcuni anni prima dell'anno in cui "
-"l'evento liturgico dovrebbe iniziare a esistere."
 
-#: components/NewTestModal.php:46
-msgid ""
-"This range should include a few years after the year in which the liturgical "
-"event should cease to exist."
-msgstr ""
-"Questo intervallo dovrebbe includere alcuni anni dopo l'anno in cui l'evento "
-"liturgico dovrebbe cessare di esistere."
+#~ msgid "General Roman"
+#~ msgstr "Romano Generale"
 
-#: components/NewTestModal.php:49
-msgid "You can then remove any years that won't be needed."
-msgstr "Puoi quindi rimuovere gli anni che non saranno necessari."
+#~ msgid "Define a Liturgical Accuracy Test"
+#~ msgstr "Definire un Test di Accuratezza Liturgica"
 
-#: components/NewTestModal.php:53
-msgid ""
-"Finally, set the year from which the liturgical event should exist by "
-"clicking on the hammer icon inside one of the years in the range."
-msgstr ""
-"Infine, imposta l'anno da cui l'evento liturgico dovrebbe esistere cliccando "
-"sull'icona del martello all'interno di uno degli anni nell'intervallo."
+#~ msgid ""
+#~ "In order to verify that the liturgical calendar data produced by the API "
+#~ "is accurate, we can create Liturgical Accuracy Tests that allow us to "
+#~ "verify that events were / were not created in the calendar, or that they "
+#~ "have expected dates from year to year."
+#~ msgstr ""
+#~ "Per verificare che i dati del calendario liturgico prodotti dall'API "
+#~ "siano accurati, possiamo creare Test di Accuratezza Liturgica che ci "
+#~ "permettono di verificare che gli eventi siano stati o non siano stati "
+#~ "creati nel calendario, o che abbiano date previste di anno in anno."
 
-#: components/NewTestModal.php:59
-msgid ""
-"Finally, set the year until which the liturgical event should exist by "
-"clicking on the hammer icon inside one of the years in the range."
-msgstr ""
-"Infine, imposta l'anno fino al quale l'evento liturgico dovrebbe esistere "
-"cliccando sull'icona del martello all'interno di uno degli anni "
-"nell'intervallo."
+#~ msgid "Edit an existing test"
+#~ msgstr "Modifica test esistente"
 
-#: components/NewTestModal.php:65
-msgid ""
-"Finally, set the years in which the liturgical event shouldn't exist by "
-"clicking on the hammer icon inside the years in the range."
-msgstr ""
-"Infine, imposta gli anni in cui l'evento liturgico non dovrebbe esistere "
-"cliccando sull'icona del martello all'interno degli anni nell'intervallo."
+#~ msgid "Create a New Test"
+#~ msgstr "Crea un nuovo test"
 
-#: components/NewTestModal.php:88
-msgid "Please set the year from which the liturgical event should exist."
-msgstr ""
-"Si prega di impostare l'anno da cui l'evento liturgico dovrebbe esistere."
+#~ msgid "Calendar to test"
+#~ msgstr "Calendario da testare"
 
-#: components/NewTestModal.php:91
-msgid "Please set the year until which the liturgical event should exist."
-msgstr "Imposta l'anno fino al quale l'evento liturgico dovrebbe esistere."
+#~ msgid "Test Type"
+#~ msgstr "Tipo di test"
 
-#: components/NewTestModal.php:94
-msgid "Please set the years in which the liturgical event should not exist."
-msgstr ""
-"Si prega di impostare gli anni in cui l'evento liturgico non dovrebbe "
-"esistere."
+#~ msgid ""
+#~ "In the span of years for which we are making an assertion, we assert that "
+#~ "the liturgical event should exist, and should fall on an expected date "
+#~ "(date can optionally be defined differently for each given year)"
+#~ msgstr ""
+#~ "Nel periodo di anni per cui stiamo facendo un'affermazione, affermiamo "
+#~ "che l'evento liturgico dovrebbe esistere e dovrebbe cadere in una data "
+#~ "prevista (la data può essere definita diversamente per ogni anno dato)"
 
-#: components/NewTestModal.php:100
-msgid "Set the base date for this liturgical event."
-msgstr "Imposta la data base per questo evento liturgico."
+#~ msgid "Exact date"
+#~ msgstr "Data esatta"
 
-#: components/NewTestModal.php:103
-msgid ""
-"If the liturgical event is mobile rather than fixed, set the date for the "
-"first year you are testing against. In any case you will later be able to "
-"adjust the date for each year if needed."
-msgstr ""
-"Se l'evento liturgico è mobile piuttosto che fisso, imposta la data per il "
-"primo anno contro cui stai testando. In ogni caso, potrai successivamente "
-"regolare la data per ogni anno se necessario."
+#~ msgid ""
+#~ "When a liturgical event should only exist after a certain year, we assert "
+#~ "that for a certain span of years before such year the liturgical event "
+#~ "should not exist, while for a certain span of years after such year the "
+#~ "liturgical event should exist and should fall on an expected date (date "
+#~ "can optionally be defined differently for each given year)."
+#~ msgstr ""
+#~ "Quando un evento liturgico dovrebbe esistere solo dopo un certo anno, si "
+#~ "asserisce che per un certo intervallo di anni prima di tale anno l'evento "
+#~ "liturgico non dovrebbe esistere, mentre per un certo intervallo di anni "
+#~ "dopo tale anno l'evento liturgico dovrebbe esistere e dovrebbe cadere in "
+#~ "una data prevista (la data può essere definita opzionalmente in modo "
+#~ "diverso per ciascun anno)."
 
-#: components/NewTestModal.php:108
-msgid "The date input cannot be empty."
-msgstr "L'input della data non può essere vuoto."
+#~ msgid "Exact date since year"
+#~ msgstr "Data esatta dall'anno"
 
-#: components/NewTestModal.php:126
-msgid "Close"
-msgstr "Chiudi"
+#~ msgid ""
+#~ "When a liturgical event should no longer exist after a certain year, we "
+#~ "assert that for a certain span of years before such year the liturgical "
+#~ "event should fall on an expected date (date can optionally be defined "
+#~ "differently for each given year), while for a certain span of years after "
+#~ "such year the liturgical event should not exist."
+#~ msgstr ""
+#~ "Quando un evento liturgico non dovrebbe più esistere dopo un certo anno, "
+#~ "affermiamo che per un certo periodo di anni prima di tale anno l'evento "
+#~ "liturgico dovrebbe cadere in una data prevista (la data può essere "
+#~ "definita diversamente per ogni anno dato), mentre per un certo periodo di "
+#~ "anni dopo tale anno l'evento liturgico non dovrebbe esistere."
 
-#: components/NewTestModal.php:127
-msgid "Create test"
-msgstr "Crea test"
+#~ msgid "Exact date until year"
+#~ msgstr "Data esatta fino all'anno"
 
+#~ msgid ""
+#~ "When a liturgical event is expected to be overridden in various years for "
+#~ "whatever reason, we assert that it should exist in certain given years on "
+#~ "an expected date (date can optionally be defined differently for each "
+#~ "given year), and that it should not exist for other given years."
+#~ msgstr ""
+#~ "Quando ci si aspetta che un evento liturgico venga superato in diversi "
+#~ "anni per qualsiasi motivo, affermiamo che dovrebbe esistere in "
+#~ "determinati anni in una data prevista (la data può essere definita in "
+#~ "modo diverso per ciascun anno indicato) e che non dovrebbe esistere per "
+#~ "altri anni indicati."
 
-#: index.php:48 resources.php:48
-msgid "Run results saved."
-msgstr "Risultati dell'esecuzione salvati."
+#~ msgid "Variable existence by year"
+#~ msgstr "Esistenza variabile per anno"
 
-#: index.php:56 resources.php:56
-msgid "Could not save run results."
-msgstr "Impossibile salvare i risultati dell'esecuzione."
+#~ msgid "Please login to create or edit tests."
+#~ msgstr "Accedi per creare o modificare i test."
 
-#: index.php:64 resources.php:64
-msgid "Could not load run results."
-msgstr "Impossibile caricare i risultati dell'esecuzione."
+#~ msgid "Name of Test"
+#~ msgstr "Nome del test"
 
-#: index.php:85 resources.php:77
-msgid "Past Runs"
-msgstr "Esecuzioni precedenti"
+#~ msgid "Description"
+#~ msgstr "Descrizione"
 
-#: index.php:87 resources.php:79
-msgid "— Live —"
-msgstr "— Live —"
+#~ msgid "Per year assertions"
+#~ msgstr "Asserzioni per anno"
+
+#~ msgid "Login to view and edit test details."
+#~ msgstr "Accedi per visualizzare e modificare i dettagli del test."
+
+#~ msgid "Save Accuracy Test"
+#~ msgstr "Salva Test di Accuratezza"
+
+#~ msgid "Add or Edit Comment"
+#~ msgstr "Aggiungi o modifica commento"
+
+#~ msgid "Comment"
+#~ msgstr "Commento"
+
+#~ msgid "This test is significant because…"
+#~ msgstr "Questo test è significativo perché…"
+
+#~ msgid "Save"
+#~ msgstr "Salva"
+
+#~ msgid "Toggle sidebar"
+#~ msgstr "Mostra/nascondi barra laterale"
+
+#~ msgid "Accuracy Tests Admin"
+#~ msgstr "Amministrazione Test di Accuratezza"
+
+#~ msgid "Catholic Liturgical Calendar"
+#~ msgstr "Calendario Liturgico Cattolico"
+
+#~ msgid "Accuracy Tests Runner"
+#~ msgstr "Esecuzione Test di Accuratezza"
+
+#~ msgid "Exact Correspondence Test"
+#~ msgstr "Test di corrispondenza esatta"
+
+#~ msgid ""
+#~ "Choose the liturgical event for which you would like to create a test"
+#~ msgstr "Scegli l'evento liturgico per il quale desideri creare un test"
+
+#~ msgid ""
+#~ "This liturgical event does not seem to exist? Please choose from a value "
+#~ "in the list."
+#~ msgstr ""
+#~ "Questo evento liturgico non sembra esistere. Scegli un valore dalla lista."
+
+#~ msgid "Years to test"
+#~ msgstr "Anni da testare"
+
+#~ msgid "First choose the range of years that we will be testing."
+#~ msgstr "Prima scegli l'intervallo di anni che testeremo."
+
+#~ msgid ""
+#~ "This range should include a few years before the year in which the "
+#~ "liturgical event should start to exist."
+#~ msgstr ""
+#~ "Questo intervallo dovrebbe includere alcuni anni prima dell'anno in cui "
+#~ "l'evento liturgico dovrebbe iniziare a esistere."
+
+#~ msgid ""
+#~ "This range should include a few years after the year in which the "
+#~ "liturgical event should cease to exist."
+#~ msgstr ""
+#~ "Questo intervallo dovrebbe includere alcuni anni dopo l'anno in cui "
+#~ "l'evento liturgico dovrebbe cessare di esistere."
+
+#~ msgid "You can then remove any years that won't be needed."
+#~ msgstr "Puoi quindi rimuovere gli anni che non saranno necessari."
+
+#~ msgid ""
+#~ "Finally, set the year from which the liturgical event should exist by "
+#~ "clicking on the hammer icon inside one of the years in the range."
+#~ msgstr ""
+#~ "Infine, imposta l'anno da cui l'evento liturgico dovrebbe esistere "
+#~ "cliccando sull'icona del martello all'interno di uno degli anni "
+#~ "nell'intervallo."
+
+#~ msgid ""
+#~ "Finally, set the year until which the liturgical event should exist by "
+#~ "clicking on the hammer icon inside one of the years in the range."
+#~ msgstr ""
+#~ "Infine, imposta l'anno fino al quale l'evento liturgico dovrebbe esistere "
+#~ "cliccando sull'icona del martello all'interno di uno degli anni "
+#~ "nell'intervallo."
+
+#~ msgid ""
+#~ "Finally, set the years in which the liturgical event shouldn't exist by "
+#~ "clicking on the hammer icon inside the years in the range."
+#~ msgstr ""
+#~ "Infine, imposta gli anni in cui l'evento liturgico non dovrebbe esistere "
+#~ "cliccando sull'icona del martello all'interno degli anni nell'intervallo."
+
+#~ msgid "Please set the year from which the liturgical event should exist."
+#~ msgstr ""
+#~ "Si prega di impostare l'anno da cui l'evento liturgico dovrebbe esistere."
+
+#~ msgid "Please set the year until which the liturgical event should exist."
+#~ msgstr "Imposta l'anno fino al quale l'evento liturgico dovrebbe esistere."
+
+#~ msgid "Please set the years in which the liturgical event should not exist."
+#~ msgstr ""
+#~ "Si prega di impostare gli anni in cui l'evento liturgico non dovrebbe "
+#~ "esistere."
+
+#~ msgid "Set the base date for this liturgical event."
+#~ msgstr "Imposta la data base per questo evento liturgico."
+
+#~ msgid ""
+#~ "If the liturgical event is mobile rather than fixed, set the date for the "
+#~ "first year you are testing against. In any case you will later be able to "
+#~ "adjust the date for each year if needed."
+#~ msgstr ""
+#~ "Se l'evento liturgico è mobile piuttosto che fisso, imposta la data per "
+#~ "il primo anno contro cui stai testando. In ogni caso, potrai "
+#~ "successivamente regolare la data per ogni anno se necessario."
+
+#~ msgid "The date input cannot be empty."
+#~ msgstr "L'input della data non può essere vuoto."
+
+#~ msgid "Create test"
+#~ msgstr "Crea test"
 
 #~ msgid "Websocket"
 #~ msgstr "Websocket"
