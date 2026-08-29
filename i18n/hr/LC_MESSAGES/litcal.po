@@ -1,15 +1,15 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# OpenAI <noreply-mt-openai@weblate.org>, 2025.
+# OpenAI <noreply-mt-openai@weblate.org>, 2025, 2026.
 # "John R. D'Orazio" <priest@johnromanodorazio.com>, 2025, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-27 13:30+0000\n"
-"PO-Revision-Date: 2026-06-25 08:52+0000\n"
-"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
+"PO-Revision-Date: 2026-08-29 11:05+0000\n"
+"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Croatian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hr/>\n"
 "Language: hr\n"
@@ -22,7 +22,7 @@ msgstr ""
 
 #: components/login-modal.php:6
 msgid "Session Expiring"
-msgstr ""
+msgstr "Sesija uskoro istječe"
 
 #: components/login-modal.php:12 layout/topnavbar.php:127
 #: layout/topnavbar.php:128 layout/topnavbar.php:131 layout/topnavbar.php:132
@@ -31,11 +31,11 @@ msgstr "Odjava"
 
 #: components/login-modal.php:15
 msgid "Extend Session"
-msgstr ""
+msgstr "Produži sesiju"
 
 #: components/login-modal.php:31
 msgid "Session Expired"
-msgstr ""
+msgstr "Sesija je istekla"
 
 #: components/login-modal.php:32
 msgid "Close"
@@ -43,7 +43,7 @@ msgstr "Zatvori"
 
 #: components/login-modal.php:35
 msgid "Your session has expired. Please log in again."
-msgstr ""
+msgstr "Vaša sesija je istekla. Molimo vas da se ponovno prijavite."
 
 #: components/login-modal.php:38 components/login-modal.php:79
 #: components/login-modal.php:371 layout/topnavbar.php:112
@@ -53,27 +53,27 @@ msgstr "Prijava"
 
 #: components/login-modal.php:50
 msgid "Administrator Login"
-msgstr ""
+msgstr "Prijava administratora"
 
 #: components/login-modal.php:56
 msgid "Username"
-msgstr ""
+msgstr "Korisničko ime"
 
 #: components/login-modal.php:60
 msgid "Password"
-msgstr ""
+msgstr "Lozinka"
 
 #: components/login-modal.php:63 components/login-modal.php:224
 msgid "Show password"
-msgstr ""
+msgstr "Prikaži lozinku"
 
 #: components/login-modal.php:70
 msgid "Remember me"
-msgstr ""
+msgstr "Zapamti me"
 
 #: components/login-modal.php:78
 msgid "Cancel"
-msgstr ""
+msgstr "Otkaži"
 
 #: components/login-modal.php:93 layout/topnavbar.php:94
 msgid "Admin"
@@ -82,44 +82,47 @@ msgstr "Admin"
 #: components/login-modal.php:141
 msgid "Unable to verify authentication status. The server may be unavailable."
 msgstr ""
+"Ne može se potvrditi status autentifikacije. Poslužitelj možda nije dostupan."
 
 #: components/login-modal.php:168 components/login-modal.php:616
 msgid "Are you sure you want to logout?"
-msgstr ""
+msgstr "Jesi li siguran da se želiš odjaviti?"
 
 #: components/login-modal.php:219
 msgid "Hide password"
-msgstr ""
+msgstr "Sakrij lozinku"
 
 #: components/login-modal.php:326
 msgid "Please enter both username and password"
-msgstr ""
+msgstr "Unesite i korisničko ime i lozinku"
 
 #: components/login-modal.php:334
 msgid "Logging in…"
-msgstr ""
+msgstr "Prijava u tijeku…"
 
 #: components/login-modal.php:366
 msgid "Login failed. Please check your credentials."
-msgstr ""
+msgstr "Prijava nije uspjela. Provjeri svoje vjerodajnice."
 
 #: components/login-modal.php:482
 msgid "Your session will expire in less than {minutes} minute(s)."
-msgstr ""
+msgstr "Tvoja sesija će isteći za manje od {minutes} minuta."
 
 #: components/login-modal.php:537
 msgid "Extending..."
-msgstr ""
+msgstr "Produžavanje..."
 
 #: components/login-modal.php:570
 msgid ""
 "Could not reach the server just now. Your session is still active and this "
 "will retry automatically."
 msgstr ""
+"Trenutno se ne može pristupiti poslužitelju. Tvoja sesija je još uvijek "
+"aktivna i ovo će se automatski ponovno pokušati."
 
 #: components/login-modal.php:583
 msgid "Failed to extend session. Please login again."
-msgstr ""
+msgstr "Nije uspjelo produženje sesije. Molimo prijavite se ponovno."
 
 #: index.php:17 resources.php:17
 msgid ""
@@ -152,26 +155,29 @@ msgstr "Nije moguće spremiti rezultate izvođenja."
 #: index.php:66 resources.php:66
 msgid "Run complete. Log in to save it to Past Runs."
 msgstr ""
+"Izvršavanje dovršeno. Prijavite se kako biste ga spremili u Prošle "
+"Izvršavanja."
 
 #: index.php:74 resources.php:74
 msgid "Run complete. You do not have permission to save it to Past Runs."
 msgstr ""
+"Izvršavanje dovršeno. Nemate dopuštenje za spremanje u Prošle Izvršavanja."
 
 #: index.php:82 resources.php:82
 msgid "Could not load run results."
 msgstr "Nije moguće učitati rezultate izvođenja."
 
 #: index.php:90 resources.php:90
-#, fuzzy
-#| msgid "Could not load run results."
 msgid "Could not load the calendar controls."
-msgstr "Nije moguće učitati rezultate izvođenja."
+msgstr "Nije moguće učitati kontrole kalendara."
 
 #: index.php:101 resources.php:101
 msgid ""
 "Could not load the list of checks from the API, so no test run can be "
 "started. Try reloading the page."
 msgstr ""
+"Nije moguće učitati popis provjera iz API-ja, pa testno pokretanje ne može "
+"biti pokrenuto. Pokušajte ponovno učitati stranicu."
 
 #: index.php:120 resources.php:117
 msgid "Response Format"
@@ -186,10 +192,8 @@ msgid "— Live —"
 msgstr "— Uživo —"
 
 #: index.php:149 resources.php:146
-#, fuzzy
-#| msgid "Could not save run results."
 msgid "You do not have permission to run tests."
-msgstr "Nije moguće spremiti rezultate izvođenja."
+msgstr "Nemaš dopuštenje za provođenje testova."
 
 #: index.php:151 resources.php:148
 msgid "Run Tests"
@@ -217,10 +221,9 @@ msgstr "VALIDIRAJ IZVORNE PODATKE"
 
 #. translators: %1$s: first year of the range; %2$s: last year of the range. Both are filled in by JavaScript and depend on the selected liturgical rite.
 #: index.php:209
-#, fuzzy, php-format
-#| msgid "VALIDATE CALENDAR DATA FOR YEARS FROM 1970 UNTIL %s"
+#, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
-msgstr "PROVJERI PODATKE KALENDARA ZA GODINE OD 1970. DO %s"
+msgstr "PROVJERI KALENDARSKI PODACI ZA GODINE OD %1$s DO %2$s"
 
 #: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
@@ -231,10 +234,8 @@ msgid "Loading…"
 msgstr "Učitavam…"
 
 #: layout/footer.php:65
-#, fuzzy
-#| msgid "Liturgical Calendar"
 msgid "Liturgical Rite"
-msgstr "Liturgijski kalendar"
+msgstr "Liturgijski obred"
 
 #: layout/footer.php:66
 msgid "Liturgical Calendar"
@@ -262,11 +263,11 @@ msgstr "Status veze putem WebSocket-a"
 
 #: resources.php:175
 msgid "API Paths"
-msgstr ""
+msgstr "API Putevi"
 
 #: resources.php:204
 msgid "Source data"
-msgstr ""
+msgstr "Izvorni podaci"
 
 #~ msgid "General Roman"
 #~ msgstr "Opći rimski"
