@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-27 13:30+0000\n"
-"PO-Revision-Date: 2026-08-29 11:05+0000\n"
-"Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
+"PO-Revision-Date: 2026-08-29 14:08+0000\n"
+"Last-Translator: \"John R. D'Orazio\" <priest@johnromanodorazio.com>\n"
 "Language-Team: Croatian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/unit-test-interface/hr/>\n"
 "Language: hr\n"
@@ -43,7 +43,7 @@ msgstr "Zatvori"
 
 #: components/login-modal.php:35
 msgid "Your session has expired. Please log in again."
-msgstr "Vaša sesija je istekla. Molimo vas da se ponovno prijavite."
+msgstr "Tvoja sesija je istekla. Prijavi se ponovno."
 
 #: components/login-modal.php:38 components/login-modal.php:79
 #: components/login-modal.php:371 layout/topnavbar.php:112
@@ -94,7 +94,7 @@ msgstr "Sakrij lozinku"
 
 #: components/login-modal.php:326
 msgid "Please enter both username and password"
-msgstr "Unesite i korisničko ime i lozinku"
+msgstr "Unesi i korisničko ime i lozinku"
 
 #: components/login-modal.php:334
 msgid "Logging in…"
@@ -106,7 +106,7 @@ msgstr "Prijava nije uspjela. Provjeri svoje vjerodajnice."
 
 #: components/login-modal.php:482
 msgid "Your session will expire in less than {minutes} minute(s)."
-msgstr "Tvoja sesija će isteći za manje od {minutes} minuta."
+msgstr "Tvoja sesija će isteći za manje od {minutes} minute."
 
 #: components/login-modal.php:537
 msgid "Extending..."
@@ -122,7 +122,7 @@ msgstr ""
 
 #: components/login-modal.php:583
 msgid "Failed to extend session. Please login again."
-msgstr "Nije uspjelo produženje sesije. Molimo prijavite se ponovno."
+msgstr "Nije uspjelo produženje sesije. Prijavi se ponovno."
 
 #: index.php:17 resources.php:17
 msgid ""
@@ -154,14 +154,12 @@ msgstr "Nije moguće spremiti rezultate izvođenja."
 
 #: index.php:66 resources.php:66
 msgid "Run complete. Log in to save it to Past Runs."
-msgstr ""
-"Izvršavanje dovršeno. Prijavite se kako biste ga spremili u Prošle "
-"Izvršavanja."
+msgstr "Izvršavanje dovršeno. Prijavi se za spremanje u Prethodna izvođenja."
 
 #: index.php:74 resources.php:74
 msgid "Run complete. You do not have permission to save it to Past Runs."
 msgstr ""
-"Izvršavanje dovršeno. Nemate dopuštenje za spremanje u Prošle Izvršavanja."
+"Izvršavanje dovršeno. Nemaš dopuštenje za spremanje u Prethodna izvođenja."
 
 #: index.php:82 resources.php:82
 msgid "Could not load run results."
@@ -177,7 +175,7 @@ msgid ""
 "started. Try reloading the page."
 msgstr ""
 "Nije moguće učitati popis provjera iz API-ja, pa testno pokretanje ne može "
-"biti pokrenuto. Pokušajte ponovno učitati stranicu."
+"biti pokrenuto. Pokušaj ponovno učitati stranicu."
 
 #: index.php:120 resources.php:117
 msgid "Response Format"
@@ -223,7 +221,7 @@ msgstr "VALIDIRAJ IZVORNE PODATKE"
 #: index.php:209
 #, php-format
 msgid "VALIDATE CALENDAR DATA FOR YEARS FROM %1$s UNTIL %2$s"
-msgstr "PROVJERI KALENDARSKI PODACI ZA GODINE OD %1$s DO %2$s"
+msgstr "PROVJERI KALENDARSKE PODATKE ZA GODINE OD %1$s DO %2$s"
 
 #: index.php:243
 msgid "EXECUTE ACCURACY TESTS FOR SPECIFIC EVENTS"
