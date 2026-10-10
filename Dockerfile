@@ -1,15 +1,19 @@
 # Use the official PHP 8.4 CLI image as the base image
 FROM php:8.4-cli-trixie AS build
 
+# PIE (PHP Installer for Extensions) replaces the deprecated pecl installer
+COPY --from=ghcr.io/php/pie:1.5.2-bin /pie /usr/bin/pie
+
 # Install necessary PHP extensions and Composer in one step to minimize layers
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update -y && \
     apt-get install -y --no-install-suggests --no-install-recommends \
-        libicu-dev libonig-dev libzip-dev gettext libyaml-dev && \
+        libicu-dev libonig-dev libzip-dev gettext libyaml-dev unzip && \
     docker-php-ext-install intl zip calendar gettext && \
-    pecl install apcu yaml && \
-    docker-php-ext-enable intl zip calendar apcu yaml gettext && \
+    pie install pecl/yaml:^2.3 && \
+    pie install apcu/apcu:^5.1 && \
+    docker-php-ext-enable intl zip calendar gettext && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the Composer binary from the official, pinned image instead of piping the
