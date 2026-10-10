@@ -69,14 +69,18 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
             // any kind. `CalendarHandler::calculateAmbrosianCalendar()` reads only the Ambrosian
             // temporale, the Ambrosian sanctorale and the diocese's own file, so a scope with
             // `rite: 'roman'` here — which is what `buildNonVASourceDataChecks()` used to pass —
-            // composes 19 ids naming source data the calendar never touches.
+            // composes 19 ids naming source data the calendar never touches. The Ambrosian
+            // sanctorale is not composed at all: its ids carry a missal edition (API#963) that
+            // nothing in /calendars names, so buildSourceDataChecks() discovers it from the
+            // inventory (#101).
             ambrosianDiocesan: inventoryIdsForCalendar({
                 rite: 'ambrosian', dioceseRite: 'ambrosian', nation: null, widerRegion: null,
                 missals: [], dioceseId: 'milano_it',
             }),
             // A rite-level calendar has no diocese id, so `rite` and `dioceseRite` are simply the
-            // same selected rite. Ambrosian's universal corpus is temporale + sanctorale, never
-            // decrees (a Roman-only file v1 never checked here either).
+            // same selected rite. Ambrosian's composed universal corpus is its temporale (the
+            // sanctorale editions are discovered, as above), never decrees (a Roman-only file v1
+            // never checked here either).
             ambrosianRiteLevel: inventoryIdsForCalendar({
                 rite: 'ambrosian', dioceseRite: 'ambrosian', nation: null, widerRegion: null,
                 missals: [], dioceseId: null,
@@ -128,8 +132,6 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
     expect(ids.ambrosianDiocesan).toEqual([
         'temporale:ambrosian',
         'temporale:ambrosian:i18n',
-        'sanctorale:ambrosian',
-        'sanctorale:ambrosian:i18n',
         'diocese:ambrosian:milano_it',
         'diocese:ambrosian:milano_it:i18n',
         'diocese:ambrosian:milano_it:lectionary',
@@ -139,8 +141,6 @@ test('inventoryIdsForCalendar composes the ids the API advertises', async ({ pag
     expect(ids.ambrosianRiteLevel).toEqual([
         'temporale:ambrosian',
         'temporale:ambrosian:i18n',
-        'sanctorale:ambrosian',
-        'sanctorale:ambrosian:i18n',
     ]);
     // decrees:roman must never appear under a pure-Ambrosian scope — v1 never checked it there.
     expect(ids.ambrosianRiteLevel.some((id: string) => id.startsWith('decrees:'))).toBe(false);
@@ -259,6 +259,37 @@ test('every composed id is one the API really advertises', async ({ page, reques
     }
 });
 
+test('every composed Ambrosian rite-level id is advertised, and its sanctorale is there to be discovered', async ({ page, request }) => {
+    // The Roman test above never composed an Ambrosian scope, so when API#963 gave the Ambrosian
+    // sanctorale an edition segment, the edition-less `sanctorale:ambrosian` pair this page still
+    // composed went unadvertised, buildSourceDataChecks() warned and skipped it, and the Ambrosian
+    // sanctorale silently stopped being checked (#101). This is that test for the other rite.
+    const validationsResponse = await request.get(`${apiBase}/validations`);
+    expect(validationsResponse.ok(), `GET /validations: ${validationsResponse.status()} ${validationsResponse.statusText()}`).toBeTruthy();
+    const advertised: string[] = (await validationsResponse.json())
+        .litcal_validations.map((item: { id: string }) => item.id);
+
+    // The rite-level scope, deliberately: it is exactly the rite's universal corpus, which is where
+    // the drift was. The diocese tier is the same composition the Roman test above already checks
+    // against the live inventory, and the Ambrosian diocesan calendars are not always published.
+    await page.goto('/resources.php');
+    const composed: string[] = await page.evaluate(async () => {
+        const { inventoryIdsForCalendar } = await import('/assets/js/wsProtocol.js' as any);
+        return inventoryIdsForCalendar({
+            rite: 'ambrosian', dioceseRite: 'ambrosian', nation: null, widerRegion: null,
+            missals: [], dioceseId: null,
+        });
+    });
+    expect(composed.length).toBeGreaterThan(0);
+    expect(composed.filter((id) => !advertised.includes(id))).toEqual([]);
+
+    // What the discovery in buildSourceDataChecks() relies on: at least one edition, and each with the
+    // shape `sanctorale:ambrosian:{edition}`, never the edition-less form.
+    const editions = advertised.filter((id) => /^sanctorale:ambrosian:[^:]+$/.test(id) && id !== 'sanctorale:ambrosian:i18n');
+    expect(editions.length).toBeGreaterThan(0);
+    expect(advertised).not.toContain('sanctorale:ambrosian');
+});
+
 test('only the missal family is treated as optionally absent', async ({ page }) => {
     await page.goto('/resources.php');
     const verdicts = await page.evaluate(async () => {
@@ -273,10 +304,10 @@ test('only the missal family is treated as optionally absent', async ({ page }) 
             missalFile: isConditionalInventoryId('sanctorale:roman:IT_1983'),
             unpublishedMissalFile: isConditionalInventoryId('sanctorale:roman:IT_2020'),
             unpublishedMissalI18n: isConditionalInventoryId('sanctorale:roman:IT_2020:i18n'),
-            // Three segments like a base missal id, and deliberately NOT optional: the Ambrosian
-            // rite's own sanctorale translations are unconditional, and treating them as optional
-            // would silently drop universal coverage. This is the case the predicate's negative
-            // lookahead exists for.
+            // Three segments like a base missal id, and deliberately NOT optional: before API#963
+            // this was the Ambrosian rite's own (unconditional) sanctorale translations, and treating
+            // that shape as optional would silently drop universal coverage. Nothing composes it any
+            // more (#101), but the predicate's negative lookahead still keeps it out.
             riteSanctoraleI18n: isConditionalInventoryId('sanctorale:ambrosian:i18n'),
             riteSanctorale: isConditionalInventoryId('sanctorale:ambrosian'),
             nationI18n: isConditionalInventoryId('nation:roman:IT:i18n'),

@@ -224,8 +224,14 @@ test('the source-data scaffold follows the rite, and covers i18n folders', async
     const ambrosian = await classTokens();
     expect(ambrosian.has('temporale-ambrosian')).toBe(true);
     expect(ambrosian.has('temporale-ambrosian-i18n')).toBe(true);
-    expect(ambrosian.has('sanctorale-ambrosian')).toBe(true);
-    expect(ambrosian.has('sanctorale-ambrosian-i18n')).toBe(true);
+    // The Ambrosian sanctorale is per edition since API#963 (`sanctorale:ambrosian:EDITIO_TYPICA_2024`),
+    // and discovered from the inventory rather than composed (#101). Pinned as the same pairing as the
+    // Roman missals above, so an edition that gains source data (1976, API#957) needs no edit here.
+    const ambrosianEditions = [...ambrosian].filter((t) => /^sanctorale-ambrosian-[a-z0-9_]+$/.test(t));
+    expect(ambrosianEditions.length).toBeGreaterThan(0);
+    for (const edition of ambrosianEditions) {
+        expect(ambrosian.has(`${edition}-i18n`)).toBe(true);
+    }
     // The Roman corpus is gone, not merely joined: an Ambrosian scaffold's universal corpus is
     // its own temporale/sanctorale, never the Roman decrees.
     expect(ambrosian.has('decrees-roman')).toBe(false);
