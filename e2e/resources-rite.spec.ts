@@ -97,7 +97,7 @@ test('national, wider-region and per-missal checks are Roman-only', async ({ pag
     // invented from the API's on-disk layout, which is what made every layout change a lockstep
     // edit here.
     //
-    // The Ambrosian sanctorale is an inventory item of its own (`sanctorale:ambrosian:2024`), so
+    // The Ambrosian sanctorale is an inventory item of its own (`sanctorale:ambrosian:EDITIO_TYPICA_2024`), so
     // the rite prefix in the id is what separates it from the Roman missals rather than a negative
     // lookbehind on a hand-built name.
     const roman = await cardMarkup(page);

@@ -141,7 +141,7 @@ export const yearsForRite = ( rite, upperBound, riteProperties ) => {
  * addressing schemes are independent — this page attributes frames by `requestId`, never by the
  * class the server composes — and it is written down here so it is not mistaken for a bug later.
  *
- * @param {string} id - An inventory id, e.g. `sanctorale:ambrosian:2024`.
+ * @param {string} id - An inventory id, e.g. `sanctorale:ambrosian:EDITIO_TYPICA_2024`.
  * @returns {string}
  */
 export const idToCardClass = ( id ) => id.replace( /[^A-Za-z0-9_-]/g, '-' ).toLowerCase();
@@ -892,8 +892,16 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  *
  * **Two rites, not one.** `rite` selects the *universal corpus* — for `'roman'` that is the
  * temporale and decrees, each with its `:i18n` translation folder; for any other rite (currently
- * only `'ambrosian'`) it is that rite's own temporale and sanctorale, each with its `:i18n` folder,
- * and no decrees (v1 never checked `MemorialsFromDecrees`, a Roman-only file, under Ambrosian).
+ * only `'ambrosian'`) it is that rite's own temporale with its `:i18n` folder, and no decrees (v1
+ * never checked `MemorialsFromDecrees`, a Roman-only file, under Ambrosian).
+ *
+ * **A non-Roman rite's sanctorale is not composed here.** Since API#963 its inventory ids carry the
+ * missal edition, like the Roman ones — `sanctorale:ambrosian:EDITIO_TYPICA_2024` and its `:i18n`
+ * folder — and nothing `/calendars` publishes names those editions. Composing them would mean
+ * hardcoding the API's edition list, which grows as editions gain source data (1976, API#957), so
+ * `buildSourceDataChecks()` discovers them from the inventory by prefix instead, exactly as it does
+ * the rite's lectionary sections. Composing the old edition-less `sanctorale:ambrosian` pair is what
+ * silently dropped the Ambrosian sanctorale from every scaffold once #963 landed (#101).
  * `dioceseRite` separately qualifies the diocese id, because the two arguments answer different
  * questions: `rite` is *which corpus this calendar is generated from*, `dioceseRite` is *how the
  * inventory spells this diocese's own id* — `diocese:ambrosian:milano_it`; there is no
@@ -912,7 +920,7 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  * remain distinct questions, and a rite that answered them differently would need both.
  *
  * **`:i18n` ids are included at every tier** — the universal corpus (temporale, decrees or the
- * rite's own sanctorale) *and* the calendar-specific tier (wider region, nation, missals, diocese).
+ * rite's own sanctorale, discovered by the caller) *and* the calendar-specific tier (wider region, nation, missals, diocese).
  * The calendar-specific half is new in #61: the #42 migration deliberately held coverage constant
  * so that any change in card counts during it would be a migration bug rather than intended new
  * coverage, and this is that intended new coverage, landed separately. The API has advertised all
@@ -938,7 +946,7 @@ export const summariseAbandoned = ( registry, requestIds ) => {
  *
  * @param {object} scope
  * @param {string} scope.rite - The rite whose universal corpus (temporale/decrees or
- *   temporale/sanctorale) is checked.
+ *   temporale) is checked.
  * @param {string} scope.dioceseRite - The rite that qualifies `scope.dioceseId`, i.e. how the
  *   inventory spells this diocese's id. Equal to `scope.rite` for every caller today; kept separate
  *   because it answers a different question (see "Two rites, not one" above).
@@ -952,7 +960,7 @@ export const summariseAbandoned = ( registry, requestIds ) => {
 export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegion, missals, dioceseId } ) => {
     const ids = 'roman' === rite
         ? [ 'temporale:roman', 'temporale:roman:i18n', 'decrees:roman', 'decrees:roman:i18n' ]
-        : [ `temporale:${rite}`, `temporale:${rite}:i18n`, `sanctorale:${rite}`, `sanctorale:${rite}:i18n` ];
+        : [ `temporale:${rite}`, `temporale:${rite}:i18n` ];
     if ( widerRegion ) {
         ids.push(
             `widerregion:roman:${widerRegion}`,
@@ -987,9 +995,10 @@ export const inventoryIdsForCalendar = ( { rite, dioceseRite, nation, widerRegio
 /**
  * The shape of a missal's translation-folder id, e.g. `sanctorale:roman:IT_1983:i18n`.
  *
- * Four segments, which is what separates it from the *rite's own* sanctorale i18n folder
- * (`sanctorale:ambrosian:i18n`, three segments) — that one is unconditional and must not be
- * matched here.
+ * Four segments, which is what separates it from a three-segment `sanctorale:{rite}:i18n` — the
+ * shape a rite's own sanctorale translations had before API#963 gave them an edition segment. No
+ * such id is composed any more (a non-Roman rite's sanctorale is discovered, not composed), but one
+ * would be unconditional, so it is still kept out of the conditional family.
  */
 const CONDITIONAL_INVENTORY_ID = /^sanctorale:[^:]+:(?!i18n$)[^:]+(?::i18n)?$/;
 
@@ -1038,9 +1047,11 @@ const CONDITIONAL_LECTIONARY_ID = /^(?:nation|widerregion|sanctorale|diocese):[^
  * instead is not open to this function: knowing which missals have files means reading the inventory,
  * which is precisely what this function does not do.)
  *
- * The negative lookahead is load-bearing: `sanctorale:{rite}:i18n` is a *rite's* sanctorale
- * translations, which is unconditional and must keep warning, and it has the same three-segment shape
- * as `sanctorale:roman:{missalId}`.
+ * The negative lookahead keeps `sanctorale:{rite}:i18n` out of the family: that three-segment shape
+ * was a *rite's* own sanctorale translations before API#963 added the edition segment, which would be
+ * unconditional and must keep warning, and it has the same shape as `sanctorale:roman:{missalId}`.
+ * Nothing composes it today — see {@link inventoryIdsForCalendar} — so it guards a regression rather
+ * than a live id.
  *
  * @param {string} id - A composed inventory id.
  * @returns {boolean} True when the server may legitimately publish no such item.

@@ -154,8 +154,9 @@ let ValidationsInventoryReady = false;
  * - **composed**, by `inventoryIdsForCalendar()`, for everything calendar metadata implies — the
  *   universal corpus, and the wider region / nation / missal / diocese tiers with their `:i18n` and
  *   `:lectionary` siblings — then resolved against the fetched inventory;
- * - **discovered**, by id prefix, for the rite's own lectionary corpus, whose section names nothing in
- *   `/calendars` publishes and which therefore cannot be composed without hardcoding the API's layout.
+ * - **discovered**, by id prefix, for the rite's own lectionary corpus and, under a non-Roman rite, its
+ *   sanctorale editions — names nothing in `/calendars` publishes, and which therefore cannot be
+ *   composed without hardcoding the API's layout.
  *
  * A composed id the server does not advertise is said out loud unless `isConditionalInventoryId()` says
  * the absence is the contract; a discovered id cannot disagree by construction, since it came from the
@@ -208,8 +209,16 @@ const buildSourceDataChecks = ( { rite, dioceseRite, nation, widerRegion, missal
     // The rule the two halves follow: compose what calendar metadata implies, discover from the
     // inventory what it does not. `decrees:roman:lectionary` is discovered here too — it is part of the
     // rite's corpus rather than of any calendar's.
+    //
+    // A non-Roman rite's sanctorale is discovered for the same reason: since API#963 its ids carry the
+    // missal edition (`sanctorale:ambrosian:EDITIO_TYPICA_2024` and its `:i18n` folder), and nothing in
+    // `/calendars` names the editions. The Roman `sanctorale:roman:*` family is *not* discovered: those
+    // are the calendar's own missals, composed from its national metadata, and discovering them would
+    // put every nation's missals on every Roman scaffold.
     ValidationsInventory
-        .filter( item => item.id.startsWith( `lectionary:${rite}:` ) || item.id === `decrees:${rite}:lectionary` )
+        .filter( item => ( 'roman' !== rite && item.id.startsWith( `sanctorale:${rite}:` ) )
+            || item.id.startsWith( `lectionary:${rite}:` )
+            || item.id === `decrees:${rite}:lectionary` )
         .forEach( item => checks.push( { id: item.id, label: item.label, steps: item.steps } ) );
 
     return checks;
@@ -1708,7 +1717,8 @@ const buildNonVASourceDataChecks = (calendarId, calendarCategory) => {
             nation: null,
             widerRegion: null,
             // Not an omission: this rite's missals are its temporale and sanctorale, which `rite`
-            // already covers. `missals` is specifically the *Roman* `sanctorale:roman:{id}` family,
+            // already covers (the sanctorale editions are discovered from the inventory by
+            // `buildSourceDataChecks()`). `missals` is specifically the *Roman* `sanctorale:roman:{id}` family,
             // which is why the rite-level branch of `setupPage()` passes `[]` here too.
             missals: [],
             dioceseId
